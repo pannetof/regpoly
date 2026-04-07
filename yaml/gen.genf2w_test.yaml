@@ -1,0 +1,19 @@
+# GF(2^w) generators — polynomial LCG, polynomial basis
+family: genf2w
+type: polylcg
+normal_basis: false
+
+common:
+  w: 7
+  r: 3
+  modM: 0x49
+  step: 1
+
+generators:
+  - coeffs:
+      - { value: 0x3c, position: 2 }
+      - { value: 0x1c, position: 0 }
+
+  - coeffs:
+      - { value: 0x2a, position: 2 }
+      - { value: 0x15, position: 0 }

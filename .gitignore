@@ -1,0 +1,35 @@
+# C build artifacts
+c_regpoly/lib/*.o
+c_regpoly/lib/*.a
+c_regpoly/POL
+c_regpoly/test_transition_matrix_generator
+
+# C++ / Python build artifacts
+cpp_regpoly/build/
+cpp_regpoly/*.egg-info/
+cpp_regpoly/src/regpoly/_regpoly_cpp*.so
+cpp_regpoly/.venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Cython build artifacts
+pkg_regpoly/build/
+pkg_regpoly/*.egg-info/
+pkg_regpoly/.venv/
+pkg_regpoly/src/regpoly/**/*.c
+!pkg_regpoly/src/regpoly/**/*.pyx
+
+# pyregpoly
+pyregpoly/build/
+pyregpoly/*.egg-info/
+pyregpoly/.venv/
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

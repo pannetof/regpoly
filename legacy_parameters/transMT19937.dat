@@ -1,0 +1,25 @@
+1
+tempMK2 32 7 15 11 18 1
+9d2c5680
+efc60000
+
+tempMK 32 7 15 -1 
+2b5b2500
+db8b0000
+
+tempMKopt 32 7 15 -1 0 32
+permut 8 -1 -1
+tempMK 8 2 4 -1 0 16
+permut 2 -1 -1
+tempMK 4 1 2 -1 0 16
+permut 4 -1 -1
+tempMK 4 1 2 -1 0 16
+
+permut 16 -1 -1
+permut 16 -1 -1
+tempMK 16 2 10 -1 0 16
+permut 16 -1 -1
+tempMK 16 2 10 -1 0 16
+permut 16 -1 -1
+tempMK 16 2 10 -1 0 16
+permut 16 -1 -1

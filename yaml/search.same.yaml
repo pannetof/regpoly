@@ -1,0 +1,23 @@
+# Two-component search using the same generator pool
+# Generators must have different k values for C(n,2) to work
+search:
+  seed: [1059674621, 1170794524]
+  Lmax: 32
+
+components:
+  - generators:
+      family: tgfsr
+      common:
+        w: 32
+      generators:
+        - { r: 3, a: 0x8ebfd028, m: 1 }
+        - { r: 5, a: 0xd0ca64b1, m: 2 }
+        - { r: 7, a: 0x9908b0df, m: 3 }
+
+  - generators: same
+
+tests:
+  - type: equidistribution
+    max_gap_sum: 100
+    delta:
+      - { from: 1, to: 32, max: 10000 }

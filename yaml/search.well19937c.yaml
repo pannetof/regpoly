@@ -1,0 +1,23 @@
+# Reproduction of: ./POL 1 example_well44497b carry32_1391_15_final.dat
+# WELL44497b generator (carry type, k=44497) with MT19937 tempering
+# Uses lattice method for equidistribution check
+
+search:
+  seed: [1059674621, 1170794524]
+  Lmax: 32
+
+components:
+  - generators:
+      legacy_file: ../carry32_624_31_final.dat
+    tempering:
+      - type: tempMK
+        w: 32
+        eta: 7
+        mu: 15
+        b: 0xe46e1700
+        c: 0x9b868000
+
+tests:
+  - type: equidistribution
+    method: lattice
+    max_gap_sum: 100000

@@ -1,0 +1,6 @@
+# Cython build artifacts
+build/
+*.so
+*.egg-info/
+__pycache__/
+.pytest_cache/

@@ -1,0 +1,11 @@
+# Mersenne Twister generators
+family: MT
+common:
+  w: 32
+  r: 3
+  m: 1
+  p: 0
+
+generators:
+  - a: 0x9908b0df
+  - a: 0xd0ca64b1

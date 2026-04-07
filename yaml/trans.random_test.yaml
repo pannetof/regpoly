@@ -1,0 +1,20 @@
+# Transformations with typed random specs
+transformations:
+  - type: tempMK
+    w: 32
+    eta: 7
+    mu: 15
+    b: { random: bitvect, bits: w }
+    c: { random: bitvect, bits: w }
+
+  - type: permut
+    w: 32
+    p: { random: coprime, mod: w }
+    q: { random: int, min: 0, max: 31 }
+
+  - type: tempMK
+    w: 32
+    eta: 7
+    mu: 15
+    b: 0x2b5b2500
+    c: 0xdb8b0000

@@ -1,0 +1,42 @@
+# Search for good combined TGFSR with MK tempering
+search:
+  seed: [1059674621, 1170794524]
+  Lmax: 32
+  nbtries: 1
+
+components:
+  - generators:
+      family: tgfsr
+      common:
+        w: 32
+        r: 3
+      generators:
+        - { a: 0x8ebfd028, m: 1 }
+        - { a: 0xd0ca64b1, m: 1 }
+        - { a: 0x9908b0df, m: 1 }
+
+    tempering:
+      - type: tempMK
+        w: 32
+        eta: 7
+        mu: 15
+        b: { random: bitvect, bits: w }
+        c: { random: bitvect, bits: w }
+
+  - generators:
+      family: tgfsr
+      common:
+        w: 32
+        r: 5
+      generators:
+        - { a: 0x8ebfd028, m: 2 }
+        - { a: 0xd0ca64b1, m: 2 }
+        - { a: 0x9908b0df, m: 2 }
+
+    tempering: []
+
+tests:
+  - type: equidistribution
+    max_gap_sum: 10000
+    delta:
+      - { from: 1, to: 32, max: 10000 }

@@ -1,0 +1,13 @@
+# Mixed transformations
+transformations:
+  - type: tempMK
+    w: 32
+    eta: 7
+    mu: 15
+    b: 0x2b5b2500
+    c: 0xdb8b0000
+
+  - type: permut
+    w: 32
+    p: 3
+    q: 7

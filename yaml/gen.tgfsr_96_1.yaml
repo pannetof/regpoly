@@ -1,0 +1,12 @@
+# TGFSR generators from 96_1.dt (w=32, r=3, k=96)
+family: tgfsr
+common:
+  w: 32
+  r: 3
+
+generators:
+  - { a: 0x9965523b, m: 1 }
+  - { a: 0xb07c9b61, m: 1 }
+  - { a: 0x93da7639, m: 1 }
+  - { a: 0x89415f19, m: 1 }
+  - { a: 0xbd20f645, m: 1 }

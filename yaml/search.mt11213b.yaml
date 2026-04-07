@@ -1,0 +1,35 @@
+# Verify equidistribution of MT11213B (Matsumoto & Nishimura, 1998)
+# (w,n,m,r) = (32, 351, 175, 19), a = 0xCCAB8EE7
+# Tempering: u=11, s=7, b=0x31B6AB00, t=15, c=0xFFE50000, l=17
+# Period: 2^11213 - 1
+# k = 32*351 - 19 = 11213
+
+search:
+  seed: [1059674621, 1170794524]
+  Lmax: 32
+  nbtries: 1
+
+components:
+  - generators:
+      family: MT
+      common:
+        w: 32
+        r: 351
+        m: 175
+        p: 19
+      generators:
+        - a: 0xccab8ee7
+    tempering:
+      - type: tempMK2
+        w: 32
+        eta: 7
+        mu: 15
+        u: 11
+        l: 17
+        b: 0x31b6ab00
+        c: 0xffe50000
+
+tests:
+  - type: equidistribution
+    method: lattice
+    max_gap_sum: 100000

@@ -1,0 +1,8 @@
+-1                # racine du générateur pour les params des trans.lin.
+32                # L=32
+0                 # aucune transformation linéaire composante 1
+0                 # aucune transformation linéaire composante 2
+0                 # aucune trans. lin. sur aucune composante
+-1                # Ne pas vérifier équidistribution
+0                 # Aucune restriction sur bits particuliers
+1 4 10 10 5 5 2   # Vérifier si  Delta(10,10,5,5) <= 2
