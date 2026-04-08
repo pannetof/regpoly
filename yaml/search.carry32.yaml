@@ -5,7 +5,7 @@ search:
 
 components:
   - generators:
-      legacy_file: ../carry32_16_0_1.dat
+      legacy_file: ../legacy_parameters/carry32_16_0_1.dat
 
 tests:
   - type: equidistribution

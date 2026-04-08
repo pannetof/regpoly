@@ -1,5 +1,6 @@
 #include "gen_tgfsr.h"
 #include <cstdio>
+#include <NTL/GF2X.h>
 
 TGFSRGen::TGFSRGen(int w, int r, int m, const BitVect& a, int L)
     : Generateur(w * r, L), w_(w), r_(r), m_(m), a_(a.copy()) {}
@@ -52,4 +53,34 @@ std::unique_ptr<Generateur> TGFSRGen::copy() const {
     auto p = std::make_unique<TGFSRGen>(w_, r_, m_, a_, L_);
     p->state_ = state_.copy();
     return p;
+}
+
+BitVect TGFSRGen::char_poly() const {
+    // CharTGFSR: P(t) = (t^r + t^m)^w + sum_{j: bit j of a} (t^r + t^m)^j
+    // where a is the w-bit twist mask (bit 0 = MSB in our BitVect).
+    int K = k_;  // w * r
+
+    // Build tntm = t^r + t^m in NTL
+    NTL::GF2X tntm;
+    NTL::SetCoeff(tntm, r_);
+    NTL::SetCoeff(tntm, m_);
+
+    // res = (t^r + t^m)^w
+    NTL::GF2X res;
+    NTL::power(res, tntm, w_);
+
+    // Add (t^r + t^m)^j for each set bit j of a
+    for (int j = 0; j < w_; j++) {
+        if (a_.get_bit(j)) {
+            NTL::GF2X term;
+            NTL::power(term, tntm, j);
+            res += term;
+        }
+    }
+
+    // Convert to BitVect: bit j = coefficient of z^j, no leading term
+    BitVect bv(K);
+    for (int j = 0; j < K; j++)
+        bv.set_bit(j, IsOne(coeff(res, j)) ? 1 : 0);
+    return bv;
 }

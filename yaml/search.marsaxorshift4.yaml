@@ -5,7 +5,7 @@ search:
 
 components:
   - generators:
-      legacy_file: ../marsaxor4_32_8_-2.dat
+      legacy_file: ../legacy_parameters/marsaxor4_32_8_-2.dat
 tests:
   - type: equidistribution
     max_gap_sum: 100

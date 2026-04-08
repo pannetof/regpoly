@@ -12,6 +12,7 @@ public:
     void init(const BitVect& init_bv) override;
     void next() override;
     std::unique_ptr<Generateur> copy() const override;
+    BitVect char_poly() const override;
 
     int w() const { return w_; }
     int r() const { return r_; }

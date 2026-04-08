@@ -26,7 +26,12 @@ public:
     virtual void get_transition_state(uint64_t* out_words, int out_nwords) const;
 
     // Algorithms (use the virtual interface above)
-    BitVect char_poly() const;
+    // Default: Berlekamp-Massey. Overridden by TGFSR, MT, PolyLCG.
+    virtual BitVect char_poly() const;
+
+    // Returns true if the characteristic polynomial is primitive over GF(2),
+    // meaning the generator has full period 2^k - 1.
+    bool is_full_period() const;
 
     // Compute the K×K transition matrix.
     // Returns K row BitVects, where row[i] has bit j set if A[i][j] = 1.

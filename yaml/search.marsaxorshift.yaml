@@ -5,7 +5,7 @@ search:
 
 components:
   - generators:
-      legacy_file: ../marsaxor3_32_2_7.dat
+      legacy_file: ../legacy_parameters/marsaxor3_32_2_7.dat
 
 tests:
   - type: equidistribution

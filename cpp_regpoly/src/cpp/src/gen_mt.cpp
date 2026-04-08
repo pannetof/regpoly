@@ -1,6 +1,7 @@
 #include "gen_mt.h"
 #include <algorithm>
 #include <cstdio>
+#include <NTL/GF2X.h>
 
 MersenneTwister::MersenneTwister(int w, int r, int m, int p, uint64_t a, int L)
     : Generateur(w * r - p, L),
@@ -90,6 +91,62 @@ std::unique_ptr<Generateur> MersenneTwister::copy() const {
     p->maskw_ = maskw_;
     p->state_bits_ = state_bits_;
     return p;
+}
+
+BitVect MersenneTwister::char_poly() const {
+    // CharMT: the characteristic polynomial of the Mersenne Twister.
+    // P(t) = sum_{j=0}^{p-1} a_j * (t^{r-1}+t^{m-1})^{p-j-1} * (t^r+t^m)^{w-p}
+    //       + sum_{j=p}^{w-1} a_j * (t^r+t^m)^{w-j-1}
+    //       + (t^{r-1}+t^{m-1})^p * (t^r+t^m)^{w-p}
+    // where a_j = bit j of the twist coefficient a_.
+    int K = k_;  // w*r - p
+
+    // Build polynomials
+    NTL::GF2X tntm;    // t^r + t^m
+    NTL::SetCoeff(tntm, r_);
+    NTL::SetCoeff(tntm, m_);
+
+    NTL::GF2X tn1tm1;  // t^(r-1) + t^(m-1)
+    NTL::SetCoeff(tn1tm1, r_ - 1);
+    NTL::SetCoeff(tn1tm1, m_ - 1);
+
+    // (t^r + t^m)^(w-p)
+    NTL::GF2X tntmwp;
+    NTL::power(tntmwp, tntm, w_ - p_);
+
+    NTL::GF2X res;
+    NTL::clear(res);
+
+    // sum for j = 0..p-1: a_j * (t^{r-1}+t^{m-1})^{p-j-1} * (t^r+t^m)^{w-p}
+    for (int j = 0; j < p_; j++) {
+        if (a_ & (1ULL << j)) {
+            NTL::GF2X pw;
+            NTL::power(pw, tn1tm1, p_ - j - 1);
+            res += pw * tntmwp;
+        }
+    }
+
+    // sum for j = p..w-1: a_j * (t^r+t^m)^{w-j-1}
+    for (int j = p_; j < w_; j++) {
+        if (a_ & (1ULL << j)) {
+            NTL::GF2X pw;
+            NTL::power(pw, tntm, w_ - j - 1);
+            res += pw;
+        }
+    }
+
+    // + (t^{r-1}+t^{m-1})^p * (t^r+t^m)^{w-p}
+    {
+        NTL::GF2X pw;
+        NTL::power(pw, tn1tm1, p_);
+        res += pw * tntmwp;
+    }
+
+    // Convert to BitVect: bit j = coefficient of z^j, no leading term
+    BitVect bv(K);
+    for (int j = 0; j < K; j++)
+        bv.set_bit(j, IsOne(coeff(res, j)) ? 1 : 0);
+    return bv;
 }
 
 uint64_t MersenneTwister::V(int idx) const {

@@ -147,6 +147,7 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
         .def("init", &Generateur::init)
         .def("next", &Generateur::next)
         .def("char_poly", &Generateur::char_poly)
+        .def("is_full_period", &Generateur::is_full_period)
         .def("transition_matrix", &Generateur::transition_matrix)
         .def("get_output", &Generateur::get_output)
         .def("copy", [](const Generateur& g) { return g.copy(); })

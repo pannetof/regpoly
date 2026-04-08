@@ -77,3 +77,14 @@ std::unique_ptr<Generateur> PolyLCG::copy() const {
     p->state_ = state_.copy();
     return p;
 }
+
+BitVect PolyLCG::char_poly() const {
+    // The characteristic polynomial IS the stored polynomial.
+    // C code: coeff[j] = ValBitBV(POLYLCGPOL, k-1-j) for j=0..k-1, coeff[k]=1
+    // In our BitVect: poly_.get_bit(i) = coefficient of z^(k-1-i) in the polynomial.
+    // We return a k-bit BitVect where bit j = coefficient of z^j (no leading term).
+    BitVect bv(k_);
+    for (int j = 0; j < k_; j++)
+        bv.set_bit(j, poly_.get_bit(k_ - 1 - j));
+    return bv;
+}

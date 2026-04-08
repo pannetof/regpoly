@@ -13,6 +13,7 @@ public:
     void init(const BitVect& init_bv) override;
     void next() override;
     std::unique_ptr<Generateur> copy() const override;
+    BitVect char_poly() const override;
     void get_transition_state(uint64_t* out_words, int out_nwords) const override;
 
     int s() const { return s_; }

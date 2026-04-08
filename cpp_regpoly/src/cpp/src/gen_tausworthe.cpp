@@ -63,6 +63,19 @@ std::unique_ptr<Generateur> Tausworthe::copy() const {
     return p;
 }
 
+BitVect Tausworthe::char_poly() const {
+    // The characteristic polynomial is z^k + z^Q[0] + z^Q[1] + ... + 1
+    // Q_ contains the non-leading, non-constant exponents, plus k itself.
+    // Q_ is sorted. Q_.back() == k_.
+    // The constant term (z^0) is always present.
+    // Return k bits where bit j = coefficient of z^j (no leading term).
+    BitVect bv(k_);
+    bv.set_bit(0, 1);  // constant term z^0
+    for (int i = 0; i < NbCoeff_ - 1; i++)
+        bv.set_bit(Q_[i], 1);
+    return bv;
+}
+
 void Tausworthe::get_transition_state(uint64_t* out_words, int out_nwords) const {
     BitVect tmp(k_);
     tmp.copy_part_from(state_, k_);

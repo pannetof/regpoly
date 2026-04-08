@@ -8,7 +8,7 @@ search:
 
 components:
   - generators:
-      legacy_file: ../carry32_624_31_final.dat
+      legacy_file: ../legacy_parameters/carry32_624_31_final.dat
     tempering:
       - type: tempMK
         w: 32

@@ -50,11 +50,16 @@ class Generateur:
         bv = self._cpp_gen.char_poly()
         return BitVect(self.k, bv.to_int())
 
-    def transition_matrix(self) -> "Matrix":
-        from regpoly.matrix import Matrix
+    def is_full_period(self) -> bool:
+        """Returns True if the characteristic polynomial is primitive,
+        meaning the generator has maximum period 2^k - 1."""
+        return self._cpp_gen.is_full_period()
+
+    def transition_matrix(self) -> "BitMatrix":
+        from regpoly.matrix import BitMatrix
         K = self.k
         cpp_rows = self._cpp_gen.transition_matrix()
-        A = Matrix(K, K, 1)
+        A = BitMatrix(K, K)
         for i in range(K):
             A._rows[i] = cpp_rows[i].to_int()
         return A
