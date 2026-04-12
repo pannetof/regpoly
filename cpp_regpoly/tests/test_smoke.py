@@ -2,6 +2,7 @@
 
 import regpoly._regpoly_cpp as _cpp
 from regpoly import BitVect, BitMatrix, Generateur, Transformation
+from regpoly.generateur import resolve_family
 
 
 # ── BitVect ──────────────────────────────────────────────────────────────
@@ -48,15 +49,14 @@ def test_bitmatrix_display():
 # ─�� Generateur (via C++ factory) ─────────────────────────────────────────
 
 def test_create_polylcg():
-    # poly exponents for x^3 + x + 1: positions 1, 0 (constant term implicit)
-    gen = Generateur(_cpp.create_generator("polylcg", {"k": 3, "poly": [1]}, 3))
+    gen = Generateur(_cpp.create_generator("PolyLCG", {"k": 3, "poly": [1]}, 3))
     assert gen.k == 3
     assert gen.L == 3
     assert gen.name() != ""
 
 
 def test_polylcg_iteration():
-    gen = Generateur(_cpp.create_generator("polylcg", {"k": 3, "poly": [1]}, 3))
+    gen = Generateur(_cpp.create_generator("PolyLCG", {"k": 3, "poly": [1]}, 3))
     init_bv = BitVect.zeros(3)
     init_bv.put_bit(0, 1)
     gen.initialize_state(init_bv)
@@ -65,28 +65,27 @@ def test_polylcg_iteration():
 
 
 def test_create_tausworthe():
-    # taus family: poly = list of exponents, s = step
     gen = Generateur(_cpp.create_generator(
-        "taus", {"poly": [3, 7], "s": 3, "quicktaus": True}, 7
+        "Tausworthe", {"poly": [3, 7], "s": 3, "quicktaus": True}, 7
     ))
     assert gen.k == 7
 
 
 def test_create_tgfsr():
     gen = Generateur(_cpp.create_generator(
-        "tgfsr", {"w": 8, "r": 3, "m": 1, "a": 0b10110011}, 8
+        "TGFSRGen", {"w": 8, "r": 3, "m": 1, "a": 0b10110011}, 8
     ))
     assert gen.k == 24  # w * r
 
 
 def test_generateur_display_returns_string():
-    gen = Generateur(_cpp.create_generator("polylcg", {"k": 3, "poly": [1]}, 3))
+    gen = Generateur(_cpp.create_generator("PolyLCG", {"k": 3, "poly": [1]}, 3))
     result = gen.display()
     assert isinstance(result, str)
 
 
 def test_char_poly():
-    gen = Generateur(_cpp.create_generator("polylcg", {"k": 3, "poly": [1]}, 3))
+    gen = Generateur(_cpp.create_generator("PolyLCG", {"k": 3, "poly": [1]}, 3))
     init_bv = BitVect.zeros(3)
     init_bv.put_bit(0, 1)
     gen.initialize_state(init_bv)
@@ -95,11 +94,36 @@ def test_char_poly():
 
 
 def test_transition_matrix():
-    gen = Generateur(_cpp.create_generator("polylcg", {"k": 3, "poly": [1]}, 3))
+    gen = Generateur(_cpp.create_generator("PolyLCG", {"k": 3, "poly": [1]}, 3))
     mat = gen.transition_matrix()
     assert isinstance(mat, BitMatrix)
     assert mat.nblignes == 3
     assert mat.l == 3
+
+
+# ── resolve_family ───────────────────────────────────────────────────────
+
+def test_resolve_family_aliases():
+    assert resolve_family("polylcg") == "PolyLCG"
+    assert resolve_family("taus") == "Tausworthe"
+    assert resolve_family("taus2") == "Tausworthe"
+    assert resolve_family("tgfsr") == "TGFSRGen"
+    assert resolve_family("MT") == "MersenneTwister"
+    assert resolve_family("matsumoto") == "MatsumotoGen"
+    assert resolve_family("marsaxorshift") == "MarsaXorshiftGen"
+    assert resolve_family("AC1D") == "AC1DGen"
+    assert resolve_family("carry") == "Carry2Gen"
+
+
+def test_resolve_family_passthrough():
+    assert resolve_family("PolyLCG") == "PolyLCG"
+    assert resolve_family("MersenneTwister") == "MersenneTwister"
+
+
+def test_resolve_family_genf2w():
+    assert resolve_family("genf2w", {"type": "lfsr"}) == "GenF2wLFSR"
+    assert resolve_family("genf2w", {"type": "polylcg"}) == "GenF2wPolyLCG"
+    assert resolve_family("genf2w") == "GenF2wPolyLCG"
 
 
 # ── Transformation ───────────────────────────────────────────────────────

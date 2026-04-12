@@ -9,6 +9,38 @@ import regpoly._regpoly_cpp as _cpp
 from regpoly.bitvect import BitVect
 
 
+# Legacy/short names → C++ class names used by the factory.
+# The C++ factory expects the exact class name (e.g. "PolyLCG").
+# "genf2w" is handled specially by resolve_family(): it inspects the
+# params["type"] field to select GenF2wLFSR or GenF2wPolyLCG.
+_FAMILY_ALIASES: dict[str, str] = {
+    "polylcg":       "PolyLCG",
+    "taus":          "Tausworthe",
+    "taus2":         "Tausworthe",
+    "tgfsr":         "TGFSRGen",
+    "MT":            "MersenneTwister",
+    "matsumoto":     "MatsumotoGen",
+    "marsaxorshift": "MarsaXorshiftGen",
+    "AC1D":          "AC1DGen",
+    "carry":         "Carry2Gen",
+}
+
+
+def resolve_family(family: str, params: dict | None = None) -> str:
+    """
+    Translate a legacy/short family name to the C++ class name.
+
+    If *family* is already a valid C++ class name it is returned as-is.
+    The special case ``"genf2w"`` inspects ``params["type"]`` to choose
+    between ``"GenF2wLFSR"`` and ``"GenF2wPolyLCG"``.
+    """
+    if family == "genf2w":
+        if params and params.get("type") == "lfsr":
+            return "GenF2wLFSR"
+        return "GenF2wPolyLCG"
+    return _FAMILY_ALIASES.get(family, family)
+
+
 class Generateur:
     """
     Wrapper around a C++ generator object.
@@ -92,6 +124,6 @@ class Generateur:
         generators = []
         for entry in data["generators"]:
             params = {**common, **entry}
-            cpp_gen = _cpp.create_generator(family, params, L)
+            cpp_gen = _cpp.create_generator(resolve_family(family, params), params, L)
             generators.append(cls(cpp_gen))
         return generators

@@ -240,6 +240,8 @@ def _resolve_path(path: str, base_dir: str) -> str:
 
 
 def _build_inline_generators(gen_cfg: dict, L: int) -> list:
+    from regpoly.generateur import resolve_family
+
     family = gen_cfg["family"]
     family_params = {k: v for k, v in gen_cfg.items()
                      if k not in ("family", "common", "generators")}
@@ -247,7 +249,7 @@ def _build_inline_generators(gen_cfg: dict, L: int) -> list:
     generators = []
     for entry in gen_cfg["generators"]:
         params = {**common, **entry}
-        cpp_gen = _cpp.create_generator(family, params, L)
+        cpp_gen = _cpp.create_generator(resolve_family(family, params), params, L)
         generators.append(Generateur(cpp_gen))
     return generators
 

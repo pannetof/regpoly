@@ -35,7 +35,7 @@ void register_generator_types(py::module_& m) {
 std::unique_ptr<Generateur> create_generator(
     const std::string& family, const Params& params, int L)
 {
-    if (family == "polylcg") {
+    if (family == "PolyLCG") {
         int k = (int)params.get_int("k");
         auto poly_list = params.get_int_vec("poly");
         BitVect poly_bv(k);
@@ -43,7 +43,7 @@ std::unique_ptr<Generateur> create_generator(
             poly_bv.set_bit(k - e - 1, 1);
         return std::make_unique<PolyLCG>(k, poly_bv, L);
 
-    } else if (family == "taus" || family == "taus2") {
+    } else if (family == "Tausworthe") {
         auto poly_list = params.get_int_vec("poly");
         std::vector<int> Q(poly_list);
         std::sort(Q.begin(), Q.end());
@@ -52,7 +52,7 @@ std::unique_ptr<Generateur> create_generator(
         bool quicktaus = params.get_bool("quicktaus", true);
         return std::make_unique<Tausworthe>(k, Q, s, quicktaus, L);
 
-    } else if (family == "tgfsr") {
+    } else if (family == "TGFSRGen") {
         int w = (int)params.get_int("w");
         int r = (int)params.get_int("r");
         int m = (int)params.get_int("m");
@@ -70,7 +70,7 @@ std::unique_ptr<Generateur> create_generator(
         }
         return std::make_unique<TGFSRGen>(w, r, m, a_bv, std::min(w, L));
 
-    } else if (family == "MT") {
+    } else if (family == "MersenneTwister") {
         int w = (int)params.get_int("w");
         int r = (int)params.get_int("r");
         int m = (int)params.get_int("m");
@@ -78,7 +78,7 @@ std::unique_ptr<Generateur> create_generator(
         uint64_t a = (uint64_t)params.get_int("a");
         return std::make_unique<MersenneTwister>(w, r, m, p, a, L);
 
-    } else if (family == "genf2w") {
+    } else if (family == "GenF2wPolyLCG") {
         int w = (int)params.get_int("w");
         int r = (int)params.get_int("r");
         uint64_t modM = (uint64_t)params.get_int("modM");
@@ -87,18 +87,24 @@ std::unique_ptr<Generateur> create_generator(
         auto nocoeff_vals = params.get_int_vec("nocoeff");
         auto coeff_vals = params.get_uint_vec("coeff");
         int nbcoeff = (int)nocoeff_vals.size();
-        std::string type_str = params.get_string("type", "polylcg");
+        return std::make_unique<GenF2wPolyLCG>(
+            w, r, nbcoeff, nocoeff_vals, coeff_vals,
+            modM, normal_basis, step_count, L);
 
-        if (type_str == "lfsr") {
-            return std::make_unique<GenF2wLFSR>(
-                w, r, nbcoeff, nocoeff_vals, coeff_vals,
-                modM, normal_basis, step_count, L);
-        } else {
-            return std::make_unique<GenF2wPolyLCG>(
-                w, r, nbcoeff, nocoeff_vals, coeff_vals,
-                modM, normal_basis, step_count, L);
-        }
-    } else if (family == "matsumoto") {
+    } else if (family == "GenF2wLFSR") {
+        int w = (int)params.get_int("w");
+        int r = (int)params.get_int("r");
+        uint64_t modM = (uint64_t)params.get_int("modM");
+        bool normal_basis = params.get_bool("normal_basis", false);
+        int step_count = (int)params.get_int("step", 1);
+        auto nocoeff_vals = params.get_int_vec("nocoeff");
+        auto coeff_vals = params.get_uint_vec("coeff");
+        int nbcoeff = (int)nocoeff_vals.size();
+        return std::make_unique<GenF2wLFSR>(
+            w, r, nbcoeff, nocoeff_vals, coeff_vals,
+            modM, normal_basis, step_count, L);
+
+    } else if (family == "MatsumotoGen") {
         int type = (int)params.get_int("type");
         int n = (int)params.get_int("n");
         int m = (int)params.get_int("m");
@@ -109,7 +115,7 @@ std::unique_ptr<Generateur> create_generator(
             paramsunsigned.push_back((uint32_t)v);
         return std::make_unique<MatsumotoGen>(type, n, m, paramsint, paramsunsigned, L);
 
-    } else if (family == "marsaxorshift") {
+    } else if (family == "MarsaXorshiftGen") {
         int type = (int)params.get_int("type");
         int w = (int)params.get_int("w", 32);
         int r = (int)params.get_int("r", 1);
@@ -162,7 +168,7 @@ std::unique_ptr<Generateur> create_generator(
         return std::make_unique<MarsaXorshiftGen>(
             type, w, r, m, t1, t2x, taps, t4, mi, L);
 
-    } else if (family == "AC1D") {
+    } else if (family == "AC1DGen") {
         int n = (int)params.get_int("n");
         auto flat = params.get_int_vec("matrix");
         std::vector<std::vector<int>> matrix(n, std::vector<int>(n, 0));
@@ -172,7 +178,7 @@ std::unique_ptr<Generateur> create_generator(
                     matrix[i][j] = flat[i * n + j];
         return std::make_unique<AC1DGen>(n, matrix, L);
 
-    } else if (family == "carry") {
+    } else if (family == "Carry2Gen") {
         int w = (int)params.get_int("w", 32);
         int r = (int)params.get_int("r");
         int p = (int)params.get_int("p");
