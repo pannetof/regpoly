@@ -2,13 +2,15 @@
 regpoly.cli — Command-line entry point.
 
 Usage:
-    regpoly search.config.yaml                          (equidistribution search)
-    regpoly search_primitive.yaml                       (full-period search)
-    regpoly nb_comp test_file gen_file1 [gen_file2 ...]  (legacy format)
+    regpoly equidist/config.yaml                                (equidistribution search)
+    regpoly fullperiodsearch/Family.desc.yaml                   (full-period search)
+    regpoly testedgenerators/Family/params.equidist.0001.yaml   (re-test a saved generator)
+    regpoly nb_comp test_file gen_file1 [gen_file2 ...]         (legacy format)
 
 The YAML format is auto-detected:
-  - If the file has a top-level "search.family" key → primitive search
-  - If the file has a "components" key → equidistribution search (Seek)
+  - "search.family" key → full-period search
+  - "generator" or "components" + "results" → tested generator (display results)
+  - "components" + "tests" → equidistribution search (Seek)
 """
 
 import sys
@@ -28,10 +30,26 @@ def main() -> None:
             config = yaml.safe_load(f)
 
         search = config.get("search", {})
+
         if "family" in search:
+            # Full-period search
             from regpoly.search_primitive import PrimitiveSearch
             PrimitiveSearch.from_yaml(arg).run()
+
+        elif "generator" in config or (
+            "components" in config and "results" in config
+        ):
+            # Tested generator file — display its contents
+            from regpoly.tested_generator import load_tested_generator
+            comb, results = load_tested_generator(arg)
+            print(f"Loaded tested generator from {arg}")
+            print(f"  k_g = {comb.k_g}, L = {comb.L}, J = {comb.J}")
+            if results:
+                for test_name, res in results.items():
+                    print(f"  {test_name}: {res}")
+
         else:
+            # Equidistribution search
             from regpoly.seek import Seek
             Seek.from_yaml(arg).run()
     else:

@@ -10,8 +10,10 @@
 #include "gen_marsaxorshift.h"
 #include "gen_ac1d.h"
 #include "gen_wellrng.h"
+#include "gen_melg.h"
 #include "trans_permutation.h"
 #include "trans_temper_mk.h"
+#include "trans_lag_mask.h"
 #include <algorithm>
 #include <stdexcept>
 
@@ -30,6 +32,7 @@ void register_generator_types(py::module_& m) {
     py::class_<MarsaXorshiftGen, Generateur, std::unique_ptr<MarsaXorshiftGen>>(m, "MarsaXorshiftGen");
     py::class_<AC1DGen, Generateur, std::unique_ptr<AC1DGen>>(m, "AC1DGen");
     py::class_<WELLRNG, Generateur, std::unique_ptr<WELLRNG>>(m, "WELLRNG");
+    py::class_<MELG, Generateur, std::unique_ptr<MELG>>(m, "MELG");
 }
 
 std::unique_ptr<Generateur> create_generator(
@@ -208,6 +211,16 @@ std::unique_ptr<Generateur> create_generator(
             }
         }
         return std::make_unique<WELLRNG>(w, r, p, m1, m2, m3, matrices, L);
+
+    } else if (family == "MELG") {
+        int w = (int)params.get_int("w", 64);
+        int N = (int)params.get_int("N");
+        int M = (int)params.get_int("M");
+        int r = (int)params.get_int("r");
+        int sigma1 = (int)params.get_int("sigma1");
+        int sigma2 = (int)params.get_int("sigma2");
+        uint64_t a = (uint64_t)params.get_int("a");
+        return std::make_unique<MELG>(w, N, M, r, sigma1, sigma2, a, L);
     }
     throw std::invalid_argument("Unknown generator family: " + family);
 }
@@ -231,6 +244,12 @@ std::unique_ptr<Transformation> create_transformation(
         uint64_t b = (uint64_t)params.get_int("b", 0);
         uint64_t c = (uint64_t)params.get_int("c", 0);
         return std::make_unique<TemperMKTrans>(w, mk_type, eta, mu, u, l, b, c);
+
+    } else if (type == "laggedTempering") {
+        int sigma = (int)params.get_int("sigma");
+        int L = (int)params.get_int("L");
+        uint64_t b = (uint64_t)params.get_int("b", 0);
+        return std::make_unique<LaggedTempering>(w, sigma, L, b);
     }
     throw std::invalid_argument("Unknown transformation type: " + type);
 }
@@ -310,6 +329,15 @@ std::vector<ParamSpec> get_param_specs(const std::string& family)
         S("mat_types", "int_vec",  false, false, 0,  "none",    ""),
         S("mat_pi",    "int_vec",  false, false, 0,  "none",    ""),
         S("mat_pu",    "uint_vec", false, false, 0,  "none",    ""),
+    };
+    if (family == "MELG") return {
+        S("w",      "int", true,  true,  64, "",        ""),
+        S("N",      "int", true,  false, 0,  "",        ""),
+        S("r",      "int", true,  false, 0,  "",        ""),
+        S("M",      "int", false, false, 0,  "range",   "1,N-2"),
+        S("sigma1", "int", false, false, 0,  "range",   "1,w-1"),
+        S("sigma2", "int", false, false, 0,  "range",   "1,w-1"),
+        S("a",      "int", false, false, 0,  "bitmask", "w"),
     };
     throw std::invalid_argument("Unknown generator family: " + family);
 }

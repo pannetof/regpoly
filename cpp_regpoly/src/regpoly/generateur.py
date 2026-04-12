@@ -48,12 +48,17 @@ def _get_factors_for_k(k: int) -> list[int] | None:
     if not data:
         return None
 
-    # Collect factors of Φ_d(2) for every divisor d of k.
-    # Φ_1(2) = 1 (no prime factors), so d=1 is always safe to skip.
+    # For Mersenne prime exponents, 2^k - 1 is itself prime.
+    # No factorization from the table needed.
+    if _is_mersenne_prime_exponent(k):
+        return [2**k - 1]
+
+    # Collect factors of Phi_d(2) for every divisor d of k.
+    # Phi_1(2) = 1 (no prime factors), so d=1 is always safe to skip.
     factors = set()
     for d in _divisors(k):
         if d == 1:
-            continue  # Φ_1(2) = 1
+            continue
         entry = data.get(str(d))
         if entry is None:
             return None
@@ -62,6 +67,18 @@ def _get_factors_for_k(k: int) -> list[int] | None:
         for p in entry["factors"]:
             factors.add(p)
     return sorted(factors)
+
+
+_MERSENNE_PRIMES = {
+    2, 3, 5, 7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607,
+    1279, 2203, 2281, 3217, 4253, 4423, 9689, 9941, 11213,
+    19937, 21701, 23209, 44497, 86243, 110503, 132049, 216091,
+    756839, 859433, 1257787,
+}
+
+
+def _is_mersenne_prime_exponent(k: int) -> bool:
+    return k in _MERSENNE_PRIMES
 
 
 def _divisors(n: int) -> list[int]:
@@ -177,6 +194,8 @@ class Generateur:
         self._cpp_gen = cpp_gen
         self.k: int = cpp_gen.k()
         self.L: int = cpp_gen.L()
+        self._family: str | None = None
+        self._create_params: dict | None = None
 
     @classmethod
     def parameters(cls, family: str) -> list[dict]:
@@ -232,7 +251,27 @@ class Generateur:
             full[name] = _generate_random(spec, full)
 
         cpp_gen = _cpp.create_generator(resolved, full, L)
-        return cls(cpp_gen)
+        gen = cls(cpp_gen)
+        gen._family = resolved
+        gen._create_params = full
+        return gen
+
+    @property
+    def family(self) -> str | None:
+        return self._family
+
+    @property
+    def create_params(self) -> dict | None:
+        return self._create_params
+
+    def structural_params(self) -> dict:
+        """Return only the structural parameters (those that define k)."""
+        if not self._family or not self._create_params:
+            return {}
+        specs = _cpp.get_param_specs(self._family)
+        return {s["name"]: self._create_params[s["name"]]
+                for s in specs
+                if s["structural"] and s["name"] in self._create_params}
 
     def name(self) -> str:
         return self._cpp_gen.name()
@@ -252,7 +291,10 @@ class Generateur:
         return self
 
     def copy(self) -> "Generateur":
-        return Generateur(self._cpp_gen.copy())
+        g = Generateur(self._cpp_gen.copy())
+        g._family = self._family
+        g._create_params = dict(self._create_params) if self._create_params else None
+        return g
 
     def char_poly(self) -> BitVect:
         bv = self._cpp_gen.char_poly()

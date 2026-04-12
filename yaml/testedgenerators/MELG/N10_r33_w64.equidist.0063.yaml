@@ -1,0 +1,26 @@
+generator:
+  family: MELG
+  L: 64
+  w: 64
+  N: 10
+  r: 33
+  M: 1
+  sigma1: 14
+  sigma2: 33
+  a: 8436527140812985130
+tempering:
+- type: laggedTempering
+  w: 64
+  sigma: 33
+  L: 2
+  b: 3812732298033472340
+results:
+  equidistribution:
+    se: 6
+    ecart:
+      3: 1
+      5: 1
+      6: 1
+      53: 1
+      54: 1
+      55: 1

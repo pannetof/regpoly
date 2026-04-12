@@ -88,7 +88,14 @@ static Params dict_to_params(const py::dict& d) {
         if (py::isinstance<py::bool_>(val)) {
             p.set_bool(key, val.cast<bool>());
         } else if (py::isinstance<py::int_>(val)) {
-            p.set_int(key, val.cast<int64_t>());
+            try {
+                p.set_int(key, val.cast<int64_t>());
+            } catch (...) {
+                // Value exceeds int64_t range (e.g. large uint64 bitmask)
+                // Store it as int64 with the same bit pattern
+                uint64_t uval = val.cast<uint64_t>();
+                p.set_int(key, static_cast<int64_t>(uval));
+            }
         } else if (py::isinstance<py::str>(val)) {
             p.set_string(key, val.cast<std::string>());
         } else if (py::isinstance<py::list>(val)) {

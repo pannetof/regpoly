@@ -1,0 +1,12 @@
+# Simple search: single genf2w component, no tempering
+search:
+  seed: [1059674621, 1170794524]
+  Lmax: 32
+
+components:
+  - generators:
+      file: ../generators/GenF2wPolyLCG/r3_w7.yaml
+
+tests:
+  - type: equidistribution
+    max_gap_sum: 100

@@ -1,8 +1,8 @@
 """
-seek.py — Seek class: runs the combined-generator search.
+seek.py — Seek class: runs the equidistribution search.
 
 Supports two input formats:
-  - YAML: single search config file (search.*.yaml)
+  - YAML: single config file (equidist.*.yaml)
   - Legacy: nb_comp + test_file + gen_data_files (C-compatible)
 """
 
@@ -18,6 +18,7 @@ from regpoly.generateur import Generateur
 from regpoly.transformation import Transformation
 from regpoly.combinaison import Combinaison
 from regpoly.legacy_reader import LegacyReader
+from regpoly.tested_generator import save_tested_generator
 from regpoly.analyses.equidistribution_test import (
     EquidistributionTest,
     METHOD_MATRICIAL,
@@ -46,6 +47,7 @@ class Seek:
         self._comb: Combinaison = None
         self._tests: list = []
         self._nbtries: int = 1
+        self._output_dir: str | None = None
 
     # -- Constructors ------------------------------------------------------
 
@@ -64,6 +66,7 @@ class Seek:
         seeds = search.get("seed", [-1, 0])
         Lmax = search.get("Lmax", 32)
         s._nbtries = search.get("nbtries", 1)
+        s._output_dir = search.get("output_dir", "yaml/testedgenerators")
 
         # Seed RNG
         seed1, seed2 = seeds
@@ -199,6 +202,14 @@ class Seek:
                     if msg:
                         print(msg)
                 nbsel += 1
+
+                # Save tested generator
+                if self._output_dir:
+                    test_results = _build_results_dict(me_results, tup_results)
+                    path = save_tested_generator(
+                        self._output_dir, "equidist", comb, test_results)
+                    print(f"  Saved: {path}")
+
                 print(_SEP)
 
             sys.stdout.flush()
@@ -453,6 +464,34 @@ def _format_current_comb(comb) -> str:
         else:
             lines.append(_EQ66)
     return "\n".join(lines)
+
+
+def _build_results_dict(me_results, tup_results=None) -> dict:
+    """Build a results dict from test results for saving."""
+    results = {}
+    if me_results is not None and me_results.verified:
+        eq = {"se": me_results.se}
+        if me_results.is_me():
+            eq["status"] = "ME"
+        # Store non-zero ecart values compactly
+        ecart = {}
+        for l in range(1, me_results.L + 1):
+            if me_results.ecart[l] != 0:
+                ecart[l] = me_results.ecart[l]
+        if ecart:
+            eq["ecart"] = ecart
+        results["equidistribution"] = eq
+
+    if tup_results is not None and tup_results.verified:
+        tup = {
+            "firstpart_max": tup_results.firstpart_max,
+            "firstpart_sum": tup_results.firstpart_sum,
+            "secondpart_max": tup_results.secondpart_max,
+            "secondpart_sum": tup_results.secondpart_sum,
+        }
+        results["tuplets"] = tup
+
+    return results
 
 
 def _format_summary(nbgen, nbME, nbCF, nbsel, elapsed) -> str:

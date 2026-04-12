@@ -8,7 +8,7 @@ is_full_period().
 
 Results are stored in::
 
-    <results_dir>/<Family>/<structural_params>.yaml
+    <generators_dir>/<Family>/<structural_params>.yaml
 
 The output file uses the standard generator file format (family, common,
 generators) so it can be passed directly to the equidistribution search.
@@ -44,7 +44,7 @@ class PrimitiveSearch:
         search_params: dict,
         max_tries: int | None,
         max_seconds: float | None,
-        results_dir: str,
+        generators_dir: str,
     ) -> None:
         self.family = family
         self.L = L
@@ -52,7 +52,7 @@ class PrimitiveSearch:
         self.search_params = search_params
         self.max_tries = max_tries
         self.max_seconds = max_seconds
-        self.results_dir = results_dir
+        self.generators_dir = generators_dir
         self.output_file = self._build_output_path()
 
     @classmethod
@@ -66,7 +66,7 @@ class PrimitiveSearch:
         limit = search.get("limit", {})
         max_tries = limit.get("max_tries")
         max_seconds = limit.get("max_seconds")
-        results_dir = search.get("results_dir", "results")
+        generators_dir = search.get("generators_dir", "yaml/generators")
 
         structural = config.get("structural", {})
         search_params = config.get("search_params", {})
@@ -78,7 +78,7 @@ class PrimitiveSearch:
             search_params=search_params,
             max_tries=max_tries,
             max_seconds=max_seconds,
-            results_dir=results_dir,
+            generators_dir=generators_dir,
         )
 
     def run(self) -> list[dict]:
@@ -225,7 +225,7 @@ class PrimitiveSearch:
         for key, val in sorted(self.structural.items()):
             parts.append(f"{key}{val}")
         filename = "_".join(parts) + ".yaml" if parts else "default.yaml"
-        return os.path.join(self.results_dir, resolved, filename)
+        return os.path.join(self.generators_dir, resolved, filename)
 
     # -- File I/O ----------------------------------------------------------
 
@@ -285,8 +285,12 @@ class PrimitiveSearch:
         r = fixed.get("r")
         p = fixed.get("p")
         k = fixed.get("k")
+        N = fixed.get("N")
         if k is not None:
             return str(k)
+        # MELG: k = N*w - r
+        if N is not None and w is not None and r is not None:
+            return str(N * w - r)
         if w is not None and r is not None:
             base = w * r
             if p is not None:

@@ -43,19 +43,19 @@ generator family, parameters, tempering, and test method in a single file.
 **Single generator, lattice method (WELL19937a):**
 
 ```bash
-python -m regpoly.cli ../yaml/search.well19937a.yaml
+python -m regpoly.cli ../yaml/equidist/well19937a.yml
 ```
 
 **Mersenne Twister MT19937 with tempering:**
 
 ```bash
-python -m regpoly.cli ../yaml/search.mt19937.yaml
+python -m regpoly.cli ../yaml/equidist/mt19937.yaml
 ```
 
 **Two-component combined generator:**
 
 ```bash
-python -m regpoly.cli ../yaml/search.example3.yaml
+python -m regpoly.cli ../yaml/equidist/example3.yaml
 ```
 
 ### Legacy mode

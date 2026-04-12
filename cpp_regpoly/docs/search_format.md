@@ -83,7 +83,7 @@ results:
 ## Running
 
 ```bash
-regpoly search_tgfsr96.yaml
+regpoly fullperiodsearch.TGFSRGen.w32r3.yaml
 ```
 
 Or from Python:
@@ -91,7 +91,7 @@ Or from Python:
 ```python
 from regpoly.search_primitive import PrimitiveSearch
 
-search = PrimitiveSearch.from_yaml("search_tgfsr96.yaml")
+search = PrimitiveSearch.from_yaml("fullperiodsearch.TGFSRGen.w32r3.yaml")
 results = search.run()
 ```
 
