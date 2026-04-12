@@ -1,5 +1,5 @@
 # TGFSR generators from 155_2.dt (w=31, r=5, k=155)
-family: tgfsr
+family: TGFSRGen
 common:
   w: 31
   r: 5

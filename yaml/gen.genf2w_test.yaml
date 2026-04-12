@@ -1,6 +1,5 @@
 # GF(2^w) generators — polynomial LCG, polynomial basis
-family: genf2w
-type: polylcg
+family: GenF2wPolyLCG
 normal_basis: false
 
 common:

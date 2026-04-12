@@ -6,7 +6,7 @@ search:
 
 components:
   - generators:
-      family: tgfsr
+      family: TGFSRGen
       common:
         w: 32
         r: 3
@@ -24,7 +24,7 @@ components:
         c: { random: bitvect, bits: w }
 
   - generators:
-      family: tgfsr
+      family: TGFSRGen
       common:
         w: 32
         r: 5

@@ -1,5 +1,5 @@
 # Mersenne Twister generators
-family: MT
+family: MersenneTwister
 common:
   w: 32
   r: 3
