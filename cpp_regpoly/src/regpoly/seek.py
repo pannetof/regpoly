@@ -246,7 +246,7 @@ def _build_inline_generators(gen_cfg: dict, L: int) -> list:
     generators = []
     for entry in gen_cfg["generators"]:
         params = {**common, **entry}
-        generators.append(Generateur.create(family, params, L))
+        generators.append(Generateur.create(family, L, **params))
     return generators
 
 

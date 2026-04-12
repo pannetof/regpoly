@@ -1,5 +1,5 @@
 # WELL19937 generators (carry type, k = 32*624 - 31 = 19937)
-family: Carry2Gen
+family: WELLRNG
 common:
   w: 32
   r: 624

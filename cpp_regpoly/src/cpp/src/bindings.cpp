@@ -9,6 +9,10 @@
 #include "factory.h"
 #include "lattice_polys.h"
 
+#include <NTL/GF2X.h>
+#include <NTL/GF2XFactoring.h>
+#include <NTL/ZZ.h>
+
 namespace py = pybind11;
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -266,4 +270,58 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
           [](const std::string& type, const py::dict& d) {
         return create_transformation(type, dict_to_params(d));
     }, py::arg("type"), py::arg("params"));
+
+    // ── Primitivity test with precomputed factors ─────────────────────
+
+    m.def("is_primitive_with_factors",
+          [](const BitVect& char_poly_bv, int k,
+             const std::vector<std::string>& factor_strings) -> bool {
+        // Build NTL polynomial
+        NTL::GF2X f;
+        NTL::SetCoeff(f, k);
+        for (int j = 0; j < k; j++)
+            if (char_poly_bv.get_bit(j))
+                NTL::SetCoeff(f, j);
+
+        // Constant term must be 1
+        if (!IsOne(coeff(f, 0)))
+            return false;
+
+        // Irreducibility check
+        if (NTL::IterIrredTest(f) == 0)
+            return false;
+
+        // For each prime factor p of 2^k-1, check x^((2^k-1)/p) != 1
+        NTL::GF2XModulus F;
+        NTL::build(F, f);
+        NTL::ZZ order = NTL::power(NTL::ZZ(2), k) - 1;
+
+        for (const auto& s : factor_strings) {
+            NTL::ZZ p = NTL::conv<NTL::ZZ>(s.c_str());
+            NTL::ZZ exp = order / p;
+            NTL::GF2X r;
+            NTL::PowerXMod(r, exp, F);
+            if (IsOne(r))
+                return false;
+        }
+        return true;
+    }, py::arg("char_poly"), py::arg("k"), py::arg("factors"));
+
+    m.def("get_param_specs",
+          [](const std::string& family) -> py::list {
+        auto specs = get_param_specs(family);
+        py::list result;
+        for (auto& s : specs) {
+            py::dict d;
+            d["name"]       = s.name;
+            d["type"]       = s.type;
+            d["structural"] = s.structural;
+            d["has_default"] = s.has_default;
+            d["default"]    = s.default_val;
+            d["rand_type"]  = s.rand_type;
+            d["rand_args"]  = s.rand_args;
+            result.append(d);
+        }
+        return result;
+    }, py::arg("family"));
 }

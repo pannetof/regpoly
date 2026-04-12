@@ -65,7 +65,7 @@ class LegacyReader:
                 if e == 0:
                     break
             params = {"k": k, "poly": exponents}
-            generators.append(Generateur.create("PolyLCG", params, L))
+            generators.append(Generateur.create("PolyLCG", L, **params))
         return generators
 
     # -- Tausworthe -------------------------------------------------------
@@ -107,7 +107,7 @@ class LegacyReader:
                 s = kmq
 
             params = {"poly": Q, "s": s, "quicktaus": quicktaus}
-            generators.append(Generateur.create("Tausworthe", params, L))
+            generators.append(Generateur.create("Tausworthe", L, **params))
         return generators
 
     # -- TGFSR ------------------------------------------------------------
@@ -131,7 +131,7 @@ class LegacyReader:
                 a_val = int(tokens[0], 16)
                 m_val = int(tokens[1])
                 params = {"w": w, "r": r, "m": m_val, "a": a_val}
-                generators.append(Generateur.create("TGFSRGen", params, L))
+                generators.append(Generateur.create("TGFSRGen", L, **params))
         return generators
 
     # -- Mersenne Twister -------------------------------------------------
@@ -155,7 +155,7 @@ class LegacyReader:
                 if w > 32:
                     raise ValueError(f"w must be <= 32 bits, got {w}")
                 params = {"w": w, "r": r, "m": m, "p": p, "a": a}
-                generators.append(Generateur.create("MersenneTwister", params, L))
+                generators.append(Generateur.create("MersenneTwister", L, **params))
         return generators
 
     # -- GenF2w -----------------------------------------------------------
@@ -199,7 +199,7 @@ class LegacyReader:
                     "type": "lfsr" if gen_type == 1 else "polylcg",
                     "coeffs": coeffs,
                 }
-                generators.append(Generateur.create("genf2w", params, L))
+                generators.append(Generateur.create("genf2w", L, **params))
         return generators
 
     # -- Carry ------------------------------------------------------------
@@ -243,7 +243,7 @@ class LegacyReader:
                     "mat_pi": mat_pi,
                     "mat_pu": mat_pu,
                 }
-                generators.append(Generateur.create("Carry2Gen", params, L))
+                generators.append(Generateur.create("Carry2Gen", L, **params))
         return generators
 
     # -- Matsumoto --------------------------------------------------------
@@ -283,7 +283,7 @@ class LegacyReader:
                     "paramsint": paramsint,
                     "paramsunsigned": paramsunsigned,
                 }
-                generators.append(Generateur.create("MatsumotoGen", params, L))
+                generators.append(Generateur.create("MatsumotoGen", L, **params))
         return generators
 
     # -- MarsaXorshift ----------------------------------------------------
@@ -331,7 +331,7 @@ class LegacyReader:
                     # Create 4 variants: (a,b,c), (c,b,a), (-a,-b,-c), (a,-c,-b)
                     for shifts in [(a,b,c), (c,b,a), (-a,-b,-c), (a,-c,-b)]:
                         params = {"type": 1, "w": w, "r": 1, "shifts": list(shifts)}
-                        generators.append(Generateur.create("MarsaXorshiftGen", params, L))
+                        generators.append(Generateur.create("MarsaXorshiftGen", L, **params))
 
                 elif gen_type >= TYPE21 and gen_type <= TYPE25:
                     m_val = int(tokens[idx]); idx += 1
@@ -365,7 +365,7 @@ class LegacyReader:
                             "type": gen_type, "w": w, "r": r, "m": m_val,
                             "p": p_v, "q": q_v,
                         }
-                        generators.append(Generateur.create("MarsaXorshiftGen", params, L))
+                        generators.append(Generateur.create("MarsaXorshiftGen", L, **params))
 
                 elif gen_type == TYPE3:
                     n3 = int(tokens[idx]); idx += 1
@@ -378,7 +378,7 @@ class LegacyReader:
                         "type": 3, "w": w, "r": r,
                         "tap_positions": tap_pos, "tap_shifts": tap_shifts,
                     }
-                    generators.append(Generateur.create("MarsaXorshiftGen", params, L))
+                    generators.append(Generateur.create("MarsaXorshiftGen", L, **params))
 
                 elif gen_type == TYPE4:
                     r_val = int(tokens[idx]); idx += 1
@@ -391,7 +391,7 @@ class LegacyReader:
                         "type": 4, "w": w, "r": r_val, "m": m_val,
                         "p": [a, b], "q": [c, d],
                     }
-                    generators.append(Generateur.create("MarsaXorshiftGen", params, L))
+                    generators.append(Generateur.create("MarsaXorshiftGen", L, **params))
 
                 elif gen_type == TYPEGENERAL:
                     nbmi = int(tokens[idx]); idx += 1
@@ -411,7 +411,7 @@ class LegacyReader:
                         "mi_counts": mi_counts,
                         "mi_shifts": mi_shifts,
                     }
-                    generators.append(Generateur.create("MarsaXorshiftGen", params, L))
+                    generators.append(Generateur.create("MarsaXorshiftGen", L, **params))
 
                 else:
                     raise ValueError(f"Unknown marsaxorshift type: {gen_type}")

@@ -6,7 +6,7 @@
 #include <vector>
 #include <functional>
 
-class Carry2Gen : public Generateur {
+class WELLRNG : public Generateur {
 public:
     struct MatrixEntry {
         int type;
@@ -14,7 +14,7 @@ public:
         uint64_t paramsulong[3];
     };
 
-    Carry2Gen(int w, int r, int p, int m1, int m2, int m3,
+    WELLRNG(int w, int r, int p, int m1, int m2, int m3,
               const std::vector<MatrixEntry>& matrices, int L);
 
     std::string name() const override;

@@ -48,14 +48,14 @@ def test_bitmatrix_display():
 # ── Generateur.create ────────────────────────────────────────────────────
 
 def test_create_polylcg():
-    gen = Generateur.create("PolyLCG", {"k": 3, "poly": [1]}, 3)
+    gen = Generateur.create("PolyLCG", 3, k=3, poly=[1])
     assert gen.k == 3
     assert gen.L == 3
     assert gen.name() != ""
 
 
 def test_polylcg_iteration():
-    gen = Generateur.create("PolyLCG", {"k": 3, "poly": [1]}, 3)
+    gen = Generateur.create("PolyLCG", 3, k=3, poly=[1])
     init_bv = BitVect.zeros(3)
     init_bv.put_bit(0, 1)
     gen.initialize_state(init_bv)
@@ -64,32 +64,38 @@ def test_polylcg_iteration():
 
 
 def test_create_tausworthe():
-    gen = Generateur.create(
-        "Tausworthe", {"poly": [3, 7], "s": 3, "quicktaus": True}, 7
-    )
+    gen = Generateur.create("Tausworthe", 7, poly=[3, 7], s=3, quicktaus=True)
+    assert gen.k == 7
+
+
+def test_create_tausworthe_auto_s():
+    gen = Generateur.create("Tausworthe", 7, poly=[3, 7])
     assert gen.k == 7
 
 
 def test_create_tgfsr():
-    gen = Generateur.create(
-        "TGFSRGen", {"w": 8, "r": 3, "m": 1, "a": 0b10110011}, 8
-    )
+    gen = Generateur.create("TGFSRGen", 8, w=8, r=3, m=1, a=0b10110011)
     assert gen.k == 24  # w * r
 
 
 def test_create_with_legacy_name():
-    gen = Generateur.create("polylcg", {"k": 3, "poly": [1]}, 3)
+    gen = Generateur.create("polylcg", 3, k=3, poly=[1])
     assert gen.k == 3
 
 
+def test_create_with_random_params():
+    gen = Generateur.create("TGFSRGen", 32, w=32, r=3)
+    assert gen.k == 96  # w * r = 32 * 3
+
+
 def test_generateur_display_returns_string():
-    gen = Generateur.create("PolyLCG", {"k": 3, "poly": [1]}, 3)
+    gen = Generateur.create("PolyLCG", 3, k=3, poly=[1])
     result = gen.display()
     assert isinstance(result, str)
 
 
 def test_char_poly():
-    gen = Generateur.create("PolyLCG", {"k": 3, "poly": [1]}, 3)
+    gen = Generateur.create("PolyLCG", 3, k=3, poly=[1])
     init_bv = BitVect.zeros(3)
     init_bv.put_bit(0, 1)
     gen.initialize_state(init_bv)
@@ -98,11 +104,32 @@ def test_char_poly():
 
 
 def test_transition_matrix():
-    gen = Generateur.create("PolyLCG", {"k": 3, "poly": [1]}, 3)
+    gen = Generateur.create("PolyLCG", 3, k=3, poly=[1])
     mat = gen.transition_matrix()
     assert isinstance(mat, BitMatrix)
     assert mat.nblignes == 3
     assert mat.l == 3
+
+
+# ── Generateur.parameters ────────────────────────────────────────────────
+
+def test_parameters_tgfsr():
+    specs = Generateur.parameters("TGFSRGen")
+    names = [s["name"] for s in specs]
+    assert "w" in names
+    assert "r" in names
+    assert "m" in names
+    assert "a" in names
+    w_spec = next(s for s in specs if s["name"] == "w")
+    assert w_spec["structural"] is True
+    m_spec = next(s for s in specs if s["name"] == "m")
+    assert m_spec["structural"] is False
+    assert m_spec["rand_type"] == "range"
+
+
+def test_parameters_legacy_alias():
+    specs = Generateur.parameters("tgfsr")
+    assert len(specs) == len(Generateur.parameters("TGFSRGen"))
 
 
 # ── resolve_family ───────────────────────────────────────────────────────
@@ -116,7 +143,7 @@ def test_resolve_family_aliases():
     assert resolve_family("matsumoto") == "MatsumotoGen"
     assert resolve_family("marsaxorshift") == "MarsaXorshiftGen"
     assert resolve_family("AC1D") == "AC1DGen"
-    assert resolve_family("carry") == "Carry2Gen"
+    assert resolve_family("carry") == "WELLRNG"
 
 
 def test_resolve_family_passthrough():

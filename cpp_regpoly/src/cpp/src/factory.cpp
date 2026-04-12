@@ -9,7 +9,7 @@
 #include "gen_matsumoto.h"
 #include "gen_marsaxorshift.h"
 #include "gen_ac1d.h"
-#include "gen_carry2.h"
+#include "gen_wellrng.h"
 #include "trans_permutation.h"
 #include "trans_temper_mk.h"
 #include <algorithm>
@@ -29,7 +29,7 @@ void register_generator_types(py::module_& m) {
     py::class_<MatsumotoGen, Generateur, std::unique_ptr<MatsumotoGen>>(m, "MatsumotoGen");
     py::class_<MarsaXorshiftGen, Generateur, std::unique_ptr<MarsaXorshiftGen>>(m, "MarsaXorshiftGen");
     py::class_<AC1DGen, Generateur, std::unique_ptr<AC1DGen>>(m, "AC1DGen");
-    py::class_<Carry2Gen, Generateur, std::unique_ptr<Carry2Gen>>(m, "Carry2Gen");
+    py::class_<WELLRNG, Generateur, std::unique_ptr<WELLRNG>>(m, "WELLRNG");
 }
 
 std::unique_ptr<Generateur> create_generator(
@@ -48,8 +48,15 @@ std::unique_ptr<Generateur> create_generator(
         std::vector<int> Q(poly_list);
         std::sort(Q.begin(), Q.end());
         int k = Q.back();
-        int s = (int)params.get_int("s");
         bool quicktaus = params.get_bool("quicktaus", true);
+        int s;
+        if (params.has("s")) {
+            s = (int)params.get_int("s");
+        } else if (quicktaus && Q.size() >= 2) {
+            s = k - Q[Q.size() - 2];
+        } else {
+            s = 1;
+        }
         return std::make_unique<Tausworthe>(k, Q, s, quicktaus, L);
 
     } else if (family == "TGFSRGen") {
@@ -178,7 +185,7 @@ std::unique_ptr<Generateur> create_generator(
                     matrix[i][j] = flat[i * n + j];
         return std::make_unique<AC1DGen>(n, matrix, L);
 
-    } else if (family == "Carry2Gen") {
+    } else if (family == "WELLRNG") {
         int w = (int)params.get_int("w", 32);
         int r = (int)params.get_int("r");
         int p = (int)params.get_int("p");
@@ -190,7 +197,7 @@ std::unique_ptr<Generateur> create_generator(
         auto mat_pi = params.get_int_vec("mat_pi");
         auto mat_pu_u64 = params.get_uint_vec("mat_pu");
 
-        std::vector<Carry2Gen::MatrixEntry> matrices(8);
+        std::vector<WELLRNG::MatrixEntry> matrices(8);
         for (int j = 0; j < 8; j++) {
             matrices[j].type = (j < (int)mat_types.size()) ? mat_types[j] : 1;
             for (int x = 0; x < 3; x++) {
@@ -200,7 +207,7 @@ std::unique_ptr<Generateur> create_generator(
                     ? mat_pu_u64[idx] : 0;
             }
         }
-        return std::make_unique<Carry2Gen>(w, r, p, m1, m2, m3, matrices, L);
+        return std::make_unique<WELLRNG>(w, r, p, m1, m2, m3, matrices, L);
     }
     throw std::invalid_argument("Unknown generator family: " + family);
 }
@@ -227,3 +234,84 @@ std::unique_ptr<Transformation> create_transformation(
     }
     throw std::invalid_argument("Unknown transformation type: " + type);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Parameter specifications per generator family
+// ═══════════════════════════════════════════════════════════════════════════
+
+//                          name              type        struct  hasDef defVal  randType          randArgs
+#define S(n,t,s,hd,dv,rt,ra) ParamSpec{n, t, s, hd, dv, rt, ra}
+
+std::vector<ParamSpec> get_param_specs(const std::string& family)
+{
+    if (family == "PolyLCG") return {
+        S("k",    "int",     true,  false, 0, "",                ""),
+        S("poly", "int_vec", false, false, 0, "poly_exponents",  "k"),
+    };
+    if (family == "Tausworthe") return {
+        S("poly",      "int_vec", true,  false, 0, "",     ""),
+        S("s",         "int",     false, true,  0, "",     ""),
+        S("quicktaus", "bool",    true,  true,  1, "",     ""),
+    };
+    if (family == "TGFSRGen") return {
+        S("w", "int", true,  false, 0, "",        ""),
+        S("r", "int", true,  false, 0, "",        ""),
+        S("m", "int", false, false, 0, "range",   "1,r-1"),
+        S("a", "int", false, false, 0, "bitmask", "w"),
+    };
+    if (family == "MersenneTwister") return {
+        S("w", "int", true,  false, 0,  "",        ""),
+        S("r", "int", true,  false, 0,  "",        ""),
+        S("p", "int", true,  true,  0,  "",        ""),
+        S("m", "int", false, false, 0,  "range",   "1,r-1"),
+        S("a", "int", false, false, 0,  "bitmask", "w"),
+    };
+    if (family == "GenF2wPolyLCG" || family == "GenF2wLFSR") return {
+        S("w",            "int",      true,  false, 0, "",             ""),
+        S("r",            "int",      true,  false, 0, "",             ""),
+        S("modM",         "int",      true,  false, 0, "",             ""),
+        S("normal_basis", "bool",     true,  true,  0, "",             ""),
+        S("step",         "int",      true,  true,  1, "",             ""),
+        S("nocoeff",      "int_vec",  true,  false, 0, "",             ""),
+        S("coeff",        "uint_vec", false, false, 0, "bitmask_vec",  "w,nocoeff"),
+    };
+    if (family == "MatsumotoGen") return {
+        S("type",           "int",      true,  false, 0, "",     ""),
+        S("n",              "int",      true,  false, 0, "",     ""),
+        S("m",              "int",      false, false, 0, "range","1,n-1"),
+        S("paramsint",      "int_vec",  false, false, 0, "none", ""),
+        S("paramsunsigned", "uint_vec", false, false, 0, "none", ""),
+    };
+    if (family == "MarsaXorshiftGen") return {
+        S("type",           "int",     true,  false, 0,  "",     ""),
+        S("w",              "int",     true,  true,  32, "",     ""),
+        S("r",              "int",     true,  true,  1,  "",     ""),
+        S("m",              "int",     true,  true,  0,  "",     ""),
+        S("shifts",         "int_vec", false, false, 0,  "none", ""),
+        S("p",              "int_vec", false, false, 0,  "none", ""),
+        S("q",              "int_vec", false, false, 0,  "none", ""),
+        S("tap_positions",  "int_vec", false, false, 0,  "none", ""),
+        S("tap_shifts",     "int_vec", false, false, 0,  "none", ""),
+        S("mi_positions",   "int_vec", false, false, 0,  "none", ""),
+        S("mi_shifts",      "int_vec", false, false, 0,  "none", ""),
+        S("mi_counts",      "int_vec", false, false, 0,  "none", ""),
+    };
+    if (family == "AC1DGen") return {
+        S("n",      "int",     true,  false, 0, "",     ""),
+        S("matrix", "int_vec", false, false, 0, "none", ""),
+    };
+    if (family == "WELLRNG") return {
+        S("w",         "int",      true,  true,  32, "",        ""),
+        S("r",         "int",      true,  false, 0,  "",        ""),
+        S("p",         "int",      true,  false, 0,  "",        ""),
+        S("m1",        "int",      false, false, 0,  "range",   "1,r-1"),
+        S("m2",        "int",      false, false, 0,  "range",   "1,r-1"),
+        S("m3",        "int",      false, false, 0,  "range",   "1,r-1"),
+        S("mat_types", "int_vec",  false, false, 0,  "none",    ""),
+        S("mat_pi",    "int_vec",  false, false, 0,  "none",    ""),
+        S("mat_pu",    "uint_vec", false, false, 0,  "none",    ""),
+    };
+    throw std::invalid_argument("Unknown generator family: " + family);
+}
+
+#undef S

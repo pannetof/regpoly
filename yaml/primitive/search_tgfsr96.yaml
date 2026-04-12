@@ -1,0 +1,14 @@
+# Search for full-period TGFSR generators with k = 32*3 = 96
+search:
+  family: TGFSRGen
+  L: 32
+  limit:
+    max_tries: 5000
+
+structural:
+  w: 32
+  r: 3
+
+search_params:
+  m:                        # randomized in [1, r-1]
+  a:                        # randomized as a 32-bit value

@@ -1,0 +1,13 @@
+# Search for full-period PolyLCG generators with k=96
+search:
+  family: PolyLCG
+  L: 32
+  limit:
+    max_tries: 5000
+    max_seconds: 60
+
+structural:
+  k: 96
+
+search_params:
+  poly:

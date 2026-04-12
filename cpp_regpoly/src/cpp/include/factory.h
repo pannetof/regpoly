@@ -2,8 +2,10 @@
 #include "generateur.h"
 #include "transformation.h"
 #include "params.h"
+#include "param_spec.h"
 #include <memory>
 #include <string>
+#include <vector>
 
 // Forward declaration for pybind11 module type
 namespace pybind11 { class module_; }
@@ -13,6 +15,8 @@ std::unique_ptr<Generateur> create_generator(
 
 std::unique_ptr<Transformation> create_transformation(
     const std::string& type, const Params& params);
+
+std::vector<ParamSpec> get_param_specs(const std::string& family);
 
 // Register all generator subclass types with pybind11
 // (defined in factory.cpp where all headers are available)

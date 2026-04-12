@@ -1,27 +1,41 @@
 """
-regpoly.cli — Command-line entry point for the combined-generator search.
+regpoly.cli — Command-line entry point.
 
 Usage:
-    regpoly search.config.yaml                          (YAML format)
+    regpoly search.config.yaml                          (equidistribution search)
+    regpoly search_primitive.yaml                       (full-period search)
     regpoly nb_comp test_file gen_file1 [gen_file2 ...]  (legacy format)
+
+The YAML format is auto-detected:
+  - If the file has a top-level "search.family" key → primitive search
+  - If the file has a "components" key → equidistribution search (Seek)
 """
 
 import sys
 
-from regpoly.seek import Seek
-
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <search.yaml>")
+        print(f"Usage: {sys.argv[0]} <config.yaml>")
         print(f"       {sys.argv[0]} nb_comp test_file gen_file1 [gen_file2 ...]")
         sys.exit(1)
 
-    # Detect format: if first arg is a .yaml file, use YAML path
-    if sys.argv[1].endswith(".yaml") or sys.argv[1].endswith(".yml"):
-        Seek.from_yaml(sys.argv[1]).run()
+    arg = sys.argv[1]
+
+    if arg.endswith(".yaml") or arg.endswith(".yml"):
+        import yaml
+        with open(arg) as f:
+            config = yaml.safe_load(f)
+
+        search = config.get("search", {})
+        if "family" in search:
+            from regpoly.search_primitive import PrimitiveSearch
+            PrimitiveSearch.from_yaml(arg).run()
+        else:
+            from regpoly.seek import Seek
+            Seek.from_yaml(arg).run()
     else:
-        # Legacy format
+        from regpoly.seek import Seek
         if len(sys.argv) < 4:
             print(f"Usage: {sys.argv[0]} nb_comp test_file gen_file1 [gen_file2 ...]")
             sys.exit(1)

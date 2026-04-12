@@ -5,8 +5,74 @@ All computation is delegated to the C++ backend via _cpp_gen.
 No Python subclasses needed — one class wraps any generator type.
 """
 
+from __future__ import annotations
+
+import json
+import os
+import random as _random
+
 import regpoly._regpoly_cpp as _cpp
 from regpoly.bitvect import BitVect
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Precomputed primitive factors of Φ_k(2) for primitivity testing
+# ═══════════════════════════════════════════════════════════════════════════
+
+_FACTORS_DATA: dict | None = None
+_FACTORS_FILE = os.path.join(os.path.dirname(__file__), "data",
+                              "primitive_factors.json")
+
+
+def _load_factors() -> dict:
+    global _FACTORS_DATA
+    if _FACTORS_DATA is None:
+        if os.path.exists(_FACTORS_FILE):
+            with open(_FACTORS_FILE) as f:
+                _FACTORS_DATA = json.load(f)
+        else:
+            _FACTORS_DATA = {}
+    return _FACTORS_DATA
+
+
+def _get_factors_for_k(k: int) -> list[int] | None:
+    """
+    Return all prime factors of 2^k - 1, or None if the factorization
+    is incomplete.
+
+    Uses precomputed factors of Φ_d(2) for every divisor d of k.
+    If any divisor has an incomplete factorization, returns None
+    (fallback to C++ trial division).
+    """
+    data = _load_factors()
+    if not data:
+        return None
+
+    # Collect factors of Φ_d(2) for every divisor d of k.
+    # Φ_1(2) = 1 (no prime factors), so d=1 is always safe to skip.
+    factors = set()
+    for d in _divisors(k):
+        if d == 1:
+            continue  # Φ_1(2) = 1
+        entry = data.get(str(d))
+        if entry is None:
+            return None
+        if not entry["complete"]:
+            return None
+        for p in entry["factors"]:
+            factors.add(p)
+    return sorted(factors)
+
+
+def _divisors(n: int) -> list[int]:
+    """Return all divisors of n in ascending order."""
+    divs = []
+    for i in range(1, int(n**0.5) + 1):
+        if n % i == 0:
+            divs.append(i)
+            if i != n // i:
+                divs.append(n // i)
+    return sorted(divs)
 
 
 # Legacy/short names → C++ class names used by the factory.
@@ -22,7 +88,8 @@ _FAMILY_ALIASES: dict[str, str] = {
     "matsumoto":     "MatsumotoGen",
     "marsaxorshift": "MarsaXorshiftGen",
     "AC1D":          "AC1DGen",
-    "carry":         "Carry2Gen",
+    "carry":         "WELLRNG",
+    "Carry2Gen":     "WELLRNG",
 }
 
 
@@ -39,6 +106,59 @@ def resolve_family(family: str, params: dict | None = None) -> str:
             return "GenF2wLFSR"
         return "GenF2wPolyLCG"
     return _FAMILY_ALIASES.get(family, family)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Random-generation helpers (interpret rand_type / rand_args from C++ specs)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _eval_expr(expr: str, params: dict) -> int:
+    """Evaluate a simple expression: literal int, param name, or 'param±N'."""
+    expr = expr.strip()
+    # Pure integer literal
+    if expr.lstrip("-").isdigit():
+        return int(expr)
+    # "param-N" or "param+N"
+    for op in ("-", "+"):
+        if op in expr and not expr.startswith(op):
+            name, offset = expr.split(op, 1)
+            val = params[name.strip()]
+            n = int(offset.strip())
+            return (val - n) if op == "-" else (val + n)
+    # Bare param name
+    return params[expr]
+
+
+def _generate_random(spec: dict, params: dict) -> object:
+    """Generate a random value for a non-structural parameter."""
+    rt = spec["rand_type"]
+    ra = spec["rand_args"]
+
+    if rt == "bitmask":
+        bits = _eval_expr(ra, params)
+        return _random.getrandbits(bits)
+
+    if rt == "range":
+        lo_expr, hi_expr = ra.split(",", 1)
+        lo = _eval_expr(lo_expr, params)
+        hi = _eval_expr(hi_expr, params)
+        return _random.randint(lo, hi)
+
+    if rt == "poly_exponents":
+        k = _eval_expr(ra, params)
+        num_terms = _random.randint(1, min(k - 1, 10))
+        return sorted(_random.sample(range(1, k), num_terms)) + [0]
+
+    if rt == "bitmask_vec":
+        bits_param, length_param = ra.split(",", 1)
+        bits = _eval_expr(bits_param, params)
+        length = len(params[length_param.strip()])
+        return [_random.getrandbits(bits) for _ in range(length)]
+
+    raise ValueError(
+        f"Parameter '{spec['name']}' has rand_type='{rt}' which is not "
+        f"randomizable — it must be provided explicitly"
+    )
 
 
 class Generateur:
@@ -59,14 +179,59 @@ class Generateur:
         self.L: int = cpp_gen.L()
 
     @classmethod
-    def create(cls, family: str, params: dict, L: int) -> "Generateur":
+    def parameters(cls, family: str) -> list[dict]:
         """
-        Create a generator from a family name and parameters.
+        Return the parameter specifications for a generator family.
 
-        Accepts both C++ class names (``"PolyLCG"``) and legacy short
-        names (``"polylcg"``).
+        Each entry is a dict with keys: name, type, structural,
+        has_default, default, rand_type, rand_args.
         """
-        cpp_gen = _cpp.create_generator(resolve_family(family, params), params, L)
+        return list(_cpp.get_param_specs(resolve_family(family)))
+
+    @classmethod
+    def create(cls, family: str, L: int, **params) -> "Generateur":
+        """
+        Create a generator, randomizing missing non-structural parameters.
+
+        Structural parameters (those that define the period k) must always
+        be provided.  Non-structural parameters are filled in randomly
+        using the hints declared in C++ when omitted.
+
+        Examples::
+
+            # All params explicit — no randomization
+            gen = Generateur.create("TGFSRGen", L=32, w=32, r=3, m=1,
+                                    a=0x9908b0df)
+
+            # m and a omitted — randomized
+            gen = Generateur.create("TGFSRGen", L=32, w=32, r=3)
+
+        Accepts both C++ class names and legacy aliases.
+        """
+        resolved = resolve_family(family, params)
+        specs = _cpp.get_param_specs(resolved)
+        full = dict(params)
+
+        for spec in specs:
+            name = spec["name"]
+            if name in full:
+                continue
+            if spec["has_default"]:
+                continue  # C++ factory will use its default
+            if spec["structural"]:
+                raise ValueError(
+                    f"Structural parameter '{name}' is required for "
+                    f"{resolved} (it defines the period)"
+                )
+            rt = spec["rand_type"]
+            if not rt or rt == "none":
+                raise ValueError(
+                    f"Parameter '{name}' for {resolved} must be provided "
+                    f"(no random generation available)"
+                )
+            full[name] = _generate_random(spec, full)
+
+        cpp_gen = _cpp.create_generator(resolved, full, L)
         return cls(cpp_gen)
 
     def name(self) -> str:
@@ -95,8 +260,24 @@ class Generateur:
 
     def is_full_period(self) -> bool:
         """Returns True if the characteristic polynomial is primitive,
-        meaning the generator has maximum period 2^k - 1."""
-        return self._cpp_gen.is_full_period()
+        meaning the generator has maximum period 2^k - 1.
+
+        Uses precomputed prime factors of 2^k - 1 from the Cunningham
+        tables.  Raises ValueError if the complete factorization of
+        2^k - 1 is not available.
+        """
+        factors = _get_factors_for_k(self.k)
+        if factors is None:
+            raise ValueError(
+                f"Cannot test primitivity for k={self.k}: the complete "
+                f"factorization of 2^{self.k} - 1 is not available. "
+                f"Regenerate primitive_factors.json with a larger range "
+                f"or provide the missing factors."
+            )
+        cp = self._cpp_gen.char_poly()
+        return _cpp.is_primitive_with_factors(
+            cp, self.k, [str(p) for p in factors]
+        )
 
     def transition_matrix(self) -> "BitMatrix":
         from regpoly.matrix import BitMatrix
@@ -120,7 +301,7 @@ class Generateur:
             generators: [ ... ]       — list of per-generator parameters
 
         Each generator entry is merged with family-level and common params,
-        then passed to the C++ factory.
+        then passed to create().
         """
         import yaml
 
@@ -134,6 +315,6 @@ class Generateur:
 
         generators = []
         for entry in data["generators"]:
-            params = {**common, **entry}
-            generators.append(cls.create(family, params, L))
+            merged = {**common, **entry}
+            generators.append(cls.create(family, L, **merged))
         return generators

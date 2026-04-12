@@ -1,10 +1,10 @@
-#include "gen_carry2.h"
+#include "gen_wellrng.h"
 #include <algorithm>
 #include <cstdio>
 #include <sstream>
 #include <iomanip>
 
-Carry2Gen::Carry2Gen(int w, int r, int p, int m1, int m2, int m3,
+WELLRNG::WELLRNG(int w, int r, int p, int m1, int m2, int m3,
                      const std::vector<MatrixEntry>& matrices, int L)
     : Generateur(w * r - p, L),
       w_(w), r_(r), p_(p), m1_(m1), m2_(m2), m3_(m3),
@@ -13,16 +13,16 @@ Carry2Gen::Carry2Gen(int w, int r, int p, int m1, int m2, int m3,
     state_ = BitVect(state_bits_);
 }
 
-std::string Carry2Gen::name() const { return "Carry Generator"; }
+std::string WELLRNG::name() const { return "Carry Generator"; }
 
 // ── Display matching POL output ─────────────────────────────────────────
 
-int Carry2Gen::type_cost(int type) {
+int WELLRNG::type_cost(int type) {
     static const int costs[] = {3, 1, 5, 2, 4, 8, 7, 0};
     return (type >= 0 && type < 8) ? costs[type] : 0;
 }
 
-std::string Carry2Gen::type_display(int type, const int* pi, const uint64_t* pu) {
+std::string WELLRNG::type_display(int type, const int* pi, const uint64_t* pu) {
     std::ostringstream oss;
     switch (type) {
         case 0: oss << "T0(" << pi[0] << ")"; break;
@@ -44,7 +44,7 @@ std::string Carry2Gen::type_display(int type, const int* pi, const uint64_t* pu)
     return oss.str();
 }
 
-std::string Carry2Gen::display_str() const {
+std::string WELLRNG::display_str() const {
     std::ostringstream oss;
     oss << k_ << "\n";
     oss << " w= " << std::setw(3) << w_
@@ -84,7 +84,7 @@ std::string Carry2Gen::display_str() const {
 
 // ── Core operations (64-bit types, 32-bit semantics via & M32) ──────────
 
-void Carry2Gen::init(const BitVect& init_bv) {
+void WELLRNG::init(const BitVect& init_bv) {
     state_ = BitVect(state_bits_);
     state_.copy_part_from(init_bv, k_);
     i_ = 0;
@@ -100,7 +100,7 @@ void Carry2Gen::init(const BitVect& init_bv) {
 
 // ShiftR: 32-bit shift matching C's uint32_t behavior.
 // Result is always masked to 32 bits.
-uint64_t Carry2Gen::ShiftR(uint64_t v, int s) {
+uint64_t WELLRNG::ShiftR(uint64_t v, int s) {
     v &= M32;
     if (s > 0)
         return v >> s;
@@ -109,7 +109,7 @@ uint64_t Carry2Gen::ShiftR(uint64_t v, int s) {
 }
 
 // apply_matrix: all arithmetic in 32-bit semantics.
-uint64_t Carry2Gen::apply_matrix(int type, uint64_t v, const int* pi, const uint64_t* pu) {
+uint64_t WELLRNG::apply_matrix(int type, uint64_t v, const int* pi, const uint64_t* pu) {
     v &= M32;
     switch (type) {
         case 0:
@@ -136,20 +136,20 @@ uint64_t Carry2Gen::apply_matrix(int type, uint64_t v, const int* pi, const uint
     }
 }
 
-uint64_t Carry2Gen::TMAT(int j, uint64_t val) const {
+uint64_t WELLRNG::TMAT(int j, uint64_t val) const {
     return apply_matrix(matrices_[j].type, val,
                         matrices_[j].paramsint, matrices_[j].paramsulong);
 }
 
-uint64_t Carry2Gen::V(int idx) const {
+uint64_t WELLRNG::V(int idx) const {
     return (uint64_t)state_.get_word(idx, 32);
 }
 
-void Carry2Gen::SetV(int idx, uint64_t val) {
+void WELLRNG::SetV(int idx, uint64_t val) {
     state_.set_word(idx, 32, val & M32);
 }
 
-void Carry2Gen::next() {
+void WELLRNG::next() {
     uint64_t z0 = (V((i_ + r_ - 1) % r_) & umaskp_)
                 | (V((i_ + r_ - 2) % r_) & maskp_);
     uint64_t z1 = TMAT(0, V(i_)) ^ TMAT(1, V((i_ + m1_) % r_));
@@ -163,7 +163,7 @@ void Carry2Gen::next() {
     i_ = (i_ + r_ - 1) % r_;
 }
 
-BitVect Carry2Gen::get_output() const {
+BitVect WELLRNG::get_output() const {
     BitVect out(L_);
     int nw = (L_ + 31) / 32;
     for (int j = 0; j < nw; j++) {
@@ -173,7 +173,7 @@ BitVect Carry2Gen::get_output() const {
     return out;
 }
 
-void Carry2Gen::get_transition_state(uint64_t* out_words, int out_nwords) const {
+void WELLRNG::get_transition_state(uint64_t* out_words, int out_nwords) const {
     BitVect tmp(k_);
     int nw = (k_ + 31) / 32;
     for (int j = 0; j < nw; j++) {
@@ -187,8 +187,8 @@ void Carry2Gen::get_transition_state(uint64_t* out_words, int out_nwords) const 
         out_words[i] = 0;
 }
 
-std::unique_ptr<Generateur> Carry2Gen::copy() const {
-    auto g = std::make_unique<Carry2Gen>(w_, r_, p_, m1_, m2_, m3_, matrices_, L_);
+std::unique_ptr<Generateur> WELLRNG::copy() const {
+    auto g = std::make_unique<WELLRNG>(w_, r_, p_, m1_, m2_, m3_, matrices_, L_);
     g->state_ = state_.copy();
     g->i_ = i_;
     g->state_bits_ = state_bits_;

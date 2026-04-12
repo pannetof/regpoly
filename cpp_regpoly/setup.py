@@ -24,7 +24,7 @@ ext_modules = [
             "src/cpp/src/gen_matsumoto.cpp",
             "src/cpp/src/gen_marsaxorshift.cpp",
             "src/cpp/src/gen_ac1d.cpp",
-            "src/cpp/src/gen_carry2.cpp",
+            "src/cpp/src/gen_wellrng.cpp",
             "src/cpp/src/factory.cpp",
             "src/cpp/src/trans_permutation.cpp",
             "src/cpp/src/trans_temper_mk.cpp",

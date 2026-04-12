@@ -1,0 +1,16 @@
+# Search for full-period Mersenne Twister with k = 32*624 - 31 = 19937
+# With m and a randomized
+search:
+  family: MersenneTwister
+  L: 32
+  limit:
+    max_seconds: 120
+
+structural:
+  w: 32
+  r: 624
+  p: 31
+
+search_params:
+  m:                        # randomized in [1, 623]
+  a:                        # randomized as a 32-bit value
