@@ -58,6 +58,17 @@ class Generateur:
         self.k: int = cpp_gen.k()
         self.L: int = cpp_gen.L()
 
+    @classmethod
+    def create(cls, family: str, params: dict, L: int) -> "Generateur":
+        """
+        Create a generator from a family name and parameters.
+
+        Accepts both C++ class names (``"PolyLCG"``) and legacy short
+        names (``"polylcg"``).
+        """
+        cpp_gen = _cpp.create_generator(resolve_family(family, params), params, L)
+        return cls(cpp_gen)
+
     def name(self) -> str:
         return self._cpp_gen.name()
 
@@ -124,6 +135,5 @@ class Generateur:
         generators = []
         for entry in data["generators"]:
             params = {**common, **entry}
-            cpp_gen = _cpp.create_generator(resolve_family(family, params), params, L)
-            generators.append(cls(cpp_gen))
+            generators.append(cls.create(family, params, L))
         return generators

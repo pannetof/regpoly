@@ -1,6 +1,5 @@
 """Smoke tests to verify the package loads and basic operations work."""
 
-import regpoly._regpoly_cpp as _cpp
 from regpoly import BitVect, BitMatrix, Generateur, Transformation
 from regpoly.generateur import resolve_family
 
@@ -46,17 +45,17 @@ def test_bitmatrix_display():
     assert "1" in text
 
 
-# ─�� Generateur (via C++ factory) ─────────────────────────────────────────
+# ── Generateur.create ────────────────────────────────────────────────────
 
 def test_create_polylcg():
-    gen = Generateur(_cpp.create_generator("PolyLCG", {"k": 3, "poly": [1]}, 3))
+    gen = Generateur.create("PolyLCG", {"k": 3, "poly": [1]}, 3)
     assert gen.k == 3
     assert gen.L == 3
     assert gen.name() != ""
 
 
 def test_polylcg_iteration():
-    gen = Generateur(_cpp.create_generator("PolyLCG", {"k": 3, "poly": [1]}, 3))
+    gen = Generateur.create("PolyLCG", {"k": 3, "poly": [1]}, 3)
     init_bv = BitVect.zeros(3)
     init_bv.put_bit(0, 1)
     gen.initialize_state(init_bv)
@@ -65,27 +64,32 @@ def test_polylcg_iteration():
 
 
 def test_create_tausworthe():
-    gen = Generateur(_cpp.create_generator(
+    gen = Generateur.create(
         "Tausworthe", {"poly": [3, 7], "s": 3, "quicktaus": True}, 7
-    ))
+    )
     assert gen.k == 7
 
 
 def test_create_tgfsr():
-    gen = Generateur(_cpp.create_generator(
+    gen = Generateur.create(
         "TGFSRGen", {"w": 8, "r": 3, "m": 1, "a": 0b10110011}, 8
-    ))
+    )
     assert gen.k == 24  # w * r
 
 
+def test_create_with_legacy_name():
+    gen = Generateur.create("polylcg", {"k": 3, "poly": [1]}, 3)
+    assert gen.k == 3
+
+
 def test_generateur_display_returns_string():
-    gen = Generateur(_cpp.create_generator("PolyLCG", {"k": 3, "poly": [1]}, 3))
+    gen = Generateur.create("PolyLCG", {"k": 3, "poly": [1]}, 3)
     result = gen.display()
     assert isinstance(result, str)
 
 
 def test_char_poly():
-    gen = Generateur(_cpp.create_generator("PolyLCG", {"k": 3, "poly": [1]}, 3))
+    gen = Generateur.create("PolyLCG", {"k": 3, "poly": [1]}, 3)
     init_bv = BitVect.zeros(3)
     init_bv.put_bit(0, 1)
     gen.initialize_state(init_bv)
@@ -94,7 +98,7 @@ def test_char_poly():
 
 
 def test_transition_matrix():
-    gen = Generateur(_cpp.create_generator("PolyLCG", {"k": 3, "poly": [1]}, 3))
+    gen = Generateur.create("PolyLCG", {"k": 3, "poly": [1]}, 3)
     mat = gen.transition_matrix()
     assert isinstance(mat, BitMatrix)
     assert mat.nblignes == 3

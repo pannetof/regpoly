@@ -1,12 +1,9 @@
 """
 legacy_reader.py — Parsers for the old text-based file formats.
 
-All creation goes through the C++ factory functions:
-  _cpp.create_generator(family, params, L)
-  _cpp.create_transformation(type, params)
-
-Legacy file tags (e.g. "polylcg", "taus") are translated to C++ class
-names by resolve_family() before reaching the factory.
+All creation goes through Generateur.create() and Transformation().
+Legacy file tags (e.g. "polylcg", "taus") are accepted by
+Generateur.create() which resolves them to C++ class names.
 """
 
 from __future__ import annotations
@@ -14,8 +11,6 @@ from __future__ import annotations
 import re
 import sys
 
-import regpoly._regpoly_cpp as _cpp
-from regpoly.generateur import resolve_family
 
 
 class LegacyReader:
@@ -70,8 +65,7 @@ class LegacyReader:
                 if e == 0:
                     break
             params = {"k": k, "poly": exponents}
-            cpp_gen = _cpp.create_generator("PolyLCG", params, L)
-            generators.append(Generateur(cpp_gen))
+            generators.append(Generateur.create("PolyLCG", params, L))
         return generators
 
     # -- Tausworthe -------------------------------------------------------
@@ -113,8 +107,7 @@ class LegacyReader:
                 s = kmq
 
             params = {"poly": Q, "s": s, "quicktaus": quicktaus}
-            cpp_gen = _cpp.create_generator("Tausworthe", params, L)
-            generators.append(Generateur(cpp_gen))
+            generators.append(Generateur.create("Tausworthe", params, L))
         return generators
 
     # -- TGFSR ------------------------------------------------------------
@@ -138,8 +131,7 @@ class LegacyReader:
                 a_val = int(tokens[0], 16)
                 m_val = int(tokens[1])
                 params = {"w": w, "r": r, "m": m_val, "a": a_val}
-                cpp_gen = _cpp.create_generator("TGFSRGen", params, L)
-                generators.append(Generateur(cpp_gen))
+                generators.append(Generateur.create("TGFSRGen", params, L))
         return generators
 
     # -- Mersenne Twister -------------------------------------------------
@@ -163,8 +155,7 @@ class LegacyReader:
                 if w > 32:
                     raise ValueError(f"w must be <= 32 bits, got {w}")
                 params = {"w": w, "r": r, "m": m, "p": p, "a": a}
-                cpp_gen = _cpp.create_generator("MersenneTwister", params, L)
-                generators.append(Generateur(cpp_gen))
+                generators.append(Generateur.create("MersenneTwister", params, L))
         return generators
 
     # -- GenF2w -----------------------------------------------------------
@@ -208,8 +199,7 @@ class LegacyReader:
                     "type": "lfsr" if gen_type == 1 else "polylcg",
                     "coeffs": coeffs,
                 }
-                cpp_gen = _cpp.create_generator(resolve_family("genf2w", params), params, L)
-                generators.append(Generateur(cpp_gen))
+                generators.append(Generateur.create("genf2w", params, L))
         return generators
 
     # -- Carry ------------------------------------------------------------
@@ -253,8 +243,7 @@ class LegacyReader:
                     "mat_pi": mat_pi,
                     "mat_pu": mat_pu,
                 }
-                cpp_gen = _cpp.create_generator("Carry2Gen", params, L)
-                generators.append(Generateur(cpp_gen))
+                generators.append(Generateur.create("Carry2Gen", params, L))
         return generators
 
     # -- Matsumoto --------------------------------------------------------
@@ -294,8 +283,7 @@ class LegacyReader:
                     "paramsint": paramsint,
                     "paramsunsigned": paramsunsigned,
                 }
-                cpp_gen = _cpp.create_generator("MatsumotoGen", params, L)
-                generators.append(Generateur(cpp_gen))
+                generators.append(Generateur.create("MatsumotoGen", params, L))
         return generators
 
     # -- MarsaXorshift ----------------------------------------------------
@@ -343,8 +331,7 @@ class LegacyReader:
                     # Create 4 variants: (a,b,c), (c,b,a), (-a,-b,-c), (a,-c,-b)
                     for shifts in [(a,b,c), (c,b,a), (-a,-b,-c), (a,-c,-b)]:
                         params = {"type": 1, "w": w, "r": 1, "shifts": list(shifts)}
-                        cpp_gen = _cpp.create_generator("MarsaXorshiftGen", params, L)
-                        generators.append(Generateur(cpp_gen))
+                        generators.append(Generateur.create("MarsaXorshiftGen", params, L))
 
                 elif gen_type >= TYPE21 and gen_type <= TYPE25:
                     m_val = int(tokens[idx]); idx += 1
@@ -378,8 +365,7 @@ class LegacyReader:
                             "type": gen_type, "w": w, "r": r, "m": m_val,
                             "p": p_v, "q": q_v,
                         }
-                        cpp_gen = _cpp.create_generator("MarsaXorshiftGen", params, L)
-                        generators.append(Generateur(cpp_gen))
+                        generators.append(Generateur.create("MarsaXorshiftGen", params, L))
 
                 elif gen_type == TYPE3:
                     n3 = int(tokens[idx]); idx += 1
@@ -392,8 +378,7 @@ class LegacyReader:
                         "type": 3, "w": w, "r": r,
                         "tap_positions": tap_pos, "tap_shifts": tap_shifts,
                     }
-                    cpp_gen = _cpp.create_generator("MarsaXorshiftGen", params, L)
-                    generators.append(Generateur(cpp_gen))
+                    generators.append(Generateur.create("MarsaXorshiftGen", params, L))
 
                 elif gen_type == TYPE4:
                     r_val = int(tokens[idx]); idx += 1
@@ -406,8 +391,7 @@ class LegacyReader:
                         "type": 4, "w": w, "r": r_val, "m": m_val,
                         "p": [a, b], "q": [c, d],
                     }
-                    cpp_gen = _cpp.create_generator("MarsaXorshiftGen", params, L)
-                    generators.append(Generateur(cpp_gen))
+                    generators.append(Generateur.create("MarsaXorshiftGen", params, L))
 
                 elif gen_type == TYPEGENERAL:
                     nbmi = int(tokens[idx]); idx += 1
@@ -427,8 +411,7 @@ class LegacyReader:
                         "mi_counts": mi_counts,
                         "mi_shifts": mi_shifts,
                     }
-                    cpp_gen = _cpp.create_generator("MarsaXorshiftGen", params, L)
-                    generators.append(Generateur(cpp_gen))
+                    generators.append(Generateur.create("MarsaXorshiftGen", params, L))
 
                 else:
                     raise ValueError(f"Unknown marsaxorshift type: {gen_type}")
