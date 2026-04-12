@@ -23,10 +23,7 @@ degree k.  comb[j] returns the active Generateur of component j.
 
 from __future__ import annotations
 
-import random
-import socket
 import sys
-import time
 
 from regpoly.generateur import Generateur
 from regpoly.component import Component
@@ -85,7 +82,6 @@ class Combinaison:
         gen_lists: list,
         Lmax: int,
         temperings: list,
-        seeds: list,
     ) -> "Combinaison":
         """
         Build a fully-populated Combinaison from pre-built data.
@@ -99,47 +95,18 @@ class Combinaison:
         Lmax       : maximum bit-width
         temperings : list[list[Transformation]] — one list per component
                      (empty list if no tempering)
-        seeds      : [seed1, seed2] as read from the search file;
-                     seed1 == -1 means use current time
 
         Returns
         -------
         comb : Combinaison — fully initialised and populated
         """
         nb_comp = len(gen_lists)
-
-        # Random seed
-        seed1, seed2 = seeds
-        if seed1 == -1:
-            seed  = int(time.time())
-            Seed1 = float(seed)
-            Seed2 = Seed1 + 111119903.0
-        else:
-            Seed1 = float(seed1)
-            Seed2 = float(seed2)
-            seed  = seed1 * (2**32) + seed2
-        random.seed(seed)
-
-        # Create Combinaison
         comb = cls(J=nb_comp, Lmax=Lmax)
 
-        # Header
-        print("=" * 68)
-        print("SUMMARY OF THE SEARCH PARAMETERS\n")
-        print(f"Computer : {socket.gethostname()}\n")
-        print(f"Seed of RNG for tempering parameters = ( {Seed1:12.0f}, {Seed2:12.0f} )\n")
-        print("1 component:" if nb_comp == 1 else f"{nb_comp} components:")
-
-        # Apply tempering transformations and print their names
         for j, trans_list in enumerate(temperings):
-            if trans_list:
-                print("  Tempering transformations:")
-                for t in trans_list:
-                    print(f"   * {t.name}")
-                    comb.components[j].add_trans(t)
+            for t in trans_list:
+                comb.components[j].add_trans(t)
 
-        # Populate components — when two gen_lists entries are the same object,
-        # share the gens list so product_no_repeat_ordered enforces C(n,k).
         for j, gen_list in enumerate(gen_lists):
             if j > 0 and gen_list is gen_lists[j - 1]:
                 comb.components[j].gens = comb.components[j - 1].gens

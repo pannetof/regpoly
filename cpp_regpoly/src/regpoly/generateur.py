@@ -29,8 +29,8 @@ class Generateur:
     def name(self) -> str:
         return self._cpp_gen.name()
 
-    def display(self) -> None:
-        print(self._cpp_gen.display_str())
+    def display(self) -> str:
+        return self._cpp_gen.display_str()
 
     def initialize_state(self, init_bv: BitVect) -> BitVect:
         self._cpp_gen.init(_cpp.BitVect.from_int(init_bv.n, init_bv._val))

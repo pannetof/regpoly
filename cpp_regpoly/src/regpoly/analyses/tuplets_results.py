@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import sys
 
-from regpoly.tests.test_results_base import AbstractTestResults
+from regpoly.analyses.test_results_base import AbstractTestResults
 
 _MAX_TYPE = 1
 _SUM_TYPE = 0
@@ -67,49 +67,53 @@ class TupletsResults(AbstractTestResults):
     def verified(self) -> bool:
         return self._verified
 
-    def display(self) -> None:
-        """DispTuplets: print the gap tables to stdout."""
+    def display(self) -> str:
+        """DispTuplets: return the gap tables as a string."""
         if not self._verified:
-            return
+            return ""
+
+        lines = []
 
         # First part: successive dimensions
-        print("\n  Tables of gaps obtained (successive dimensions)")
+        lines.append("\n  Tables of gaps obtained (successive dimensions)")
         T    = 1
         maxD = self.tuph[1]
         while maxD > 0:
             cols = min(maxD, 16)
-            print("======" + "+=====" * cols + "+")
-            print("DIM   " + "".join(f"|{T + j - 1:5d}" for j in range(1, cols + 1)) + "|")
-            print("------" + "+-----" * cols + "+")
-            print("GAP   " + "".join(
+            lines.append("======" + "+=====" * cols + "+")
+            lines.append("DIM   " + "".join(f"|{T + j - 1:5d}" for j in range(1, cols + 1)) + "|")
+            lines.append("------" + "+-----" * cols + "+")
+            lines.append("GAP   " + "".join(
                 "|     " if self.gap[T + j - 1] == 0.0
                 else f"|{int(self.gap[T + j - 1]):5d}"
                 for j in range(1, cols + 1)
             ) + "|")
-            print("======" + "+=====" * cols + "+")
+            lines.append("======" + "+=====" * cols + "+")
             maxD -= 16
             T    += 16
-        print()
+        lines.append("")
 
         # Second part: non-successive dimensions (if tupd > 1)
         if self.tupd > 1:
-            print("\n\n   Tables of maximal gaps obtained (non-successive dimensions)")
+            lines.append("\n\n   Tables of maximal gaps obtained (non-successive dimensions)")
             w = self.tupd - 1
-            print("===========" + "+" + "======+" * w)
-            print("Dimension  |" + "".join(f"{i:6d}|" for i in range(2, self.tupd + 1)))
-            print("-----------+" + "------+" * w)
-            print("t_i        |" + "".join(f"{self.tuph[i]:6d}|" for i in range(2, self.tupd + 1)))
-            print("-----------+" + "------+" * w)
-            print("GAP        |" + "".join(f" {int(self.DELTA[i]):5d}|" for i in range(2, self.tupd + 1)))
-            print("-----------+" + "------+" * w)
-            print("percentage |" + "".join(f"{self.pourcentage[i] * 100:6.2f}|" for i in range(2, self.tupd + 1)))
-            print("===========" + "+" + "======+" * w)
+            lines.append("===========" + "+" + "======+" * w)
+            lines.append("Dimension  |" + "".join(f"{i:6d}|" for i in range(2, self.tupd + 1)))
+            lines.append("-----------+" + "------+" * w)
+            lines.append("t_i        |" + "".join(f"{self.tuph[i]:6d}|" for i in range(2, self.tupd + 1)))
+            lines.append("-----------+" + "------+" * w)
+            lines.append("GAP        |" + "".join(f" {int(self.DELTA[i]):5d}|" for i in range(2, self.tupd + 1)))
+            lines.append("-----------+" + "------+" * w)
+            lines.append("percentage |" + "".join(f"{self.pourcentage[i] * 100:6.2f}|" for i in range(2, self.tupd + 1)))
+            lines.append("===========" + "+" + "======+" * w)
 
         delta_val = max(self.firstpart_max, self.secondpart_max)
-        print(f"Value of DELTA( " +
+        lines.append(f"Value of DELTA( " +
               ", ".join(str(self.tuph[i]) for i in range(1, self.tupd + 1)) +
               f" ) = {delta_val:5.3f}")
-        print(f"Sum of all gaps observed = {self.firstpart_sum + self.secondpart_sum:5.3f}")
+        lines.append(f"Sum of all gaps observed = {self.firstpart_sum + self.secondpart_sum:5.3f}")
+
+        return "\n".join(lines)
 
     # -- Status predicate -------------------------------------------------
 

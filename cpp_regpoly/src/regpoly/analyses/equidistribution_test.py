@@ -10,8 +10,8 @@ import math
 import sys
 from typing import TYPE_CHECKING
 
-from regpoly.tests.test_base import AbstractTest
-from regpoly.tests.equidistribution_results import EquidistributionResults
+from regpoly.analyses.test_base import AbstractTest
+from regpoly.analyses.equidistribution_results import EquidistributionResults
 
 if TYPE_CHECKING:
     from regpoly.combinaison import Combinaison

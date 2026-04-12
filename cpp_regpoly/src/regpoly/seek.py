@@ -19,15 +19,15 @@ from regpoly.generateur import Generateur
 from regpoly.transformation import Transformation
 from regpoly.combinaison import Combinaison
 from regpoly.legacy_reader import LegacyReader
-from regpoly.tests.equidistribution_test import (
+from regpoly.analyses.equidistribution_test import (
     EquidistributionTest,
     METHOD_MATRICIAL,
     METHOD_DUALLATTICE,
     METHOD_NOTHING,
 )
-from regpoly.tests.collision_free_test import CollisionFreeTest
-from regpoly.tests.tuplets_test import TupletsTest
-from regpoly.tests.tuplets_results import _MAX_TYPE
+from regpoly.analyses.collision_free_test import CollisionFreeTest
+from regpoly.analyses.tuplets_test import TupletsTest
+from regpoly.analyses.tuplets_results import _MAX_TYPE
 
 _SEP      = "\n\n" + "+" * 104
 _EQ66     = "=" * 66
@@ -106,7 +106,7 @@ class Seek:
         # Tests
         tests_cfg = config.get("tests", [])
         if isinstance(tests_cfg, dict) and "file" in tests_cfg:
-            from regpoly.tests.test_base import AbstractTest
+            from regpoly.analyses.test_base import AbstractTest
             path = _resolve_path(tests_cfg["file"], base_dir)
             s._tests = AbstractTest.from_yaml(path, Lmax)
         else:
@@ -117,7 +117,7 @@ class Seek:
         if not has_tempering:
             s._nbtries = 1
 
-        _print_header(nb_comp, Seed1, Seed2, temperings)
+        print(_format_header(nb_comp, Seed1, Seed2, temperings))
 
         s._comb = Combinaison(J=nb_comp, Lmax=Lmax)
         for j, (gen_list, trans_list) in enumerate(zip(gen_lists, temperings)):
@@ -130,7 +130,8 @@ class Seek:
                     for gen in gen_list:
                         s._comb.components[j].add_gen(gen)
 
-        _print_search_summary(s._tests, s._nbtries, has_tempering, gen_lists)
+        print(_format_search_summary(s._tests, s._nbtries, has_tempering, gen_lists))
+        sys.stdout.flush()
 
         return s
 
@@ -168,33 +169,36 @@ class Seek:
             tup_results = None
 
             for test in tests:
-                cls_name = type(test).__name__
-
-                if cls_name == "EquidistributionTest":
+                if isinstance(test, EquidistributionTest):
                     me_results = test.run(comb)
                     if not me_results.is_presque_me():
                         passed = False
                         break
 
-                elif cls_name == "TupletsTest":
+                elif isinstance(test, TupletsTest):
                     tup_results = test.run(comb)
                     if not tup_results.is_ok():
                         passed = False
                         break
 
-                elif cls_name == "CollisionFreeTest":
+                elif isinstance(test, CollisionFreeTest):
                     test.run(comb, me_results=me_results)
 
             if passed and me_results is not None:
-                _display_current_comb(comb)
+                print(_format_current_comb(comb))
                 if me_results.is_me():
-                    me_results.display()
+                    msg = me_results.display()
+                    if msg:
+                        print(msg)
                     nbME += 1
                 else:
                     print("\n  Dimension gaps for every resolution", end="")
-                    me_results.display_table(comb, 'l')
+                    table_str, _ = me_results.display_table(comb, 'l')
+                    print(table_str)
                 if tup_results is not None:
-                    tup_results.display()
+                    msg = tup_results.display()
+                    if msg:
+                        print(msg)
                 nbsel += 1
                 print(_SEP)
 
@@ -210,7 +214,7 @@ class Seek:
                 no_try = 1
 
         elapsed = time.time() - t_start
-        _display_summary(nbgen, nbME, nbCF, nbsel, elapsed)
+        print(_format_summary(nbgen, nbME, nbCF, nbsel, elapsed))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -363,7 +367,13 @@ def _read_legacy(nb_comp, test_file, gen_data_files):
             old_gen_list = LegacyReader.read_generators(path, Lmax)
             gen_lists.append(old_gen_list)
 
-    comb = Combinaison.CreateFromFiles(gen_lists, Lmax, temperings, seeds)
+    # Seed RNG
+    Seed1, Seed2, seed = _compute_seeds(seed1, seed2)
+    random.seed(seed)
+
+    print(_format_header(nb_comp, Seed1, Seed2, temperings))
+
+    comb = Combinaison.CreateFromFiles(gen_lists, Lmax, temperings)
 
     if has_tempering:
         print(f"Number of tries per combined generator : {nbtries}")
@@ -391,65 +401,71 @@ def _read_legacy(nb_comp, test_file, gen_data_files):
 # Display helpers
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _print_header(nb_comp, Seed1, Seed2, temperings):
-    print("=" * 68)
-    print("SUMMARY OF THE SEARCH PARAMETERS\n")
-    print(f"Computer : {socket.gethostname()}\n")
-    print(f"Seed of RNG for tempering parameters = ( {Seed1:12.0f}, {Seed2:12.0f} )\n")
-    print("1 component:" if nb_comp == 1 else f"{nb_comp} components:")
+def _format_header(nb_comp, Seed1, Seed2, temperings) -> str:
+    lines = []
+    lines.append("=" * 68)
+    lines.append("SUMMARY OF THE SEARCH PARAMETERS\n")
+    lines.append(f"Computer : {socket.gethostname()}\n")
+    lines.append(f"Seed of RNG for tempering parameters = ( {Seed1:12.0f}, {Seed2:12.0f} )\n")
+    lines.append("1 component:" if nb_comp == 1 else f"{nb_comp} components:")
     for trans_list in temperings:
         if trans_list:
-            print("  Tempering transformations:")
+            lines.append("  Tempering transformations:")
             for t in trans_list:
-                print(f"   * {t.name}")
+                lines.append(f"   * {t.name}")
+    return "\n".join(lines)
 
 
-def _print_search_summary(tests, nbtries, has_tempering, gen_lists):
+def _format_search_summary(tests, nbtries, has_tempering, gen_lists) -> str:
+    lines = []
     if has_tempering:
-        print(f"Number of tries per combined generator : {nbtries}")
+        lines.append(f"Number of tries per combined generator : {nbtries}")
     for test in tests:
-        if type(test).__name__ == "EquidistributionTest":
-            print(f"Upperbound for the sum of dimension gaps for resolutions in psi_12 : {test.mse}")
-    print("=" * 68)
+        if isinstance(test, EquidistributionTest):
+            lines.append(f"Upperbound for the sum of dimension gaps for resolutions in psi_12 : {test.mse}")
+    lines.append("=" * 68)
     for j, gen_list in enumerate(gen_lists):
         if gen_list is not None:
-            print(f"- Component {j + 1}: {gen_list[0].name()} ")
-    sys.stdout.flush()
+            lines.append(f"- Component {j + 1}: {gen_list[0].name()} ")
+    return "\n".join(lines)
 
 
-def _display_current_comb(comb):
-    print(_EQ66)
-    print(f"Number of points   : 2^({comb.k_g})")
-    print()
+def _format_current_comb(comb) -> str:
+    lines = []
+    lines.append(_EQ66)
+    lines.append(f"Number of points   : 2^({comb.k_g})")
+    lines.append("")
     for j, comp in enumerate(comb.components):
         gen = comb[j]
         poly_bv = gen.char_poly()
         hw = bin(poly_bv._val).count('1') + 1
-        print(f"hammingweigth = {hw}")
-        sys.stdout.flush()
-        print(f"{gen.name()}:")
+        lines.append(f"hammingweigth = {hw}")
+        lines.append(f"{gen.name()}:")
         disp = gen._cpp_gen.display_str()
-        # Insert "hamingweight poly = N" on the w= line if it's a carry generator
-        lines = disp.split('\n')
-        for line in lines:
+        for line in disp.split('\n'):
             if line.lstrip().startswith('w=') or line.lstrip().startswith(' w='):
-                print(f"{line}  hamingweight poly = {hw}")
+                lines.append(f"{line}  hamingweight poly = {hw}")
             else:
-                print(line)
-        comp.display()
+                lines.append(line)
+        comp_str = comp.display()
+        if comp_str:
+            lines.append(comp_str)
         if j < comb.J - 1:
-            print(_EQ66dash)
+            lines.append(_EQ66dash)
         else:
-            print(_EQ66)
+            lines.append(_EQ66)
+    return "\n".join(lines)
 
 
-def _display_summary(nbgen, nbME, nbCF, nbsel, elapsed):
-    print("\n===========================")
-    print(f"   Total   =  {nbgen:10d}  ")
-    print()
-    print(f"     ME    =  {nbME:10d}  ")
-    print(f"   CF-ME   =  {nbCF:10d}  ")
-    print(f"  retained =  {nbsel:10d}  ")
-    print("---------------------------")
-    print(f" CPU (sec) =   {elapsed:5.2f}       ")
-    print("===========================")
+def _format_summary(nbgen, nbME, nbCF, nbsel, elapsed) -> str:
+    lines = []
+    lines.append("\n===========================")
+    lines.append(f"   Total   =  {nbgen:10d}  ")
+    lines.append("")
+    lines.append(f"     ME    =  {nbME:10d}  ")
+    lines.append(f"   CF-ME   =  {nbCF:10d}  ")
+    lines.append(f"  retained =  {nbsel:10d}  ")
+    lines.append("---------------------------")
+    lines.append(f" CPU (sec) =   {elapsed:5.2f}       ")
+    lines.append("===========================")
+    return "\n".join(lines)

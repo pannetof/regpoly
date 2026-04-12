@@ -7,7 +7,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from regpoly.tests.test_results_base import AbstractTestResults
+from regpoly.analyses.test_results_base import AbstractTestResults
 
 if TYPE_CHECKING:
     from regpoly.combinaison import Combinaison
@@ -56,10 +56,11 @@ class EquidistributionResults(AbstractTestResults):
     def verified(self) -> bool:
         return self._verified
 
-    def display(self) -> None:
-        """DispME: print ME status."""
+    def display(self) -> str:
+        """DispME: return ME status string."""
         if self.is_me():
-            print("\n ===> ME GENERATOR")
+            return "\n ===> ME GENERATOR"
+        return ""
 
     # -- Status predicates ------------------------------------------------
 
@@ -84,15 +85,15 @@ class EquidistributionResults(AbstractTestResults):
 
     # -- Display table ----------------------------------------------------
 
-    def display_table(self, C: "Combinaison", by: str = 'l') -> int:
+    def display_table(self, C: "Combinaison", by: str = 'l') -> tuple[str, int]:
         """
-        DispTable: print the gap table and return the total gap sum.
+        DispTable: return (table_string, total_gap_sum).
 
         by='l' — rows are resolutions l, values are dimension gaps Delta_l
         by='t' — rows are dimensions t, values are resolution gaps Lambda_t
         """
         if not self._verified:
-            return -1
+            return ("", -1)
 
         if by == 'l':
             max_i      = min(C.L, self.L)
@@ -115,6 +116,7 @@ class EquidistributionResults(AbstractTestResults):
         else:
             raise ValueError(f"display_table: unknown type '{by}'")
 
+        lines = []
         nblocks = (max_i - 1) // 16 + 1
         for block in range(nblocks):
             start = block * 16 + 1
@@ -123,35 +125,33 @@ class EquidistributionResults(AbstractTestResults):
             w     = len(cols)
             eqbase = "=======" + "+=====" * w
             mline  = "-------" + "+-----" * w + "|"
-            # Opening =====: trailing +; newline before first block only
             if block == 0:
-                print("\n" + eqbase + "+")
+                lines.append("\n" + eqbase + "+")
             else:
-                print(eqbase + "+")
-            print(row_label  + "".join(f"|{i:5d}" for i in cols) + "|")
-            print(mline)
-            print(gap_label  + "".join(
+                lines.append(eqbase + "+")
+            lines.append(row_label  + "".join(f"|{i:5d}" for i in cols) + "|")
+            lines.append(mline)
+            lines.append(gap_label  + "".join(
                 "|     " if table[i] == 0 else f"|{table[i]:5d}"
                 for i in cols
             ) + "|")
-            print(mline)
-            print(dual_label + "".join(f"|{dual(i):5d}" for i in cols) + "|")
-            # Closing =====: no trailing + (next block or final "+\n" adds it)
+            lines.append(mline)
+            lines.append(dual_label + "".join(f"|{dual(i):5d}" for i in cols) + "|")
             if block < nblocks - 1:
-                print(eqbase)
+                lines.append(eqbase)
             else:
-                print(eqbase + "+")
+                lines.append(eqbase + "+")
 
         if by == 'l':
             somme = self.se
-            print(f"--------------------------->DIMENSION GAPS SUM (Psi_12) = {somme}")
+            lines.append(f"--------------------------->DIMENSION GAPS SUM (Psi_12) = {somme}")
         else:
             somme = sum(
                 table[i] for i in range(1, C.k_g + 1) if self._phi12[i]
             )
-            print(f"--------------------------->RESOLUTION GAPS SUM (Phi_12) = {somme}")
+            lines.append(f"--------------------------->RESOLUTION GAPS SUM (Phi_12) = {somme}")
 
-        return somme
+        return ("\n".join(lines), somme)
 
     # -- Private helpers --------------------------------------------------
 

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import regpoly._regpoly_cpp as _cpp
 
-from regpoly.tests.test_results_base import AbstractTestResults
+from regpoly.analyses.test_results_base import AbstractTestResults
 
 if TYPE_CHECKING:
     from regpoly.combinaison import Combinaison
@@ -55,9 +55,9 @@ class AbstractTest(ABC):
         Returns a list of AbstractTest instances.
         """
         import yaml
-        from regpoly.tests.equidistribution_test import EquidistributionTest
-        from regpoly.tests.collision_free_test import CollisionFreeTest
-        from regpoly.tests.tuplets_test import TupletsTest
+        from regpoly.analyses.equidistribution_test import EquidistributionTest
+        from regpoly.analyses.collision_free_test import CollisionFreeTest
+        from regpoly.analyses.tuplets_test import TupletsTest
 
         _dispatch = {
             "equidistribution": EquidistributionTest,

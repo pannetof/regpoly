@@ -7,9 +7,9 @@ from __future__ import annotations
 import sys
 from itertools import combinations as _itertools_combinations
 
-from regpoly.tests.test_base import AbstractTest
-from regpoly.tests.tuplets_results import TupletsResults, _MAX_TYPE, _SUM_TYPE
-from regpoly.tests.equidistribution_test import EquidistributionTest
+from regpoly.analyses.test_base import AbstractTest
+from regpoly.analyses.tuplets_results import TupletsResults, _MAX_TYPE, _SUM_TYPE
+from regpoly.analyses.equidistribution_test import EquidistributionTest
 from regpoly.combinaison import Combinaison
 
 

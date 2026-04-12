@@ -8,12 +8,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from regpoly.tests.test_base import AbstractTest
-from regpoly.tests.collision_free_results import CollisionFreeResults
+from regpoly.analyses.test_base import AbstractTest
+from regpoly.analyses.collision_free_results import CollisionFreeResults
 
 if TYPE_CHECKING:
     from regpoly.combinaison import Combinaison
-    from regpoly.tests.equidistribution_results import EquidistributionResults
+    from regpoly.analyses.equidistribution_results import EquidistributionResults
 
 
 class CollisionFreeTest(AbstractTest):

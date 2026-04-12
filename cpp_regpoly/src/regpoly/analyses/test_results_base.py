@@ -27,5 +27,5 @@ class AbstractTestResults(ABC):
         """True iff the test has been run and results are available."""
 
     @abstractmethod
-    def display(self) -> None:
-        """Print a human-readable summary of the results to stdout."""
+    def display(self) -> str:
+        """Return a human-readable summary of the results."""

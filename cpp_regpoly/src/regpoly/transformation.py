@@ -49,8 +49,8 @@ class Transformation:
     def w_original(self) -> int:
         return self._w_original
 
-    def display(self) -> None:
-        print(self._cpp_trans.display_str())
+    def display(self) -> str:
+        return self._cpp_trans.display_str()
 
     def update_params(self, L: int) -> None:
         """Compute w from L, generate random values from specs, update C++."""

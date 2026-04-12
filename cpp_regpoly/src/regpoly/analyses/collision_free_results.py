@@ -6,10 +6,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from regpoly.tests.test_results_base import AbstractTestResults
+from regpoly.analyses.test_results_base import AbstractTestResults
 
 if TYPE_CHECKING:
-    from regpoly.tests.equidistribution_results import EquidistributionResults
+    from regpoly.analyses.equidistribution_results import EquidistributionResults
 
 
 class CollisionFreeResults(AbstractTestResults):
@@ -42,10 +42,11 @@ class CollisionFreeResults(AbstractTestResults):
     def verified(self) -> bool:
         return self._verified
 
-    def display(self) -> None:
-        """DispCF: print CF status."""
+    def display(self) -> str:
+        """DispCF: return CF status string."""
         if self.is_cf_unconditional():
-            print("\n ===> CF GENERATOR")
+            return "\n ===> CF GENERATOR"
+        return ""
 
     # -- Status predicates ------------------------------------------------
 

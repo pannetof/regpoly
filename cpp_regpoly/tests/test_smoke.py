@@ -1,10 +1,10 @@
 """Smoke tests to verify the package loads and basic operations work."""
 
-from regpoly import BitVect, Matrix
-from regpoly.generators import PolyLCG, Tausworthe, TGFSR
-from regpoly.transformations import TemperMK, Permutation
-from regpoly.tests import EquidistributionTest, CollisionFreeTest, TupletsTest
+import regpoly._regpoly_cpp as _cpp
+from regpoly import BitVect, BitMatrix, Generateur, Transformation
 
+
+# ── BitVect ──────────────────────────────────────────────────────────────
 
 def test_bitvect_basics():
     bv = BitVect.zeros(32)
@@ -26,24 +26,105 @@ def test_bitvect_shift():
     assert shifted._val == 0b00010000
 
 
-def test_matrix_create():
-    m = Matrix(4, 8, 1)
+# ── BitMatrix ────────────────────────────────────────────────────────────
+
+def test_bitmatrix_create():
+    m = BitMatrix(4, 8)
     assert m.nblignes == 4
     assert m.l == 8
-    assert m.t == 1
+    m.set_bit(0, 0, 1)
+    assert m.get_bit(0, 0) == 1
+    assert m.get_bit(0, 1) == 0
 
 
-def test_generators_importable():
-    assert PolyLCG.name() == "Polynomial LCG"
-    assert Tausworthe.name() == "Tausworthe Generator"
-    assert TGFSR.name() == "TGFSR"
+def test_bitmatrix_display():
+    m = BitMatrix(2, 4)
+    m.set_bit(0, 0, 1)
+    m.set_bit(1, 3, 1)
+    text = m.display("raw")
+    assert "1" in text
+
+
+# ─�� Generateur (via C++ factory) ─────────────────────────────────────────
+
+def test_create_polylcg():
+    # poly exponents for x^3 + x + 1: positions 1, 0 (constant term implicit)
+    gen = Generateur(_cpp.create_generator("polylcg", {"k": 3, "poly": [1]}, 3))
+    assert gen.k == 3
+    assert gen.L == 3
+    assert gen.name() != ""
 
 
 def test_polylcg_iteration():
-    poly = BitVect(3, 0b011)  # x^3 + x + 1 → poly bits = 011
-    gen = PolyLCG(3, poly, 3)
-    init = BitVect.zeros(3)
-    init.put_bit(0, 1)
-    gen.initialize_state(init)
+    gen = Generateur(_cpp.create_generator("polylcg", {"k": 3, "poly": [1]}, 3))
+    init_bv = BitVect.zeros(3)
+    init_bv.put_bit(0, 1)
+    gen.initialize_state(init_bv)
     out = next(gen)
     assert out.n == 3
+
+
+def test_create_tausworthe():
+    # taus family: poly = list of exponents, s = step
+    gen = Generateur(_cpp.create_generator(
+        "taus", {"poly": [3, 7], "s": 3, "quicktaus": True}, 7
+    ))
+    assert gen.k == 7
+
+
+def test_create_tgfsr():
+    gen = Generateur(_cpp.create_generator(
+        "tgfsr", {"w": 8, "r": 3, "m": 1, "a": 0b10110011}, 8
+    ))
+    assert gen.k == 24  # w * r
+
+
+def test_generateur_display_returns_string():
+    gen = Generateur(_cpp.create_generator("polylcg", {"k": 3, "poly": [1]}, 3))
+    result = gen.display()
+    assert isinstance(result, str)
+
+
+def test_char_poly():
+    gen = Generateur(_cpp.create_generator("polylcg", {"k": 3, "poly": [1]}, 3))
+    init_bv = BitVect.zeros(3)
+    init_bv.put_bit(0, 1)
+    gen.initialize_state(init_bv)
+    poly = gen.char_poly()
+    assert poly.n == 3
+
+
+def test_transition_matrix():
+    gen = Generateur(_cpp.create_generator("polylcg", {"k": 3, "poly": [1]}, 3))
+    mat = gen.transition_matrix()
+    assert isinstance(mat, BitMatrix)
+    assert mat.nblignes == 3
+    assert mat.l == 3
+
+
+# ── Transformation ───────────────────────────────────────────────────────
+
+def test_create_permutation():
+    t = Transformation("permut", {"w": 8, "p": 3, "q": 1}, 8)
+    assert t.w == 8
+    assert isinstance(t.display(), str)
+
+
+def test_transformation_copy():
+    t = Transformation("permut", {"w": 8, "p": 3, "q": 1}, 8)
+    t2 = t.copy()
+    assert t2.w == t.w
+    assert t2 is not t
+
+
+# ── Analyses imports ─────────────────────────────────────────────────────
+
+def test_analyses_importable():
+    from regpoly.analyses import (
+        EquidistributionTest,
+        CollisionFreeTest,
+        TupletsTest,
+    )
+    assert EquidistributionTest is not None
+    assert CollisionFreeTest is not None
+    assert TupletsTest is not None

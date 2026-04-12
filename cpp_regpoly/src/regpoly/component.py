@@ -61,7 +61,6 @@ class Component:
 
     # -- Display ----------------------------------------------------------
 
-    def display(self) -> None:
-        """Print all transformations in this component."""
-        for t in self.trans:
-            t.display()
+    def display(self) -> str:
+        """Return a string describing all transformations in this component."""
+        return "\n".join(t.display() for t in self.trans)
