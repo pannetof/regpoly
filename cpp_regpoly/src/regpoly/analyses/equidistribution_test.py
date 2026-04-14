@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 METHOD_MATRICIAL   = 0
 METHOD_DUALLATTICE = 1
 METHOD_NOTHING     = 2
+METHOD_HARASE      = 3
 
 
 class EquidistributionTest(AbstractTest):
@@ -45,7 +46,7 @@ class EquidistributionTest(AbstractTest):
         meverif: bool = True,
         method: int = METHOD_MATRICIAL,
     ) -> None:
-        if method not in (METHOD_MATRICIAL, METHOD_DUALLATTICE, METHOD_NOTHING):
+        if method not in (METHOD_MATRICIAL, METHOD_DUALLATTICE, METHOD_NOTHING, METHOD_HARASE):
             raise ValueError(f"Unknown method: {method}")
         self.L       = L
         self.delta   = list(delta)      # indexed 0..L; delta[0] unused
@@ -70,6 +71,8 @@ class EquidistributionTest(AbstractTest):
             method = METHOD_MATRICIAL
         elif method_str == "lattice":
             method = METHOD_DUALLATTICE
+        elif method_str == "harase":
+            method = METHOD_HARASE
         else:
             method = METHOD_NOTHING
 
@@ -101,6 +104,9 @@ class EquidistributionTest(AbstractTest):
 
         if self.method == METHOD_DUALLATTICE:
             return self._run_lattice(C)
+
+        if self.method == METHOD_HARASE:
+            return self._run_harase(C)
 
         if self.L < C.L:
             raise ValueError(
@@ -192,6 +198,33 @@ class EquidistributionTest(AbstractTest):
         mse_capped = min(self.mse, INT_MAX)
 
         result = _cpp.test_me_lat(
+            gens, trans,
+            C.k_g, C.L, self.L,
+            delta_capped, mse_capped,
+        )
+
+        psi12 = self._compute_psi12(C)
+        return EquidistributionResults(
+            L=self.L, ecart=result['ecart'], psi12=psi12,
+            se=result['se'], verified=True, mse=self.mse,
+            meverif=self.meverif, delta=self.delta,
+        )
+
+    def _run_harase(self, C: "Combinaison") -> EquidistributionResults:
+        """Harase-Matsumoto-Saito: primal lattice with Mulders-Storjohann."""
+        import regpoly._regpoly_cpp as _cpp
+
+        INT_MAX = 2**31 - 1
+        gens = [C[j]._cpp_gen for j in range(C.J)]
+        trans = [
+            [t._cpp_trans for t in comp.trans if hasattr(t, '_cpp_trans')]
+            for comp in C.components
+        ]
+
+        delta_capped = [min(d, INT_MAX) for d in self.delta]
+        mse_capped = min(self.mse, INT_MAX)
+
+        result = _cpp.test_me_lat_harase(
             gens, trans,
             C.k_g, C.L, self.L,
             delta_capped, mse_capped,

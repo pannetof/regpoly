@@ -67,6 +67,34 @@ class Transformation:
 
         self._cpp_trans.update(params)
 
+    def optimizable_params(self) -> list[tuple[str, int]]:
+        """Return bitmask parameters that can be optimized: [(name, width), ...].
+
+        Override per transformation type. Default: parameters whose name
+        is 'b' or 'c' with width w.
+        """
+        result = []
+        w = self.w
+        for name in ("b", "c"):
+            if name in self._orig_params:
+                result.append((name, w))
+        return result
+
+    def get_param(self, name: str) -> int:
+        """Read the current value of a parameter."""
+        return self._orig_params[name]
+
+    def set_param(self, name: str, value: int) -> None:
+        """Set a parameter and push to C++."""
+        self._orig_params[name] = value
+        self._cpp_trans.update(self._orig_params)
+
+    def flip_bit(self, name: str, bit: int) -> None:
+        """Flip one bit of a bitmask parameter and push to C++."""
+        val = self._orig_params[name]
+        val ^= (1 << bit)
+        self.set_param(name, val)
+
     def copy(self) -> Transformation:
         new = Transformation.__new__(Transformation)
         new._type = self._type

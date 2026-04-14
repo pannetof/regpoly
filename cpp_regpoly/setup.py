@@ -32,6 +32,7 @@ ext_modules = [
             "src/cpp/src/trans_lag_mask.cpp",
             "src/cpp/src/poly_lattice.cpp",
             "src/cpp/src/lattice_polys.cpp",
+            "src/cpp/src/harase_lattice.cpp",
             "src/cpp/src/bindings.cpp",
         ],
         include_dirs=["src/cpp/include"],

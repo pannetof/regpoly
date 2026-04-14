@@ -26,7 +26,7 @@ public:
     virtual void get_transition_state(uint64_t* out_words, int out_nwords) const;
 
     // Algorithms (use the virtual interface above)
-    // Default: Berlekamp-Massey. Overridden by TGFSR, MT, PolyLCG.
+    // Default: Berlekamp-Massey. Overridden by TGFSR, MT, PolyLCG, MELG.
     virtual BitVect char_poly() const;
 
     // Returns true if the characteristic polynomial is primitive over GF(2),
@@ -42,3 +42,4 @@ protected:
     int k_;
     int L_;
 };
+

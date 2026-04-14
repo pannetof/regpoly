@@ -2,21 +2,22 @@
 #include <cstring>
 
 // ══════════════════════════════════════════════════════════════════════════
-// PolVect
+// PolVect — flat contiguous storage for l polynomials of degree ≤ degmax
 // ══════════════════════════════════════════════════════════════════════════
 
-PolVect::PolVect(int resolution, int degmax)
-    : deg(INT_MIN), indicemaxdeg(INT_MIN)
+PolVect::PolVect(int resolution_, int degmax)
+    : deg(INT_MIN), indicemaxdeg(INT_MIN),
+      nwords((degmax + 1 + 63) / 64), resolution(resolution_)
 {
-    coeffs.reserve(resolution);
-    for (int j = 0; j < resolution; j++)
-        coeffs.emplace_back(degmax + 1);
+    data.resize((size_t)resolution_ * nwords, 0ULL);
 }
 
 void PolVect::swap(PolVect& other) {
-    coeffs.swap(other.coeffs);
+    data.swap(other.data);
     std::swap(deg, other.deg);
     std::swap(indicemaxdeg, other.indicemaxdeg);
+    std::swap(nwords, other.nwords);
+    std::swap(resolution, other.resolution);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -24,7 +25,8 @@ void PolVect::swap(PolVect& other) {
 // ══════════════════════════════════════════════════════════════════════════
 
 PolyLatBase::PolyLatBase(int maxresolution, int degmax)
-    : resolution_(0), maxresolution_(maxresolution), degmax_(degmax)
+    : resolution_(0), maxresolution_(maxresolution), degmax_(degmax),
+      nwords_((degmax + 1 + 63) / 64)
 {
     vect_.reserve(maxresolution);
     for (int i = 0; i < maxresolution; i++)
@@ -34,74 +36,82 @@ PolyLatBase::PolyLatBase(int maxresolution, int degmax)
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// Element operations
+// Element operations — identical logic to original, using flat coord()
 // ══════════════════════════════════════════════════════════════════════════
 
 void PolyLatBase::set_element_zero(PolVect& P, int j) {
     if (P.deg == INT_MIN) return;
+    uint64_t* d = P.coord(j);
     int nw = P.deg / WL;
-    uint64_t* d = P.coeffs[j].data();
     for (int i = 0; i <= nw; i++)
         d[i] = 0ULL;
 }
 
 void PolyLatBase::set_element_one(PolVect& P, int j) {
     set_element_zero(P, j);
-    P.coeffs[j].set_bit(0, 1);
+    P.coord(j)[0] = 1ULL << 63;  // bit 0 = MSB = z^0
     if (P.deg == INT_MIN) {
         P.deg = 0;
         P.indicemaxdeg = j;
     }
 }
 
-int PolyLatBase::norme_bitvect(const BitVect& A) const {
-    for (int k = degmax_; k >= 0; k--) {
-        if (A.get_bit(k))
-            return k;
-    }
-    return INT_MIN;
-}
-
 void PolyLatBase::set_element_from_bv(PolVect& P, int j, const BitVect& A) {
-    // Copy A into P.coeffs[j]
-    int nw = std::min(A.nwords(), P.coeffs[j].nwords());
+    uint64_t* d = P.coord(j);
+    int nw = std::min(A.nwords(), P.nwords);
     for (int w = 0; w < nw; w++)
-        P.coeffs[j].data()[w] = A.data()[w];
-    for (int w = nw; w < P.coeffs[j].nwords(); w++)
-        P.coeffs[j].data()[w] = 0ULL;
+        d[w] = A.data()[w];
+    for (int w = nw; w < P.nwords; w++)
+        d[w] = 0ULL;
 
-    int deg = norme_bitvect(P.coeffs[j]);
-    if (P.deg < deg) {
-        P.deg = deg;
-        P.indicemaxdeg = j;
+    // Find highest degree in this coordinate.
+    // MSB-first: lowest bit position = highest polynomial degree.
+    for (int k = nw - 1; k >= 0; k--) {
+        if (d[k]) {
+            int ctz = __builtin_ctzll(d[k]);
+            int deg_j = k * WL + (WL - 1 - ctz);
+            if (P.deg < deg_j) {
+                P.deg = deg_j;
+                P.indicemaxdeg = j;
+            }
+            return;
+        }
     }
 }
 
 int PolyLatBase::element_norme_equal(const PolVect& P, int j, int norme) const {
-    return P.coeffs[perm_[j]].get_bit(norme) ? 1 : 0;
+    const uint64_t* d = P.coord(perm_[j]);
+    int w = norme / WL;
+    int b = 63 - (norme % WL);
+    return (d[w] >> b) & 1;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// update_polvect_deg — find the highest set bit across all coordinates
+// update_polvect_deg — uses __builtin_clzll for fast scanning
 // ══════════════════════════════════════════════════════════════════════════
 
 void PolyLatBase::update_polvect_deg(PolVect& a) {
+    // MSB-first: within word k, bit position p = degree k*64 + (63-p).
+    // Highest degree = lowest bit position → use __builtin_ctzll.
     int K = a.deg / WL;
     int LL = a.deg - WL * K;
 
     for (int k = K; k >= 0; k--) {
         uint64_t blob = 0ULL;
         for (int j = 0; j < resolution_; j++)
-            blob |= a.coeffs[j].data()[k];
-        for (int ll = LL; ll >= 0; ll--) {
-            uint64_t mask = 1ULL << (63 - ll);
-            if (blob & mask) {
-                a.deg = k * WL + ll;
-                for (int j = 0; j < resolution_; j++) {
-                    if (a.coeffs[j].data()[k] & mask) {
-                        a.indicemaxdeg = j;
-                        return;
-                    }
+            blob |= a.coord(j)[k];
+        // In the top word, mask out bits for degrees above a.deg:
+        // degrees 0..LL within this word → bit positions (63-LL)..63
+        if (k == K)
+            blob &= ~0ULL << (WL - 1 - LL);
+        if (blob) {
+            int ctz = __builtin_ctzll(blob);
+            a.deg = k * WL + (WL - 1 - ctz);
+            uint64_t mask = 1ULL << ctz;
+            for (int j = 0; j < resolution_; j++) {
+                if (a.coord(j)[k] & mask) {
+                    a.indicemaxdeg = j;
+                    return;
                 }
             }
         }
@@ -112,8 +122,7 @@ void PolyLatBase::update_polvect_deg(PolVect& a) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// add_polvect — res = a XOR b (polynomial vector addition over GF(2))
-// NOTE: modifies b in-place when a.deg > b.deg (masks tail bits)
+// add_polvect — res = a XOR b  (EXACT logic from original code)
 // ══════════════════════════════════════════════════════════════════════════
 
 void PolyLatBase::add_polvect(PolVect& res, PolVect& a, PolVect& b) {
@@ -122,7 +131,7 @@ void PolyLatBase::add_polvect(PolVect& res, PolVect& a, PolVect& b) {
         int nw = a.deg / WL;
         for (int k = nw; k >= 0; k--)
             for (int j = 0; j < resolution_; j++)
-                res.coeffs[j].data()[k] = a.coeffs[j].data()[k] ^ b.coeffs[j].data()[k];
+                res.coord(j)[k] = a.coord(j)[k] ^ b.coord(j)[k];
         update_polvect_deg(res);
         return;
     }
@@ -132,30 +141,23 @@ void PolyLatBase::add_polvect(PolVect& res, PolVect& a, PolVect& b) {
         int bK = b.deg / WL;
         int bLL = b.deg - bK * WL;
         for (int j = 0; j < resolution_; j++) {
+            uint64_t* rd = res.coord(j);
+            const uint64_t* ad = a.coord(j);
+            uint64_t* bd = b.coord(j);  // NOTE: b is modified (tail masking)
             for (int k = a.deg / WL; k > bK; k--)
-                res.coeffs[j].data()[k] = a.coeffs[j].data()[k];
-            // Mask out insignificant bits in b (C code does this in-place)
-            b.coeffs[j].data()[bK] &= ~0ULL << (WL - bLL - 1);
+                rd[k] = ad[k];
+            // Mask out insignificant bits in b (same as original C code)
+            bd[bK] &= ~0ULL << (WL - bLL - 1);
             for (int k = bK; k >= 0; k--)
-                res.coeffs[j].data()[k] = a.coeffs[j].data()[k] ^ b.coeffs[j].data()[k];
+                rd[k] = ad[k] ^ bd[k];
         }
         return;
     }
-    // a.deg < b.deg: should not happen in the algorithm's usage
+    // a.deg < b.deg: should not happen in algorithm's usage
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// multbys — r = a * z^S (left shift of polynomial vector by S positions)
-//
-// In the MSB-first BitVect, multiplying by z^S means the coefficient data
-// shifts to higher word indices (the bits representing lower-order coefficients
-// are stored at lower indices in MSB-first).  The C code's bit layout is:
-//   bit 0 (MSB of word 0) = coefficient of z^0
-//   bit k = coefficient of z^k
-// Multiplying by z^S: coefficient of z^k in the result comes from
-// coefficient of z^(k-S) in the original.  In MSB-first storage this means
-// the data words shift to the RIGHT (higher indices) by S/WL words,
-// with intra-word right-shift by S%WL.
+// multbys — r = a * z^S  (EXACT logic from original code)
 // ══════════════════════════════════════════════════════════════════════════
 
 void PolyLatBase::multbys(PolVect& r, const PolVect& a, int S) {
@@ -166,8 +168,8 @@ void PolyLatBase::multbys(PolVect& r, const PolVect& a, int S) {
     if (nbbits != 0) {
         int WLmn = WL - nbbits;
         for (int ii = 0; ii < resolution_; ii++) {
-            uint64_t* rd = r.coeffs[ii].data();
-            const uint64_t* ad = a.coeffs[ii].data();
+            uint64_t* rd = r.coord(ii);
+            const uint64_t* ad = a.coord(ii);
             for (int i = 0; i < nbblocks; i++)
                 rd[i] = 0ULL;
             int i = nbblocks;
@@ -177,8 +179,8 @@ void PolyLatBase::multbys(PolVect& r, const PolVect& a, int S) {
         }
     } else {
         for (int ii = 0; ii < resolution_; ii++) {
-            uint64_t* rd = r.coeffs[ii].data();
-            const uint64_t* ad = a.coeffs[ii].data();
+            uint64_t* rd = r.coord(ii);
+            const uint64_t* ad = a.coord(ii);
             for (int i = 0; i < nbblocks; i++)
                 rd[i] = 0ULL;
             int i = nbblocks;
@@ -192,7 +194,7 @@ void PolyLatBase::multbys(PolVect& r, const PolVect& a, int S) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// multbys2 — r XOR= a * z^S in-place
+// multbys2 — r XOR= a * z^S in-place  (EXACT logic from original code)
 // ══════════════════════════════════════════════════════════════════════════
 
 void PolyLatBase::multbys2(PolVect& r, const PolVect& a, int S) {
@@ -204,8 +206,8 @@ void PolyLatBase::multbys2(PolVect& r, const PolVect& a, int S) {
         if (nbbits != 0) {
             int WLmn = WL - nbbits;
             for (int ii = 0; ii < resolution_; ii++) {
-                uint64_t* rd = r.coeffs[ii].data();
-                const uint64_t* ad = a.coeffs[ii].data();
+                uint64_t* rd = r.coord(ii);
+                const uint64_t* ad = a.coord(ii);
                 int i = nbblocks;
                 rd[i++] ^= ad[0] >> nbbits;
                 for (; i <= N; i++)
@@ -213,8 +215,8 @@ void PolyLatBase::multbys2(PolVect& r, const PolVect& a, int S) {
             }
         } else {
             for (int ii = 0; ii < resolution_; ii++) {
-                uint64_t* rd = r.coeffs[ii].data();
-                const uint64_t* ad = a.coeffs[ii].data();
+                uint64_t* rd = r.coord(ii);
+                const uint64_t* ad = a.coord(ii);
                 int i = nbblocks;
                 rd[i++] ^= ad[0];
                 for (; i <= N; i++)
@@ -231,8 +233,8 @@ void PolyLatBase::multbys2(PolVect& r, const PolVect& a, int S) {
         if (nbbits != 0) {
             int WLmn = WL - nbbits;
             for (int ii = 0; ii < resolution_; ii++) {
-                uint64_t* rd = r.coeffs[ii].data();
-                const uint64_t* ad = a.coeffs[ii].data();
+                uint64_t* rd = r.coord(ii);
+                const uint64_t* ad = a.coord(ii);
                 int i = nbblocks;
                 rd[i++] ^= ad[0] >> nbbits;
                 for (; i < N; i++)
@@ -241,8 +243,8 @@ void PolyLatBase::multbys2(PolVect& r, const PolVect& a, int S) {
             }
         } else {
             for (int ii = 0; ii < resolution_; ii++) {
-                uint64_t* rd = r.coeffs[ii].data();
-                const uint64_t* ad = a.coeffs[ii].data();
+                uint64_t* rd = r.coord(ii);
+                const uint64_t* ad = a.coord(ii);
                 int i = nbblocks;
                 rd[i++] ^= ad[0];
                 for (; i <= N; i++)
@@ -264,7 +266,7 @@ void PolyLatBase::add_self_polvect_mult(PolVect& res, const PolVect& a, int s) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// DualBase — initialize the dual basis
+// DualBase
 // ══════════════════════════════════════════════════════════════════════════
 
 void PolyLatBase::dual_base(const std::vector<BitVect>& polys, const BitVect& M, int res) {
@@ -274,11 +276,9 @@ void PolyLatBase::dual_base(const std::vector<BitVect>& polys, const BitVect& M,
     }
     resolution_ = res;
 
-    // Row 0: the characteristic polynomial M
     vb(0).zero_lazy();
     set_element_from_bv(vb(0), 0, M);
 
-    // Rows 1..res-1: normalized polynomial h_i + identity in coordinate i
     for (int i = 1; i < res; i++) {
         vb(i).zero_lazy();
         set_element_from_bv(vb(i), 0, polys[i]);
@@ -289,10 +289,8 @@ void PolyLatBase::dual_base(const std::vector<BitVect>& polys, const BitVect& M,
 void PolyLatBase::dual_base_increase(const std::vector<BitVect>& polys) {
     resolution_++;
     int newi = resolution_ - 1;
-    // Zero out the new coordinate in all existing rows
     for (int j = 0; j <= newi - 1; j++)
         set_element_zero(vb(j), newi);
-    // New row: normalized polynomial + identity
     vb(newi).zero_lazy();
     set_element_from_bv(vb(newi), 0, polys[newi]);
     set_element_one(vb(newi), newi);
@@ -317,7 +315,6 @@ void PolyLatBase::renumber(int m, int resolution) {
 }
 
 void PolyLatBase::solve_axb(int m, std::vector<int>& x) {
-    // Small system: (m+1) x (m+2) bits — use a simple dense array
     int n = m + 1;
     int nw = (n + 1 + 63) / 64;
     std::vector<std::vector<uint64_t>> A(n, std::vector<uint64_t>(nw, 0ULL));
@@ -329,21 +326,18 @@ void PolyLatBase::solve_axb(int m, std::vector<int>& x) {
         return (A[row][col / 64] >> (63 - (col % 64))) & 1;
     };
 
-    // Fill upper triangle: A[j][i] = element_norme_equal(vect[i], j, norm(vect[i]))
     for (int i = 0; i <= m; i++) {
         for (int j = i; j <= m; j++) {
             if (element_norme_equal(vect_[i], j, vect_[i].deg))
                 setbit(j, i);
         }
     }
-    // RHS column (m+1): from vect[m+1]
     int bmp1_norme = vect_[m + 1].deg;
     for (int j = 0; j <= m; j++) {
         if (element_norme_equal(vect_[m + 1], j, bmp1_norme))
             setbit(j, m + 1);
     }
 
-    // Forward substitution (system is already upper triangular in C code)
     for (int j = 0; j <= m; j++) {
         int sum = getbit(j, m + 1);
         for (int i = 0; i < j; i++)
@@ -361,7 +355,7 @@ void PolyLatBase::permute_coord(int m) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// Lenstra's algorithm
+// Lenstra's algorithm — EXACT logic from original code
 // ══════════════════════════════════════════════════════════════════════════
 
 int PolyLatBase::lenstra(int res) {

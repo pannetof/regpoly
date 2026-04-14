@@ -8,6 +8,7 @@
 #include "gauss.h"
 #include "factory.h"
 #include "lattice_polys.h"
+#include "harase_lattice.h"
 
 #include <NTL/GF2X.h>
 #include <NTL/GF2XFactoring.h>
@@ -263,6 +264,32 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
        py::arg("kg"), py::arg("L"), py::arg("maxL"),
        py::arg("delta"), py::arg("mse"));
 
+    // ── test_me_lat_harase (primal lattice, Mulders-Storjohann) ────────
+
+    m.def("test_me_lat_harase",
+          [](const py::list& gens_py,
+             const py::list& trans_py,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        std::vector<Generateur*> gens;
+        for (auto item : gens_py)
+            gens.push_back(item.cast<Generateur*>());
+        std::vector<std::vector<Transformation*>> trans;
+        for (auto comp_trans : trans_py) {
+            std::vector<Transformation*> chain;
+            for (auto t : comp_trans)
+                chain.push_back(t.cast<Transformation*>());
+            trans.push_back(chain);
+        }
+        auto result = test_me_lat_harase(gens, trans, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gens"), py::arg("trans"),
+       py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
     // ── Generator subclass registrations ────────────────────────────────
     register_generator_types(m);
 
@@ -313,6 +340,18 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
         }
         return true;
     }, py::arg("char_poly"), py::arg("k"), py::arg("factors"));
+
+    m.def("is_irreducible",
+          [](const BitVect& char_poly_bv, int k) -> bool {
+        NTL::GF2X f;
+        NTL::SetCoeff(f, k);
+        for (int j = 0; j < k; j++)
+            if (char_poly_bv.get_bit(j))
+                NTL::SetCoeff(f, j);
+        if (!IsOne(coeff(f, 0)))
+            return false;
+        return NTL::IterIrredTest(f) != 0;
+    }, py::arg("char_poly"), py::arg("k"));
 
     m.def("get_param_specs",
           [](const std::string& family) -> py::list {

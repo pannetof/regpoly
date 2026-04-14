@@ -304,10 +304,16 @@ class Generateur:
         """Returns True if the characteristic polynomial is primitive,
         meaning the generator has maximum period 2^k - 1.
 
-        Uses precomputed prime factors of 2^k - 1 from the Cunningham
-        tables.  Raises ValueError if the complete factorization of
-        2^k - 1 is not available.
+        For Mersenne prime exponents (2^k - 1 is prime), only an
+        irreducibility test is needed.  For other k, uses precomputed
+        prime factors of 2^k - 1 from the Cunningham tables.
         """
+        cp = self._cpp_gen.char_poly()
+
+        # Fast path: for Mersenne prime exponents, irreducible = primitive
+        if _is_mersenne_prime_exponent(self.k):
+            return _cpp.is_irreducible(cp, self.k)
+
         factors = _get_factors_for_k(self.k)
         if factors is None:
             raise ValueError(
@@ -316,7 +322,6 @@ class Generateur:
                 f"Regenerate primitive_factors.json with a larger range "
                 f"or provide the missing factors."
             )
-        cp = self._cpp_gen.char_poly()
         return _cpp.is_primitive_with_factors(
             cp, self.k, [str(p) for p in factors]
         )

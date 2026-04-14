@@ -28,71 +28,166 @@ void Generateur::get_transition_state(uint64_t* out_words, int out_nwords) const
         out_words[i] = 0;
 }
 
-// ── Berlekamp-Massey (char_poly) ─────────────────────────────────────────
+// ── Packed Berlekamp-Massey ──────────────────────────────────────────────
+// Polynomials C, B and the output sequence are stored as packed uint64_t
+// arrays (MSB-first, matching BitVect convention).  This gives ~64×
+// speedup over the element-wise int-array version for the inner loop.
 
-BitVect Generateur::char_poly() const {
-    int K = k_;
+namespace {
 
-    // Create a copy of self
-    auto gen = copy();
+inline int pk_get(const uint64_t* data, int i) {
+    return (data[i >> 6] >> (63 - (i & 63))) & 1;
+}
 
-    // Init with canonical vector (bit 0 set)
-    BitVect init_bv(K);
-    init_bv.set_bit(0, 1);
-    gen->init(init_bv);
+inline void pk_set1(uint64_t* data, int i) {
+    data[i >> 6] |= 1ULL << (63 - (i & 63));
+}
 
-    // Collect 2*K output bits: MSB of output each time
-    std::vector<int> seq(2 * K, 0);
-    for (int i = 0; i < 2 * K; i++) {
-        gen->next();
-        // Get MSB of output (bit 0) — uses get_output() to handle
-        // generators with circular buffers or output rotation
-        seq[i] = gen->get_output().get_bit(0);
+// Extract 64 contiguous bits starting at bit position pos.
+// Caller must ensure data[] has ≥ 1 word of padding at the end.
+inline uint64_t pk_extract64(const uint64_t* data, int pos) {
+    int w = pos >> 6;
+    int b = pos & 63;
+    if (b == 0) return data[w];
+    return (data[w] << b) | (data[w + 1] >> (64 - b));
+}
+
+// C ^= (B right-shifted by 'shift' bits).
+// Polynomial semantics: C(z) += z^shift · B(z).
+static void pk_shift_xor(uint64_t* C, const uint64_t* B, int shift, int nw) {
+    int ws = shift >> 6;
+    int bs = shift & 63;
+    if (ws >= nw) return;
+    if (bs == 0) {
+        for (int i = nw - 1; i >= ws; i--)
+            C[i] ^= B[i - ws];
+    } else {
+        int comp = 64 - bs;
+        for (int i = nw - 1; i > ws; i--)
+            C[i] ^= (B[i - ws] >> bs) | (B[i - ws - 1] << comp);
+        C[ws] ^= B[0] >> bs;
     }
+}
 
-    // Berlekamp-Massey algorithm (SequenceMinimalPolynomial)
-    std::vector<int> C(K + 1, 0);
-    std::vector<int> B(K + 1, 0);
-    C[0] = B[0] = 1;
+// Core packed BM.  Runs the generator from init_state for 2K steps.
+// Returns linear complexity L.
+// If out_poly is non-null, stores the connection polynomial as a BitVect.
+static int packed_bm(const Generateur& gen, const BitVect& init_state,
+                     int K, BitVect* out_poly)
+{
+    auto g = gen.copy();
+    g->init(init_state);
+
+    int N_total = 2 * K;
+    int nw_seq  = (N_total + 63) / 64 + 2;  // +2 padding for pk_extract64
+    int nw_poly = (K + 1 + 63) / 64 + 1;    // +1 padding
+
+    // Reversed sequence: rseq bit i stores s[N_total-1-i].
+    // This makes the discrepancy window contiguous for word-level AND+popcount.
+    std::vector<uint64_t> rseq(nw_seq, 0);
+
+    std::vector<uint64_t> C(nw_poly, 0);
+    std::vector<uint64_t> B(nw_poly, 0);
+    std::vector<uint64_t> T(nw_poly);  // pre-allocated temp
+
+    C[0] = 1ULL << 63;  // C[0] = 1 (bit 0 = MSB)
+    B[0] = 1ULL << 63;  // B[0] = 1
+
     int Len = 0;
     int x = 1;
 
-    for (int N = 0; N < 2 * K; N++) {
-        int d = seq[N];
-        for (int j = 1; j <= Len; j++) {
-            if (C[j])
-                d ^= seq[N - j];
+    for (int N = 0; N < N_total; N++) {
+        g->next();
+        int sN = g->get_output().get_bit(0);
+
+        if (sN) pk_set1(rseq.data(), N_total - 1 - N);
+
+        // Discrepancy: d = Σ_{j=0}^{Len} C[j] · s[N-j]
+        //              = Σ_{j=0}^{Len} C[j] · rseq[base + j]
+        int base = N_total - 1 - N;
+        int d = 0;
+        int nw_active = (Len + 64) / 64;
+        for (int w = 0; w < nw_active; w++) {
+            uint64_t cw = C[w];
+            if (cw)
+                d ^= __builtin_popcountll(cw & pk_extract64(rseq.data(), base + 64 * w));
         }
         d &= 1;
 
         if (d == 0) {
-            x += 1;
+            x++;
         } else if (2 * Len > N) {
-            // C = C - x^x * B (in GF(2): XOR)
-            std::vector<int> temp(K + 1, 0);
-            for (int i = 0; i + x <= K; i++)
-                temp[i + x] = B[i];
-            for (int i = 0; i <= K; i++)
-                C[i] ^= temp[i];
-            x += 1;
+            pk_shift_xor(C.data(), B.data(), x, nw_poly);
+            x++;
         } else {
-            std::vector<int> T = C;
-            std::vector<int> temp(K + 1, 0);
-            for (int i = 0; i + x <= K; i++)
-                temp[i + x] = B[i];
-            for (int i = 0; i <= K; i++)
-                C[i] ^= temp[i];
+            std::memcpy(T.data(), C.data(), nw_poly * sizeof(uint64_t));
+            pk_shift_xor(C.data(), B.data(), x, nw_poly);
             Len = N + 1 - Len;
-            B = T;
+            std::memcpy(B.data(), T.data(), nw_poly * sizeof(uint64_t));
             x = 1;
         }
     }
 
-    // Pack into BitVect: public bit j holds C[K - j]
-    BitVect bv(K);
-    for (int j = 0; j < K; j++)
-        bv.set_bit(j, C[K - j]);
-    return bv;
+    if (out_poly) {
+        *out_poly = BitVect(K);
+        for (int j = 0; j < K; j++)
+            if (pk_get(C.data(), K - j))
+                out_poly->set_bit(j, 1);
+    }
+    return Len;
+}
+
+// ── Splitmix64 seed generator ───────────────────────────────────────────
+
+inline uint64_t splitmix64(uint64_t& state) {
+    state += 0x9e3779b97f4a7c15ULL;
+    uint64_t z = state;
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+    return z ^ (z >> 31);
+}
+
+}  // namespace
+
+// ── char_poly (default: packed Berlekamp-Massey) ────────────────────────
+
+BitVect Generateur::char_poly() const {
+    int K = k_;
+    BitVect init_bv(K);
+    init_bv.set_bit(0, 1);
+    BitVect result;
+    packed_bm(*this, init_bv, K, &result);
+    return result;
+}
+
+// ── LCP-based full period test ──────────────────────────────────────────
+// For Mersenne prime exponents: irreducible ⟺ primitive.
+// Run BM with num_seeds random seeds.  If any gives L < k, the
+// characteristic polynomial is reducible (certain).  If all give L = k,
+// it is primitive with probability ≥ 1 − 2^{−num_seeds}.
+
+bool is_full_period_lcp(const Generateur& gen, int num_seeds) {
+    int K = gen.k();
+    for (int seed_idx = 0; seed_idx < num_seeds; seed_idx++) {
+        BitVect seed(K);
+        uint64_t sm = (uint64_t)(seed_idx + 1) * 0x123456789ABCDEFULL;
+        for (int w = 0; w < seed.nwords(); w++)
+            seed.data()[w] = splitmix64(sm);
+        // Clear tail bits
+        int rem = K % 64;
+        if (rem != 0)
+            seed.data()[seed.nwords() - 1] &= (~0ULL) << (64 - rem);
+        // Ensure nonzero
+        bool all_zero = true;
+        for (int w = 0; w < seed.nwords() && all_zero; w++)
+            if (seed.data()[w]) all_zero = false;
+        if (all_zero) seed.set_bit(0, 1);
+
+        int L = packed_bm(gen, seed, K, nullptr);
+        if (L != K)
+            return false;
+    }
+    return true;
 }
 
 // ── Primitivity test ─────────────────────────────────────────────────────
@@ -143,7 +238,6 @@ bool Generateur::is_full_period() const {
     int K = k_;
     BitVect cp = char_poly();
 
-    // Build NTL polynomial: f(x) = x^K + sum of cp bits
     NTL::GF2X f;
     NTL::SetCoeff(f, K);
     for (int j = 0; j < K; j++)
