@@ -9,7 +9,6 @@ Generateur.create() which resolves them to C++ class names.
 from __future__ import annotations
 
 import re
-import sys
 
 
 

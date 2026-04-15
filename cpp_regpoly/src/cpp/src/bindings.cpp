@@ -9,6 +9,7 @@
 #include "factory.h"
 #include "lattice_polys.h"
 #include "harase_lattice.h"
+#include "lattice_optimizer.h"
 
 #include <NTL/GF2X.h>
 #include <NTL/GF2XFactoring.h>
@@ -289,6 +290,69 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
     }, py::arg("gens"), py::arg("trans"),
        py::arg("kg"), py::arg("L"), py::arg("maxL"),
        py::arg("delta"), py::arg("mse"));
+
+    // ── LatticeOptCache (dual lattice StackBase for optimizer) ─────────
+
+    py::class_<LatticeOptCache>(m, "LatticeOptCache")
+        .def(py::init([](const py::list& gens_py, const py::list& trans_py,
+                         int kg, int L) {
+            std::vector<Generateur*> gens;
+            for (auto item : gens_py) gens.push_back(item.cast<Generateur*>());
+            std::vector<std::vector<Transformation*>> trans;
+            for (auto ct : trans_py) {
+                std::vector<Transformation*> chain;
+                for (auto t : ct) chain.push_back(t.cast<Transformation*>());
+                trans.push_back(chain);
+            }
+            return LatticeOptCache(gens, trans, kg, L);
+        }), py::arg("gens"), py::arg("trans"), py::arg("kg"), py::arg("L"))
+        .def("compute_all", &LatticeOptCache::compute_all)
+        .def("compute_gap", &LatticeOptCache::compute_gap, py::arg("v"))
+        .def("refresh_inv_g0", &LatticeOptCache::refresh_inv_g0)
+        .def("rebuild", &LatticeOptCache::rebuild)
+        .def("reset_step", &LatticeOptCache::reset_step)
+        .def("step", &LatticeOptCache::step, py::arg("v"));
+
+    // ── PISCache (StackBase strategy for tempering optimizer) ──────────
+
+    py::class_<PISCache>(m, "PISCache")
+        .def(py::init([](const py::list& gens_py, const py::list& trans_py,
+                         int kg, int L) {
+            std::vector<Generateur*> gens;
+            for (auto item : gens_py) gens.push_back(item.cast<Generateur*>());
+            std::vector<std::vector<Transformation*>> trans;
+            for (auto ct : trans_py) {
+                std::vector<Transformation*> chain;
+                for (auto t : ct) chain.push_back(t.cast<Transformation*>());
+                trans.push_back(chain);
+            }
+            return PISCache(gens, trans, kg, L);
+        }), py::arg("gens"), py::arg("trans"), py::arg("kg"), py::arg("L"))
+        .def("compute_all", &PISCache::compute_all)
+        .def("restore_and_reduce", &PISCache::restore_and_reduce,
+             py::arg("v"))
+        .def("kg", &PISCache::kg)
+        .def("L", &PISCache::L);
+
+    // ── compute_kv (single-resolution PIS) ────────────────────────────
+
+    m.def("compute_kv",
+          [](const py::list& gens_py,
+             const py::list& trans_py,
+             int kg, int v) -> int {
+        std::vector<Generateur*> gens;
+        for (auto item : gens_py)
+            gens.push_back(item.cast<Generateur*>());
+        std::vector<std::vector<Transformation*>> trans;
+        for (auto comp_trans : trans_py) {
+            std::vector<Transformation*> chain;
+            for (auto t : comp_trans)
+                chain.push_back(t.cast<Transformation*>());
+            trans.push_back(chain);
+        }
+        return compute_kv(gens, trans, kg, v);
+    }, py::arg("gens"), py::arg("trans"),
+       py::arg("kg"), py::arg("v"));
 
     // ── Generator subclass registrations ────────────────────────────────
     register_generator_types(m);

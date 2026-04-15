@@ -137,16 +137,6 @@ static int packed_bm(const Generateur& gen, const BitVect& init_state,
     return Len;
 }
 
-// ── Splitmix64 seed generator ───────────────────────────────────────────
-
-inline uint64_t splitmix64(uint64_t& state) {
-    state += 0x9e3779b97f4a7c15ULL;
-    uint64_t z = state;
-    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
-    z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
-    return z ^ (z >> 31);
-}
-
 }  // namespace
 
 // ── char_poly (default: packed Berlekamp-Massey) ────────────────────────
@@ -158,36 +148,6 @@ BitVect Generateur::char_poly() const {
     BitVect result;
     packed_bm(*this, init_bv, K, &result);
     return result;
-}
-
-// ── LCP-based full period test ──────────────────────────────────────────
-// For Mersenne prime exponents: irreducible ⟺ primitive.
-// Run BM with num_seeds random seeds.  If any gives L < k, the
-// characteristic polynomial is reducible (certain).  If all give L = k,
-// it is primitive with probability ≥ 1 − 2^{−num_seeds}.
-
-bool is_full_period_lcp(const Generateur& gen, int num_seeds) {
-    int K = gen.k();
-    for (int seed_idx = 0; seed_idx < num_seeds; seed_idx++) {
-        BitVect seed(K);
-        uint64_t sm = (uint64_t)(seed_idx + 1) * 0x123456789ABCDEFULL;
-        for (int w = 0; w < seed.nwords(); w++)
-            seed.data()[w] = splitmix64(sm);
-        // Clear tail bits
-        int rem = K % 64;
-        if (rem != 0)
-            seed.data()[seed.nwords() - 1] &= (~0ULL) << (64 - rem);
-        // Ensure nonzero
-        bool all_zero = true;
-        for (int w = 0; w < seed.nwords() && all_zero; w++)
-            if (seed.data()[w]) all_zero = false;
-        if (all_zero) seed.set_bit(0, 1);
-
-        int L = packed_bm(gen, seed, K, nullptr);
-        if (L != K)
-            return false;
-    }
-    return true;
 }
 
 // ── Primitivity test ─────────────────────────────────────────────────────

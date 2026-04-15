@@ -36,6 +36,18 @@ struct LatticeVec {
 
     LatticeVec() : J(0), next(0), count(0), zero(false) {}
 
+    // Deep copy of this vector (copies all generator states)
+    LatticeVec deep_copy() const {
+        LatticeVec v;
+        v.J = J;
+        v.trans = trans;
+        for (auto& g : gens) v.gens.push_back(g->copy());
+        v.next = next;
+        v.count = count;
+        v.zero = zero;
+        return v;
+    }
+
     // Clone from template generators (deep copy of all components)
     static LatticeVec from_generators(
         const std::vector<Generateur*>& tpl,
@@ -255,4 +267,230 @@ MeLatResult test_me_lat_harase(
         if (result.ecart[l] == -1) result.ecart[l] = INT_MAX;
     }
     return result;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// compute_kv — PIS for a single resolution v.
+// Same algorithm as test_me_lat_harase but only for one resolution.
+// Cost: O(k/v) generator steps.
+// ══════════════════════════════════════════════════════════════════════════
+
+int compute_kv(
+    const std::vector<Generateur*>& gens,
+    const std::vector<std::vector<Transformation*>>& trans,
+    int kg, int v)
+{
+    // Build v+1 basis vectors: v standard + 1 generator
+    int size = v + 1;
+    std::vector<LatticeVec> basis(size);
+
+    // Standard basis: output bit i = 1 once, then 0
+    for (int i = 0; i < v; i++) {
+        basis[i] = LatticeVec::from_generators(gens, trans);
+        basis[i].set_zero();
+        basis[i].count = 0;
+        basis[i].zero = false;
+        basis[i].next = 1ULL << (63 - i);
+    }
+
+    // Generator vector: canonical init, advance one step
+    basis[v] = LatticeVec::from_generators(gens, trans);
+    {
+        int pos = 0;
+        for (int j = 0; j < basis[v].J; j++) {
+            int ki = basis[v].gens[j]->k();
+            BitVect e0(ki);
+            e0.set_bit(0, 1);
+            basis[v].gens[j]->init(e0);
+            pos += ki;
+        }
+    }
+    basis[v].next_state(v);
+
+    // PIS reduction at resolution v
+    int pivot_index = calc_1pos(basis[v].next);
+    while (!basis[v].zero) {
+        if (pivot_index == -1 || pivot_index >= v) break;
+
+        if (basis[v].count > basis[pivot_index].count)
+            std::swap(basis[v], basis[pivot_index]);
+
+        basis[v].add(basis[pivot_index]);
+
+        if (basis[v].next == 0) {
+            basis[v].next_state(v);
+            pivot_index = calc_1pos(basis[v].next);
+        } else {
+            pivot_index = calc_1pos(basis[v].next);
+        }
+    }
+
+    // k(v) = min count among surviving basis vectors
+    int min_count = basis[0].count;
+    for (int i = 1; i < v; i++)
+        if (min_count > basis[i].count)
+            min_count = basis[i].count;
+
+    return std::min(min_count, kg / v);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PISCache — StackBase strategy for tempering optimization
+//
+// compute_all() runs the full PIS (v = L..1), saving a snapshot of the
+// basis BEFORE each reduction.  restore_and_reduce(v) restores the
+// snapshot at v, rebuilds the generator vector (which depends on the
+// bitmask), and re-reduces.  Cost: O(k/v) per restore_and_reduce call.
+// ══════════════════════════════════════════════════════════════════════════
+
+struct PISCache::Impl {
+    std::vector<Generateur*> gens;
+    std::vector<std::vector<Transformation*>> trans;
+    int kg;
+    int L;
+
+    // Current basis (L+1 vectors)
+    std::vector<LatticeVec> basis;
+
+    // Cached snapshots: stack[v] = basis state BEFORE reducing at resolution v.
+    // stack[v] has v+1 vectors (indices 0..v).
+    std::vector<std::vector<LatticeVec>> stack;
+
+    void init_basis() {
+        int v = L;
+        basis.resize(v + 1);
+
+        // Standard basis vectors
+        for (int i = 0; i < v; i++) {
+            basis[i] = LatticeVec::from_generators(gens, trans);
+            basis[i].set_zero();
+            basis[i].count = 0;
+            basis[i].zero = false;
+            basis[i].next = 1ULL << (63 - i);
+        }
+
+        // Generator vector
+        basis[v] = LatticeVec::from_generators(gens, trans);
+        for (int j = 0; j < basis[v].J; j++) {
+            int ki = basis[v].gens[j]->k();
+            BitVect e0(ki);
+            e0.set_bit(0, 1);
+            basis[v].gens[j]->init(e0);
+        }
+        basis[v].next_state(v);
+    }
+
+    // Deep-copy the basis vectors 0..bit_len into a snapshot
+    std::vector<LatticeVec> snapshot(int bit_len) {
+        std::vector<LatticeVec> snap;
+        snap.reserve(bit_len + 1);
+        for (int i = 0; i <= bit_len; i++)
+            snap.push_back(basis[i].deep_copy());
+        return snap;
+    }
+
+    // Restore from a snapshot
+    void restore(int bit_len, const std::vector<LatticeVec>& snap) {
+        for (int i = 0; i <= bit_len && i < (int)snap.size(); i++)
+            basis[i] = snap[i].deep_copy();
+    }
+
+    // PIS reduction at a single resolution
+    int reduce_at(int bit_len) {
+        int pivot_index = calc_1pos(basis[bit_len].next);
+        while (!basis[bit_len].zero) {
+            if (pivot_index == -1 || pivot_index >= bit_len) break;
+            if (basis[bit_len].count > basis[pivot_index].count)
+                std::swap(basis[bit_len], basis[pivot_index]);
+            basis[bit_len].add(basis[pivot_index]);
+            if (basis[bit_len].next == 0) {
+                basis[bit_len].next_state(bit_len);
+                pivot_index = calc_1pos(basis[bit_len].next);
+            } else {
+                pivot_index = calc_1pos(basis[bit_len].next);
+            }
+        }
+        int min_count = basis[0].count;
+        for (int i = 1; i < bit_len; i++)
+            if (min_count > basis[i].count) min_count = basis[i].count;
+        return std::min(min_count, kg / bit_len);
+    }
+
+    // Adjust basis from resolution bit_len to bit_len-1
+    void adjust(int bit_len) {
+        int new_len = bit_len - 1;
+        uint64_t mask = (new_len < 64) ? (~0ULL << (64 - new_len)) : ~0ULL;
+        for (int i = 0; i <= bit_len; i++) {
+            basis[i].next &= mask;
+            if (basis[i].next == 0 && !basis[i].zero)
+                basis[i].next_state(new_len);
+        }
+    }
+
+    // Rebuild the generator vector (basis[v]) from scratch for resolution v.
+    // Called after a bitmask perturbation to reflect the new tempering.
+    void rebuild_generator_vec(int v) {
+        basis[v] = LatticeVec::from_generators(gens, trans);
+        for (int j = 0; j < basis[v].J; j++) {
+            int ki = basis[v].gens[j]->k();
+            BitVect e0(ki);
+            e0.set_bit(0, 1);
+            basis[v].gens[j]->init(e0);
+        }
+        basis[v].next_state(v);
+    }
+};
+
+PISCache::PISCache(
+    const std::vector<Generateur*>& gens,
+    const std::vector<std::vector<Transformation*>>& trans,
+    int kg, int L)
+    : gens_(gens), trans_(trans), kg_(kg), L_(L),
+      impl_(std::make_shared<Impl>())
+{
+    impl_->gens = gens;
+    impl_->trans = trans;
+    impl_->kg = kg;
+    impl_->L = L;
+    impl_->stack.resize(L + 1);
+}
+
+std::vector<int> PISCache::compute_all() {
+    auto& I = *impl_;
+    I.init_basis();
+
+    std::vector<int> ecart(L_ + 1, 0);
+
+    for (int v = L_; v >= 1; v--) {
+        // Save snapshot BEFORE reducing at resolution v
+        I.stack[v] = I.snapshot(v);
+
+        // Reduce
+        int kv = I.reduce_at(v);
+        ecart[v] = kg_ / v - kv;
+
+        // Adjust for next resolution
+        if (v > 1) I.adjust(v);
+    }
+    return ecart;
+}
+
+int PISCache::restore_and_reduce(int v) {
+    auto& I = *impl_;
+
+    // Restore the cached basis at resolution v (before reduction)
+    if (v <= L_ && !I.stack[v].empty()) {
+        I.restore(v, I.stack[v]);
+    } else {
+        // No cache — rebuild from scratch
+        I.init_basis();
+        for (int bl = L_; bl > v; bl--)
+            I.adjust(bl);
+    }
+
+    // Rebuild the generator vector (depends on current bitmask)
+    I.rebuild_generator_vec(v);
+
+    // Reduce at resolution v
+    return I.reduce_at(v);
 }
