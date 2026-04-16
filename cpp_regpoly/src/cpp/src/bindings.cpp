@@ -417,21 +417,30 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
         return NTL::IterIrredTest(f) != 0;
     }, py::arg("char_poly"), py::arg("k"));
 
-    m.def("get_param_specs",
-          [](const std::string& family) -> py::list {
-        auto specs = get_param_specs(family);
+    auto specs_to_list = [](const std::vector<ParamSpec>& specs) -> py::list {
         py::list result;
         for (auto& s : specs) {
             py::dict d;
-            d["name"]       = s.name;
-            d["type"]       = s.type;
-            d["structural"] = s.structural;
+            d["name"]        = s.name;
+            d["type"]        = s.type;
+            d["structural"]  = s.structural;
             d["has_default"] = s.has_default;
-            d["default"]    = s.default_val;
-            d["rand_type"]  = s.rand_type;
-            d["rand_args"]  = s.rand_args;
+            d["default"]     = s.default_val;
+            d["rand_type"]   = s.rand_type;
+            d["rand_args"]   = s.rand_args;
+            d["optimizable"] = s.optimizable;
             result.append(d);
         }
         return result;
+    };
+
+    m.def("get_gen_param_specs",
+          [&specs_to_list](const std::string& family) -> py::list {
+        return specs_to_list(get_gen_param_specs(family));
     }, py::arg("family"));
+
+    m.def("get_trans_param_specs",
+          [&specs_to_list](const std::string& type) -> py::list {
+        return specs_to_list(get_trans_param_specs(type));
+    }, py::arg("type"));
 }

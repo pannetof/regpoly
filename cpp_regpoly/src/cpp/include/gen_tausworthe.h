@@ -1,5 +1,6 @@
 #pragma once
 #include "generateur.h"
+#include "param_spec.h"
 #include <vector>
 #include <memory>
 #include <string>
@@ -7,6 +8,9 @@
 class Tausworthe : public Generateur {
 public:
     Tausworthe(int k, const std::vector<int>& Q, int s, bool quicktaus, int L);
+
+    static std::unique_ptr<Generateur> from_params(const Params& params, int L);
+    static std::vector<ParamSpec> param_specs();
 
     std::string name() const override;
     std::string display_str() const override;

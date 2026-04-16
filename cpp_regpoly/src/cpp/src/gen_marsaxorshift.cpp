@@ -154,3 +154,76 @@ std::unique_ptr<Generateur> MarsaXorshiftGen::copy() const {
     g->state_ = state_.copy();
     return g;
 }
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> MarsaXorshiftGen::from_params(const Params& params, int L) {
+    int type = (int)params.get_int("type");
+    int w = (int)params.get_int("w", 32);
+    int r = (int)params.get_int("r", 1);
+    int m = (int)params.get_int("m", 0);
+
+    Type1Params t1{};
+    Type2xParams t2x;
+    std::vector<Tap> taps;
+    Type4Params t4;
+    std::vector<MiEntry> mi;
+
+    if (type == 1) {
+        auto abc = params.get_int_vec("shifts");
+        t1.a = abc.size() > 0 ? abc[0] : 0;
+        t1.b = abc.size() > 1 ? abc[1] : 0;
+        t1.c = abc.size() > 2 ? abc[2] : 0;
+    } else if (type >= 21 && type <= 25) {
+        t2x.p = params.get_int_vec("p");
+        t2x.q = params.get_int_vec("q");
+        t2x.p.resize(3, 0);
+        t2x.q.resize(3, 0);
+    } else if (type == 3) {
+        auto tap_pos = params.get_int_vec("tap_positions");
+        auto tap_shifts = params.get_int_vec("tap_shifts");
+        for (size_t i = 0; i < tap_pos.size(); i++) {
+            taps.push_back({tap_pos[i],
+                (i < tap_shifts.size()) ? tap_shifts[i] : 0});
+        }
+    } else if (type == 4) {
+        t4.p = params.get_int_vec("p");
+        t4.q = params.get_int_vec("q");
+        t4.p.resize(2, 0);
+        t4.q.resize(2, 0);
+    } else if (type == 100) {
+        auto mi_pos = params.get_int_vec("mi_positions");
+        auto mi_shifts = params.get_int_vec("mi_shifts");
+        auto mi_counts = params.get_int_vec("mi_counts");
+        int offset = 0;
+        for (size_t i = 0; i < mi_pos.size(); i++) {
+            MiEntry entry;
+            entry.position = mi_pos[i];
+            int count = (i < mi_counts.size()) ? mi_counts[i] : 1;
+            for (int j = 0; j < count && offset < (int)mi_shifts.size(); j++) {
+                entry.shifts.push_back(mi_shifts[offset++]);
+            }
+            mi.push_back(entry);
+        }
+    }
+
+    return std::make_unique<MarsaXorshiftGen>(
+        type, w, r, m, t1, t2x, taps, t4, mi, L);
+}
+
+std::vector<ParamSpec> MarsaXorshiftGen::param_specs() {
+    return {
+        {"type",           "int",     true,  false, 0,  "",     "", false},
+        {"w",              "int",     true,  true,  32, "",     "", false},
+        {"r",              "int",     true,  true,  1,  "",     "", false},
+        {"m",              "int",     true,  true,  0,  "",     "", false},
+        {"shifts",         "int_vec", false, false, 0,  "none", "", false},
+        {"p",              "int_vec", false, false, 0,  "none", "", false},
+        {"q",              "int_vec", false, false, 0,  "none", "", false},
+        {"tap_positions",  "int_vec", false, false, 0,  "none", "", false},
+        {"tap_shifts",     "int_vec", false, false, 0,  "none", "", false},
+        {"mi_positions",   "int_vec", false, false, 0,  "none", "", false},
+        {"mi_shifts",      "int_vec", false, false, 0,  "none", "", false},
+        {"mi_counts",      "int_vec", false, false, 0,  "none", "", false},
+    };
+}

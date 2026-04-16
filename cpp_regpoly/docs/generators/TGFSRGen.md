@@ -73,11 +73,11 @@ search:
   limit:
     max_tries: 10000
 
-structural:
+structural_params:
   w: 32
   r: 3
 
-search_params:
+fixed_params:
   m:     # randomized in [1, 2]
   a:     # randomized 32-bit mask
 ```
@@ -93,11 +93,11 @@ search:
     max_tries: 50000
     max_seconds: 30
 
-structural:
+structural_params:
   w: 32
   r: 7
 
-search_params:
+fixed_params:
   m: 4               # fixed offset
   a:                  # randomized 32-bit mask
 ```
@@ -111,11 +111,11 @@ search:
   limit:
     max_tries: 200000
 
-structural:
+structural_params:
   w: 32
   r: 25
 
-search_params:
+fixed_params:
   m:     # randomized in [1, 24]
   a:     # randomized 32-bit mask
 ```

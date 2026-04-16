@@ -1,4 +1,5 @@
 #include "gen_f2w_lfsr.h"
+#include "gen_f2w_polylcg.h"
 
 GenF2wLFSR::GenF2wLFSR(int w, int r, int nbcoeff,
                          const std::vector<int>& nocoeff,
@@ -63,4 +64,24 @@ std::unique_ptr<Generateur> GenF2wLFSR::copy() const {
     p->table_ = table_;
     p->state_bits_ = state_bits_;
     return p;
+}
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> GenF2wLFSR::from_params(const Params& params, int L) {
+    int w = (int)params.get_int("w");
+    int r = (int)params.get_int("r");
+    uint64_t modM = (uint64_t)params.get_int("modM");
+    bool normal_basis = params.get_bool("normal_basis", false);
+    int step_count = (int)params.get_int("step", 1);
+    auto nocoeff_vals = params.get_int_vec("nocoeff");
+    auto coeff_vals = params.get_uint_vec("coeff");
+    int nbcoeff = (int)nocoeff_vals.size();
+    return std::make_unique<GenF2wLFSR>(
+        w, r, nbcoeff, nocoeff_vals, coeff_vals,
+        modM, normal_basis, step_count, L);
+}
+
+std::vector<ParamSpec> GenF2wLFSR::param_specs() {
+    return GenF2wPolyLCG::param_specs();  // same parameter layout
 }

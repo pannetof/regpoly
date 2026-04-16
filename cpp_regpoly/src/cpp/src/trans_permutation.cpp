@@ -38,3 +38,20 @@ void PermutationTrans::update(const Params& params) {
     p_ = (int)params.get_int("p", p_);
     q_ = (int)params.get_int("q", q_);
 }
+
+// ── Factory method ─────────────────────────────────────────────────────
+
+std::unique_ptr<Transformation> PermutationTrans::from_params(const Params& params) {
+    int w = (int)params.get_int("w");
+    int p = (int)params.get_int("p");
+    int q = (int)params.get_int("q");
+    return std::make_unique<PermutationTrans>(w, p, q);
+}
+
+std::vector<ParamSpec> PermutationTrans::param_specs() {
+    return {
+        {"w", "int", true,  false, 0, "",      "", false},
+        {"p", "int", false, false, 0, "range", "0,w-1", false},
+        {"q", "int", false, false, 0, "range", "0,w-1", false},
+    };
+}

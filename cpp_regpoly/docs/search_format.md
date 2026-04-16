@@ -13,11 +13,11 @@ search:
     max_tries: <stop after N attempts>
     max_seconds: <stop after N seconds>
 
-structural:
+structural_params:
   <param>: <value>
   ...
 
-search_params:
+fixed_params:
   <param>: <value>       # fixed to this value
   <param>:               # omitted value → randomized
 ```
@@ -38,7 +38,7 @@ Both limits are optional. If both are given, whichever is reached first
 stops the search. If neither is given, the search runs forever (Ctrl-C
 to stop).
 
-### `structural`
+### `structural_params`
 
 Parameters that define the period k. These must always be provided and
 are never randomized.
@@ -46,7 +46,7 @@ are never randomized.
 Call `Generateur.parameters(family)` to see which parameters are
 structural for a given family.
 
-### `search_params`
+### `fixed_params`
 
 Parameters that are varied during the search. Two cases:
 
@@ -54,7 +54,7 @@ Parameters that are varied during the search. Two cases:
 - **Key with no value** (`a:`): randomized on each try using the
   generator's built-in randomization hints.
 
-Parameters not listed in `search_params` that are non-structural and
+Parameters not listed in `fixed_params` that are non-structural and
 have randomization hints will also be randomized automatically.
 
 ## Output Format
@@ -64,7 +64,7 @@ The search writes a YAML file with all found generators:
 ```yaml
 family: TGFSRGen
 L: 32
-structural:
+structural_params:
   w: 32
   r: 3
 summary:

@@ -79,3 +79,22 @@ void LaggedTempering::update(const Params& params) {
     L_ = (int)params.get_int("L", L_);
     b_ = (uint64_t)params.get_int("b", (int64_t)b_);
 }
+
+// ── Factory method ─────────────────────────────────────────────────────
+
+std::unique_ptr<Transformation> LaggedTempering::from_params(const Params& params) {
+    int w = (int)params.get_int("w");
+    int sigma = (int)params.get_int("sigma");
+    int L = (int)params.get_int("L");
+    uint64_t b = (uint64_t)params.get_int("b", 0);
+    return std::make_unique<LaggedTempering>(w, sigma, L, b);
+}
+
+std::vector<ParamSpec> LaggedTempering::param_specs() {
+    return {
+        {"w",     "int", true,  false, 0, "",        "", false},
+        {"sigma", "int", false, false, 0, "range",   "1,w-1", false},
+        {"L",     "int", false, false, 0, "",        "", false},
+        {"b",     "int", false, false, 0, "bitmask", "w", true},
+    };
+}

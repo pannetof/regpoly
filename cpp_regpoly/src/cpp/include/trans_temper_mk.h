@@ -1,5 +1,6 @@
 #pragma once
 #include "transformation.h"
+#include "param_spec.h"
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -8,6 +9,10 @@ class TemperMKTrans : public Transformation {
 public:
     TemperMKTrans(int w, int type, int eta, int mu, int u, int l,
                   uint64_t b, uint64_t c);
+
+    static std::unique_ptr<Transformation> from_params(
+        const std::string& type_name, const Params& params);
+    static std::vector<ParamSpec> param_specs();
 
     std::string name() const override;
     std::string display_str() const override;

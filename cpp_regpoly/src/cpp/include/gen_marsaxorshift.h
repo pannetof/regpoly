@@ -1,5 +1,6 @@
 #pragma once
 #include "generateur.h"
+#include "param_spec.h"
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -43,6 +44,9 @@ public:
                      const Type4Params& t4,
                      const std::vector<MiEntry>& mi,
                      int L);
+
+    static std::unique_ptr<Generateur> from_params(const Params& params, int L);
+    static std::vector<ParamSpec> param_specs();
 
     std::string name() const override;
     std::string display_str() const override;

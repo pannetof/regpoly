@@ -106,11 +106,11 @@ search:
   limit:
     max_tries: 1000
 
-structural:
+structural_params:
   type: 1
   n: 24
 
-search_params:
+fixed_params:
   m:                                # randomized: uniform in [1, n-1]
   paramsint: [-15, -17, 13, -7]    # fixed shift parameters
 ```
@@ -124,11 +124,11 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   type: 2
   n: 24
 
-search_params:
+fixed_params:
   m: 7                                # fixed
   paramsint: [1, -15, 11, -17]        # fixed shift parameters
   paramsunsigned: [0x8ebfd028]        # fixed twist coefficient a
@@ -145,11 +145,11 @@ search:
     max_tries: 5000
     max_seconds: 60
 
-structural:
+structural_params:
   type: 3
   n: 15
 
-search_params:
+fixed_params:
   m:                                # randomized: uniform in [1, n-1]
   paramsint: [-17, 15, -22]        # fixed shift parameters
 ```

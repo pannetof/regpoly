@@ -99,7 +99,7 @@ def save_tested_generator(
     """
     # Determine family and structural params from the first component
     gen0 = comb[0]
-    family = gen0.family or "Unknown"
+    family = gen0.type_name or "Unknown"
     struct_str = structural_filename(gen0)
 
     # Build directory and find next serial number
@@ -151,10 +151,10 @@ def _single_component_data(comb: Combinaison, j: int) -> dict:
     gen = comb[j]
     comp = comb.components[j]
 
-    gen_data = {"family": gen.family, "L": gen.L}
-    if gen.create_params:
+    gen_data = {"family": gen.type_name, "L": gen.L}
+    if gen.params:
         gen_data.update({k: _yaml_safe(v)
-                         for k, v in gen.create_params.items()})
+                         for k, v in gen.params.items()})
 
     data: dict = {"generator": gen_data}
 
@@ -170,10 +170,10 @@ def _multi_component_data(comb: Combinaison) -> dict:
         gen = comb[j]
         comp = comb.components[j]
 
-        gen_data = {"family": gen.family, "L": gen.L}
-        if gen.create_params:
+        gen_data = {"family": gen.type_name, "L": gen.L}
+        if gen.params:
             gen_data.update({k: _yaml_safe(v)
-                             for k, v in gen.create_params.items()})
+                             for k, v in gen.params.items()})
 
         entry: dict = {"generator": gen_data}
         if comp.trans:
@@ -184,8 +184,8 @@ def _multi_component_data(comb: Combinaison) -> dict:
 
 
 def _trans_to_dict(t: Transformation) -> dict:
-    d = {"type": t._type}
-    d.update({k: _yaml_safe(v) for k, v in t._orig_params.items()})
+    d = {"type": t._type_name}
+    d.update({k: _yaml_safe(v) for k, v in t._params.items()})
     return d
 
 
@@ -207,8 +207,7 @@ def _load_single(data: dict) -> Combinaison:
     for t_data in data.get("tempering", []):
         trans_type = t_data["type"]
         t_params = {k: v for k, v in t_data.items() if k != "type"}
-        w_original = t_params.get("w", 0)
-        t = Transformation(trans_type, t_params, w_original)
+        t = Transformation.create(trans_type, **t_params)
         comb.components[0].add_trans(t)
 
     comb.reset()
@@ -241,8 +240,7 @@ def _load_multi(data: dict) -> Combinaison:
         for t_data in entry.get("tempering", []):
             trans_type = t_data["type"]
             t_params = {k: v for k, v in t_data.items() if k != "type"}
-            w_original = t_params.get("w", 0)
-            t = Transformation(trans_type, t_params, w_original)
+            t = Transformation.create(trans_type, **t_params)
             comb.components[j].add_trans(t)
 
     comb.reset()

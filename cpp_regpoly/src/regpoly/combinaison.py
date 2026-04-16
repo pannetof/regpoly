@@ -130,13 +130,6 @@ class Combinaison:
         comp = self.components[j]
         return comp.gens[comp.current_gen]
 
-    # -- Tempering --------------------------------------------------------
-
-    def update_trans(self) -> None:
-        """Call update_trans() on every component."""
-        for comp in self.components:
-            comp.update_trans()
-
     # -- Iterator protocol ------------------------------------------------
 
     def _make_combo_iter(self):

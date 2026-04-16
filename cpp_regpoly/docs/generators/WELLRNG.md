@@ -104,12 +104,12 @@ search:
   limit:
     max_tries: 50000
 
-structural:
+structural_params:
   w: 32
   r: 16
   p: 0
 
-search_params:
+fixed_params:
   m1:                # randomized in [1, 15]
   m2:                # randomized in [1, 15]
   m3:                # randomized in [1, 15]
@@ -132,12 +132,12 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   w: 32
   r: 624
   p: 31
 
-search_params:
+fixed_params:
   m1: 70
   m2: 179
   m3: 449
@@ -155,12 +155,12 @@ search:
   limit:
     max_tries: 100000
 
-structural:
+structural_params:
   w: 32
   r: 32
   p: 0
 
-search_params:
+fixed_params:
   m1:                # randomized
   m2:                # randomized
   m3:                # randomized

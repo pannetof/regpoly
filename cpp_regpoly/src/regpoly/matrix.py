@@ -61,7 +61,7 @@ class BitMatrix:
             "hex4"    — hexadecimal, 4-bit groups
             "hex8"    — hexadecimal, 8-bit groups
             "block"   — Unicode block characters (1 col x 2 rows)
-            "png"     — save as PNG bitmap, returns the file path
+            "braille" — Unicode braille characters (2 cols x 4 rows per char)
         """
         if fmt == "raw":
             return self._fmt_raw()
@@ -71,6 +71,8 @@ class BitMatrix:
             return self._fmt_hex(8)
         elif fmt == "block":
             return self._fmt_block()
+        elif fmt == "braille":
+            return self._fmt_braille()
         else:
             raise ValueError(f"Unknown format: {fmt!r}")
 
@@ -140,6 +142,28 @@ class BitMatrix:
                 top = self._bit(r, c)
                 bot = self._bit(r + 1, c) if r + 1 < nrows else 0
                 chars.append(_BLOCK[top * 2 + bot])
+            lines.append("".join(chars))
+        return "\n".join(lines)
+
+    def _fmt_braille(self) -> str:
+        # Each braille character encodes a 2-col x 4-row block.
+        # Dot positions within U+2800 offset:
+        #   col0: row0=0x01, row1=0x02, row2=0x04, row3=0x40
+        #   col1: row0=0x08, row1=0x10, row2=0x20, row3=0x80
+        _DOT = ((0x01, 0x08), (0x02, 0x10), (0x04, 0x20), (0x40, 0x80))
+        nrows = self.nblignes
+        ncols = self.l
+        lines = []
+        for r in range(0, nrows, 4):
+            chars = []
+            for c in range(0, ncols, 2):
+                code = 0x2800
+                for dr in range(4):
+                    for dc in range(2):
+                        if r + dr < nrows and c + dc < ncols:
+                            if self._bit(r + dr, c + dc):
+                                code |= _DOT[dr][dc]
+                chars.append(chr(code))
             lines.append("".join(chars))
         return "\n".join(lines)
 

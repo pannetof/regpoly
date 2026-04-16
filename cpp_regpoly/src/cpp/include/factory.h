@@ -16,7 +16,8 @@ std::unique_ptr<Generateur> create_generator(
 std::unique_ptr<Transformation> create_transformation(
     const std::string& type, const Params& params);
 
-std::vector<ParamSpec> get_param_specs(const std::string& family);
+std::vector<ParamSpec> get_gen_param_specs(const std::string& family);
+std::vector<ParamSpec> get_trans_param_specs(const std::string& type);
 
 // Register all generator subclass types with pybind11
 // (defined in factory.cpp where all headers are available)

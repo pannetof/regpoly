@@ -140,12 +140,12 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   type: 1
   w: 32
   r: 1
 
-search_params:
+fixed_params:
   shifts: [13, -17, 5]   # fixed: v ^= (v<<13); v ^= (v>>17); v ^= (v<<5)
 ```
 
@@ -158,13 +158,13 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   type: 4
   w: 32
   r: 8
   m: 2
 
-search_params:
+fixed_params:
   p: [-2, 17]
   q: [3, -18]
 ```
@@ -178,12 +178,12 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   type: 100
   w: 32
   r: 5
 
-search_params:
+fixed_params:
   mi_positions: [1, 2, 5]
   mi_shifts: [-28, -17, 3, -18, 13, -12]
   mi_counts: [1, 2, 3]

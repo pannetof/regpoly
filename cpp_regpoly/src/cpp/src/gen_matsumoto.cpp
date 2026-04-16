@@ -95,3 +95,27 @@ std::unique_ptr<Generateur> MatsumotoGen::copy() const {
     g->state_ = state_.copy();
     return g;
 }
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> MatsumotoGen::from_params(const Params& params, int L) {
+    int type = (int)params.get_int("type");
+    int n = (int)params.get_int("n");
+    int m = (int)params.get_int("m");
+    auto paramsint = params.get_int_vec("paramsint");
+    auto paramsunsigned_u64 = params.get_uint_vec("paramsunsigned");
+    std::vector<uint32_t> paramsunsigned;
+    for (auto v : paramsunsigned_u64)
+        paramsunsigned.push_back((uint32_t)v);
+    return std::make_unique<MatsumotoGen>(type, n, m, paramsint, paramsunsigned, L);
+}
+
+std::vector<ParamSpec> MatsumotoGen::param_specs() {
+    return {
+        {"type",           "int",      true,  false, 0, "",     "", false},
+        {"n",              "int",      true,  false, 0, "",     "", false},
+        {"m",              "int",      false, false, 0, "range","1,n-1", false},
+        {"paramsint",      "int_vec",  false, false, 0, "none", "", false},
+        {"paramsunsigned", "uint_vec", false, false, 0, "none", "", false},
+    };
+}

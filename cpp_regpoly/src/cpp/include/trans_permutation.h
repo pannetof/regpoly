@@ -1,11 +1,15 @@
 #pragma once
 #include "transformation.h"
+#include "param_spec.h"
 #include <memory>
 #include <string>
 
 class PermutationTrans : public Transformation {
 public:
     PermutationTrans(int w, int p, int q);
+
+    static std::unique_ptr<Transformation> from_params(const Params& params);
+    static std::vector<ParamSpec> param_specs();
 
     std::string name() const override;
     std::string display_str() const override;

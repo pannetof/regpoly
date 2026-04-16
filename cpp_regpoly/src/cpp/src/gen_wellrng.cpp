@@ -196,3 +196,44 @@ std::unique_ptr<Generateur> WELLRNG::copy() const {
     g->umaskp_ = umaskp_;
     return g;
 }
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> WELLRNG::from_params(const Params& params, int L) {
+    int w = (int)params.get_int("w", 32);
+    int r = (int)params.get_int("r");
+    int p = (int)params.get_int("p");
+    int m1 = (int)params.get_int("m1");
+    int m2 = (int)params.get_int("m2");
+    int m3 = (int)params.get_int("m3");
+
+    auto mat_types = params.get_int_vec("mat_types");
+    auto mat_pi = params.get_int_vec("mat_pi");
+    auto mat_pu_u64 = params.get_uint_vec("mat_pu");
+
+    std::vector<MatrixEntry> matrices(8);
+    for (int j = 0; j < 8; j++) {
+        matrices[j].type = (j < (int)mat_types.size()) ? mat_types[j] : 1;
+        for (int x = 0; x < 3; x++) {
+            int idx = j * 3 + x;
+            matrices[j].paramsint[x] = (idx < (int)mat_pi.size()) ? mat_pi[idx] : 0;
+            matrices[j].paramsulong[x] = (idx < (int)mat_pu_u64.size())
+                ? mat_pu_u64[idx] : 0;
+        }
+    }
+    return std::make_unique<WELLRNG>(w, r, p, m1, m2, m3, matrices, L);
+}
+
+std::vector<ParamSpec> WELLRNG::param_specs() {
+    return {
+        {"w",         "int",      true,  true,  32, "",        "", false},
+        {"r",         "int",      true,  false, 0,  "",        "", false},
+        {"p",         "int",      true,  false, 0,  "",        "", false},
+        {"m1",        "int",      false, false, 0,  "range",   "1,r-1", false},
+        {"m2",        "int",      false, false, 0,  "range",   "1,r-1", false},
+        {"m3",        "int",      false, false, 0,  "range",   "1,r-1", false},
+        {"mat_types", "int_vec",  false, false, 0,  "none",    "", false},
+        {"mat_pi",    "int_vec",  false, false, 0,  "none",    "", false},
+        {"mat_pu",    "uint_vec", false, false, 0,  "none",    "", false},
+    };
+}

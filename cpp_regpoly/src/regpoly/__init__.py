@@ -13,6 +13,9 @@ from regpoly.combinaison import Combinaison
 from regpoly.transformation import Transformation
 from regpoly.legacy_reader import LegacyReader
 from regpoly.seek import Seek
+from regpoly.search_primitive import PrimitiveSearch
+from regpoly.tempering_optimizer import TemperingOptimizer
+from regpoly.tempering_search import TemperingSearch
 
 __all__ = [
     "BitVect",
@@ -23,4 +26,7 @@ __all__ = [
     "Transformation",
     "LegacyReader",
     "Seek",
+    "PrimitiveSearch",
+    "TemperingOptimizer",
+    "TemperingSearch",
 ]

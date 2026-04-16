@@ -1,5 +1,6 @@
 #pragma once
 #include "bitvect.h"
+#include "params.h"
 #include <memory>
 #include <string>
 #include <sstream>

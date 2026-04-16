@@ -77,12 +77,12 @@ search:
   limit:
     max_tries: 100000
 
-structural:
+structural_params:
   w: 32
   r: 624
   p: 31
 
-search_params:
+fixed_params:
   m:     # randomized in [1, 623]
   a:     # randomized 32-bit mask
 ```
@@ -98,12 +98,12 @@ search:
     max_tries: 50000
     max_seconds: 30
 
-structural:
+structural_params:
   w: 32
   r: 351
   p: 19
 
-search_params:
+fixed_params:
   m: 175            # fixed near r/2
   a:                # randomized 32-bit mask
 ```
@@ -117,12 +117,12 @@ search:
   limit:
     max_tries: 10000
 
-structural:
+structural_params:
   w: 32
   r: 3
   p: 0
 
-search_params:
+fixed_params:
   m:     # randomized in [1, 2]
   a:     # randomized 32-bit mask
 ```

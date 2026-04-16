@@ -1,5 +1,6 @@
 #pragma once
 #include "transformation.h"
+#include "param_spec.h"
 #include <cstdint>
 
 /**
@@ -22,6 +23,9 @@
 class LaggedTempering : public Transformation {
 public:
     LaggedTempering(int w, int sigma, int L, uint64_t b);
+
+    static std::unique_ptr<Transformation> from_params(const Params& params);
+    static std::vector<ParamSpec> param_specs();
 
     std::string name() const override;
     std::string display_str() const override;

@@ -72,10 +72,10 @@ search:
   limit:
     max_tries: 50000
 
-structural:
+structural_params:
   k: 89
 
-search_params:
+fixed_params:
   poly:          # randomized: random primitive polynomial exponents
 ```
 
@@ -88,10 +88,10 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   k: 31
 
-search_params:
+fixed_params:
   poly: [3, 0]  # fixed: z^31 + z^3 + 1
 ```
 
@@ -106,9 +106,9 @@ search:
     max_tries: 100000
     max_seconds: 60
 
-structural:
+structural_params:
   k: 521
 
-search_params:
+fixed_params:
   poly:          # randomized
 ```

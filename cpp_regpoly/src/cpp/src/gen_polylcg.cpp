@@ -88,3 +88,21 @@ BitVect PolyLCG::char_poly() const {
         bv.set_bit(j, poly_.get_bit(k_ - 1 - j));
     return bv;
 }
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> PolyLCG::from_params(const Params& params, int L) {
+    int k = (int)params.get_int("k");
+    auto poly_list = params.get_int_vec("poly");
+    BitVect poly_bv(k);
+    for (int e : poly_list)
+        poly_bv.set_bit(k - e - 1, 1);
+    return std::make_unique<PolyLCG>(k, poly_bv, L);
+}
+
+std::vector<ParamSpec> PolyLCG::param_specs() {
+    return {
+        {"k",    "int",     true,  false, 0, "",                "", false},
+        {"poly", "int_vec", false, false, 0, "poly_exponents",  "k", false},
+    };
+}

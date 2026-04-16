@@ -79,10 +79,10 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   n: 5
 
-search_params:
+fixed_params:
   matrix: [
     0, 1, 0, 0, 0,
     0, 0, 1, 0, 0,
@@ -105,10 +105,10 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   n: 8
 
-search_params:
+fixed_params:
   matrix: [
     0, 1, 0, 0, 0, 0, 0, 0,
     0, 0, 1, 0, 0, 0, 0, 0,

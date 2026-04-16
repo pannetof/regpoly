@@ -14,7 +14,6 @@
 #include "trans_permutation.h"
 #include "trans_temper_mk.h"
 #include "trans_lag_mask.h"
-#include <algorithm>
 #include <stdexcept>
 
 #include <pybind11/pybind11.h>
@@ -38,308 +37,49 @@ void register_generator_types(py::module_& m) {
 std::unique_ptr<Generateur> create_generator(
     const std::string& family, const Params& params, int L)
 {
-    if (family == "PolyLCG") {
-        int k = (int)params.get_int("k");
-        auto poly_list = params.get_int_vec("poly");
-        BitVect poly_bv(k);
-        for (int e : poly_list)
-            poly_bv.set_bit(k - e - 1, 1);
-        return std::make_unique<PolyLCG>(k, poly_bv, L);
-
-    } else if (family == "Tausworthe") {
-        auto poly_list = params.get_int_vec("poly");
-        std::vector<int> Q(poly_list);
-        std::sort(Q.begin(), Q.end());
-        int k = Q.back();
-        bool quicktaus = params.get_bool("quicktaus", true);
-        int s;
-        if (params.has("s")) {
-            s = (int)params.get_int("s");
-        } else if (quicktaus && Q.size() >= 2) {
-            s = k - Q[Q.size() - 2];
-        } else {
-            s = 1;
-        }
-        return std::make_unique<Tausworthe>(k, Q, s, quicktaus, L);
-
-    } else if (family == "TGFSRGen") {
-        int w = (int)params.get_int("w");
-        int r = (int)params.get_int("r");
-        int m = (int)params.get_int("m");
-        uint64_t a_val = (uint64_t)params.get_int("a");
-        int k = w * r;
-        BitVect a_bv(k);
-        if (k > 32) {
-            for (int i = 0; i < 32; i++)
-                if ((a_val >> (31 - i)) & 1)
-                    a_bv.set_bit(i, 1);
-        } else {
-            for (int i = 0; i < k; i++)
-                if ((a_val >> (k - 1 - i)) & 1)
-                    a_bv.set_bit(i, 1);
-        }
-        return std::make_unique<TGFSRGen>(w, r, m, a_bv, std::min(w, L));
-
-    } else if (family == "MersenneTwister") {
-        int w = (int)params.get_int("w");
-        int r = (int)params.get_int("r");
-        int m = (int)params.get_int("m");
-        int p = (int)params.get_int("p", 0);
-        uint64_t a = (uint64_t)params.get_int("a");
-        return std::make_unique<MersenneTwister>(w, r, m, p, a, L);
-
-    } else if (family == "GenF2wPolyLCG") {
-        int w = (int)params.get_int("w");
-        int r = (int)params.get_int("r");
-        uint64_t modM = (uint64_t)params.get_int("modM");
-        bool normal_basis = params.get_bool("normal_basis", false);
-        int step_count = (int)params.get_int("step", 1);
-        auto nocoeff_vals = params.get_int_vec("nocoeff");
-        auto coeff_vals = params.get_uint_vec("coeff");
-        int nbcoeff = (int)nocoeff_vals.size();
-        return std::make_unique<GenF2wPolyLCG>(
-            w, r, nbcoeff, nocoeff_vals, coeff_vals,
-            modM, normal_basis, step_count, L);
-
-    } else if (family == "GenF2wLFSR") {
-        int w = (int)params.get_int("w");
-        int r = (int)params.get_int("r");
-        uint64_t modM = (uint64_t)params.get_int("modM");
-        bool normal_basis = params.get_bool("normal_basis", false);
-        int step_count = (int)params.get_int("step", 1);
-        auto nocoeff_vals = params.get_int_vec("nocoeff");
-        auto coeff_vals = params.get_uint_vec("coeff");
-        int nbcoeff = (int)nocoeff_vals.size();
-        return std::make_unique<GenF2wLFSR>(
-            w, r, nbcoeff, nocoeff_vals, coeff_vals,
-            modM, normal_basis, step_count, L);
-
-    } else if (family == "MatsumotoGen") {
-        int type = (int)params.get_int("type");
-        int n = (int)params.get_int("n");
-        int m = (int)params.get_int("m");
-        auto paramsint = params.get_int_vec("paramsint");
-        auto paramsunsigned_u64 = params.get_uint_vec("paramsunsigned");
-        std::vector<uint32_t> paramsunsigned;
-        for (auto v : paramsunsigned_u64)
-            paramsunsigned.push_back((uint32_t)v);
-        return std::make_unique<MatsumotoGen>(type, n, m, paramsint, paramsunsigned, L);
-
-    } else if (family == "MarsaXorshiftGen") {
-        int type = (int)params.get_int("type");
-        int w = (int)params.get_int("w", 32);
-        int r = (int)params.get_int("r", 1);
-        int m = (int)params.get_int("m", 0);
-
-        MarsaXorshiftGen::Type1Params t1{};
-        MarsaXorshiftGen::Type2xParams t2x;
-        std::vector<MarsaXorshiftGen::Tap> taps;
-        MarsaXorshiftGen::Type4Params t4;
-        std::vector<MarsaXorshiftGen::MiEntry> mi;
-
-        if (type == 1) {
-            auto abc = params.get_int_vec("shifts");
-            t1.a = abc.size() > 0 ? abc[0] : 0;
-            t1.b = abc.size() > 1 ? abc[1] : 0;
-            t1.c = abc.size() > 2 ? abc[2] : 0;
-        } else if (type >= 21 && type <= 25) {
-            t2x.p = params.get_int_vec("p");
-            t2x.q = params.get_int_vec("q");
-            t2x.p.resize(3, 0);
-            t2x.q.resize(3, 0);
-        } else if (type == 3) {
-            auto tap_pos = params.get_int_vec("tap_positions");
-            auto tap_shifts = params.get_int_vec("tap_shifts");
-            for (size_t i = 0; i < tap_pos.size(); i++) {
-                taps.push_back({tap_pos[i],
-                    (i < tap_shifts.size()) ? tap_shifts[i] : 0});
-            }
-        } else if (type == 4) {
-            t4.p = params.get_int_vec("p");
-            t4.q = params.get_int_vec("q");
-            t4.p.resize(2, 0);
-            t4.q.resize(2, 0);
-        } else if (type == 100) {
-            auto mi_pos = params.get_int_vec("mi_positions");
-            auto mi_shifts = params.get_int_vec("mi_shifts");
-            auto mi_counts = params.get_int_vec("mi_counts");
-            int offset = 0;
-            for (size_t i = 0; i < mi_pos.size(); i++) {
-                MarsaXorshiftGen::MiEntry entry;
-                entry.position = mi_pos[i];
-                int count = (i < mi_counts.size()) ? mi_counts[i] : 1;
-                for (int j = 0; j < count && offset < (int)mi_shifts.size(); j++) {
-                    entry.shifts.push_back(mi_shifts[offset++]);
-                }
-                mi.push_back(entry);
-            }
-        }
-
-        return std::make_unique<MarsaXorshiftGen>(
-            type, w, r, m, t1, t2x, taps, t4, mi, L);
-
-    } else if (family == "AC1DGen") {
-        int n = (int)params.get_int("n");
-        auto flat = params.get_int_vec("matrix");
-        std::vector<std::vector<int>> matrix(n, std::vector<int>(n, 0));
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < n; j++)
-                if (i * n + j < (int)flat.size())
-                    matrix[i][j] = flat[i * n + j];
-        return std::make_unique<AC1DGen>(n, matrix, L);
-
-    } else if (family == "WELLRNG") {
-        int w = (int)params.get_int("w", 32);
-        int r = (int)params.get_int("r");
-        int p = (int)params.get_int("p");
-        int m1 = (int)params.get_int("m1");
-        int m2 = (int)params.get_int("m2");
-        int m3 = (int)params.get_int("m3");
-
-        auto mat_types = params.get_int_vec("mat_types");
-        auto mat_pi = params.get_int_vec("mat_pi");
-        auto mat_pu_u64 = params.get_uint_vec("mat_pu");
-
-        std::vector<WELLRNG::MatrixEntry> matrices(8);
-        for (int j = 0; j < 8; j++) {
-            matrices[j].type = (j < (int)mat_types.size()) ? mat_types[j] : 1;
-            for (int x = 0; x < 3; x++) {
-                int idx = j * 3 + x;
-                matrices[j].paramsint[x] = (idx < (int)mat_pi.size()) ? mat_pi[idx] : 0;
-                matrices[j].paramsulong[x] = (idx < (int)mat_pu_u64.size())
-                    ? mat_pu_u64[idx] : 0;
-            }
-        }
-        return std::make_unique<WELLRNG>(w, r, p, m1, m2, m3, matrices, L);
-
-    } else if (family == "MELG") {
-        int w = (int)params.get_int("w", 64);
-        int N = (int)params.get_int("N");
-        int M = (int)params.get_int("M");
-        int r = (int)params.get_int("r");
-        int sigma1 = (int)params.get_int("sigma1");
-        int sigma2 = (int)params.get_int("sigma2");
-        uint64_t a = (uint64_t)params.get_int("a");
-        return std::make_unique<MELG>(w, N, M, r, sigma1, sigma2, a, L);
-    }
+    if (family == "PolyLCG")          return PolyLCG::from_params(params, L);
+    if (family == "Tausworthe")       return Tausworthe::from_params(params, L);
+    if (family == "TGFSRGen")         return TGFSRGen::from_params(params, L);
+    if (family == "MersenneTwister")  return MersenneTwister::from_params(params, L);
+    if (family == "GenF2wPolyLCG")    return GenF2wPolyLCG::from_params(params, L);
+    if (family == "GenF2wLFSR")       return GenF2wLFSR::from_params(params, L);
+    if (family == "MatsumotoGen")     return MatsumotoGen::from_params(params, L);
+    if (family == "MarsaXorshiftGen") return MarsaXorshiftGen::from_params(params, L);
+    if (family == "AC1DGen")          return AC1DGen::from_params(params, L);
+    if (family == "WELLRNG")          return WELLRNG::from_params(params, L);
+    if (family == "MELG")             return MELG::from_params(params, L);
     throw std::invalid_argument("Unknown generator family: " + family);
 }
 
 std::unique_ptr<Transformation> create_transformation(
     const std::string& type, const Params& params)
 {
-    int w = (int)params.get_int("w");
-
-    if (type == "permut") {
-        int p = (int)params.get_int("p");
-        int q = (int)params.get_int("q");
-        return std::make_unique<PermutationTrans>(w, p, q);
-
-    } else if (type == "tempMK" || type == "tempMK2") {
-        int mk_type = (type == "tempMK2") ? 2 : 1;
-        int eta = (int)params.get_int("eta");
-        int mu = (int)params.get_int("mu");
-        int u = (int)params.get_int("u", 0);
-        int l = (int)params.get_int("l", 0);
-        uint64_t b = (uint64_t)params.get_int("b", 0);
-        uint64_t c = (uint64_t)params.get_int("c", 0);
-        return std::make_unique<TemperMKTrans>(w, mk_type, eta, mu, u, l, b, c);
-
-    } else if (type == "laggedTempering") {
-        int sigma = (int)params.get_int("sigma");
-        int L = (int)params.get_int("L");
-        uint64_t b = (uint64_t)params.get_int("b", 0);
-        return std::make_unique<LaggedTempering>(w, sigma, L, b);
-    }
+    if (type == "permut")                        return PermutationTrans::from_params(params);
+    if (type == "tempMK" || type == "tempMK2")   return TemperMKTrans::from_params(type, params);
+    if (type == "laggedTempering")               return LaggedTempering::from_params(params);
     throw std::invalid_argument("Unknown transformation type: " + type);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Parameter specifications per generator family
-// ═══════════════════════════════════════════════════════════════════════════
-
-//                          name              type        struct  hasDef defVal  randType          randArgs
-#define S(n,t,s,hd,dv,rt,ra) ParamSpec{n, t, s, hd, dv, rt, ra}
-
-std::vector<ParamSpec> get_param_specs(const std::string& family)
+std::vector<ParamSpec> get_gen_param_specs(const std::string& family)
 {
-    if (family == "PolyLCG") return {
-        S("k",    "int",     true,  false, 0, "",                ""),
-        S("poly", "int_vec", false, false, 0, "poly_exponents",  "k"),
-    };
-    if (family == "Tausworthe") return {
-        S("poly",      "int_vec", true,  false, 0, "",     ""),
-        S("s",         "int",     false, true,  0, "",     ""),
-        S("quicktaus", "bool",    true,  true,  1, "",     ""),
-    };
-    if (family == "TGFSRGen") return {
-        S("w", "int", true,  false, 0, "",        ""),
-        S("r", "int", true,  false, 0, "",        ""),
-        S("m", "int", false, false, 0, "range",   "1,r-1"),
-        S("a", "int", false, false, 0, "bitmask", "w"),
-    };
-    if (family == "MersenneTwister") return {
-        S("w", "int", true,  false, 0,  "",        ""),
-        S("r", "int", true,  false, 0,  "",        ""),
-        S("p", "int", true,  true,  0,  "",        ""),
-        S("m", "int", false, false, 0,  "range",   "1,r-1"),
-        S("a", "int", false, false, 0,  "bitmask", "w"),
-    };
-    if (family == "GenF2wPolyLCG" || family == "GenF2wLFSR") return {
-        S("w",            "int",      true,  false, 0, "",             ""),
-        S("r",            "int",      true,  false, 0, "",             ""),
-        S("modM",         "int",      true,  false, 0, "",             ""),
-        S("normal_basis", "bool",     true,  true,  0, "",             ""),
-        S("step",         "int",      true,  true,  1, "",             ""),
-        S("nocoeff",      "int_vec",  true,  false, 0, "",             ""),
-        S("coeff",        "uint_vec", false, false, 0, "bitmask_vec",  "w,nocoeff"),
-    };
-    if (family == "MatsumotoGen") return {
-        S("type",           "int",      true,  false, 0, "",     ""),
-        S("n",              "int",      true,  false, 0, "",     ""),
-        S("m",              "int",      false, false, 0, "range","1,n-1"),
-        S("paramsint",      "int_vec",  false, false, 0, "none", ""),
-        S("paramsunsigned", "uint_vec", false, false, 0, "none", ""),
-    };
-    if (family == "MarsaXorshiftGen") return {
-        S("type",           "int",     true,  false, 0,  "",     ""),
-        S("w",              "int",     true,  true,  32, "",     ""),
-        S("r",              "int",     true,  true,  1,  "",     ""),
-        S("m",              "int",     true,  true,  0,  "",     ""),
-        S("shifts",         "int_vec", false, false, 0,  "none", ""),
-        S("p",              "int_vec", false, false, 0,  "none", ""),
-        S("q",              "int_vec", false, false, 0,  "none", ""),
-        S("tap_positions",  "int_vec", false, false, 0,  "none", ""),
-        S("tap_shifts",     "int_vec", false, false, 0,  "none", ""),
-        S("mi_positions",   "int_vec", false, false, 0,  "none", ""),
-        S("mi_shifts",      "int_vec", false, false, 0,  "none", ""),
-        S("mi_counts",      "int_vec", false, false, 0,  "none", ""),
-    };
-    if (family == "AC1DGen") return {
-        S("n",      "int",     true,  false, 0, "",     ""),
-        S("matrix", "int_vec", false, false, 0, "none", ""),
-    };
-    if (family == "WELLRNG") return {
-        S("w",         "int",      true,  true,  32, "",        ""),
-        S("r",         "int",      true,  false, 0,  "",        ""),
-        S("p",         "int",      true,  false, 0,  "",        ""),
-        S("m1",        "int",      false, false, 0,  "range",   "1,r-1"),
-        S("m2",        "int",      false, false, 0,  "range",   "1,r-1"),
-        S("m3",        "int",      false, false, 0,  "range",   "1,r-1"),
-        S("mat_types", "int_vec",  false, false, 0,  "none",    ""),
-        S("mat_pi",    "int_vec",  false, false, 0,  "none",    ""),
-        S("mat_pu",    "uint_vec", false, false, 0,  "none",    ""),
-    };
-    if (family == "MELG") return {
-        S("w",      "int", true,  true,  64, "",        ""),
-        S("N",      "int", true,  false, 0,  "",        ""),
-        S("r",      "int", true,  false, 0,  "",        ""),
-        S("M",      "int", false, false, 0,  "range",   "1,N-2"),
-        S("sigma1", "int", false, false, 0,  "range",   "1,w-1"),
-        S("sigma2", "int", false, false, 0,  "range",   "1,w-1"),
-        S("a",      "int", false, false, 0,  "bitmask", "w"),
-    };
+    if (family == "PolyLCG")          return PolyLCG::param_specs();
+    if (family == "Tausworthe")       return Tausworthe::param_specs();
+    if (family == "TGFSRGen")         return TGFSRGen::param_specs();
+    if (family == "MersenneTwister")  return MersenneTwister::param_specs();
+    if (family == "GenF2wPolyLCG" || family == "GenF2wLFSR")
+                                      return GenF2wPolyLCG::param_specs();
+    if (family == "MatsumotoGen")     return MatsumotoGen::param_specs();
+    if (family == "MarsaXorshiftGen") return MarsaXorshiftGen::param_specs();
+    if (family == "AC1DGen")          return AC1DGen::param_specs();
+    if (family == "WELLRNG")          return WELLRNG::param_specs();
+    if (family == "MELG")             return MELG::param_specs();
     throw std::invalid_argument("Unknown generator family: " + family);
 }
 
-#undef S
+std::vector<ParamSpec> get_trans_param_specs(const std::string& type)
+{
+    if (type == "permut")                        return PermutationTrans::param_specs();
+    if (type == "tempMK" || type == "tempMK2")   return TemperMKTrans::param_specs();
+    if (type == "laggedTempering")               return LaggedTempering::param_specs();
+    throw std::invalid_argument("Unknown transformation type: " + type);
+}

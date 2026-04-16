@@ -1,5 +1,6 @@
 #pragma once
 #include "generateur.h"
+#include "param_spec.h"
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -16,6 +17,9 @@ public:
 
     WELLRNG(int w, int r, int p, int m1, int m2, int m3,
               const std::vector<MatrixEntry>& matrices, int L);
+
+    static std::unique_ptr<Generateur> from_params(const Params& params, int L);
+    static std::vector<ParamSpec> param_specs();
 
     std::string name() const override;
     std::string display_str() const override;

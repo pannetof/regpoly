@@ -92,13 +92,13 @@ search:
   limit:
     max_tries: 10000
 
-structural:
+structural_params:
   w: 8
   r: 3
   modM: 0x169         # x^8 + x^6 + x^5 + x^3 + 1
   nocoeff: [0, 2]
 
-search_params:
+fixed_params:
   coeff:               # randomized: two independent 8-bit GF(2^w) elements
 ```
 
@@ -111,13 +111,13 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   w: 32
   r: 3
   modM: 0x100000285   # irreducible of degree 32
   nocoeff: [0, 1]
 
-search_params:
+fixed_params:
   coeff: [0xa34f09b2, 0x7c51e3d4]   # fixed coefficients
 ```
 
@@ -132,13 +132,13 @@ search:
     max_tries: 50000
     max_seconds: 30
 
-structural:
+structural_params:
   w: 8
   r: 7
   modM: 0x169
   step: 3
   nocoeff: [0, 2, 5]
 
-search_params:
+fixed_params:
   coeff:               # randomized: three 8-bit coefficients
 ```

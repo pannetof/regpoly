@@ -1,11 +1,15 @@
 #pragma once
 #include "generateur.h"
+#include "param_spec.h"
 #include <memory>
 #include <string>
 
 class TGFSRGen : public Generateur {
 public:
     TGFSRGen(int w, int r, int m, const BitVect& a, int L);
+
+    static std::unique_ptr<Generateur> from_params(const Params& params, int L);
+    static std::vector<ParamSpec> param_specs();
 
     std::string name() const override;
     std::string display_str() const override;

@@ -1,5 +1,6 @@
 #pragma once
 #include "generateur.h"
+#include "param_spec.h"
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -29,6 +30,9 @@ class MELG : public Generateur {
 public:
     MELG(int w, int N, int M, int r, int sigma1, int sigma2,
          uint64_t a, int L);
+
+    static std::unique_ptr<Generateur> from_params(const Params& params, int L);
+    static std::vector<ParamSpec> param_specs();
 
     std::string name() const override;
     std::string display_str() const override;

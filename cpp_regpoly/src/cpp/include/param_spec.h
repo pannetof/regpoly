@@ -17,4 +17,5 @@ struct ParamSpec {
                             //   poly_exponents:  param name for degree (e.g. "k")
                             //   bitmask_vec:     "bits_param,length_param" (e.g. "w,nocoeff")
                             //   none/"":         not randomizable
+    bool optimizable;       // true → can be optimized (tempering bitmasks)
 };

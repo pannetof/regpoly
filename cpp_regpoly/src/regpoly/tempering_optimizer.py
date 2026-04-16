@@ -8,9 +8,15 @@ Mirrors the C code's OptimizeTemper() from temperMK.c:
   - Incremental StackBase via step(v).
   - ONE recursive algorithm controlled by delta[v] and mse.
 
-run(delta, mse, n_restarts):
+The optimizer is a reusable configuration object.  Create it once
+with your settings, then call run(comb) on any Combinaison:
 
-  delta=None, mse=None, n_restarts=1:
+    opt = TemperingOptimizer(max_essais=400, delta=[0]*33, mse=0)
+    result = opt.run(comb)
+
+Modes (controlled by delta, mse, n_restarts):
+
+  delta=None, mse=None, n_restarts=1 (default):
       ME mode.  delta=[0]*L, mse=0.  Single call.
 
   delta=[...], mse=N, n_restarts=1:
@@ -18,9 +24,6 @@ run(delta, mse, n_restarts):
 
   n_restarts > 1 (delta and mse ignored):
       Minimize se via iterative delta tightening.
-      First pass: delta=INT_MAX (one deep sweep).
-      Subsequent passes: delta = best gaps so far, mse = best se so far.
-      Stop after n_restarts consecutive failures.
 """
 
 from __future__ import annotations
@@ -39,13 +42,50 @@ class TemperingOptimizer:
 
     def __init__(
         self,
-        comb: Combinaison,
         max_essais: int = 400,
+        delta: list[int] | None = None,
+        mse: int | None = None,
+        n_restarts: int = 1,
         verbose: bool = True,
     ) -> None:
-        self.comb = comb
         self.max_essais = max_essais
+        self.delta = delta
+        self.mse = mse
+        self.n_restarts = n_restarts
         self.verbose = verbose
+
+    # ------------------------------------------------------------------
+    # Main entry point
+    # ------------------------------------------------------------------
+
+    def run(self, comb: Combinaison) -> OptResult:
+        """
+        Optimize the bitmask parameters of the transformations in comb.
+
+        Builds all comb-specific state (safe masks, C++ caches), runs
+        the optimization, and returns an OptResult.
+        """
+        ctx = _RunContext(self, comb)
+
+        if self.n_restarts > 1:
+            return ctx.run_minimize()
+
+        delta = self.delta
+        mse = self.mse
+        if delta is None:
+            delta = [0] * (ctx.L + 1)
+        if mse is None:
+            mse = 0
+
+        return ctx.run_once(delta, mse, self.verbose)
+
+
+class _RunContext:
+    """Per-run state tied to a specific Combinaison."""
+
+    def __init__(self, opt: TemperingOptimizer, comb: Combinaison) -> None:
+        self.opt = opt
+        self.comb = comb
         self.L = comb.L
 
         # (j, ti, param_name) -> bit width
@@ -71,7 +111,6 @@ class TemperingOptimizer:
         L = self.L
         safe_masks: list[dict[tuple, int]] = [{} for _ in range(L + 1)]
 
-        # Detect mu shift for TemperMK mask_b adjustment
         param_mu: dict[tuple, int] = {}
         for (j, ti, pn), w in self._param_widths.items():
             if pn == 'b':
@@ -90,8 +129,6 @@ class TemperingOptimizer:
 
                 mask = (1 << nbits) - 1
 
-                # TemperMK: clear bits whose b-change propagates
-                # through the c-step to positions below v-1
                 mu = param_mu.get(key, 0)
                 if mu > 0:
                     for p in range(mu, min(v + mu - 1, w)):
@@ -101,7 +138,7 @@ class TemperingOptimizer:
 
                 safe_masks[v][key] = mask
 
-        if self.verbose:
+        if self.opt.verbose:
             for v in [1, L // 2, L]:
                 total = sum(bin(m).count('1') for m in safe_masks[v].values())
                 print(f"  Safe mask v={v}: {total} bits")
@@ -109,32 +146,15 @@ class TemperingOptimizer:
         return safe_masks
 
     # ------------------------------------------------------------------
-    # Main entry point
-    # ------------------------------------------------------------------
-
-    def run(self, delta: list[int] | None = None,
-            mse: int | None = None,
-            n_restarts: int = 1) -> OptResult:
-
-        if n_restarts > 1:
-            return self._run_minimize(n_restarts)
-
-        if delta is None:
-            delta = [0] * (self.L + 1)
-        if mse is None:
-            mse = 0
-
-        return self._run_once(delta, mse, self.verbose)
-
-    # ------------------------------------------------------------------
     # Single recursive optimization pass
     # ------------------------------------------------------------------
 
-    def _run_once(self, delta: list[int], mse: int,
-                  verbose: bool) -> OptResult:
+    def run_once(self, delta: list[int], mse: int,
+                 verbose: bool) -> OptResult:
         comb = self.comb
         L = self.L
         kg = comb.k_g
+        max_essais = self.opt.max_essais
         t_start = time.time()
         safe_masks = self._safe_masks
 
@@ -158,11 +178,10 @@ class TemperingOptimizer:
             Lim = 5 if v < L // 2 else 2
 
             for _ in range(Lim):
-                if essais >= self.max_essais:
+                if essais >= max_essais:
                     break
                 essais += 1
 
-                # Random multi-bit perturbation within safe mask
                 for (j, ti, pn), w in self._param_widths.items():
                     mask = safe_masks[v].get((j, ti, pn), 0)
                     if mask == 0:
@@ -174,7 +193,6 @@ class TemperingOptimizer:
                 ecart[v] = cache.step(v)
                 se = sum(ecart[1:v + 1])
 
-                # Save best if improvement at this depth or deeper
                 if se < best_se[v] and v >= max_v:
                     essais = 0
                     best_params = self._save_params()
@@ -185,14 +203,12 @@ class TemperingOptimizer:
                         print(f"  v={v:>3d}: se={se} (max_v={max_v})")
                         sys.stdout.flush()
 
-                # Recurse if gap within tolerance
                 if ecart[v] <= delta[v] and se <= mse:
                     if v >= L:
                         break
                     else:
                         optimize(v + 1)
 
-                # Early exit if target met at deepest level
                 if (ecart[L] >= 0
                         and ecart[L] <= delta[L]
                         and best_se[L] <= mse):
@@ -201,7 +217,6 @@ class TemperingOptimizer:
         optimize(1)
         self._restore_params(best_params)
 
-        # Final verification
         gaps, se = self._compute_gaps()
 
         elapsed = time.time() - t_start
@@ -216,11 +231,12 @@ class TemperingOptimizer:
     # Iterative delta tightening (minimize se)
     # ------------------------------------------------------------------
 
-    def _run_minimize(self, n_restarts: int) -> OptResult:
+    def run_minimize(self) -> OptResult:
         L = self.L
+        n_restarts = self.opt.n_restarts
         t_start = time.time()
 
-        if self.verbose:
+        if self.opt.verbose:
             print(f"Minimize se: k_g={self.comb.k_g}, L={L}, "
                   f"n_restarts={n_restarts}")
             sys.stdout.flush()
@@ -233,7 +249,6 @@ class TemperingOptimizer:
         while failures < n_restarts:
             n_calls += 1
 
-            # Randomize starting point
             for (j, ti, pn), w in self._param_widths.items():
                 self.comb.components[j].trans[ti].set_param(
                     pn, random.getrandbits(w))
@@ -246,13 +261,13 @@ class TemperingOptimizer:
                          for v in range(L + 1)]
                 mse_val = best_result.se
 
-            result = self._run_once(delta, mse_val, verbose=False)
+            result = self.run_once(delta, mse_val, verbose=False)
 
             if best_result is None or result.se < best_result.se:
                 best_result = result
                 best_params = self._save_params()
                 failures = 0
-                if self.verbose:
+                if self.opt.verbose:
                     print(f"  call {n_calls:>3d}: se={result.se} "
                           f"({result.elapsed:.1f}s)")
                     sys.stdout.flush()
@@ -263,7 +278,7 @@ class TemperingOptimizer:
             self._restore_params(best_params)
 
         elapsed = time.time() - t_start
-        if self.verbose:
+        if self.opt.verbose:
             print(f"\nMinimize complete: se={best_result.se}, "
                   f"{n_calls} calls, {elapsed:.1f}s")
 

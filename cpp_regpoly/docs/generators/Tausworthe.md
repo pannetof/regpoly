@@ -75,11 +75,11 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   poly: [31, 3, 0]
   quicktaus: true
 
-search_params:
+fixed_params:
   # No search parameters -- all are structural or auto-derived.
   # s is automatically set to 31 - 3 = 28.
 ```
@@ -93,11 +93,11 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   poly: [89, 38, 19, 3, 0]
   quicktaus: false
 
-search_params:
+fixed_params:
   s: 13   # fixed decimation step
 ```
 
@@ -110,10 +110,10 @@ search:
   limit:
     max_tries: 1
 
-structural:
+structural_params:
   poly: [521, 32, 0]
   quicktaus: true
 
-search_params:
+fixed_params:
   # s auto-derived: 521 - 32 = 489
 ```

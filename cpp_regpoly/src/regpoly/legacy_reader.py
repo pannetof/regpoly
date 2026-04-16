@@ -476,30 +476,20 @@ class LegacyReader:
                         idx += 1  # skip disp_progress
                         idx += 1  # skip limit_v
 
-                    random_specs = {}
-                    if nb_words != -1:
-                        b_tokens = f.readline().split()
-                        c_tokens = f.readline().split()
-                        b_val = LegacyReader._read_hex_words(b_tokens, nb_words, w)
-                        c_val = LegacyReader._read_hex_words(c_tokens, nb_words, w)
-                    else:
-                        b_val = 0
-                        c_val = 0
-                        random_specs = {
-                            "b": {"random": "bitvect", "bits": "w"},
-                            "c": {"random": "bitvect", "bits": "w"},
-                        }
-
                     params = {
                         "w": w, "eta": eta, "mu": mu,
                         "u": u, "l": l,
-                        "b": b_val, "c": c_val,
                     }
+                    if nb_words != -1:
+                        b_tokens = f.readline().split()
+                        c_tokens = f.readline().split()
+                        params["b"] = LegacyReader._read_hex_words(b_tokens, nb_words, w)
+                        params["c"] = LegacyReader._read_hex_words(c_tokens, nb_words, w)
+                    # else: b and c omitted — randomized by fill_params
                 else:
                     raise ValueError(f"Unknown transformation type '{type_str}'")
 
-                t = Transformation(trans_type, params, w_original=w)
-                t._random_specs = random_specs
+                t = Transformation.create(trans_type, **params)
                 transformations.append(t)
                 if type_str in _mk_opt_types:
                     mk_opt = True

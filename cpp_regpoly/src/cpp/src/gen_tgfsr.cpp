@@ -84,3 +84,33 @@ BitVect TGFSRGen::char_poly() const {
         bv.set_bit(j, IsOne(coeff(res, j)) ? 1 : 0);
     return bv;
 }
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> TGFSRGen::from_params(const Params& params, int L) {
+    int w = (int)params.get_int("w");
+    int r = (int)params.get_int("r");
+    int m = (int)params.get_int("m");
+    uint64_t a_val = (uint64_t)params.get_int("a");
+    int k = w * r;
+    BitVect a_bv(k);
+    if (k > 32) {
+        for (int i = 0; i < 32; i++)
+            if ((a_val >> (31 - i)) & 1)
+                a_bv.set_bit(i, 1);
+    } else {
+        for (int i = 0; i < k; i++)
+            if ((a_val >> (k - 1 - i)) & 1)
+                a_bv.set_bit(i, 1);
+    }
+    return std::make_unique<TGFSRGen>(w, r, m, a_bv, std::min(w, L));
+}
+
+std::vector<ParamSpec> TGFSRGen::param_specs() {
+    return {
+        {"w", "int", true,  false, 0, "",        "", false},
+        {"r", "int", true,  false, 0, "",        "", false},
+        {"m", "int", false, false, 0, "range",   "1,r-1", false},
+        {"a", "int", false, false, 0, "bitmask", "w", false},
+    };
+}

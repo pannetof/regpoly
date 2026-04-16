@@ -160,13 +160,13 @@ def test_resolve_family_genf2w():
 # ── Transformation ───────────────────────────────────────────────────────
 
 def test_create_permutation():
-    t = Transformation("permut", {"w": 8, "p": 3, "q": 1}, 8)
+    t = Transformation.create("permut", w=8, p=3, q=1)
     assert t.w == 8
     assert isinstance(t.display(), str)
 
 
 def test_transformation_copy():
-    t = Transformation("permut", {"w": 8, "p": 3, "q": 1}, 8)
+    t = Transformation.create("permut", w=8, p=3, q=1)
     t2 = t.copy()
     assert t2.w == t.w
     assert t2 is not t

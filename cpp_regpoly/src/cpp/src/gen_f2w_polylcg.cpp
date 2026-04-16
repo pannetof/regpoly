@@ -34,3 +34,31 @@ std::unique_ptr<Generateur> GenF2wPolyLCG::copy() const {
     p->table_ = table_;
     return p;
 }
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> GenF2wPolyLCG::from_params(const Params& params, int L) {
+    int w = (int)params.get_int("w");
+    int r = (int)params.get_int("r");
+    uint64_t modM = (uint64_t)params.get_int("modM");
+    bool normal_basis = params.get_bool("normal_basis", false);
+    int step_count = (int)params.get_int("step", 1);
+    auto nocoeff_vals = params.get_int_vec("nocoeff");
+    auto coeff_vals = params.get_uint_vec("coeff");
+    int nbcoeff = (int)nocoeff_vals.size();
+    return std::make_unique<GenF2wPolyLCG>(
+        w, r, nbcoeff, nocoeff_vals, coeff_vals,
+        modM, normal_basis, step_count, L);
+}
+
+std::vector<ParamSpec> GenF2wPolyLCG::param_specs() {
+    return {
+        {"w",            "int",      true,  false, 0, "",             "", false},
+        {"r",            "int",      true,  false, 0, "",             "", false},
+        {"modM",         "int",      true,  false, 0, "",             "", false},
+        {"normal_basis", "bool",     true,  true,  0, "",             "", false},
+        {"step",         "int",      true,  true,  1, "",             "", false},
+        {"nocoeff",      "int_vec",  true,  false, 0, "",             "", false},
+        {"coeff",        "uint_vec", false, false, 0, "bitmask_vec",  "w,nocoeff", false},
+    };
+}

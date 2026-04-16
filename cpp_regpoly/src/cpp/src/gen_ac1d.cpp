@@ -49,3 +49,23 @@ std::unique_ptr<Generateur> AC1DGen::copy() const {
     g->state_ = state_.copy();
     return g;
 }
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> AC1DGen::from_params(const Params& params, int L) {
+    int n = (int)params.get_int("n");
+    auto flat = params.get_int_vec("matrix");
+    std::vector<std::vector<int>> matrix(n, std::vector<int>(n, 0));
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            if (i * n + j < (int)flat.size())
+                matrix[i][j] = flat[i * n + j];
+    return std::make_unique<AC1DGen>(n, matrix, L);
+}
+
+std::vector<ParamSpec> AC1DGen::param_specs() {
+    return {
+        {"n",      "int",     true,  false, 0, "",     "", false},
+        {"matrix", "int_vec", false, false, 0, "none", "", false},
+    };
+}

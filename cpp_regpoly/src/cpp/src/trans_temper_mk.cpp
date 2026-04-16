@@ -97,3 +97,31 @@ void TemperMKTrans::update(const Params& params) {
     b_ = (uint64_t)params.get_int("b", (int64_t)b_);
     c_ = (uint64_t)params.get_int("c", (int64_t)c_);
 }
+
+// ── Factory method ─────────────────────────────────────────────────────
+
+std::unique_ptr<Transformation> TemperMKTrans::from_params(
+    const std::string& type_name, const Params& params)
+{
+    int w = (int)params.get_int("w");
+    int mk_type = (type_name == "tempMK2") ? 2 : 1;
+    int eta = (int)params.get_int("eta");
+    int mu = (int)params.get_int("mu");
+    int u = (int)params.get_int("u", 0);
+    int l = (int)params.get_int("l", 0);
+    uint64_t b = (uint64_t)params.get_int("b", 0);
+    uint64_t c = (uint64_t)params.get_int("c", 0);
+    return std::make_unique<TemperMKTrans>(w, mk_type, eta, mu, u, l, b, c);
+}
+
+std::vector<ParamSpec> TemperMKTrans::param_specs() {
+    return {
+        {"w",   "int", true,  false, 0, "",        "", false},
+        {"eta", "int", true,  false, 0, "",        "", false},
+        {"mu",  "int", true,  false, 0, "",        "", false},
+        {"u",   "int", true,  true,  0, "",        "", false},
+        {"l",   "int", true,  true,  0, "",        "", false},
+        {"b",   "int", false, false, 0, "bitmask", "w", true},
+        {"c",   "int", false, false, 0, "bitmask", "w", true},
+    };
+}

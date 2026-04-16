@@ -547,3 +547,28 @@ std::unique_ptr<Generateur> MELG::copy() const {
     g->i_ = i_;
     return g;
 }
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> MELG::from_params(const Params& params, int L) {
+    int w = (int)params.get_int("w", 64);
+    int N = (int)params.get_int("N");
+    int M = (int)params.get_int("M");
+    int r = (int)params.get_int("r");
+    int sigma1 = (int)params.get_int("sigma1");
+    int sigma2 = (int)params.get_int("sigma2");
+    uint64_t a = (uint64_t)params.get_int("a");
+    return std::make_unique<MELG>(w, N, M, r, sigma1, sigma2, a, L);
+}
+
+std::vector<ParamSpec> MELG::param_specs() {
+    return {
+        {"w",      "int", true,  true,  64, "",        "", false},
+        {"N",      "int", true,  false, 0,  "",        "", false},
+        {"r",      "int", true,  false, 0,  "",        "", false},
+        {"M",      "int", false, false, 0,  "range",   "1,N-2", false},
+        {"sigma1", "int", false, false, 0,  "range",   "1,w-1", false},
+        {"sigma2", "int", false, false, 0,  "range",   "1,w-1", false},
+        {"a",      "int", false, false, 0,  "bitmask", "w", false},
+    };
+}

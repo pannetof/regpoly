@@ -1,41 +1,60 @@
 """
 transformation.py — Single wrapper class for any C++ tempering transformation.
 
-Python handles parameter originals, randomization, and w_original logic.
-C++ handles only the apply computation and display.
+C++ handles the apply computation and display.
+Python handles parameter storage and randomization via the Parametric base.
 
-Randomization specs are defined in the YAML file per parameter:
-    b: { random: bitvect, bits: 32 }
-    p: { random: coprime, mod: 32 }
-    q: { random: int, min: 0, max: 31 }
-
-Specs can reference other param names for their arguments:
-    b: { random: bitvect, bits: w }
+Missing non-structural parameters are auto-randomized from ParamSpec,
+just like Generateur.create().
 """
 
 from __future__ import annotations
 
-import math
-import random as _random
-
 import regpoly._regpoly_cpp as _cpp
+from regpoly.parametric import Parametric
 
 
-class Transformation:
+class Transformation(Parametric):
     """
     Wrapper around a C++ transformation object.
 
-    Python stores the original parameter values and random specs.
-    On update_params(L), Python computes new values from the specs,
-    then calls C++ update() to set them in place.
+    Use ``Transformation.create(type, **params)`` to construct.
+    Missing non-structural parameters with a rand_type are
+    auto-randomized, just like Generateur.create().
     """
 
-    def __init__(self, trans_type: str, params: dict, w_original: int = 0) -> None:
-        self._type = trans_type
-        self._orig_params = dict(params)
-        self._w_original = w_original
-        self._random_specs: dict = {}  # key → {random: type, ...}
-        self._cpp_trans = _cpp.create_transformation(trans_type, params)
+    @classmethod
+    def _get_cpp_specs(cls, type_name: str) -> list[dict]:
+        return _cpp.get_trans_param_specs(type_name)
+
+    def __init__(self, cpp_trans, trans_type: str, params: dict) -> None:
+        self._cpp_trans = cpp_trans
+        self._type_name = trans_type
+        self._params = dict(params)
+
+    @classmethod
+    def create(cls, trans_type: str, **params) -> "Transformation":
+        """
+        Create a transformation, randomizing missing non-structural parameters.
+
+        Structural parameters must be provided.  Non-structural parameters
+        with a rand_type are auto-randomized when omitted.
+
+        Examples::
+
+            # All params explicit
+            t = Transformation.create("tempMK", w=32, eta=7, mu=15,
+                                      b=0x9D2C5680, c=0xEFC60000)
+
+            # b and c omitted — randomized
+            t = Transformation.create("tempMK", w=32, eta=7, mu=15)
+        """
+        specs = _cpp.get_trans_param_specs(trans_type)
+        full = cls.fill_params(specs, params)
+        cpp_trans = _cpp.create_transformation(trans_type, full)
+        return cls(cpp_trans, trans_type, full)
+
+    # -- Transformation-specific methods ----------------------------------
 
     @property
     def name(self) -> str:
@@ -45,87 +64,20 @@ class Transformation:
     def w(self) -> int:
         return self._cpp_trans.w()
 
-    @property
-    def w_original(self) -> int:
-        return self._w_original
-
     def display(self) -> str:
         return self._cpp_trans.display_str()
 
-    def update_params(self, L: int) -> None:
-        """Compute w from L, generate random values from specs, update C++."""
-        if self._w_original == -1:
-            w = L
-        else:
-            w = min(self._w_original, L)
-
-        params = dict(self._orig_params)
-        params["w"] = w
-
-        for key, spec in self._random_specs.items():
-            params[key] = self._generate(spec, params)
-
-        self._cpp_trans.update(params)
-
-    def optimizable_params(self) -> list[tuple[str, int]]:
-        """Return bitmask parameters that can be optimized: [(name, width), ...].
-
-        Override per transformation type. Default: parameters whose name
-        is 'b' or 'c' with width w.
-        """
-        result = []
-        w = self.w
-        for name in ("b", "c"):
-            if name in self._orig_params:
-                result.append((name, w))
-        return result
-
-    def get_param(self, name: str) -> int:
-        """Read the current value of a parameter."""
-        return self._orig_params[name]
-
     def set_param(self, name: str, value: int) -> None:
         """Set a parameter and push to C++."""
-        self._orig_params[name] = value
-        self._cpp_trans.update(self._orig_params)
-
-    def flip_bit(self, name: str, bit: int) -> None:
-        """Flip one bit of a bitmask parameter and push to C++."""
-        val = self._orig_params[name]
-        val ^= (1 << bit)
-        self.set_param(name, val)
+        self._params[name] = value
+        self._cpp_trans.update(self._params)
 
     def copy(self) -> Transformation:
         new = Transformation.__new__(Transformation)
-        new._type = self._type
-        new._orig_params = dict(self._orig_params)
-        new._w_original = self._w_original
-        new._random_specs = dict(self._random_specs)
+        new._type_name = self._type_name
+        new._params = dict(self._params)
         new._cpp_trans = self._cpp_trans.copy()
         return new
-
-    @staticmethod
-    def _generate(spec: dict, params: dict) -> int:
-        """Generate a random value from a spec, resolving param references."""
-        kind = spec["random"]
-
-        if kind == "bitvect":
-            bits = _resolve(spec["bits"], params)
-            return _random.getrandbits(bits) & ((1 << bits) - 1)
-
-        elif kind == "int":
-            lo = _resolve(spec.get("min", 0), params)
-            hi = _resolve(spec.get("max", 1), params)
-            return _random.randint(lo, hi)
-
-        elif kind == "coprime":
-            mod = _resolve(spec["mod"], params)
-            val = 0
-            while math.gcd(val, mod) != 1:
-                val = _random.randrange(1, mod)
-            return val
-
-        raise ValueError(f"Unknown random type: {kind}")
 
     # -- YAML reader ------------------------------------------------------
 
@@ -143,28 +95,17 @@ class Transformation:
             trans_type = entry["type"]
 
             params = {}
-            random_specs = {}
             for k, v in entry.items():
                 if k == "type":
                     continue
                 if isinstance(v, dict) and "random" in v:
-                    random_specs[k] = v
-                    params[k] = 0  # placeholder
+                    continue  # omit — will be randomized by fill_params
                 else:
                     params[k] = v
 
-            w_original = params.get("w", 0)
-            t = cls(trans_type, params, w_original)
-            t._random_specs = random_specs
+            t = cls.create(trans_type, **params)
             transformations.append(t)
 
             if entry.get("optimize", False):
                 mk_opt = True
         return transformations, mk_opt
-
-
-def _resolve(val, params: dict):
-    """If val is a string, look it up in params. Otherwise return as-is."""
-    if isinstance(val, str):
-        return params[val]
-    return val

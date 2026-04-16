@@ -121,3 +121,30 @@ void Tausworthe::next_general() {
             ss = m;
     }
 }
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> Tausworthe::from_params(const Params& params, int L) {
+    auto poly_list = params.get_int_vec("poly");
+    std::vector<int> Q(poly_list);
+    std::sort(Q.begin(), Q.end());
+    int k = Q.back();
+    bool quicktaus = params.get_bool("quicktaus", true);
+    int s;
+    if (params.has("s")) {
+        s = (int)params.get_int("s");
+    } else if (quicktaus && Q.size() >= 2) {
+        s = k - Q[Q.size() - 2];
+    } else {
+        s = 1;
+    }
+    return std::make_unique<Tausworthe>(k, Q, s, quicktaus, L);
+}
+
+std::vector<ParamSpec> Tausworthe::param_specs() {
+    return {
+        {"poly",      "int_vec", true,  false, 0, "",     "", false},
+        {"s",         "int",     false, true,  0, "",     "", false},
+        {"quicktaus", "bool",    true,  true,  1, "",     "", false},
+    };
+}

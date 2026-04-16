@@ -50,15 +50,6 @@ class Component:
         """Append a deep copy of t to the transformation chain."""
         self.trans.append(t.copy())
 
-    def update_trans(self) -> None:
-        """
-        Synchronise each transformation's width w with the active generator's
-        output resolution L, then recompute its internal parameters.
-        """
-        active_L = self.gens[self.current_gen].L
-        for t in self.trans:
-            t.update_params(active_L)
-
     # -- Display ----------------------------------------------------------
 
     def display(self) -> str:

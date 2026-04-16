@@ -162,7 +162,6 @@ class Seek:
         t_start = time.time()
 
         while True:
-            comb.update_trans()
             nbgen += 1
 
             # Run tests in order
@@ -267,18 +266,14 @@ def _parse_tempering(trans_cfg) -> list:
     trans_list = []
     for entry in trans_cfg:
         params = {}
-        random_specs = {}
         for k, v in entry.items():
             if k == "type":
                 continue
             if isinstance(v, dict) and "random" in v:
-                random_specs[k] = v
-                params[k] = 0
+                continue  # omit — will be randomized by fill_params
             else:
                 params[k] = v
-        w_original = params.get("w", 0)
-        t = Transformation(entry["type"], params, w_original)
-        t._random_specs = random_specs
+        t = Transformation.create(entry["type"], **params)
         trans_list.append(t)
     return trans_list
 

@@ -158,3 +158,24 @@ void MersenneTwister::SetV(int idx, uint64_t val) {
     int ii = r_ - idx - 1;
     state_.set_word(ii, w_, val & maskw_);
 }
+
+// ── Factory methods ────────────────────────────────────────────────────
+
+std::unique_ptr<Generateur> MersenneTwister::from_params(const Params& params, int L) {
+    int w = (int)params.get_int("w");
+    int r = (int)params.get_int("r");
+    int m = (int)params.get_int("m");
+    int p = (int)params.get_int("p", 0);
+    uint64_t a = (uint64_t)params.get_int("a");
+    return std::make_unique<MersenneTwister>(w, r, m, p, a, L);
+}
+
+std::vector<ParamSpec> MersenneTwister::param_specs() {
+    return {
+        {"w", "int", true,  false, 0,  "",        "", false},
+        {"r", "int", true,  false, 0,  "",        "", false},
+        {"p", "int", true,  true,  0,  "",        "", false},
+        {"m", "int", false, false, 0,  "range",   "1,r-1", false},
+        {"a", "int", false, false, 0,  "bitmask", "w", false},
+    };
+}

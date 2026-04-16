@@ -25,7 +25,8 @@ import time
 
 import yaml
 
-from regpoly.generateur import Generateur, _generate_random, resolve_family
+from regpoly.generateur import Generateur, resolve_family
+from regpoly.parametric import generate_random
 import regpoly._regpoly_cpp as _cpp
 
 
@@ -40,16 +41,16 @@ class PrimitiveSearch:
         self,
         family: str,
         L: int,
-        structural: dict,
-        search_params: dict,
+        structural_params: dict,
+        fixed_params: dict,
         max_tries: int | None,
         max_seconds: float | None,
         generators_dir: str,
     ) -> None:
         self.family = family
         self.L = L
-        self.structural = structural
-        self.search_params = search_params
+        self.structural_params = structural_params
+        self.fixed_params = fixed_params
         self.max_tries = max_tries
         self.max_seconds = max_seconds
         self.generators_dir = generators_dir
@@ -68,14 +69,16 @@ class PrimitiveSearch:
         max_seconds = limit.get("max_seconds")
         generators_dir = search.get("generators_dir", "yaml/generators")
 
-        structural = config.get("structural", {})
-        search_params = config.get("search_params", {})
+        structural_params = config.get("structural_params",
+                                       config.get("structural", {}))
+        fixed_params = config.get("fixed_params",
+                                   config.get("search_params", {}))
 
         return cls(
             family=family,
             L=L,
-            structural=structural,
-            search_params=search_params,
+            structural_params=structural_params,
+            fixed_params=fixed_params,
             max_tries=max_tries,
             max_seconds=max_seconds,
             generators_dir=generators_dir,
@@ -97,15 +100,15 @@ class PrimitiveSearch:
                   f"{self.output_file}")
             print()
 
-        # Build the fixed params: structural + search_params with explicit values
-        fixed = dict(self.structural)
-        for key, val in self.search_params.items():
+        # Build the fixed params: structural + fixed_params with explicit values
+        fixed = dict(self.structural_params)
+        for key, val in self.fixed_params.items():
             if val is not None:
                 fixed[key] = val
 
         # Identify which params will be randomized
         resolved = resolve_family(family, fixed)
-        specs = _cpp.get_param_specs(resolved)
+        specs = _cpp.get_gen_param_specs(resolved)
         randomized_names = [
             s["name"] for s in specs
             if s["name"] not in fixed
@@ -118,11 +121,16 @@ class PrimitiveSearch:
         # Load existing generators to deduplicate
         existing = self._load_existing_generators()
 
-        # Header
-        k_str = self._compute_k(fixed, specs)
+        # Header — create one throwaway generator to determine k
+        try:
+            probe_params = self._randomize(fixed, specs)
+            probe_gen = Generateur.create(family, L, **probe_params)
+            k_str = str(probe_gen.k)
+        except Exception:
+            k_str = "?"
         print(f"Searching for full-period {family} generators")
         print(f"  L = {L},  k = {k_str}")
-        fixed_search = {k: v for k, v in self.search_params.items()
+        fixed_search = {k: v for k, v in self.fixed_params.items()
                         if v is not None}
         if fixed_search:
             print(f"  Fixed search params: {fixed_search}")
@@ -167,7 +175,7 @@ class PrimitiveSearch:
                     # Extract only the search params (not structural)
                     entry = {k: _yaml_safe(v)
                              for k, v in full_params.items()
-                             if k not in self.structural}
+                             if k not in self.structural_params}
 
                     # Deduplicate
                     entry_key = _entry_key(entry)
@@ -220,9 +228,9 @@ class PrimitiveSearch:
 
     def _build_output_path(self) -> str:
         """Compute results/<Family>/<structural_params>.yaml."""
-        resolved = resolve_family(self.family, self.structural)
+        resolved = resolve_family(self.family, self.structural_params)
         parts = []
-        for key, val in sorted(self.structural.items()):
+        for key, val in sorted(self.structural_params.items()):
             parts.append(f"{key}{val}")
         filename = "_".join(parts) + ".yaml" if parts else "default.yaml"
         return os.path.join(self.generators_dir, resolved, filename)
@@ -250,10 +258,10 @@ class PrimitiveSearch:
             data = None
 
         if not data or "generators" not in data:
-            resolved = resolve_family(self.family, self.structural)
+            resolved = resolve_family(self.family, self.structural_params)
             data = {
                 "family": resolved,
-                "common": dict(self.structural),
+                "common": dict(self.structural_params),
                 "generators": [],
             }
 
@@ -275,31 +283,9 @@ class PrimitiveSearch:
             rt = spec["rand_type"]
             if not rt or rt == "none":
                 continue
-            full[name] = _generate_random(spec, full)
+            full[name] = generate_random(spec, full)
         return full
 
-    @staticmethod
-    def _compute_k(fixed: dict, specs: list[dict]) -> str:
-        """Try to compute k from structural params, or return '?'."""
-        w = fixed.get("w")
-        r = fixed.get("r")
-        p = fixed.get("p")
-        k = fixed.get("k")
-        N = fixed.get("N")
-        if k is not None:
-            return str(k)
-        # MELG: k = N*w - r
-        if N is not None and w is not None and r is not None:
-            return str(N * w - r)
-        if w is not None and r is not None:
-            base = w * r
-            if p is not None:
-                return str(base - p)
-            return str(base)
-        n = fixed.get("n")
-        if n is not None:
-            return str(n * 32)
-        return "?"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
