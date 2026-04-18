@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Tested generators{% endblock %}
+
+{% block content %}
+<hgroup>
+    <h1>Tested combined generators</h1>
+    <p>Generators that passed a tempering search.  Trace them back to the
+        search run that found them.</p>
+</hgroup>
+
+<div x-data="testedBrowser()" x-init="init()">
+    <form @submit.prevent="reload()" class="grid">
+        <label>Family
+            <select x-model="filter.family" @change="reload()">
+                <option value="">(any)</option>
+                <template x-for="f in families" :key="f.name">
+                    <option :value="f.name" x-text="f.name"></option>
+                </template>
+            </select>
+        </label>
+        <label>Test type
+            <select x-model="filter.test_type" @change="reload()">
+                <option value="">(any)</option>
+                <option value="equidistribution">equidistribution</option>
+                <option value="collision_free">collision_free</option>
+                <option value="tuplets">tuplets</option>
+            </select>
+        </label>
+        <label>Max se
+            <input type="number" x-model.number="filter.max_se" @change="reload()">
+        </label>
+        <label><input type="checkbox" x-model="filter.is_me" @change="reload()">
+            ME only
+        </label>
+    </form>
+
+    <p><span x-text="total"></span> result(s).</p>
+
+    <table class="compact">
+        <thead>
+            <tr><th>ID</th><th>J</th><th>k_g</th><th>Families</th>
+                <th>se</th><th>ME?</th><th>Search</th><th></th></tr>
+        </thead>
+        <tbody>
+            <template x-for="tg in items" :key="tg.id">
+                <tr>
+                    <td x-text="tg.id"></td>
+                    <td x-text="tg.J"></td>
+                    <td x-text="tg.k_g"></td>
+                    <td x-text="tg.components.map(c => c.family).join(' + ')"></td>
+                    <td x-text="se(tg) ?? '—'"></td>
+                    <td x-text="isMe(tg) ? '✓' : ''"></td>
+                    <td>
+                        <template x-if="tg.search_run_id">
+                            <a :href="'/tempering-search/' + tg.search_run_id"
+                               x-text="'#' + tg.search_run_id"></a>
+                        </template>
+                    </td>
+                    <td><a :href="'/tested-generators/' + tg.id">view</a></td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+
+    <nav>
+        <button @click="prev()" :disabled="page <= 1">Prev</button>
+        <button @click="next()" :disabled="page * 50 >= total">Next</button>
+    </nav>
+</div>
+
+<script>
+function testedBrowser() {
+    return {
+        families: [], items: [], total: 0, page: 1,
+        filter: { family: '', test_type: '', max_se: null, is_me: false },
+        async init() {
+            const r = await fetch('/api/families');
+            this.families = await r.json();
+            this.reload();
+        },
+        se(tg) {
+            const r = tg.results.find(x => x.test_type === 'equidistribution');
+            return r ? r.se : null;
+        },
+        isMe(tg) {
+            const r = tg.results.find(x => x.test_type === 'equidistribution');
+            return r && r.is_me;
+        },
+        async reload() {
+            const qs = new URLSearchParams();
+            qs.set('page', this.page);
+            qs.set('per_page', 50);
+            if (this.filter.family)    qs.set('family', this.filter.family);
+            if (this.filter.test_type) qs.set('test_type', this.filter.test_type);
+            if (this.filter.max_se)    qs.set('max_se', this.filter.max_se);
+            if (this.filter.is_me)     qs.set('is_me', 'true');
+            const r = await fetch('/api/tested-generators?' + qs.toString());
+            const data = await r.json();
+            this.items = data.items;
+            this.total = data.total;
+        },
+        prev() { if (this.page > 1) { this.page--; this.reload(); } },
+        next() { this.page++; this.reload(); },
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}regpoly{% endblock %} — regpoly</title>
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js"></script>
+    <script defer
+            src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="{{ url_for('static', path='app.js') }}"></script>
+</head>
+<body>
+<nav class="container-fluid top-nav">
+    <ul>
+        <li><a href="/" class="brand"><strong>regpoly</strong></a></li>
+    </ul>
+    <ul>
+        <li><a href="/primitive-search">Primitive Search</a></li>
+        <li><a href="/generators">Generators</a></li>
+        <li><a href="/tempering-search">Tempering Search</a></li>
+        <li><a href="/tested-generators">Tested Generators</a></li>
+        <li><a href="/searches">Searches</a></li>
+    </ul>
+</nav>
+
+<main class="container">
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="container">
+    <small>regpoly web — GF(2)-linear PRNG search and analysis</small>
+</footer>
+</body>
+</html>

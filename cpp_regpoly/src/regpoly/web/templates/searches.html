@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Searches{% endblock %}
+
+{% block content %}
+<hgroup>
+    <h1>Searches</h1>
+    <p>All primitive and tempering searches — current and past.
+        Pause, resume, cancel, or restart from here.</p>
+</hgroup>
+
+<div x-data="searchesPage()" x-init="init()">
+    <form @submit.prevent="reload()" class="grid">
+        <label>Type
+            <select x-model="filter.type" @change="reload()">
+                <option value="">all</option>
+                <option value="primitive">primitive</option>
+                <option value="tempering">tempering</option>
+            </select>
+        </label>
+        <label>Family
+            <select x-model="filter.family" @change="onFamilyChange()">
+                <option value="">(any)</option>
+                <template x-for="f in families" :key="f.name">
+                    <option :value="f.name" x-text="f.name"></option>
+                </template>
+            </select>
+        </label>
+        <label>k
+            <select x-model="filter.k" @change="reload()">
+                <option value="">(any)</option>
+                <template x-for="v in kValues" :key="v">
+                    <option :value="v" x-text="v"></option>
+                </template>
+            </select>
+        </label>
+        <label>Status
+            <select x-model="filter.status" @change="reload()">
+                <option value="">any</option>
+                <option value="running">running</option>
+                <option value="pending">pending</option>
+                <option value="paused">paused</option>
+                <option value="completed">completed</option>
+                <option value="cancelled">cancelled</option>
+                <option value="failed">failed</option>
+            </select>
+        </label>
+        <label>Refresh
+            <select x-model.number="autoRefreshSecs" @change="setAutoRefresh()">
+                <option value="2">2 s</option>
+                <option value="5">5 s</option>
+                <option value="10">10 s</option>
+                <option value="0">off</option>
+            </select>
+        </label>
+    </form>
+
+    <table class="compact">
+        <thead>
+            <tr>
+                <th>Type</th><th>ID</th><th>Summary</th>
+                <th>Progress</th><th>Status</th><th>Started</th>
+                <th style="width: 1%">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <template x-for="s in items" :key="s.type + '-' + s.id">
+                <tr>
+                    <td x-text="s.type"></td>
+                    <td>
+                        <a :href="detailUrl(s)" x-text="s.id"></a>
+                    </td>
+                    <td class="mono" x-text="summary(s)"></td>
+                    <td x-text="progress(s)"></td>
+                    <td><span class="status-pill"
+                              :class="'status-' + s.status"
+                              x-text="s.status"></span></td>
+                    <td><small x-text="s.started_at || s.created_at"></small></td>
+                    <td>
+                        <div role="group" style="white-space: nowrap">
+                            <button class="outline" @click="act(s, 'pause')"
+                                    :disabled="!canPause(s)">Pause</button>
+                            <button class="outline" @click="act(s, 'resume')"
+                                    :disabled="!canResume(s)">Resume</button>
+                            <button class="outline secondary" @click="act(s, 'cancel')"
+                                    :disabled="!canCancel(s)">Cancel</button>
+                            <button class="outline" @click="act(s, 'restart')"
+                                    :disabled="!canRestart(s)">Restart</button>
+                        </div>
+                    </td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+    <p x-show="items.length === 0"><em>No searches match the filters.</em></p>
+</div>
+
+<script>
+function searchesPage() {
+    return {
+        items: [],
+        families: [],
+        kValues: [],
+        filter: { type: '', status: '', family: '', k: '' },
+        autoRefreshSecs: 5,
+        timer: null,
+
+        async init() {
+            const r = await fetch('/api/generators/families');
+            this.families = await r.json();
+            await this.loadKValues();
+            await this.reload();
+            this.setAutoRefresh();
+        },
+
+        async loadKValues() {
+            const qs = new URLSearchParams({name: 'k'});
+            if (this.filter.family) qs.set('family', this.filter.family);
+            const r = await fetch('/api/generators/param-values?' + qs.toString());
+            const data = await r.json();
+            this.kValues = data.values || [];
+        },
+
+        async onFamilyChange() {
+            // Clear k if no longer valid for the chosen family, then refetch.
+            await this.loadKValues();
+            if (this.filter.k !== '' &&
+                !this.kValues.map(String).includes(String(this.filter.k))) {
+                this.filter.k = '';
+            }
+            await this.reload();
+        },
+
+        setAutoRefresh() {
+            if (this.timer) clearInterval(this.timer);
+            if (this.autoRefreshSecs > 0) {
+                this.timer = setInterval(() => this.reload(),
+                    this.autoRefreshSecs * 1000);
+            }
+        },
+
+        _baseQS() {
+            const qs = new URLSearchParams({per_page: '200'});
+            if (this.filter.status) qs.set('status', this.filter.status);
+            if (this.filter.family) qs.set('family', this.filter.family);
+            if (this.filter.k !== '')    qs.set('k', this.filter.k);
+            return qs;
+        },
+
+        async reload() {
+            const qs = this._baseQS();
+            const rs = [];
+            if (!this.filter.type || this.filter.type === 'primitive') {
+                const r = await fetch('/api/primitive-searches?' + qs.toString());
+                const data = await r.json();
+                for (const s of data.items) rs.push({...s, type: 'primitive'});
+            }
+            if (!this.filter.type || this.filter.type === 'tempering') {
+                const r = await fetch('/api/tempering-searches?' + qs.toString());
+                const data = await r.json();
+                for (const s of data.items) rs.push({...s, type: 'tempering'});
+            }
+            rs.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+            this.items = rs;
+        },
+
+        summary(s) {
+            if (s.type === 'primitive') {
+                const fam = s.family;
+                const sp = s.structural_params
+                    ? Object.entries(s.structural_params)
+                        .map(([k, v]) => `${k}=${v}`).join(', ')
+                    : '';
+                return `${fam} ${sp}`;
+            }
+            const opt = s.optimizer_config ? ' +opt' : '';
+            return `${s.test_type} · Lmax=${s.Lmax} · tries=${s.nb_tries}${opt}`;
+        },
+
+        progress(s) {
+            if (s.type === 'primitive') {
+                const t = s.tries_done ?? 0;
+                const max = s.max_tries;
+                const found = s.found_count ?? 0;
+                if (max) return `${t}/${max} · found ${found}`;
+                return `${t} tries · found ${found}`;
+            }
+            const done = s.combos_done ?? 0;
+            const total = s.combos_total;
+            const best = s.best_se;
+            const bestStr = best !== null && best !== undefined ? ` · best se=${best}` : '';
+            return total ? `${done}/${total}${bestStr}` : `${done} combos${bestStr}`;
+        },
+
+        detailUrl(s) {
+            return (s.type === 'primitive' ? '/primitive-search/' : '/tempering-search/') + s.id;
+        },
+
+        canPause(s)   { return ['pending', 'running'].includes(s.status); },
+        canResume(s)  { return ['paused', 'cancelled', 'failed'].includes(s.status); },
+        canCancel(s)  { return ['pending', 'running', 'paused'].includes(s.status); },
+        canRestart(s) { return ['completed', 'cancelled', 'failed'].includes(s.status); },
+
+        async act(s, action) {
+            const prefix = s.type === 'primitive'
+                ? '/api/primitive-searches/'
+                : '/api/tempering-searches/';
+            const res = await fetch(prefix + s.id + '/' + action, {method: 'POST'});
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                alert('Failed: ' + (body.detail || res.statusText));
+                return;
+            }
+            await this.reload();
+        },
+    };
+}
+</script>
+{% endblock %}

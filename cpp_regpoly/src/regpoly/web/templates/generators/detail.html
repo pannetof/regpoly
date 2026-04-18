@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}Generator {{ gen_id }}{% endblock %}
+
+{% block content %}
+<div x-data="generatorDetail({{ gen_id }})" x-init="load()">
+    <template x-if="gen">
+        <div>
+            <hgroup>
+                <h1>
+                    <span x-text="gen.family"></span> #<span x-text="gen.id"></span>
+                </h1>
+                <p>k = <span x-text="gen.k"></span>,
+                   L = <span x-text="gen.L"></span>
+                   <template x-if="gen.hamming_weight !== null">
+                       , Hamming weight = <strong x-text="gen.hamming_weight"></strong>
+                   </template>
+                </p>
+            </hgroup>
+
+            <p><a href="/generators">← back to list</a></p>
+
+            <section>
+                <h3>Parameters</h3>
+                <table class="compact">
+                    <template x-for="[k, v] in Object.entries(gen.all_params)" :key="k">
+                        <tr>
+                            <td class="mono" x-text="k"></td>
+                            <td class="mono" x-text="formatVal(k, v)"></td>
+                        </tr>
+                    </template>
+                </table>
+                <p x-show="gen.search_run_id">
+                    Found by primitive search
+                    <a :href="'/primitive-search/' + gen.search_run_id"
+                       x-text="'#' + gen.search_run_id"></a>
+                    at try <span x-text="gen.found_at_try"></span>.
+                </p>
+            </section>
+
+            <section>
+                <h3>Characteristic polynomial</h3>
+                <template x-if="gen.char_poly">
+                    <div>
+                        <p>
+                            Degree:
+                            <strong x-text="gen.k"></strong>,
+                            Hamming weight:
+                            <strong x-text="gen.hamming_weight"></strong>
+                        </p>
+                        <details>
+                            <summary>View polynomial</summary>
+                            <div role="group">
+                                <button @click="polyFormat='x'"
+                                        :class="polyFormat==='x' ? '' : 'secondary'">
+                                    x-notation
+                                </button>
+                                <button @click="polyFormat='hex'"
+                                        :class="polyFormat==='hex' ? '' : 'secondary'">
+                                    Hex
+                                </button>
+                                <button @click="polyFormat='exp'"
+                                        :class="polyFormat==='exp' ? '' : 'secondary'">
+                                    Exponents
+                                </button>
+                            </div>
+                            <template x-if="polyFormat === 'hex'">
+                                <pre class="mono" style="white-space: pre-wrap;
+                                     word-break: break-all"
+                                     x-text="gen.char_poly"></pre>
+                            </template>
+                            <template x-if="polyFormat === 'x'">
+                                <div class="mono" style="font-size: 0.95em;
+                                     line-height: 1.6; word-break: break-word"
+                                     x-html="polyAsXNotation(gen.char_poly, gen.k)"></div>
+                            </template>
+                            <template x-if="polyFormat === 'exp'">
+                                <p class="mono"
+                                   x-text="polyAsExponents(gen.char_poly, gen.k)"></p>
+                            </template>
+                        </details>
+                    </div>
+                </template>
+                <template x-if="!gen.char_poly && gen.pis_error">
+                    <p style="color:#c92a2a">Analysis failed.</p>
+                </template>
+                <template x-if="!gen.char_poly && !gen.pis_error">
+                    <p><em>Analysis pending…</em></p>
+                </template>
+            </section>
+
+            <section>
+                <h3>Equidistribution (PIS method)</h3>
+                <template x-if="gen.pis_gaps">
+                    <div>
+                        <p>
+                            Sum of gaps
+                            (<span x-text="'se'"></span>):
+                            <strong x-text="gen.pis_se"></strong>
+                            <template x-if="gen.pis_se === 0">
+                                <span class="status-pill status-completed">ME</span>
+                            </template>
+                        </p>
+                        <table class="compact">
+                            <thead>
+                                <tr><th>v</th><th>⌊k/v⌋</th>
+                                    <th>t_v</th><th>gap</th></tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(g, idx) in gen.pis_gaps" :key="idx">
+                                    <tr>
+                                        <td x-text="idx + 1"></td>
+                                        <td x-text="Math.floor(gen.k / (idx + 1))"></td>
+                                        <td x-text="Math.floor(gen.k / (idx + 1)) - g"></td>
+                                        <td :class="g === 0 ? 'equidist-cell-ok'
+                                                  : g <= 2 ? 'equidist-cell-warn'
+                                                           : 'equidist-cell-bad'"
+                                            x-text="g"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        <p x-show="gen.pis_elapsed">
+                            <small>Computed in
+                                <span x-text="gen.pis_elapsed.toFixed(2)"></span>s
+                                on <span x-text="gen.pis_computed_at"></span>.
+                            </small>
+                        </p>
+                    </div>
+                </template>
+                <template x-if="gen.pis_error">
+                    <pre style="color:#c92a2a; white-space: pre-wrap"
+                         x-text="gen.pis_error"></pre>
+                </template>
+                <template x-if="!gen.pis_gaps && !gen.pis_error">
+                    <p><em>Analysis pending…</em></p>
+                </template>
+            </section>
+
+            <section>
+                <h3>Transition matrix</h3>
+                <div role="group">
+                    <button @click="loadMatrix()"
+                            x-show="!matrixLoaded && !matrixLoading">
+                        Show matrix
+                    </button>
+                    <button @click="hideMatrix()" class="secondary outline"
+                            x-show="matrixLoaded">Hide</button>
+                </div>
+
+                <template x-if="matrixLoading">
+                    <p><em>Fetching coordinates…</em></p>
+                </template>
+                <template x-if="matrixError">
+                    <p style="color:#c92a2a" x-text="matrixError"></p>
+                </template>
+                <template x-if="matrixLoaded">
+                    <div>
+                        <div role="group">
+                            <button @click="zoomBy(0.5)" class="secondary">−</button>
+                            <button @click="zoomFit()"   class="secondary">Fit</button>
+                            <button @click="zoom1to1()"  class="secondary">1:1</button>
+                            <button @click="zoomBy(2)"   class="secondary">+</button>
+                            <span class="mono" style="padding: 0 0.75em">
+                                k=<span x-text="matrixSize"></span>,
+                                <span x-text="coordCount"></span> set bits
+                                · scale <span x-text="scale.toFixed(3)"></span> px/bit
+                            </span>
+                        </div>
+                        <canvas x-ref="matrixCanvas"
+                                class="matrix-canvas"
+                                width="800" height="800"
+                                @wheel.prevent="onWheel($event)"
+                                @mousedown="startPan($event)"
+                                @mousemove="onPan($event)"
+                                @mouseup="endPan()"
+                                @mouseleave="endPan()">
+                        </canvas>
+                        <p><small>
+                            Scroll wheel = zoom at cursor,
+                            drag = pan, 1:1 = one screen pixel per matrix bit.
+                        </small></p>
+                    </div>
+                </template>
+            </section>
+        </div>
+    </template>
+    <template x-if="!gen"><p>Loading...</p></template>
+</div>
+
+<script>
+function generatorDetail(id) {
+    return {
+        gen: null,
+        polyFormat: 'x',
+        matrixLoading: false,
+        matrixError: '',
+        matrixLoaded: false,
+        matrixSize: 0,        // k
+        coords: null,         // Uint32Array of [r0, c0, r1, c1, ...]
+        coordCount: 0,
+        scale: 1.0,           // canvas pixels per matrix bit (zoom)
+        offset: {x: 0, y: 0}, // top-left of visible matrix region (in bit coords)
+        canvasPx: 800,
+        _panStart: null,
+
+        async load() {
+            const r = await fetch('/api/generators/' + id);
+            if (r.ok) this.gen = await r.json();
+            if (this.gen && this.gen.pis_computed_at === null) {
+                setTimeout(() => this.load(), 2000);
+            }
+        },
+
+        formatVal(key, v) {
+            if (Array.isArray(v)) return '[' + v.join(', ') + ']';
+            if (typeof v === 'number' && v > 1024) return v + ' (0x' + v.toString(16) + ')';
+            return String(v);
+        },
+
+        // Parse the hex char_poly and return the list of exponents of
+        // set coefficients.  BitVect convention: public bit i sits at
+        // Python position (k-1-i), and public bit i is the coefficient
+        // of x^i.  So a set bit at Python position p means exponent
+        // (k-1-p) is present.  The leading x^k coefficient is always
+        // implicit (polynomials are stored in k bits, monic of degree k).
+        polyExponents(hex, k) {
+            if (!hex) return [];
+            const clean = hex.startsWith('0x') || hex.startsWith('0X')
+                ? hex.slice(2) : hex;
+            const n = BigInt('0x' + clean);
+            const K = BigInt(k);
+            const exps = [];
+            let p = 0n;
+            let v = n;
+            while (v > 0n) {
+                if (v & 1n) exps.push(Number(K - 1n - p));
+                v >>= 1n;
+                p += 1n;
+            }
+            exps.sort((a, b) => b - a);   // highest degree first
+            return exps;
+        },
+
+        polyAsXNotation(hex, k) {
+            const exps = this.polyExponents(hex, k);
+            const terms = [`x<sup>${k}</sup>`];
+            for (const e of exps) {
+                if (e === 0) terms.push('1');
+                else if (e === 1) terms.push('x');
+                else terms.push(`x<sup>${e}</sup>`);
+            }
+            return terms.join(' + ');
+        },
+
+        polyAsExponents(hex, k) {
+            const exps = this.polyExponents(hex, k);
+            return '{' + [k, ...exps].join(', ') + '}';
+        },
+
+        async loadMatrix() {
+            this.matrixError = '';
+            this.matrixLoading = true;
+            try {
+                const r = await fetch(
+                    '/api/generators/' + id + '/transition-matrix-coords');
+                if (!r.ok) {
+                    const body = await r.json().catch(() => ({}));
+                    this.matrixError = body.detail || r.statusText;
+                    return;
+                }
+                const buf = await r.arrayBuffer();
+                this.coords = new Uint32Array(buf);
+                this.matrixSize = parseInt(
+                    r.headers.get('X-Matrix-Size') || '0', 10) || this.gen.k;
+                this.coordCount = this.coords.length >>> 1;
+                this.matrixLoaded = true;
+                // Wait for canvas to mount, size it for DPR, then draw.
+                this.$nextTick(() => {
+                    this.initCanvas();
+                    this.zoomFit();
+                });
+            } catch (err) {
+                this.matrixError = err.message;
+            } finally {
+                this.matrixLoading = false;
+            }
+        },
+
+        initCanvas() {
+            const cv = this.$refs.matrixCanvas;
+            if (!cv) return;
+            const dpr = window.devicePixelRatio || 1;
+            // Make the backing store match device pixels so lines stay
+            // crisp and 0.5-pixel offsets actually land on a device pixel.
+            cv.width  = this.canvasPx * dpr;
+            cv.height = this.canvasPx * dpr;
+            cv.style.width  = this.canvasPx + 'px';
+            cv.style.height = this.canvasPx + 'px';
+        },
+
+        hideMatrix() {
+            this.matrixLoaded = false;
+            this.coords = null;
+            this.coordCount = 0;
+            this.matrixError = '';
+        },
+
+        // -- Canvas rendering ---------------------------------------------
+
+        draw() {
+            const cv = this.$refs.matrixCanvas;
+            if (!cv || !this.coords) return;
+            const ctx = cv.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+
+            // All drawing happens in CSS-pixel coordinates; the dpr
+            // transform maps to device pixels once, so 0.5-pixel offsets
+            // land on a real device-pixel boundary and stay crisp.
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            const W = this.canvasPx;
+            const H = this.canvasPx;
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(0, 0, W, H);
+
+            const s = this.scale;
+            const ox = this.offset.x;
+            const oy = this.offset.y;
+            const k = this.matrixSize;
+
+            // Visible bit window
+            const visLeft   = Math.max(0, Math.floor(ox));
+            const visTop    = Math.max(0, Math.floor(oy));
+            const visRight  = Math.min(k, Math.ceil(ox + W / s));
+            const visBottom = Math.min(k, Math.ceil(oy + H / s));
+
+            // Grid step 32 bits, always at integer matrix positions.
+            // Snap the first gridline to a device-pixel boundary; every
+            // subsequent line is exactly `gridStep * s` CSS pixels away
+            // from the previous one, so spacing is perfectly uniform
+            // regardless of where `ox` lands.
+            const gridStep = 32;
+            const stepPx = gridStep * s;
+            const halfPx = 0.5 / dpr;          // 1 device-pixel offset
+
+            ctx.strokeStyle = '#c8c8c8';
+            ctx.lineWidth = 1 / dpr;           // exactly 1 device pixel wide
+
+            ctx.beginPath();
+            const firstCol = Math.ceil(ox / gridStep) * gridStep;
+            const firstColX = (firstCol - ox) * s;
+            // Align first line to the nearest device-pixel center.
+            const baseX = Math.round(firstColX * dpr) / dpr + halfPx;
+            for (let x = baseX; x <= W + 0.5; x += stepPx) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, H);
+            }
+            const firstRow = Math.ceil(oy / gridStep) * gridStep;
+            const firstRowY = (firstRow - oy) * s;
+            const baseY = Math.round(firstRowY * dpr) / dpr + halfPx;
+            for (let y = baseY; y <= H + 0.5; y += stepPx) {
+                ctx.moveTo(0, y); ctx.lineTo(W, y);
+            }
+            ctx.stroke();
+
+            // Filled bit cells — draw after the grid so they dominate.
+            const cellPx = s >= 1 ? s : 1;
+            const coords = this.coords;
+            ctx.fillStyle = '#000';
+            for (let i = 0; i < coords.length; i += 2) {
+                const r = coords[i];
+                const c = coords[i + 1];
+                if (r < visTop || r >= visBottom) continue;
+                if (c < visLeft || c >= visRight) continue;
+                ctx.fillRect((c - ox) * s, (r - oy) * s, cellPx, cellPx);
+            }
+
+            // Outer frame, crisp on device pixels
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 1 / dpr;
+            ctx.strokeRect(halfPx, halfPx, W - 2 * halfPx, H - 2 * halfPx);
+        },
+
+        zoomFit() {
+            if (!this.matrixSize) return;
+            this.scale = this.canvasPx / this.matrixSize;
+            this.offset = {x: 0, y: 0};
+            this.draw();
+        },
+
+        zoom1to1() {
+            // Center at current view
+            const cx = this.offset.x + (this.canvasPx / this.scale) / 2;
+            const cy = this.offset.y + (this.canvasPx / this.scale) / 2;
+            this.scale = 1.0;
+            this.offset = {
+                x: cx - (this.canvasPx / this.scale) / 2,
+                y: cy - (this.canvasPx / this.scale) / 2,
+            };
+            this.clampOffset();
+            this.draw();
+        },
+
+        zoomBy(factor, cursor) {
+            const prev = this.scale;
+            // Don't let the matrix shrink below the canvas — otherwise
+            // empty space appears outside the matrix edges.
+            const minScale = this.canvasPx / this.matrixSize;
+            const next = Math.min(64, Math.max(minScale, prev * factor));
+            if (next === prev) return;
+
+            // Zoom anchor in canvas pixel coordinates
+            const cv = this.$refs.matrixCanvas;
+            const rect = cv.getBoundingClientRect();
+            const px = cursor ? (cursor.clientX - rect.left) : rect.width / 2;
+            const py = cursor ? (cursor.clientY - rect.top)  : rect.height / 2;
+
+            // Matrix-space coordinate under the anchor before zoom
+            const bx = this.offset.x + px / prev;
+            const by = this.offset.y + py / prev;
+
+            this.scale = next;
+            this.offset = {
+                x: bx - px / next,
+                y: by - py / next,
+            };
+            this.clampOffset();
+            this.draw();
+        },
+
+        clampOffset() {
+            const visW = this.canvasPx / this.scale;
+            const visH = this.canvasPx / this.scale;
+            const maxX = Math.max(0, this.matrixSize - visW);
+            const maxY = Math.max(0, this.matrixSize - visH);
+            if (this.offset.x < 0) this.offset.x = 0;
+            if (this.offset.y < 0) this.offset.y = 0;
+            if (this.offset.x > maxX) this.offset.x = maxX;
+            if (this.offset.y > maxY) this.offset.y = maxY;
+        },
+
+        onWheel(event) {
+            const factor = event.deltaY < 0 ? 1.25 : 0.8;
+            this.zoomBy(factor, event);
+        },
+
+        startPan(event) {
+            if (event.button !== 0) return;
+            this._panStart = {
+                x: event.clientX, y: event.clientY,
+                ox: this.offset.x, oy: this.offset.y,
+            };
+            const cv = this.$refs.matrixCanvas;
+            if (cv) cv.style.cursor = 'grabbing';
+            event.preventDefault();
+        },
+
+        onPan(event) {
+            if (!this._panStart) return;
+            const dx = (event.clientX - this._panStart.x) / this.scale;
+            const dy = (event.clientY - this._panStart.y) / this.scale;
+            this.offset.x = this._panStart.ox - dx;
+            this.offset.y = this._panStart.oy - dy;
+            this.clampOffset();
+            this.draw();
+        },
+
+        endPan() {
+            if (!this._panStart) return;
+            this._panStart = null;
+            const cv = this.$refs.matrixCanvas;
+            if (cv) cv.style.cursor = 'grab';
+        },
+    };
+}
+</script>
+{% endblock %}

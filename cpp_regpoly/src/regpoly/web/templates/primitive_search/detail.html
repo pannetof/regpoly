@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Primitive search #{{ run_id }}{% endblock %}
+
+{% block content %}
+<div x-data="primitiveSearchDetail({{ run_id }})" x-init="init()">
+    <hgroup>
+        <h1>Primitive search #{{ run_id }}</h1>
+        <p>
+            <template x-if="run">
+                <span>
+                    <span x-text="run.family"></span> · L=<span x-text="run.L"></span>
+                    · k=<span x-text="run.k"></span>
+                </span>
+            </template>
+        </p>
+    </hgroup>
+
+    <template x-if="run">
+        <div class="grid">
+            <article>
+                <header>Status
+                    <span class="status-pill" :class="'status-' + run.status"
+                          x-text="run.status"></span>
+                </header>
+                <ul>
+                    <li>Tries: <span x-text="run.tries_done"></span>
+                        <template x-if="run.max_tries">/ <span x-text="run.max_tries"></span></template>
+                    </li>
+                    <li>Found: <span x-text="run.found_count"></span></li>
+                    <li>Elapsed: <span x-text="(run.elapsed_seconds || 0).toFixed(1)"></span>s</li>
+                    <template x-if="progress && progress.current_info && progress.current_info.rate">
+                        <li>Rate: <span x-text="progress.current_info.rate.toFixed(0)"></span>/s</li>
+                    </template>
+                </ul>
+
+                <template x-if="run.max_tries">
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill"
+                             :style="'width:' + (100 * run.tries_done / run.max_tries).toFixed(1) + '%'"></div>
+                    </div>
+                </template>
+
+                <footer>
+                    <button @click="cancel()"
+                            :disabled="run.status !== 'running' && run.status !== 'pending'">
+                        Cancel
+                    </button>
+                </footer>
+            </article>
+
+            <article>
+                <header>Configuration</header>
+                <table class="compact">
+                    <tr><td>Structural</td>
+                        <td class="mono" x-text="JSON.stringify(run.structural_params)"></td></tr>
+                    <tr><td>Fixed</td>
+                        <td class="mono" x-text="JSON.stringify(run.fixed_params)"></td></tr>
+                    <tr><td>Max tries</td><td x-text="run.max_tries ?? '∞'"></td></tr>
+                    <tr><td>Max seconds</td><td x-text="run.max_seconds ?? '∞'"></td></tr>
+                </table>
+            </article>
+        </div>
+    </template>
+
+    <h3>Generators found (<span x-text="generators.length"></span>)</h3>
+    <table class="compact">
+        <thead>
+            <tr><th>ID</th><th>k</th><th>Found at try</th><th>Search params</th></tr>
+        </thead>
+        <tbody>
+            <template x-for="g in generators" :key="g.id">
+                <tr>
+                    <td><a :href="'/generators/' + g.id" x-text="g.id"></a></td>
+                    <td x-text="g.k"></td>
+                    <td x-text="g.found_at_try"></td>
+                    <td class="mono" x-text="JSON.stringify(g.search_params)"></td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function primitiveSearchDetail(id) {
+    return {
+        run: null, progress: null, generators: [], sse: null,
+
+        async init() {
+            await this.loadRun();
+            await this.loadGenerators();
+            this.openSSE();
+        },
+
+        async loadRun() {
+            const r = await fetch('/api/primitive-searches/' + id);
+            if (r.ok) this.run = await r.json();
+        },
+
+        async loadGenerators() {
+            const r = await fetch('/api/primitive-searches/' + id
+                + '/generators?per_page=200');
+            if (r.ok) {
+                const data = await r.json();
+                this.generators = data.items;
+            }
+        },
+
+        openSSE() {
+            this.sse = new EventSource('/api/primitive-searches/' + id + '/progress');
+            this.sse.onmessage = (e) => {
+                try {
+                    this.progress = JSON.parse(e.data);
+                    if (this.run) {
+                        this.run.tries_done = this.progress.tries_done;
+                        this.run.found_count = this.progress.found_count;
+                    }
+                    // When the found count advances, reload the generators list
+                    if (this.progress.found_count > this.generators.length) {
+                        this.loadGenerators();
+                    }
+                } catch (_) {}
+            };
+            this.sse.addEventListener('end', () => {
+                this.sse.close();
+                this.loadRun();
+                this.loadGenerators();
+            });
+        },
+
+        async cancel() {
+            await fetch('/api/primitive-searches/' + id + '/cancel',
+                {method: 'POST'});
+            this.loadRun();
+        },
+    };
+}
+</script>
+{% endblock %}

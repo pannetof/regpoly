@@ -17,8 +17,15 @@ Or manually:
             except StopIteration:
                 break
 
-A "valid" combination is one where no two active generators share the same
-degree k.  comb[j] returns the active Generateur of component j.
+A "valid" combination is any cartesian product tuple in which the same
+Generateur object does not appear twice — if it did, the XOR of the
+component with itself would produce the zero sequence.  Equal-k
+components are allowed: combining generators of the same k yields a
+valid generator, albeit with period 2^k − 1 (not (2^k − 1)²), because
+period-multiplication requires pairwise-coprime p_i = 2^{k_i} − 1.  That
+optimality is the caller's concern, not a hard restriction here.
+
+comb[j] returns the active Generateur of component j.
 """
 
 from __future__ import annotations
@@ -133,11 +140,11 @@ class Combinaison:
     # -- Iterator protocol ------------------------------------------------
 
     def _make_combo_iter(self):
-        return (
-            combo
-            for combo in product_no_repeat_ordered(*[comp.gens for comp in self.components])
-            if len({gen.k for gen in combo}) == len(combo)
-        )
+        # Identity-uniqueness (no object reused in one combo) is enforced
+        # inside product_no_repeat_ordered; we do not filter by distinct
+        # k here — combining equal-k generators is allowed.  See the
+        # module docstring for the period-optimality caveat.
+        return product_no_repeat_ordered(*[comp.gens for comp in self.components])
 
     def reset(self) -> bool:
         """

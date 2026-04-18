@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Tested generator #{{ tg_id }}{% endblock %}
+
+{% block content %}
+<div x-data="testedDetail({{ tg_id }})" x-init="load()">
+    <template x-if="tg">
+        <div>
+            <hgroup>
+                <h1>Tested generator #<span x-text="tg.id"></span></h1>
+                <p>J=<span x-text="tg.J"></span>
+                   · k_g=<span x-text="tg.k_g"></span>
+                   · Lmax=<span x-text="tg.Lmax"></span></p>
+            </hgroup>
+
+            <p x-show="tg.search_run_id">
+                Produced by tempering search
+                <a :href="'/tempering-search/' + tg.search_run_id"
+                   x-text="'#' + tg.search_run_id"></a>
+            </p>
+
+            <h3>Components</h3>
+            <template x-for="c in tg.components" :key="c.component_index">
+                <article>
+                    <header>
+                        <strong>Component <span x-text="c.component_index + 1"></span>:
+                            <span x-text="c.family"></span></strong>
+                        — k=<span x-text="c.k"></span>,
+                        L=<span x-text="c.L"></span>
+                        <template x-if="c.generator_id">
+                            · <a :href="'/generators/' + c.generator_id"
+                                 x-text="'generator #' + c.generator_id"></a>
+                        </template>
+                    </header>
+
+                    <details>
+                        <summary>Generator parameters</summary>
+                        <table class="compact">
+                            <template x-for="[k, v] in Object.entries(c.all_params)" :key="k">
+                                <tr><td class="mono" x-text="k"></td>
+                                    <td class="mono" x-text="JSON.stringify(v)"></td></tr>
+                            </template>
+                        </table>
+                    </details>
+
+                    <template x-if="c.tempering_params.length">
+                        <details open>
+                            <summary>Tempering chain
+                                (<span x-text="c.tempering_params.length"></span>)</summary>
+                            <template x-for="(t, ti) in c.tempering_params" :key="ti">
+                                <article>
+                                    <header><strong x-text="t.type"></strong></header>
+                                    <table class="compact">
+                                        <template x-for="[k, v] in Object.entries(t).filter(([k]) => k !== 'type')" :key="k">
+                                            <tr><td class="mono" x-text="k"></td>
+                                                <td class="mono" x-text="JSON.stringify(v)"></td></tr>
+                                        </template>
+                                    </table>
+                                </article>
+                            </template>
+                        </details>
+                    </template>
+                </article>
+            </template>
+
+            <h3>Test results</h3>
+            <template x-for="r in tg.results" :key="r.test_type + r.created_at">
+                <article>
+                    <header>
+                        <strong x-text="r.test_type"></strong>
+                        <template x-if="r.is_me">
+                            <span class="status-pill status-completed">ME</span>
+                        </template>
+                    </header>
+                    <ul>
+                        <template x-if="r.se !== null">
+                            <li>se = <strong x-text="r.se"></strong></li>
+                        </template>
+                        <template x-if="r.secf !== null">
+                            <li>secf = <span x-text="r.secf"></span></li>
+                        </template>
+                        <template x-if="r.detail && r.detail.ecart">
+                            <li>Non-zero dimension gaps:
+                                <table class="compact" style="display:inline-block">
+                                    <template x-for="[l, gap] in Object.entries(r.detail.ecart)" :key="l">
+                                        <tr>
+                                            <td class="mono">l=<span x-text="l"></span></td>
+                                            <td class="mono"
+                                                :class="gap > 3 ? 'equidist-cell-bad'
+                                                        : gap > 1 ? 'equidist-cell-warn'
+                                                                  : 'equidist-cell-ok'"
+                                                x-text="gap"></td>
+                                        </tr>
+                                    </template>
+                                </table>
+                            </li>
+                        </template>
+                    </ul>
+                </article>
+            </template>
+        </div>
+    </template>
+    <template x-if="!tg"><p>Loading...</p></template>
+</div>
+
+<script>
+function testedDetail(id) {
+    return {
+        tg: null,
+        async load() {
+            const r = await fetch('/api/tested-generators/' + id);
+            if (r.ok) this.tg = await r.json();
+        },
+    };
+}
+</script>
+{% endblock %}

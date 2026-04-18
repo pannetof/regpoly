@@ -86,7 +86,12 @@ class Generateur(Parametric):
         """
         resolved = resolve_family(family, params)
         specs = _cpp.get_gen_param_specs(resolved)
-        full = cls.fill_params(specs, params)
+        # Expose L to randomizers (e.g. tausworthe_poly) via the params
+        # dict; strip it afterwards so we don't pass it to the C++ factory.
+        work = dict(params)
+        work.setdefault("L", L)
+        full = cls.fill_params(specs, work)
+        full.pop("L", None)
 
         cpp_gen = _cpp.create_generator(resolved, full, L)
         gen = cls(cpp_gen)

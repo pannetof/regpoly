@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}New primitive search{% endblock %}
+
+{% block content %}
+<h1>New primitive search</h1>
+
+<div x-data="primitiveSearchForm()" x-init="init()">
+    <div class="grid">
+        <label>
+            Generator family
+            <select x-model="family" @change="onFamilyChange()">
+                <option value="">Choose a family…</option>
+                <template x-for="f in families" :key="f.name">
+                    <option :value="f.name" x-text="f.name"></option>
+                </template>
+            </select>
+        </label>
+
+        <label>
+            Output resolution L
+            <input type="number" x-model.number="L" min="1" required>
+        </label>
+    </div>
+
+    <template x-if="docs_html">
+        <details>
+            <summary>Generator documentation</summary>
+            <div class="docs-panel" x-html="docs_html"></div>
+        </details>
+    </template>
+
+    <template x-if="family">
+        <div>
+            <h3>Structural parameters</h3>
+            <p><small>These define k (the state size) and must be specified.</small></p>
+            <div class="param-grid">
+                <template x-for="p in params.filter(p => p.structural)" :key="p.name">
+                    <template x-if="true">
+                        <div class="contents" style="display:contents">
+                            <span class="param-name" x-text="p.name"></span>
+                            <input type="text" x-model="inputs[p.name]"
+                                   :placeholder="p.has_default ? '(default)' : 'required'">
+                            <span class="param-flag">
+                                <span x-text="p.type"></span>
+                                <template x-if="p.has_default">
+                                    <span>· default: <span x-text="JSON.stringify(p.default)"></span></span>
+                                </template>
+                            </span>
+                        </div>
+                    </template>
+                </template>
+            </div>
+
+            <h3>Non-structural parameters</h3>
+            <p><small>Leave unchecked to randomize, or enter an explicit value.</small></p>
+            <div class="param-grid">
+                <template x-for="p in params.filter(p => !p.structural)" :key="p.name">
+                    <template x-if="true">
+                        <div style="display:contents">
+                            <span class="param-name" x-text="p.name"></span>
+                            <input type="text" x-model="inputs[p.name]"
+                                   :placeholder="randHint(p)">
+                            <span class="param-flag">
+                                <span x-text="p.type"></span>
+                                <template x-if="p.rand_type && p.rand_type !== 'none'">
+                                    <span> · random: <span x-text="p.rand_type"></span>(<span x-text="p.rand_args"></span>)</span>
+                                </template>
+                                <template x-if="p.has_default">
+                                    <span> · default: <span x-text="JSON.stringify(p.default)"></span></span>
+                                </template>
+                            </span>
+                        </div>
+                    </template>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <h3>Search limits</h3>
+    <div class="grid">
+        <label>Max tries (blank = unlimited)
+            <input type="number" x-model.number="max_tries" min="1">
+        </label>
+        <label>Max seconds (blank = unlimited)
+            <input type="number" x-model.number="max_seconds" min="1" step="any">
+        </label>
+    </div>
+
+    <button @click="submit()" :disabled="!canSubmit() || busy">
+        <span x-text="busy ? 'Launching…' : 'Launch search'"></span>
+    </button>
+
+    <p x-show="error" class="error" x-text="error" style="color:#c92a2a"></p>
+</div>
+
+<script>
+function primitiveSearchForm() {
+    return {
+        families: [],
+        family: '',
+        L: 32,
+        params: [],
+        inputs: {},
+        docs_html: '',
+        max_tries: 10000,
+        max_seconds: null,
+        busy: false,
+        error: '',
+
+        async init() {
+            const res = await fetch('/api/families');
+            this.families = await res.json();
+        },
+
+        async onFamilyChange() {
+            this.params = [];
+            this.inputs = {};
+            this.docs_html = '';
+            if (!this.family) return;
+            const [famRes, docsRes] = await Promise.all([
+                fetch('/api/families/' + this.family),
+                fetch('/api/families/' + this.family + '/docs'),
+            ]);
+            const fam = await famRes.json();
+            this.params = fam.params;
+            for (const p of this.params) {
+                this.inputs[p.name] = '';
+            }
+            const docs = await docsRes.json();
+            this.docs_html = docs.html || '';
+        },
+
+        randHint(p) {
+            if (!p.rand_type || p.rand_type === 'none') {
+                return p.has_default ? '(use default)' : 'required';
+            }
+            return '(randomize automatically)';
+        },
+
+        canSubmit() {
+            if (!this.family || !this.L) return false;
+            for (const p of this.params) {
+                if (p.structural && !p.has_default
+                    && (this.inputs[p.name] === '' || this.inputs[p.name] == null)) {
+                    return false;
+                }
+            }
+            return true;
+        },
+
+        parseValue(raw) {
+            if (raw === '' || raw == null) return undefined;
+            if (typeof raw === 'number') return raw;
+            const trimmed = String(raw).trim();
+            if (trimmed.startsWith('[')) {
+                try { return JSON.parse(trimmed); } catch (_) {}
+            }
+            if (/^-?\d+$/.test(trimmed)) return parseInt(trimmed, 10);
+            if (/^0x[0-9a-fA-F]+$/.test(trimmed)) return parseInt(trimmed, 16);
+            return trimmed;
+        },
+
+        buildBody() {
+            const structural = {};
+            const fixed = {};
+            for (const p of this.params) {
+                const v = this.parseValue(this.inputs[p.name]);
+                if (v === undefined) continue;
+                if (p.structural) structural[p.name] = v;
+                else fixed[p.name] = v;
+            }
+            return {
+                family: this.family,
+                L: this.L,
+                structural_params: structural,
+                fixed_params: fixed,
+                max_tries: this.max_tries || null,
+                max_seconds: this.max_seconds || null,
+            };
+        },
+
+        async submit() {
+            this.busy = true;
+            this.error = '';
+            try {
+                const res = await fetch('/api/primitive-searches', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(this.buildBody()),
+                });
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    this.error = body.detail || 'Request failed';
+                    return;
+                }
+                const data = await res.json();
+                window.location.href = '/primitive-search/' + data.id;
+            } catch (err) {
+                this.error = err.message;
+            } finally {
+                this.busy = false;
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

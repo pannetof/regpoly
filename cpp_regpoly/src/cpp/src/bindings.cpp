@@ -10,6 +10,7 @@
 #include "lattice_polys.h"
 #include "harase_lattice.h"
 #include "lattice_optimizer.h"
+#include "gen_tausworthe.h"
 
 #include <NTL/GF2X.h>
 #include <NTL/GF2XFactoring.h>
@@ -353,6 +354,17 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
         return compute_kv(gens, trans, kg, v);
     }, py::arg("gens"), py::arg("trans"),
        py::arg("kg"), py::arg("v"));
+
+    // ── tausworthe_random_poly: sample an admissible polynomial ──────
+
+    m.def("tausworthe_random_poly",
+          [](int k, int nb_terms, bool quicktaus, int L, int s) {
+        return Tausworthe::random_poly(k, nb_terms, quicktaus, L, s);
+    }, py::arg("k"), py::arg("nb_terms"), py::arg("quicktaus"),
+       py::arg("L"), py::arg("s") = 0,
+       "Sample a random admissible Tausworthe polynomial.  Returns the "
+       "sorted exponent list [0, q_1, ..., q_{t-2}, k].  Throws if the "
+       "(k, nb_terms, quicktaus, L, s) combination is inadmissible.");
 
     // ── Generator subclass registrations ────────────────────────────────
     register_generator_types(m);

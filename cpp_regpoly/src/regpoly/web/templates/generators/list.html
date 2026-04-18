@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Generators{% endblock %}
+
+{% block content %}
+<hgroup>
+    <h1>Primitive generators</h1>
+    <p>All full-period generators stored in the database.</p>
+</hgroup>
+
+<div x-data="generatorBrowser()" x-init="init()">
+
+    <div class="grid">
+        <label>
+            Family
+            <select x-model="family" @change="onFamilyChange()">
+                <option value="">(any)</option>
+                <template x-for="f in families" :key="f.name">
+                    <option :value="f.name" x-text="f.name"></option>
+                </template>
+            </select>
+        </label>
+
+        <label>
+            k
+            <select x-model="kFilter" @change="onFilterChange()">
+                <option value="">(any)</option>
+                <template x-for="v in kValues" :key="v">
+                    <option :value="v" x-text="v"></option>
+                </template>
+            </select>
+        </label>
+    </div>
+
+    <template x-if="family && params.length">
+        <div class="grid">
+            <template x-for="p in params" :key="p.name">
+                <label>
+                    <span x-text="p.name"></span>
+                    <select x-model="paramFilter[p.name]" @change="onFilterChange()">
+                        <option value="">(any)</option>
+                        <template x-for="v in paramValues[p.name] || []" :key="v">
+                            <option :value="v" x-text="formatValue(p, v)"></option>
+                        </template>
+                    </select>
+                </label>
+            </template>
+        </div>
+    </template>
+
+    <p>
+        <span x-text="total"></span> generator(s) —
+        page <span x-text="page"></span>.
+    </p>
+
+    <table class="compact">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th x-show="!family">Family</th>
+                <th>k</th>
+                <th>L</th>
+                <template x-for="p in params" :key="p.name">
+                    <th x-text="p.name"></th>
+                </template>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <template x-for="g in items" :key="g.id">
+                <tr>
+                    <td x-text="g.id"></td>
+                    <td x-show="!family" x-text="g.family"></td>
+                    <td x-text="g.k"></td>
+                    <td x-text="g.L"></td>
+                    <template x-for="p in params" :key="p.name">
+                        <td class="mono" x-text="formatValue(p, g.all_params[p.name])"></td>
+                    </template>
+                    <td><a :href="'/generators/' + g.id">view</a></td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+
+    <nav>
+        <button @click="prev()" :disabled="page <= 1">Prev</button>
+        <button @click="next()" :disabled="page * 50 >= total">Next</button>
+    </nav>
+</div>
+
+<script>
+function generatorBrowser() {
+    return {
+        families: [],
+        family: '',
+        kFilter: '',
+        kValues: [],
+        params: [],              // ParamSpec list for the selected family
+        paramFilter: {},         // {name: value} from the dropdowns
+        paramValues: {},         // {name: [distinct values]}
+        items: [], total: 0, page: 1,
+
+        async init() {
+            // Only list families that actually have generators in the DB.
+            const res = await fetch('/api/generators/families');
+            this.families = await res.json();
+            // Populate the global k dropdown (no family selected yet).
+            await this.refreshDropdowns();
+            await this.reload();
+        },
+
+        async onFamilyChange() {
+            this.params = [];
+            this.paramFilter = {};
+            this.paramValues = {};
+            this.kFilter = '';
+            this.kValues = [];
+            this.page = 1;
+            if (this.family) {
+                const famRes = await fetch('/api/families/' + this.family);
+                const fam = await famRes.json();
+                this.params = fam.params;
+                // Seed reactive entries before async fills them
+                const seededFilter = {}, seededValues = {};
+                for (const p of this.params) {
+                    seededFilter[p.name] = '';
+                    seededValues[p.name] = [];
+                }
+                this.paramFilter = seededFilter;
+                this.paramValues = seededValues;
+                await this.refreshDropdowns();
+            }
+            await this.reload();
+        },
+
+        async onFilterChange() {
+            this.page = 1;
+            // Drop any current selection whose value is no longer
+            // available (e.g. after narrowing another filter).  The
+            // refreshDropdowns call below fetches the new value lists;
+            // if the current selection vanishes, clear it.
+            await this.refreshDropdowns();
+            let cleared = false;
+            if (this.kFilter !== '' &&
+                !this.kValues.map(String).includes(String(this.kFilter))) {
+                this.kFilter = '';
+                cleared = true;
+            }
+            for (const p of this.params) {
+                const sel = this.paramFilter[p.name];
+                if (sel !== '' && sel != null) {
+                    const avail = (this.paramValues[p.name] || []).map(String);
+                    if (!avail.includes(String(sel))) {
+                        this.paramFilter[p.name] = '';
+                        cleared = true;
+                    }
+                }
+            }
+            if (cleared) await this.refreshDropdowns();
+            await this.reload();
+        },
+
+        buildFilterQS() {
+            const qs = new URLSearchParams();
+            if (this.family) qs.set('family', this.family);
+            if (this.kFilter !== '') qs.set('k', this.kFilter);
+            for (const [k, v] of Object.entries(this.paramFilter)) {
+                if (v !== '' && v !== null && v !== undefined) {
+                    qs.set('p_' + k, v);
+                }
+            }
+            return qs;
+        },
+
+        async refreshDropdowns() {
+            const baseQS = this.buildFilterQS();
+            const fetchValues = async (name) => {
+                const qs = new URLSearchParams(baseQS);
+                qs.set('name', name);
+                const r = await fetch('/api/generators/param-values?' + qs.toString());
+                return [name, (await r.json()).values];
+            };
+            const names = ['k', ...this.params.map(p => p.name)];
+            const results = await Promise.all(names.map(fetchValues));
+            const map = Object.fromEntries(results);
+            this.kValues = map.k || [];
+            const filled = {};
+            for (const p of this.params) {
+                filled[p.name] = map[p.name] || [];
+            }
+            this.paramValues = filled;
+        },
+
+        formatValue(p, v) {
+            if (v === null || v === undefined) return '';
+            if (Array.isArray(v)) return '[' + v.join(', ') + ']';
+            if (typeof v === 'number' && p.rand_type === 'bitmask') {
+                // Display bitmasks in hex
+                return '0x' + v.toString(16);
+            }
+            return String(v);
+        },
+
+        async reload() {
+            const qs = new URLSearchParams();
+            qs.set('page', this.page);
+            qs.set('per_page', 50);
+            if (this.family) qs.set('family', this.family);
+            if (this.kFilter !== '') qs.set('k', this.kFilter);
+            for (const [k, v] of Object.entries(this.paramFilter)) {
+                if (v !== '' && v !== null && v !== undefined) {
+                    qs.set('p_' + k, v);
+                }
+            }
+            const res = await fetch('/api/generators?' + qs.toString());
+            const data = await res.json();
+            this.items = data.items;
+            this.total = data.total;
+        },
+
+        prev() { if (this.page > 1) { this.page--; this.reload(); } },
+        next() { this.page++; this.reload(); },
+    };
+}
+</script>
+{% endblock %}

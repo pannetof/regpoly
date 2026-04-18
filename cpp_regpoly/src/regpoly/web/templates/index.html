@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<hgroup>
+    <h1>regpoly</h1>
+    <p>Search and analysis for GF(2)-linear pseudo-random number generators.</p>
+</hgroup>
+
+<div class="grid">
+    <article>
+        <header><strong>Primitive search</strong></header>
+        <p>Find full-period generators by sampling random non-structural
+            parameters and checking primitivity.</p>
+        <footer>
+            <a href="/primitive-search" role="button">New search</a>
+            <a href="/generators" role="button" class="secondary">Browse</a>
+        </footer>
+    </article>
+
+    <article>
+        <header><strong>Tempering search</strong></header>
+        <p>Combine primitive generators into multi-component generators,
+            add tempering, and search for parameters that minimise the
+            equidistribution defect.</p>
+        <footer>
+            <a href="/tempering-search" role="button">New search</a>
+            <a href="/tested-generators" role="button" class="secondary">
+                Browse results</a>
+        </footer>
+    </article>
+</div>
+
+<section x-data="dashboard()" x-init="init()">
+    <h2>Active searches</h2>
+    <template x-if="active.primitive.length === 0 && active.tempering.length === 0">
+        <p><em>No active searches.</em></p>
+    </template>
+
+    <template x-if="active.primitive.length">
+        <div>
+            <h3>Primitive</h3>
+            <table class="compact">
+                <thead><tr><th>#</th><th>Family</th><th>k</th>
+                    <th>Tries</th><th>Found</th><th>Status</th></tr></thead>
+                <tbody>
+                    <template x-for="r in active.primitive" :key="r.id">
+                        <tr>
+                            <td><a :href="'/primitive-search/' + r.id"
+                                   x-text="r.id"></a></td>
+                            <td x-text="r.family"></td>
+                            <td x-text="r.k"></td>
+                            <td x-text="r.tries_done"></td>
+                            <td x-text="r.found_count"></td>
+                            <td><span class="status-pill"
+                                      :class="'status-' + r.status"
+                                      x-text="r.status"></span></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <template x-if="active.tempering.length">
+        <div>
+            <h3>Tempering</h3>
+            <table class="compact">
+                <thead><tr><th>#</th><th>Test</th><th>Done</th>
+                    <th>Best se</th><th>Status</th></tr></thead>
+                <tbody>
+                    <template x-for="r in active.tempering" :key="r.id">
+                        <tr>
+                            <td><a :href="'/tempering-search/' + r.id"
+                                   x-text="r.id"></a></td>
+                            <td x-text="r.test_type"></td>
+                            <td x-text="r.combos_done"></td>
+                            <td x-text="r.best_se ?? '—'"></td>
+                            <td><span class="status-pill"
+                                      :class="'status-' + r.status"
+                                      x-text="r.status"></span></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </template>
+</section>
+
+<script>
+function dashboard() {
+    return {
+        active: { primitive: [], tempering: [] },
+        async init() {
+            await this.reload();
+            setInterval(() => this.reload(), 3000);
+        },
+        async reload() {
+            const [p1, p2, t1, t2] = await Promise.all([
+                fetch('/api/primitive-searches?status=running'),
+                fetch('/api/primitive-searches?status=pending'),
+                fetch('/api/tempering-searches?status=running'),
+                fetch('/api/tempering-searches?status=pending'),
+            ]);
+            const prim = [
+                ...(await p1.json()).items,
+                ...(await p2.json()).items,
+            ];
+            const temp = [
+                ...(await t1.json()).items,
+                ...(await t2.json()).items,
+            ];
+            this.active = { primitive: prim, tempering: temp };
+        },
+    };
+}
+</script>
+{% endblock %}

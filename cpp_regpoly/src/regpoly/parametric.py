@@ -10,6 +10,7 @@ Provides the Parametric base class with:
 
 from __future__ import annotations
 
+import math as _math
 import random as _random
 
 
@@ -176,6 +177,52 @@ def generate_random(spec: dict, params: dict) -> object:
         bits = eval_expr(bits_param, params)
         length = len(params[length_param.strip()])
         return [_random.getrandbits(bits) for _ in range(length)]
+
+    if rt == "tausworthe_poly":
+        # rand_args: "k,nb_terms".  When nb_terms is missing / 0 we
+        # default to 3 (trinomial); when s is 0 / missing we pick a
+        # random admissible s so both the poly and the decimation step
+        # vary between tries.  We stash the chosen s into `params` so
+        # the downstream C++ constructor uses exactly that value
+        # instead of re-deriving it from the polynomial.
+        k_expr, nbt_expr = ra.split(",", 1)
+        k = int(eval_expr(k_expr.strip(), params))
+        nbt_key = nbt_expr.strip()
+        if nbt_key in params:
+            nb_terms = int(params[nbt_key])
+        elif nbt_key.lstrip("-").isdigit():
+            nb_terms = int(nbt_key)
+        else:
+            nb_terms = 0
+        if nb_terms <= 0:
+            nb_terms = 3
+        quicktaus = bool(params.get("quicktaus", True))
+        L = int(params.get("L", 0))      # injected by Generateur.create
+        s = int(params.get("s", 0))
+        if s <= 0:
+            s_max = (k - (nb_terms - 2)) if quicktaus else (k - 1)
+            if s_max < 1:
+                raise ValueError(
+                    f"Tausworthe: nb_terms={nb_terms} too large for k={k}"
+                )
+            # Decimation step s must be coprime with 2^k - 1 for the
+            # decimated LFSR sequence to have full period.  Re-roll
+            # until we hit a coprime value; for most k the success
+            # probability is > 50%, so a small retry budget suffices.
+            period = (1 << k) - 1
+            for _ in range(256):
+                s = _random.randint(1, s_max)
+                if _math.gcd(s, period) == 1:
+                    break
+            else:
+                raise ValueError(
+                    f"Tausworthe: could not find s in [1, {s_max}] with "
+                    f"gcd(s, 2^{k}-1)=1 after 256 tries"
+                )
+            params["s"] = s    # propagate to the generator constructor
+        import regpoly._regpoly_cpp as _cpp
+        return list(_cpp.tausworthe_random_poly(
+            k, nb_terms, quicktaus, L, s))
 
     raise ValueError(
         f"Parameter '{spec['name']}' has rand_type='{rt}' which is not "

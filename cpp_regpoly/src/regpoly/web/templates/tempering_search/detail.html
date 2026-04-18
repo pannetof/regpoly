@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Tempering search #{{ run_id }}{% endblock %}
+
+{% block content %}
+<div x-data="temperingSearchDetail({{ run_id }})" x-init="init()">
+    <hgroup>
+        <h1>Tempering search #{{ run_id }}</h1>
+        <p><template x-if="run">
+            <span><span x-text="run.test_type"></span>
+                · Lmax=<span x-text="run.Lmax"></span>
+                · nb_tries=<span x-text="run.nb_tries"></span></span>
+        </template></p>
+    </hgroup>
+
+    <template x-if="run">
+        <article>
+            <header>Status
+                <span class="status-pill" :class="'status-' + run.status"
+                      x-text="run.status"></span>
+            </header>
+            <template x-if="run.error_message">
+                <pre style="white-space: pre-wrap; color:#c92a2a"
+                     x-text="run.error_message"></pre>
+            </template>
+            <ul>
+                <li>Combinations done: <span x-text="run.combos_done"></span>
+                    <template x-if="run.combos_total">
+                        / <span x-text="run.combos_total"></span>
+                    </template>
+                </li>
+                <li>Best se so far:
+                    <strong x-text="run.best_se ?? '—'"></strong></li>
+                <li>Elapsed:
+                    <span x-text="(run.elapsed_seconds || 0).toFixed(1)"></span>s</li>
+                <template x-if="progress && progress.message">
+                    <li><em x-text="progress.message"></em></li>
+                </template>
+            </ul>
+            <footer>
+                <button @click="cancel()"
+                        :disabled="run.status !== 'running' && run.status !== 'pending'">
+                    Cancel
+                </button>
+            </footer>
+        </article>
+    </template>
+
+    <h3>Results (<span x-text="results.length"></span>)</h3>
+    <table class="compact">
+        <thead>
+            <tr><th>ID</th><th>J</th><th>k_g</th><th>se</th><th>ME?</th><th></th></tr>
+        </thead>
+        <tbody>
+            <template x-for="tg in results" :key="tg.id">
+                <tr>
+                    <td x-text="tg.id"></td>
+                    <td x-text="tg.J"></td>
+                    <td x-text="tg.k_g"></td>
+                    <td x-text="resultSe(tg) ?? '—'"></td>
+                    <td x-text="isMe(tg) ? '✓' : ''"></td>
+                    <td><a :href="'/tested-generators/' + tg.id">view</a></td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function temperingSearchDetail(id) {
+    return {
+        run: null, progress: null, results: [], sse: null,
+
+        async init() {
+            await this.loadRun();
+            await this.loadResults();
+            this.openSSE();
+        },
+
+        async loadRun() {
+            const r = await fetch('/api/tempering-searches/' + id);
+            if (r.ok) this.run = await r.json();
+        },
+
+        async loadResults() {
+            const r = await fetch('/api/tempering-searches/' + id + '/results');
+            if (r.ok) {
+                const data = await r.json();
+                this.results = data.items;
+            }
+        },
+
+        resultSe(tg) {
+            const eq = tg.results.find(r => r.test_type === 'equidistribution');
+            return eq ? eq.se : null;
+        },
+        isMe(tg) {
+            const eq = tg.results.find(r => r.test_type === 'equidistribution');
+            return eq && eq.is_me;
+        },
+
+        openSSE() {
+            this.sse = new EventSource('/api/tempering-searches/' + id + '/progress');
+            this.sse.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (data.status) {
+                        // Run-level update
+                        if (this.run) {
+                            Object.assign(this.run, {
+                                status: data.status,
+                                combos_done: data.combos_done,
+                                combos_total: data.combos_total,
+                                best_se: data.best_se,
+                                elapsed_seconds: data.elapsed_seconds,
+                            });
+                        }
+                    } else {
+                        this.progress = data;
+                    }
+                    // Reload results when combo count advances
+                    this.loadResults();
+                } catch (_) {}
+            };
+            this.sse.addEventListener('end', () => {
+                this.sse.close();
+                this.loadRun();
+                this.loadResults();
+            });
+        },
+
+        async cancel() {
+            await fetch('/api/tempering-searches/' + id + '/cancel',
+                {method: 'POST'});
+            this.loadRun();
+        },
+    };
+}
+</script>
+{% endblock %}
