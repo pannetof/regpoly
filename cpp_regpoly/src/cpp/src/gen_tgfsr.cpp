@@ -2,12 +2,12 @@
 #include <cstdio>
 #include <NTL/GF2X.h>
 
-TGFSRGen::TGFSRGen(int w, int r, int m, const BitVect& a, int L)
+TGFSR::TGFSR(int w, int r, int m, const BitVect& a, int L)
     : Generateur(w * r, L), w_(w), r_(r), m_(m), a_(a.copy()) {}
 
-std::string TGFSRGen::name() const { return "TGFSR"; }
+std::string TGFSR::name() const { return "TGFSR"; }
 
-std::string TGFSRGen::display_str() const {
+std::string TGFSR::display_str() const {
     uint32_t a_word;
     if (a_.nbits() >= 32)
         a_word = (uint32_t)a_.get_word(0, 32);
@@ -21,12 +21,12 @@ std::string TGFSRGen::display_str() const {
     return std::string(buf);
 }
 
-void TGFSRGen::init(const BitVect& init_bv) {
+void TGFSR::init(const BitVect& init_bv) {
     state_ = BitVect(k_);
     state_.copy_part_from(init_bv, k_);
 }
 
-void TGFSRGen::next() {
+void TGFSR::next() {
     BitVect temp2 = state_.copy();
     temp2.lshift(w_ * (r_ - m_ - 1));
     temp2.and_mask(w_);
@@ -49,13 +49,13 @@ void TGFSRGen::next() {
     state_.xor_with(temp);
 }
 
-std::unique_ptr<Generateur> TGFSRGen::copy() const {
-    auto p = std::make_unique<TGFSRGen>(w_, r_, m_, a_, L_);
+std::unique_ptr<Generateur> TGFSR::copy() const {
+    auto p = std::make_unique<TGFSR>(w_, r_, m_, a_, L_);
     p->state_ = state_.copy();
     return p;
 }
 
-BitVect TGFSRGen::char_poly() const {
+BitVect TGFSR::char_poly() const {
     // CharTGFSR: P(t) = (t^r + t^m)^w + sum_{j: bit j of a} (t^r + t^m)^j
     // where a is the w-bit twist mask (bit 0 = MSB in our BitVect).
     int K = k_;  // w * r
@@ -87,7 +87,7 @@ BitVect TGFSRGen::char_poly() const {
 
 // ── Factory methods ────────────────────────────────────────────────────
 
-std::unique_ptr<Generateur> TGFSRGen::from_params(const Params& params, int L) {
+std::unique_ptr<Generateur> TGFSR::from_params(const Params& params, int L) {
     int w = (int)params.get_int("w");
     int r = (int)params.get_int("r");
     int m = (int)params.get_int("m");
@@ -103,10 +103,10 @@ std::unique_ptr<Generateur> TGFSRGen::from_params(const Params& params, int L) {
             if ((a_val >> (k - 1 - i)) & 1)
                 a_bv.set_bit(i, 1);
     }
-    return std::make_unique<TGFSRGen>(w, r, m, a_bv, std::min(w, L));
+    return std::make_unique<TGFSR>(w, r, m, a_bv, std::min(w, L));
 }
 
-std::vector<ParamSpec> TGFSRGen::param_specs() {
+std::vector<ParamSpec> TGFSR::param_specs() {
     return {
         {"w", "int", true,  false, 0, "",        "", false},
         {"r", "int", true,  false, 0, "",        "", false},

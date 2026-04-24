@@ -1,0 +1,5820 @@
+id: lecuyer-1999
+authors:
+  - {family: "L'Ecuyer", given: Pierre}
+year: 1999
+title: "Tables of Maximally Equidistributed Combined LFSR Generators"
+venue: Mathematics of Computation
+volume: "68"
+issue: "225"
+pages: "261–269"
+doi: https://www.jstor.org/stable/2585109
+pdf: papers/tausme2.pdf
+bibkey: LEcuyer1999
+starred: true
+tags: [LFSR, Tausworthe, ME, classic]
+
+abstract: |
+  We give the results of a computer search for maximally
+  equidistributed combined linear feedback shift register (or
+  Tausworthe) random number generators, whose components are
+  trinomials of degrees slightly less than 32 or 64. These
+  generators are fast and have good statistical properties.
+
+notes: |
+  All 222 generators proposed in Tables 1-7 of the paper.  The two
+  canonical ones that the paper also provides as C implementations
+  (Figures 1 and 2) are surfaced as the short ids `lfsr113` and
+  `lfsr258`; every other entry is named
+  `lecuyer1999-t<T>-r<N>` for Table T, row N.
+
+generators:
+  - id: lfsr113
+    display: 'LFSR113'
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    starred: true
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 2}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 13}
+        tempering: []
+    notes: |
+      The canonical LFSR113 (Figure 1 of the paper,
+      first ME-CF generator in Table 1).  Period $\approx 2^{113}$.
+
+  - id: lecuyer1999-t1-r02
+    display: "L'Ecuyer 1999 Table 1 #2"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 3}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 9}
+        tempering: []
+
+  - id: lecuyer1999-t1-r03
+    display: "L'Ecuyer 1999 Table 1 #3"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 3}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 12}
+        tempering: []
+
+  - id: lecuyer1999-t1-r04
+    display: "L'Ecuyer 1999 Table 1 #4"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 2}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 6}
+        tempering: []
+
+  - id: lecuyer1999-t1-r05
+    display: "L'Ecuyer 1999 Table 1 #5"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 2}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 12}
+        tempering: []
+
+  - id: lecuyer1999-t1-r06
+    display: "L'Ecuyer 1999 Table 1 #6"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 3}
+        tempering: []
+
+  - id: lecuyer1999-t1-r07
+    display: "L'Ecuyer 1999 Table 1 #7"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 6}
+        tempering: []
+
+  - id: lecuyer1999-t1-r08
+    display: "L'Ecuyer 1999 Table 1 #8"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 9}
+        tempering: []
+
+  - id: lecuyer1999-t1-r09
+    display: "L'Ecuyer 1999 Table 1 #9"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 12}
+        tempering: []
+
+  - id: lecuyer1999-t1-r10
+    display: "L'Ecuyer 1999 Table 1 #10"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 8}
+        tempering: []
+
+  - id: lecuyer1999-t1-r11
+    display: "L'Ecuyer 1999 Table 1 #11"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 2}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 9}
+        tempering: []
+
+  - id: lecuyer1999-t1-r12
+    display: "L'Ecuyer 1999 Table 1 #12"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 4}
+        tempering: []
+
+  - id: lecuyer1999-t1-r13
+    display: "L'Ecuyer 1999 Table 1 #13"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 21}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 4}
+        tempering: []
+
+  - id: lecuyer1999-t1-r14
+    display: "L'Ecuyer 1999 Table 1 #14"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 2}
+        tempering: []
+
+  - id: lecuyer1999-t1-r15
+    display: "L'Ecuyer 1999 Table 1 #15"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 9}
+        tempering: []
+
+  - id: lecuyer1999-t1-r16
+    display: "L'Ecuyer 1999 Table 1 #16"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 3}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 15}
+        tempering: []
+
+  - id: lecuyer1999-t1-r17
+    display: "L'Ecuyer 1999 Table 1 #17"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 8}
+        tempering: []
+
+  - id: lecuyer1999-t1-r18
+    display: "L'Ecuyer 1999 Table 1 #18"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 21}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 4}
+        tempering: []
+
+  - id: lecuyer1999-t1-r19
+    display: "L'Ecuyer 1999 Table 1 #19"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 15}
+        tempering: []
+
+  - id: lecuyer1999-t1-r20
+    display: "L'Ecuyer 1999 Table 1 #20"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 6}
+        tempering: []
+
+  - id: lecuyer1999-t1-r21
+    display: "L'Ecuyer 1999 Table 1 #21"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 3}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 12}
+        tempering: []
+
+  - id: lecuyer1999-t1-r22
+    display: "L'Ecuyer 1999 Table 1 #22"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 13}
+        tempering: []
+
+  - id: lecuyer1999-t1-r23
+    display: "L'Ecuyer 1999 Table 1 #23"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 4}
+        tempering: []
+
+  - id: lecuyer1999-t1-r24
+    display: "L'Ecuyer 1999 Table 1 #24"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 10}
+        tempering: []
+
+  - id: lecuyer1999-t1-r25
+    display: "L'Ecuyer 1999 Table 1 #25"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 15}
+        tempering: []
+
+  - id: lecuyer1999-t1-r26
+    display: "L'Ecuyer 1999 Table 1 #26"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 11}
+        tempering: []
+
+  - id: lecuyer1999-t1-r27
+    display: "L'Ecuyer 1999 Table 1 #27"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 21}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 14}
+        tempering: []
+
+  - id: lecuyer1999-t1-r28
+    display: "L'Ecuyer 1999 Table 1 #28"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 7}
+        tempering: []
+
+  - id: lecuyer1999-t1-r29
+    display: "L'Ecuyer 1999 Table 1 #29"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 13}
+        tempering: []
+
+  - id: lecuyer1999-t1-r30
+    display: "L'Ecuyer 1999 Table 1 #30"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 15}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 13}
+        tempering: []
+
+  - id: lecuyer1999-t1-r31
+    display: "L'Ecuyer 1999 Table 1 #31"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 2}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 10}
+        tempering: []
+
+  - id: lecuyer1999-t1-r32
+    display: "L'Ecuyer 1999 Table 1 #32"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 3}
+        tempering: []
+
+  - id: lecuyer1999-t1-r33
+    display: "L'Ecuyer 1999 Table 1 #33"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 6}
+        tempering: []
+
+  - id: lecuyer1999-t1-r34
+    display: "L'Ecuyer 1999 Table 1 #34"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 21}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 13}
+        tempering: []
+
+  - id: lecuyer1999-t1-r35
+    display: "L'Ecuyer 1999 Table 1 #35"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 8}
+        tempering: []
+
+  - id: lecuyer1999-t1-r36
+    display: "L'Ecuyer 1999 Table 1 #36"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 6}
+        tempering: []
+
+  - id: lecuyer1999-t1-r37
+    display: "L'Ecuyer 1999 Table 1 #37"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 7}
+        tempering: []
+
+  - id: lecuyer1999-t1-r38
+    display: "L'Ecuyer 1999 Table 1 #38"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 15}
+        tempering: []
+
+  - id: lecuyer1999-t1-r39
+    display: "L'Ecuyer 1999 Table 1 #39"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 15}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 9}
+        tempering: []
+
+  - id: lecuyer1999-t1-r40
+    display: "L'Ecuyer 1999 Table 1 #40"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 15}
+        tempering: []
+
+  - id: lecuyer1999-t1-r41
+    display: "L'Ecuyer 1999 Table 1 #41"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 4}
+        tempering: []
+
+  - id: lecuyer1999-t1-r42
+    display: "L'Ecuyer 1999 Table 1 #42"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 15}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 11}
+        tempering: []
+
+  - id: lecuyer1999-t1-r43
+    display: "L'Ecuyer 1999 Table 1 #43"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 13}
+        tempering: []
+
+  - id: lecuyer1999-t1-r44
+    display: "L'Ecuyer 1999 Table 1 #44"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 2}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 9}
+        tempering: []
+
+  - id: lecuyer1999-t1-r45
+    display: "L'Ecuyer 1999 Table 1 #45"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 2}
+        tempering: []
+
+  - id: lecuyer1999-t1-r46
+    display: "L'Ecuyer 1999 Table 1 #46"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 3}
+        tempering: []
+
+  - id: lecuyer1999-t1-r47
+    display: "L'Ecuyer 1999 Table 1 #47"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 11}
+        tempering: []
+
+  - id: lecuyer1999-t1-r48
+    display: "L'Ecuyer 1999 Table 1 #48"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 5}
+        tempering: []
+
+  - id: lecuyer1999-t1-r49
+    display: "L'Ecuyer 1999 Table 1 #49"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 2}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 10}
+        tempering: []
+
+  - id: lecuyer1999-t1-r50
+    display: "L'Ecuyer 1999 Table 1 #50"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 10}
+        tempering: []
+
+  - id: lecuyer1999-t1-r51
+    display: "L'Ecuyer 1999 Table 1 #51"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 21}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 2}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 7}
+        tempering: []
+
+  - id: lecuyer1999-t1-r52
+    display: "L'Ecuyer 1999 Table 1 #52"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 21}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 13}
+        tempering: []
+
+  - id: lecuyer1999-t1-r53
+    display: "L'Ecuyer 1999 Table 1 #53"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 13}
+        tempering: []
+
+  - id: lecuyer1999-t1-r54
+    display: "L'Ecuyer 1999 Table 1 #54"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 14}
+        tempering: []
+
+  - id: lecuyer1999-t1-r55
+    display: "L'Ecuyer 1999 Table 1 #55"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 15}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 5}
+        tempering: []
+
+  - id: lecuyer1999-t1-r56
+    display: "L'Ecuyer 1999 Table 1 #56"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 4}
+        tempering: []
+
+  - id: lecuyer1999-t1-r57
+    display: "L'Ecuyer 1999 Table 1 #57"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 8}
+        tempering: []
+
+  - id: lecuyer1999-t1-r58
+    display: "L'Ecuyer 1999 Table 1 #58"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 14}
+        tempering: []
+
+  - id: lecuyer1999-t1-r59
+    display: "L'Ecuyer 1999 Table 1 #59"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 14}
+        tempering: []
+
+  - id: lecuyer1999-t1-r60
+    display: "L'Ecuyer 1999 Table 1 #60"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 3}
+        tempering: []
+
+  - id: lecuyer1999-t1-r61
+    display: "L'Ecuyer 1999 Table 1 #61"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 10}
+        tempering: []
+
+  - id: lecuyer1999-t1-r62
+    display: "L'Ecuyer 1999 Table 1 #62"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 6, 31], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0, 2, 29], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0, 13, 28], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 25, nb_terms: 3, quicktaus: true, poly: [0, 3, 25], s: 12}
+        tempering: []
+
+  - id: lecuyer1999-t2-r01
+    display: "L'Ecuyer 1999 Table 2 #1"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 5, 63], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 7}
+        tempering: []
+    notes: |
+      Full-period ($\rho \approx 2^{k}$).
+
+  - id: lecuyer1999-t2-r02
+    display: "L'Ecuyer 1999 Table 2 #2"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 27}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 14}
+        tempering: []
+    notes: |
+      Full-period ($\rho \approx 2^{k}$).
+
+  - id: lecuyer1999-t2-r03
+    display: "L'Ecuyer 1999 Table 2 #3"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 5, 63], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 21}
+        tempering: []
+    notes: |
+      Full-period ($\rho \approx 2^{k}$).
+
+  - id: lecuyer1999-t2-r04
+    display: "L'Ecuyer 1999 Table 2 #4"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 21, 47], s: 5}
+        tempering: []
+    notes: |
+      Full-period ($\rho \approx 2^{k}$).
+
+  - id: lecuyer1999-t2-r05
+    display: "L'Ecuyer 1999 Table 2 #5"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 13}
+        tempering: []
+    notes: |
+      Not full period because $k_j$ are not coprime.
+
+  - id: lecuyer1999-t2-r06
+    display: "L'Ecuyer 1999 Table 2 #6"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 15}
+        tempering: []
+    notes: |
+      Not full period because $k_j$ are not coprime.
+
+  - id: lecuyer1999-t2-r07
+    display: "L'Ecuyer 1999 Table 2 #7"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 16}
+        tempering: []
+    notes: |
+      Not full period because $k_j$ are not coprime.
+
+  - id: lecuyer1999-t2-r08
+    display: "L'Ecuyer 1999 Table 2 #8"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 20}
+        tempering: []
+    notes: |
+      Not full period because $k_j$ are not coprime.
+
+  - id: lecuyer1999-t2-r09
+    display: "L'Ecuyer 1999 Table 2 #9"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 27}
+        tempering: []
+    notes: |
+      Not full period because $k_j$ are not coprime.
+
+  - id: lecuyer1999-t2-r10
+    display: "L'Ecuyer 1999 Table 2 #10"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 5, 63], s: 51}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 19}
+        tempering: []
+    notes: |
+      Not full period because $k_j$ are not coprime.
+
+  - id: lecuyer1999-t3-r01
+    display: "L'Ecuyer 1999 Table 3 #1"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 21, 47], s: 8}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=223$, $N_1=49$.
+
+  - id: lecuyer1999-t3-r02
+    display: "L'Ecuyer 1999 Table 3 #2"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 21, 47], s: 7}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=223$, $N_1=49$.
+
+  - id: lecuyer1999-t3-r03
+    display: "L'Ecuyer 1999 Table 3 #3"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 21, 47], s: 9}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=223$, $N_1=49$.
+
+  - id: lecuyer1999-t3-r04
+    display: "L'Ecuyer 1999 Table 3 #4"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 31}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 21, 47], s: 6}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=223$, $N_1=49$.
+
+  - id: lecuyer1999-t3-r05
+    display: "L'Ecuyer 1999 Table 3 #5"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 21, 47], s: 6}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=223$, $N_1=49$.
+
+  - id: lecuyer1999-t3-r06
+    display: "L'Ecuyer 1999 Table 3 #6"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 30}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 21, 47], s: 9}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=223$, $N_1=49$.
+
+  - id: lecuyer1999-t3-r07
+    display: "L'Ecuyer 1999 Table 3 #7"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 21, 47], s: 6}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=223$, $N_1=49$.
+
+  - id: lecuyer1999-t3-r08
+    display: "L'Ecuyer 1999 Table 3 #8"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 21, 47], s: 9}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=223$, $N_1=49$.
+
+  - id: lecuyer1999-t4-r01
+    display: "L'Ecuyer 1999 Table 4 #1"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 11}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r02
+    display: "L'Ecuyer 1999 Table 4 #2"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 11}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r03
+    display: "L'Ecuyer 1999 Table 4 #3"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 48}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 30}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 11}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r04
+    display: "L'Ecuyer 1999 Table 4 #4"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 27}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 11}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r05
+    display: "L'Ecuyer 1999 Table 4 #5"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 46}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 11}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r06
+    display: "L'Ecuyer 1999 Table 4 #6"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 11}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r07
+    display: "L'Ecuyer 1999 Table 4 #7"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 11}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r08
+    display: "L'Ecuyer 1999 Table 4 #8"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 34}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 11}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r09
+    display: "L'Ecuyer 1999 Table 4 #9"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 50}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 38}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 12}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r10
+    display: "L'Ecuyer 1999 Table 4 #10"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 15}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 12}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r11
+    display: "L'Ecuyer 1999 Table 4 #11"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 44}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 12}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r12
+    display: "L'Ecuyer 1999 Table 4 #12"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 12}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r13
+    display: "L'Ecuyer 1999 Table 4 #13"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 13}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r14
+    display: "L'Ecuyer 1999 Table 4 #14"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 13}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r15
+    display: "L'Ecuyer 1999 Table 4 #15"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 40}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 13}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r16
+    display: "L'Ecuyer 1999 Table 4 #16"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 30}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 13}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r17
+    display: "L'Ecuyer 1999 Table 4 #17"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 45}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 13}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r18
+    display: "L'Ecuyer 1999 Table 4 #18"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 14}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r19
+    display: "L'Ecuyer 1999 Table 4 #19"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 52}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 14}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r20
+    display: "L'Ecuyer 1999 Table 4 #20"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 52}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 30}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 14}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r21
+    display: "L'Ecuyer 1999 Table 4 #21"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 14}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r22
+    display: "L'Ecuyer 1999 Table 4 #22"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 27}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 15}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r23
+    display: "L'Ecuyer 1999 Table 4 #23"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 15}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r24
+    display: "L'Ecuyer 1999 Table 4 #24"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 31}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 15}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r25
+    display: "L'Ecuyer 1999 Table 4 #25"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 15}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r26
+    display: "L'Ecuyer 1999 Table 4 #26"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 38}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 15}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r27
+    display: "L'Ecuyer 1999 Table 4 #27"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 53}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 15}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r28
+    display: "L'Ecuyer 1999 Table 4 #28"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 50}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 15}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r29
+    display: "L'Ecuyer 1999 Table 4 #29"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 41}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 15}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r30
+    display: "L'Ecuyer 1999 Table 4 #30"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 39}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 16}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r31
+    display: "L'Ecuyer 1999 Table 4 #31"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 53}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 33}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 16}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r32
+    display: "L'Ecuyer 1999 Table 4 #32"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r33
+    display: "L'Ecuyer 1999 Table 4 #33"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r34
+    display: "L'Ecuyer 1999 Table 4 #34"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r35
+    display: "L'Ecuyer 1999 Table 4 #35"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 54}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 36}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r36
+    display: "L'Ecuyer 1999 Table 4 #36"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 45}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r37
+    display: "L'Ecuyer 1999 Table 4 #37"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 30}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r38
+    display: "L'Ecuyer 1999 Table 4 #38"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 39}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 43}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r39
+    display: "L'Ecuyer 1999 Table 4 #39"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r40
+    display: "L'Ecuyer 1999 Table 4 #40"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 50}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r41
+    display: "L'Ecuyer 1999 Table 4 #41"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r42
+    display: "L'Ecuyer 1999 Table 4 #42"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r43
+    display: "L'Ecuyer 1999 Table 4 #43"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 40}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r44
+    display: "L'Ecuyer 1999 Table 4 #44"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 46}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r45
+    display: "L'Ecuyer 1999 Table 4 #45"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 31}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 18}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r46
+    display: "L'Ecuyer 1999 Table 4 #46"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 33}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 18}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r47
+    display: "L'Ecuyer 1999 Table 4 #47"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 43}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 31}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 18}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r48
+    display: "L'Ecuyer 1999 Table 4 #48"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 38}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 18}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r49
+    display: "L'Ecuyer 1999 Table 4 #49"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 46}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 39}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 18}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r50
+    display: "L'Ecuyer 1999 Table 4 #50"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 47}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r51
+    display: "L'Ecuyer 1999 Table 4 #51"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 33}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 27}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r52
+    display: "L'Ecuyer 1999 Table 4 #52"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r53
+    display: "L'Ecuyer 1999 Table 4 #53"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 43}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r54
+    display: "L'Ecuyer 1999 Table 4 #54"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r55
+    display: "L'Ecuyer 1999 Table 4 #55"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 53}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 27}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r56
+    display: "L'Ecuyer 1999 Table 4 #56"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r57
+    display: "L'Ecuyer 1999 Table 4 #57"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 30}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 27}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r58
+    display: "L'Ecuyer 1999 Table 4 #58"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 34}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 41}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r59
+    display: "L'Ecuyer 1999 Table 4 #59"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 36}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r60
+    display: "L'Ecuyer 1999 Table 4 #60"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 15}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r61
+    display: "L'Ecuyer 1999 Table 4 #61"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 52}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 34}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r62
+    display: "L'Ecuyer 1999 Table 4 #62"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r63
+    display: "L'Ecuyer 1999 Table 4 #63"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r64
+    display: "L'Ecuyer 1999 Table 4 #64"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 38}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r65
+    display: "L'Ecuyer 1999 Table 4 #65"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r66
+    display: "L'Ecuyer 1999 Table 4 #66"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 40}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r67
+    display: "L'Ecuyer 1999 Table 4 #67"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 46}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r68
+    display: "L'Ecuyer 1999 Table 4 #68"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 27}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r69
+    display: "L'Ecuyer 1999 Table 4 #69"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 33}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r70
+    display: "L'Ecuyer 1999 Table 4 #70"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 20}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r71
+    display: "L'Ecuyer 1999 Table 4 #71"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r72
+    display: "L'Ecuyer 1999 Table 4 #72"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 41}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r73
+    display: "L'Ecuyer 1999 Table 4 #73"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 43}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r74
+    display: "L'Ecuyer 1999 Table 4 #74"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 38}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r75
+    display: "L'Ecuyer 1999 Table 4 #75"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 30}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 39}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r76
+    display: "L'Ecuyer 1999 Table 4 #76"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 38}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 43}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r77
+    display: "L'Ecuyer 1999 Table 4 #77"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r78
+    display: "L'Ecuyer 1999 Table 4 #78"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 34}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r79
+    display: "L'Ecuyer 1999 Table 4 #79"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 38}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 41}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r80
+    display: "L'Ecuyer 1999 Table 4 #80"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 31}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r81
+    display: "L'Ecuyer 1999 Table 4 #81"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r82
+    display: "L'Ecuyer 1999 Table 4 #82"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 27}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 21}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r83
+    display: "L'Ecuyer 1999 Table 4 #83"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 27}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r84
+    display: "L'Ecuyer 1999 Table 4 #84"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r85
+    display: "L'Ecuyer 1999 Table 4 #85"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 41}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r86
+    display: "L'Ecuyer 1999 Table 4 #86"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 50}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r87
+    display: "L'Ecuyer 1999 Table 4 #87"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 55}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r88
+    display: "L'Ecuyer 1999 Table 4 #88"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 50}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 36}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r89
+    display: "L'Ecuyer 1999 Table 4 #89"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 39}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r90
+    display: "L'Ecuyer 1999 Table 4 #90"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 55}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r91
+    display: "L'Ecuyer 1999 Table 4 #91"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t4-r92
+    display: "L'Ecuyer 1999 Table 4 #92"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 51}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=233$, $\lg\rho = 230$, $N_1=59$.
+
+  - id: lecuyer1999-t5-r01
+    display: "L'Ecuyer 1999 Table 5 #1"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 30}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 60, nb_terms: 3, quicktaus: true, poly: [0, 1, 60], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 18}
+        tempering: []
+    notes: |
+      ME-CF, $k=238$, $\lg\rho=220$, $N_1=71$.
+
+  - id: lecuyer1999-t5-r02
+    display: "L'Ecuyer 1999 Table 5 #2"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 60, nb_terms: 3, quicktaus: true, poly: [0, 1, 60], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 5}
+        tempering: []
+    notes: |
+      ME-CF, $k=238$, $\lg\rho=220$, $N_1=71$.
+
+  - id: lecuyer1999-t5-r03
+    display: "L'Ecuyer 1999 Table 5 #3"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 60, nb_terms: 3, quicktaus: true, poly: [0, 1, 60], s: 38}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 24}
+        tempering: []
+    notes: |
+      ME-CF, $k=238$, $\lg\rho=220$, $N_1=71$.
+
+  - id: lecuyer1999-t5-r04
+    display: "L'Ecuyer 1999 Table 5 #4"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 60, nb_terms: 3, quicktaus: true, poly: [0, 1, 60], s: 47}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=238$, $\lg\rho=220$, $N_1=71$.
+
+  - id: lecuyer1999-t5-r05
+    display: "L'Ecuyer 1999 Table 5 #5"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 60, nb_terms: 3, quicktaus: true, poly: [0, 11, 60], s: 34}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=238$, $\lg\rho=220$, $N_1=71$.
+
+  - id: lecuyer1999-t5-r06
+    display: "L'Ecuyer 1999 Table 5 #6"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 31, 63], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 60, nb_terms: 3, quicktaus: true, poly: [0, 11, 60], s: 38}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 58, nb_terms: 3, quicktaus: true, poly: [0, 19, 58], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 22, 57], s: 18}
+        tempering: []
+    notes: |
+      ME-CF, $k=238$, $\lg\rho=220$, $N_1=71$.
+
+  - id: lfsr258
+    display: 'LFSR258'
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    starred: true
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 8}
+        tempering: []
+    notes: |
+      The canonical LFSR258 (Figure 2 of the paper,
+      first ME-CF generator in Table 6).  Period $\approx 2^{258}$, full period.
+
+  - id: lecuyer1999-t6-r02
+    display: "L'Ecuyer 1999 Table 6 #2"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 15}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r03
+    display: "L'Ecuyer 1999 Table 6 #3"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 7}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r04
+    display: "L'Ecuyer 1999 Table 6 #4"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 14}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r05
+    display: "L'Ecuyer 1999 Table 6 #5"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 18}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 3}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r06
+    display: "L'Ecuyer 1999 Table 6 #6"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 31}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 15}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 13}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r07
+    display: "L'Ecuyer 1999 Table 6 #7"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 6}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r08
+    display: "L'Ecuyer 1999 Table 6 #8"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 11}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r09
+    display: "L'Ecuyer 1999 Table 6 #9"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 7}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r10
+    display: "L'Ecuyer 1999 Table 6 #10"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 8}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r11
+    display: "L'Ecuyer 1999 Table 6 #11"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 9}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r12
+    display: "L'Ecuyer 1999 Table 6 #12"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 12}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r13
+    display: "L'Ecuyer 1999 Table 6 #13"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 31}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 13}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r14
+    display: "L'Ecuyer 1999 Table 6 #14"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 36}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 8}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r15
+    display: "L'Ecuyer 1999 Table 6 #15"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 36}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 21}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 8}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r16
+    display: "L'Ecuyer 1999 Table 6 #16"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 39}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 8}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r17
+    display: "L'Ecuyer 1999 Table 6 #17"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 43}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 15}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r18
+    display: "L'Ecuyer 1999 Table 6 #18"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 44}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 15}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 15}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r19
+    display: "L'Ecuyer 1999 Table 6 #19"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 44}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 6}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 13}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r20
+    display: "L'Ecuyer 1999 Table 6 #20"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 44}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 34}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 9}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r21
+    display: "L'Ecuyer 1999 Table 6 #21"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 45}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 21}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 8}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r22
+    display: "L'Ecuyer 1999 Table 6 #22"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 51}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 3}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 12}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r23
+    display: "L'Ecuyer 1999 Table 6 #23"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 53}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 8}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t6-r24
+    display: "L'Ecuyer 1999 Table 6 #24"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 54}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 28}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 41, nb_terms: 3, quicktaus: true, poly: [0, 3, 41], s: 3}
+        tempering: []
+    notes: |
+      Full-period ME-CF, $k=258$, $N_1=103$.
+
+  - id: lecuyer1999-t7-r01
+    display: "L'Ecuyer 1999 Table 7 #1"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 34}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 18}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r02
+    display: "L'Ecuyer 1999 Table 7 #2"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 31}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 6}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r03
+    display: "L'Ecuyer 1999 Table 7 #3"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 25}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r04
+    display: "L'Ecuyer 1999 Table 7 #4"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 10}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 24}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 7}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 12}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r05
+    display: "L'Ecuyer 1999 Table 7 #5"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 8}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r06
+    display: "L'Ecuyer 1999 Table 7 #6"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 40}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 22}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r07
+    display: "L'Ecuyer 1999 Table 7 #7"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 34}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 23}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r08
+    display: "L'Ecuyer 1999 Table 7 #8"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 27}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 13}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 9}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r09
+    display: "L'Ecuyer 1999 Table 7 #9"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 17}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 37}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r10
+    display: "L'Ecuyer 1999 Table 7 #10"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 41}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 6}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r11
+    display: "L'Ecuyer 1999 Table 7 #11"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 40}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 4}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 18}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r12
+    display: "L'Ecuyer 1999 Table 7 #12"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 14}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 19}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r13
+    display: "L'Ecuyer 1999 Table 7 #13"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 41}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 6}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r14
+    display: "L'Ecuyer 1999 Table 7 #14"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 16}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 32}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 4}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r15
+    display: "L'Ecuyer 1999 Table 7 #15"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 9}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 11}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 14}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r16
+    display: "L'Ecuyer 1999 Table 7 #16"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 26}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 19}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 29}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 3}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r17
+    display: "L'Ecuyer 1999 Table 7 #17"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 44}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 20}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 6}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r18
+    display: "L'Ecuyer 1999 Table 7 #18"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 44}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 31}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 22}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 14}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r19
+    display: "L'Ecuyer 1999 Table 7 #19"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 53}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 8}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 23}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 17}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+
+  - id: lecuyer1999-t7-r20
+    display: "L'Ecuyer 1999 Table 7 #20"
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 64
+    components:
+      - family: Tausworthe
+        L: 64
+        params: {k: 63, nb_terms: 3, quicktaus: true, poly: [0, 1, 63], s: 53}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 57, nb_terms: 3, quicktaus: true, poly: [0, 7, 57], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 55, nb_terms: 3, quicktaus: true, poly: [0, 24, 55], s: 5}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 52, nb_terms: 3, quicktaus: true, poly: [0, 3, 52], s: 31}
+        tempering: []
+      - family: Tausworthe
+        L: 64
+        params: {k: 47, nb_terms: 3, quicktaus: true, poly: [0, 5, 47], s: 18}
+        tempering: []
+    notes: |
+      ME-CF, $k=274$, $\lg\rho=271$, $N_1=119$.
+

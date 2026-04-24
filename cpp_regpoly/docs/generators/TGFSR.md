@@ -1,6 +1,6 @@
-# TGFSRGen
+# TGFSR
 
-**C++ class:** `TGFSRGen`
+**C++ class:** `TGFSR`
 **Name in code:** `"TGFSR"`
 **Legacy aliases:** `tgfsr`
 
@@ -68,7 +68,7 @@ primitive.
 
 ```yaml
 search:
-  family: TGFSRGen
+  family: TGFSR
   L: 32
   limit:
     max_tries: 10000
@@ -86,7 +86,7 @@ fixed_params:
 
 ```yaml
 search:
-  family: TGFSRGen
+  family: TGFSR
   L: 32
   output: tgfsr_w32r7_results.yaml
   limit:
@@ -106,7 +106,7 @@ fixed_params:
 
 ```yaml
 search:
-  family: TGFSRGen
+  family: TGFSR
   L: 32
   limit:
     max_tries: 200000
@@ -119,3 +119,14 @@ fixed_params:
   m:     # randomized in [1, 24]
   a:     # randomized 32-bit mask
 ```
+
+---
+
+## References
+
+- M. Matsumoto and Y. Kurita. *Twisted GFSR generators.*
+  ACM Trans. Model. Comput. Simul. **2** (1992), 179–194.
+  [DOI](https://doi.org/10.1145/146382.146383)
+- M. Matsumoto and Y. Kurita. *Twisted GFSR generators II.*
+  ACM Trans. Model. Comput. Simul. **4** (1994), 254–266.
+  [DOI](https://doi.org/10.1145/189443.189445)

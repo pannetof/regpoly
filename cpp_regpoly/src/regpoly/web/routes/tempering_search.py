@@ -10,6 +10,9 @@ from fastapi.responses import StreamingResponse
 
 from regpoly.web.database import json_dumps, json_loads
 from regpoly.web.models import TemperingSearchCreate
+from regpoly.web.param_format import (
+    format_gen_params, format_tempering_list,
+)
 from regpoly.web.tasks.tempering import run_tempering_search
 
 
@@ -204,7 +207,9 @@ async def get_tempering_search(request: Request, run_id: int) -> dict:
         gen_records = [
             {
                 "id": r["id"], "family": r["family"], "L": r["L"],
-                "k": r["k"], "all_params": json_loads(r["all_params"]),
+                "k": r["k"],
+                "all_params": format_gen_params(
+                    r["family"], json_loads(r["all_params"])),
                 "search_run_id": r["search_run_id"],
             }
             for r in rows
@@ -212,7 +217,8 @@ async def get_tempering_search(request: Request, run_id: int) -> dict:
         components.append({
             "component_index": c["component_index"],
             "shared_with_component": c["shared_with_component"],
-            "tempering_config": json_loads(c["tempering_config"]),
+            "tempering_config": format_tempering_list(
+                json_loads(c["tempering_config"])),
             "generator_ids": gen_ids,
             "generators": gen_records,
         })

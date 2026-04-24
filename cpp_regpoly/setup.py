@@ -26,6 +26,8 @@ ext_modules = [
             "src/cpp/src/gen_ac1d.cpp",
             "src/cpp/src/gen_wellrng.cpp",
             "src/cpp/src/gen_melg.cpp",
+            "src/cpp/src/gen_sfmt.cpp",
+            "src/cpp/src/gen_mtgp.cpp",
             "src/cpp/src/factory.cpp",
             "src/cpp/src/gen_enumerator.cpp",
             "src/cpp/src/trans_permutation.cpp",

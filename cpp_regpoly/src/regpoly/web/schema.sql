@@ -56,6 +56,9 @@ CREATE TABLE IF NOT EXISTS primitive_generator (
     pis_elapsed       REAL,               -- seconds to compute
     pis_computed_at   TEXT,               -- datetime when analysis finished
     pis_error         TEXT,               -- last error message, if any
+    library_id        TEXT,               -- slug from docs/library/*.yaml
+                                          -- when this row is the canonical
+                                          -- published generator for that id
     UNIQUE(family, structural_params, search_params)
 );
 
@@ -117,11 +120,14 @@ CREATE TABLE IF NOT EXISTS tested_generator (
     Lmax              INTEGER NOT NULL,
     k_g               INTEGER NOT NULL,
     J                 INTEGER NOT NULL,
-    created_at        TEXT    NOT NULL DEFAULT (datetime('now'))
+    created_at        TEXT    NOT NULL DEFAULT (datetime('now')),
+    library_id        TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_tg_search_run ON tested_generator(search_run_id);
 CREATE INDEX IF NOT EXISTS idx_tg_k_g ON tested_generator(k_g);
+-- idx_pg_library_id / idx_tg_library_id are created in database.py::_migrate
+-- (after ALTER TABLE adds library_id on older DBs).
 
 CREATE TABLE IF NOT EXISTS tested_generator_component (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,

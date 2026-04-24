@@ -43,16 +43,28 @@ def find_docs_dir() -> Path | None:
 
     Looks first at an env-var override, then relative to the package.
     """
-    env = os.environ.get("REGPOLY_DOCS_DIR")
+    return _find_repo_subdir("REGPOLY_DOCS_DIR", "docs/generators")
+
+
+def find_library_dir() -> Path | None:
+    """Locate the docs/library directory holding published-generator YAMLs."""
+    return _find_repo_subdir("REGPOLY_LIBRARY_DIR", "docs/library")
+
+
+def find_papers_dir() -> Path | None:
+    """Locate the top-level papers/ directory holding committed PDFs."""
+    return _find_repo_subdir("REGPOLY_PAPERS_DIR", "papers")
+
+
+def _find_repo_subdir(env_var: str, rel_path: str) -> Path | None:
+    env = os.environ.get(env_var)
     if env:
         p = Path(env)
         if p.is_dir():
             return p
-    # The docs live at <repo>/docs/generators in source checkouts.
-    # Walk up from the package looking for a sibling 'docs' dir.
     here = WEB_PACKAGE_DIR
     for _ in range(6):
-        candidate = here / "docs" / "generators"
+        candidate = here / rel_path
         if candidate.is_dir():
             return candidate
         here = here.parent

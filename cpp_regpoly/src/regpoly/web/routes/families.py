@@ -23,7 +23,7 @@ router = APIRouter()
 KNOWN_FAMILIES: list[str] = [
     "PolyLCG",
     "Tausworthe",
-    "TGFSRGen",
+    "TGFSR",
     "MersenneTwister",
     "MatsumotoGen",
     "MarsaXorshiftGen",
@@ -32,6 +32,8 @@ KNOWN_FAMILIES: list[str] = [
     "GenF2wLFSR",
     "GenF2wPolyLCG",
     "MELG",
+    "SFMT",
+    "MTGP",
 ]
 
 # Transformation types exposed by the factory.

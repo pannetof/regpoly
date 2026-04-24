@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from regpoly.web.database import json_loads
+from regpoly.web.param_format import format_gen_params
 
 
 router = APIRouter()
@@ -14,15 +15,19 @@ def _row_to_generator(row) -> dict:
     keys = row.keys() if hasattr(row, "keys") else []
     def opt(name):
         return row[name] if name in keys else None
+    family = row["family"]
     return {
         "id": row["id"],
         "search_run_id": row["search_run_id"],
-        "family": row["family"],
+        "family": family,
         "L": row["L"],
         "k": row["k"],
-        "structural_params": json_loads(row["structural_params"]),
-        "search_params": json_loads(row["search_params"]),
-        "all_params": json_loads(row["all_params"]),
+        "structural_params": format_gen_params(
+            family, json_loads(row["structural_params"])),
+        "search_params": format_gen_params(
+            family, json_loads(row["search_params"])),
+        "all_params": format_gen_params(
+            family, json_loads(row["all_params"])),
         "found_at_try": row["found_at_try"],
         "created_at": row["created_at"],
         "char_poly": opt("char_poly"),
@@ -32,6 +37,7 @@ def _row_to_generator(row) -> dict:
         "pis_elapsed": opt("pis_elapsed"),
         "pis_computed_at": opt("pis_computed_at"),
         "pis_error": opt("pis_error"),
+        "library_id": opt("library_id"),
     }
 
 
@@ -55,7 +61,7 @@ async def list_generators(
 
     Any query param prefixed with `p_` filters by an exact match on the
     corresponding parameter inside `all_params` (via json_extract).
-    Example: `?family=TGFSRGen&p_w=32&p_r=3` matches generators whose
+    Example: `?family=TGFSR&p_w=32&p_r=3` matches generators whose
     all_params has w=32 and r=3.
     """
     db = request.app.state.db

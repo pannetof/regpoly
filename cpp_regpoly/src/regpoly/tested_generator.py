@@ -7,7 +7,7 @@ with its tempering chain and the results of the test that validated it.
 File format (single component)::
 
     generator:
-      family: TGFSRGen
+      family: TGFSR
       L: 32
       w: 32
       r: 3
@@ -32,7 +32,7 @@ File format (multi-component)::
 
     components:
       - generator:
-          family: TGFSRGen
+          family: TGFSR
           L: 32
           w: 32
           r: 3
@@ -42,7 +42,7 @@ File format (multi-component)::
           - type: tempMK
             ...
       - generator:
-          family: TGFSRGen
+          family: TGFSR
           L: 31
           w: 31
           r: 5

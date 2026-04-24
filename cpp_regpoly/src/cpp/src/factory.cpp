@@ -11,6 +11,8 @@
 #include "gen_ac1d.h"
 #include "gen_wellrng.h"
 #include "gen_melg.h"
+#include "gen_sfmt.h"
+#include "gen_mtgp.h"
 #include "trans_permutation.h"
 #include "trans_temper_mk.h"
 #include "trans_lag_mask.h"
@@ -22,7 +24,7 @@ namespace py = pybind11;
 void register_generator_types(py::module_& m) {
     py::class_<PolyLCG, Generateur, std::unique_ptr<PolyLCG>>(m, "PolyLCG");
     py::class_<Tausworthe, Generateur, std::unique_ptr<Tausworthe>>(m, "Tausworthe");
-    py::class_<TGFSRGen, Generateur, std::unique_ptr<TGFSRGen>>(m, "TGFSRGen");
+    py::class_<TGFSR, Generateur, std::unique_ptr<TGFSR>>(m, "TGFSR");
     py::class_<MersenneTwister, Generateur, std::unique_ptr<MersenneTwister>>(m, "MersenneTwister");
     py::class_<GenF2wBase, Generateur, std::unique_ptr<GenF2wBase>>(m, "GenF2wBase");
     py::class_<GenF2wPolyLCG, GenF2wBase, std::unique_ptr<GenF2wPolyLCG>>(m, "GenF2wPolyLCG");
@@ -32,6 +34,8 @@ void register_generator_types(py::module_& m) {
     py::class_<AC1DGen, Generateur, std::unique_ptr<AC1DGen>>(m, "AC1DGen");
     py::class_<WELLRNG, Generateur, std::unique_ptr<WELLRNG>>(m, "WELLRNG");
     py::class_<MELG, Generateur, std::unique_ptr<MELG>>(m, "MELG");
+    py::class_<SFMT, Generateur, std::unique_ptr<SFMT>>(m, "SFMT");
+    py::class_<MTGP, Generateur, std::unique_ptr<MTGP>>(m, "MTGP");
 }
 
 std::unique_ptr<Generateur> create_generator(
@@ -39,7 +43,8 @@ std::unique_ptr<Generateur> create_generator(
 {
     if (family == "PolyLCG")          return PolyLCG::from_params(params, L);
     if (family == "Tausworthe")       return Tausworthe::from_params(params, L);
-    if (family == "TGFSRGen")         return TGFSRGen::from_params(params, L);
+    if (family == "TGFSR" || family == "TGFSRGen")
+                                      return TGFSR::from_params(params, L);
     if (family == "MersenneTwister")  return MersenneTwister::from_params(params, L);
     if (family == "GenF2wPolyLCG")    return GenF2wPolyLCG::from_params(params, L);
     if (family == "GenF2wLFSR")       return GenF2wLFSR::from_params(params, L);
@@ -48,6 +53,8 @@ std::unique_ptr<Generateur> create_generator(
     if (family == "AC1DGen")          return AC1DGen::from_params(params, L);
     if (family == "WELLRNG")          return WELLRNG::from_params(params, L);
     if (family == "MELG")             return MELG::from_params(params, L);
+    if (family == "SFMT")             return SFMT::from_params(params, L);
+    if (family == "MTGP")             return MTGP::from_params(params, L);
     throw std::invalid_argument("Unknown generator family: " + family);
 }
 
@@ -64,7 +71,8 @@ std::vector<ParamSpec> get_gen_param_specs(const std::string& family)
 {
     if (family == "PolyLCG")          return PolyLCG::param_specs();
     if (family == "Tausworthe")       return Tausworthe::param_specs();
-    if (family == "TGFSRGen")         return TGFSRGen::param_specs();
+    if (family == "TGFSR" || family == "TGFSRGen")
+                                      return TGFSR::param_specs();
     if (family == "MersenneTwister")  return MersenneTwister::param_specs();
     if (family == "GenF2wPolyLCG" || family == "GenF2wLFSR")
                                       return GenF2wPolyLCG::param_specs();
@@ -73,6 +81,8 @@ std::vector<ParamSpec> get_gen_param_specs(const std::string& family)
     if (family == "AC1DGen")          return AC1DGen::param_specs();
     if (family == "WELLRNG")          return WELLRNG::param_specs();
     if (family == "MELG")             return MELG::param_specs();
+    if (family == "SFMT")             return SFMT::param_specs();
+    if (family == "MTGP")             return MTGP::param_specs();
     throw std::invalid_argument("Unknown generator family: " + family);
 }
 

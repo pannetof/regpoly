@@ -130,7 +130,7 @@ class LegacyReader:
                 a_val = int(tokens[0], 16)
                 m_val = int(tokens[1])
                 params = {"w": w, "r": r, "m": m_val, "a": a_val}
-                generators.append(Generateur.create("TGFSRGen", L, **params))
+                generators.append(Generateur.create("TGFSR", L, **params))
         return generators
 
     # -- Mersenne Twister -------------------------------------------------

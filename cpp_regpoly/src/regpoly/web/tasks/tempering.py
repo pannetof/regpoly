@@ -378,7 +378,15 @@ def _load_components(conn, run_id: int) -> list[dict]:
 
 
 def _build_gen_and_trans(components: list[dict], Lmax: int):
-    """Build per-component lists of Generateur and Transformation instances."""
+    """Build per-component lists of Generateur and Transformation instances.
+
+    Keeps the pool-sharing logic specific to the tempering-search worker
+    inline; delegates the (stateless) tempering-chain construction to
+    :func:`regpoly.combinaison_build.build_tempering_chain` so it is
+    shared with the library runner.
+    """
+    from regpoly.combinaison_build import build_tempering_chain
+
     gen_pools: list[list[Generateur]] = []
     pool_by_index: dict[int, list[Generateur]] = {}
 
@@ -402,33 +410,16 @@ def _build_gen_and_trans(components: list[dict], Lmax: int):
         gen_pools.append(pool)
         pool_by_index[c["component_index"]] = pool
 
-    temperings: list[list[Transformation]] = []
-    for c in components:
-        chain = []
-        for tconf in c["tempering_config"]:
-            ttype = tconf["type"]
-            tparams = {k: v for k, v in tconf.items() if k != "type"}
-            chain.append(Transformation.create(ttype, **tparams))
-        temperings.append(chain)
-
+    temperings: list[list[Transformation]] = [
+        build_tempering_chain(c["tempering_config"]) for c in components
+    ]
     return gen_pools, temperings
 
 
 def _build_test(test_config: dict, Lmax: int):
-    from regpoly.analyses.equidistribution_test import EquidistributionTest
-    from regpoly.analyses.collision_free_test import CollisionFreeTest
-    from regpoly.analyses.tuplets_test import TupletsTest
-
-    dispatch = {
-        "equidistribution": EquidistributionTest,
-        "collision_free": CollisionFreeTest,
-        "tuplets": TupletsTest,
-    }
-    ttype = test_config.get("type", "equidistribution")
-    cls = dispatch.get(ttype)
-    if cls is None:
-        raise ValueError(f"Unknown test type: {ttype}")
-    return cls._from_params(test_config, Lmax)
+    # Re-exported from tasks._test_build so the library runner can share it.
+    from regpoly.web.tasks._test_build import build_test
+    return build_test(test_config, Lmax)
 
 
 def _build_optimizer(cfg: dict | None):

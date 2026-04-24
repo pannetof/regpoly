@@ -74,7 +74,7 @@ def test_create_tausworthe_auto_s():
 
 
 def test_create_tgfsr():
-    gen = Generateur.create("TGFSRGen", 8, w=8, r=3, m=1, a=0b10110011)
+    gen = Generateur.create("TGFSR", 8, w=8, r=3, m=1, a=0b10110011)
     assert gen.k == 24  # w * r
 
 
@@ -84,7 +84,7 @@ def test_create_with_legacy_name():
 
 
 def test_create_with_random_params():
-    gen = Generateur.create("TGFSRGen", 32, w=32, r=3)
+    gen = Generateur.create("TGFSR", 32, w=32, r=3)
     assert gen.k == 96  # w * r = 32 * 3
 
 
@@ -114,7 +114,7 @@ def test_transition_matrix():
 # ── Generateur.parameters ────────────────────────────────────────────────
 
 def test_parameters_tgfsr():
-    specs = Generateur.parameters("TGFSRGen")
+    specs = Generateur.parameters("TGFSR")
     names = [s["name"] for s in specs]
     assert "w" in names
     assert "r" in names
@@ -129,7 +129,7 @@ def test_parameters_tgfsr():
 
 def test_parameters_legacy_alias():
     specs = Generateur.parameters("tgfsr")
-    assert len(specs) == len(Generateur.parameters("TGFSRGen"))
+    assert len(specs) == len(Generateur.parameters("TGFSR"))
 
 
 # ── resolve_family ───────────────────────────────────────────────────────
@@ -138,7 +138,7 @@ def test_resolve_family_aliases():
     assert resolve_family("polylcg") == "PolyLCG"
     assert resolve_family("taus") == "Tausworthe"
     assert resolve_family("taus2") == "Tausworthe"
-    assert resolve_family("tgfsr") == "TGFSRGen"
+    assert resolve_family("tgfsr") == "TGFSR"
     assert resolve_family("MT") == "MersenneTwister"
     assert resolve_family("matsumoto") == "MatsumotoGen"
     assert resolve_family("marsaxorshift") == "MarsaXorshiftGen"

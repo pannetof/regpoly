@@ -19,6 +19,14 @@
                    x-text="'#' + tg.search_run_id"></a>
             </p>
 
+            <p x-show="tg.library_id">
+                <mark class="filter-pill">
+                    Published configuration:
+                    <a :href="libraryHref()" target="_top"
+                       x-text="libraryLabel()"></a>
+                </mark>
+            </p>
+
             <h3>Components</h3>
             <template x-for="c in tg.components" :key="c.component_index">
                 <article>
@@ -38,7 +46,7 @@
                         <table class="compact">
                             <template x-for="[k, v] in Object.entries(c.all_params)" :key="k">
                                 <tr><td class="mono" x-text="k"></td>
-                                    <td class="mono" x-text="JSON.stringify(v)"></td></tr>
+                                    <td class="mono" x-text="formatParamValue(v)"></td></tr>
                             </template>
                         </table>
                     </details>
@@ -53,7 +61,7 @@
                                     <table class="compact">
                                         <template x-for="[k, v] in Object.entries(t).filter(([k]) => k !== 'type')" :key="k">
                                             <tr><td class="mono" x-text="k"></td>
-                                                <td class="mono" x-text="JSON.stringify(v)"></td></tr>
+                                                <td class="mono" x-text="formatParamValue(v)"></td></tr>
                                         </template>
                                     </table>
                                 </article>
@@ -107,9 +115,45 @@
 function testedDetail(id) {
     return {
         tg: null,
+        libPaperId: null,
+        libDisplay: null,
         async load() {
             const r = await fetch('/api/tested-generators/' + id);
             if (r.ok) this.tg = await r.json();
+            if (this.tg && this.tg.library_id) {
+                try {
+                    const lr = await fetch(
+                        '/api/library/generators/'
+                        + encodeURIComponent(this.tg.library_id));
+                    if (lr.ok) {
+                        const d = await lr.json();
+                        this.libPaperId = d.paper.id;
+                        this.libDisplay = d.display
+                            + ' — ' + d.paper.display;
+                    }
+                } catch (_) {}
+            }
+        },
+        libraryHref() {
+            if (!this.tg || !this.tg.library_id) return '#';
+            if (this.libPaperId) {
+                return '/library/' + this.libPaperId
+                    + '/' + this.tg.library_id;
+            }
+            return '/library';
+        },
+        libraryLabel() {
+            if (this.libDisplay) return this.libDisplay;
+            return (this.tg && this.tg.library_id) || '';
+        },
+        formatParamValue(v) {
+            // Bitmask fields are pre-formatted by the server as
+            // hex strings ("0x…") via web/param_format.py, so we
+            // only need to render arrays and passthrough everything
+            // else (including those strings) without JSON-quoting.
+            if (Array.isArray(v)) return '[' + v.join(', ') + ']';
+            if (v === null || v === undefined) return '';
+            return String(v);
         },
     };
 }

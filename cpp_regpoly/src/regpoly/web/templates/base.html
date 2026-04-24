@@ -35,10 +35,28 @@
 
         <h4>Families</h4>
         <nav class="sidebar-section">
-        {% for f in families %}
+        {% for f in families_primary %}
             <a href="/family/{{ f.name }}"
                class="{% if active_family == f.name %}active{% endif %}">{{ f.name }}</a>
         {% endfor %}
+        </nav>
+
+        {% if families_other %}
+        <h4>Other families</h4>
+        <nav class="sidebar-section">
+        {% for f in families_other %}
+            <a href="/family/{{ f.name }}"
+               class="{% if active_family == f.name %}active{% endif %}">{{ f.name }}</a>
+        {% endfor %}
+        </nav>
+        {% endif %}
+
+        <h4>Published configurations</h4>
+        <nav class="sidebar-section">
+            <a href="/library">All papers…</a>
+            {% for p in library_papers %}
+                <a href="/library/{{ p.id }}">{{ p.display }}</a>
+            {% endfor %}
         </nav>
 
         <h4>Global</h4>

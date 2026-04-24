@@ -5,6 +5,9 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from regpoly.web.database import json_loads
+from regpoly.web.param_format import (
+    format_gen_params, format_tempering_list,
+)
 
 
 router = APIRouter()
@@ -31,6 +34,7 @@ async def _fetch_tested(db, tg_id: int) -> dict | None:
     ) as cur:
         res_rows = await cur.fetchall()
 
+    keys = row.keys() if hasattr(row, "keys") else []
     return {
         "id": row["id"],
         "search_run_id": row["search_run_id"],
@@ -38,6 +42,7 @@ async def _fetch_tested(db, tg_id: int) -> dict | None:
         "k_g": row["k_g"],
         "J": row["J"],
         "created_at": row["created_at"],
+        "library_id": row["library_id"] if "library_id" in keys else None,
         "components": [
             {
                 "component_index": c["component_index"],
@@ -45,8 +50,10 @@ async def _fetch_tested(db, tg_id: int) -> dict | None:
                 "family": c["family"],
                 "L": c["L"],
                 "k": c["k"],
-                "all_params": json_loads(c["all_params"]),
-                "tempering_params": json_loads(c["tempering_params"]),
+                "all_params": format_gen_params(
+                    c["family"], json_loads(c["all_params"])),
+                "tempering_params": format_tempering_list(
+                    json_loads(c["tempering_params"])),
             }
             for c in comp_rows
         ],

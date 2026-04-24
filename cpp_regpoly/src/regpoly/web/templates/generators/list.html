@@ -225,11 +225,11 @@ function generatorPool() {
         sortArrow(key) { return rngTableSortArrow(this.sort, key); },
 
         formatVal(p, v) {
+            // Bitmask fields are pre-formatted server-side as "0x…"
+            // strings.  Here we only have to render arrays and
+            // passthrough everything else.
             if (v === null || v === undefined) return '';
             if (Array.isArray(v)) return '[' + v.join(', ') + ']';
-            if (typeof v === 'number' && p && p.rand_type === 'bitmask') {
-                return '0x' + v.toString(16);
-            }
             return String(v);
         },
 

@@ -168,3 +168,12 @@ fixed_params:
   mat_pi:  [16, 0, 0,   0, 0, 0,   15, 0, 0,   11, 0, 0,   19, 0, 0,   0, 0, 0,   4, 0, 0,   0, 0, 0]
   mat_pu:  [0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0,   0, 0, 0,   0, 0, 0]
 ```
+
+---
+
+## References
+
+- F. Panneton, P. L'Ecuyer, and M. Matsumoto. *Improved long-period
+  generators based on linear recurrences modulo 2.* ACM Trans. Math.
+  Softw. **32** (2006), 1–16.
+  [DOI](https://doi.org/10.1145/1132973.1132974)

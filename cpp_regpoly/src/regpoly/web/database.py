@@ -43,12 +43,16 @@ def _migrate(conn: sqlite3.Connection) -> None:
             ("pis_elapsed", "REAL"),
             ("pis_computed_at", "TEXT"),
             ("pis_error", "TEXT"),
+            ("library_id", "TEXT"),
         ],
         "primitive_search_run": [
             ("search_mode", "TEXT NOT NULL DEFAULT 'random'"),
             ("enum_index",  "INTEGER NOT NULL DEFAULT 0"),
             ("enum_total",  "TEXT"),
             ("enum_axes",   "TEXT"),
+        ],
+        "tested_generator": [
+            ("library_id", "TEXT"),
         ],
     }
     for table, columns in expected.items():
@@ -63,6 +67,23 @@ def _migrate(conn: sqlite3.Connection) -> None:
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_pg_pending_analysis "
         "ON primitive_generator(pis_computed_at, pis_error)"
+    )
+    # Indexes for library_id lookup on older DBs that lacked the column.
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_tg_library_id "
+        "ON tested_generator(library_id) WHERE library_id IS NOT NULL"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pg_library_id "
+        "ON primitive_generator(library_id) WHERE library_id IS NOT NULL"
+    )
+    # One-shot rename of the TGFSR family: older DBs store the C++
+    # class name TGFSRGen; the canonical name is now TGFSR.  The
+    # factory still accepts the legacy name, but the sidebar + API
+    # filters key off the canonical one, so normalise stored rows.
+    conn.execute(
+        "UPDATE primitive_generator SET family = 'TGFSR' "
+        "WHERE family = 'TGFSRGen'"
     )
 
 

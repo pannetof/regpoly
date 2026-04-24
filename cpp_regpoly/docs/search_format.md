@@ -62,7 +62,7 @@ have randomization hints will also be randomized automatically.
 The search writes a YAML file with all found generators:
 
 ```yaml
-family: TGFSRGen
+family: TGFSR
 L: 32
 structural_params:
   w: 32
@@ -83,7 +83,7 @@ results:
 ## Running
 
 ```bash
-regpoly fullperiodsearch.TGFSRGen.w32r3.yaml
+regpoly fullperiodsearch.TGFSR.w32r3.yaml
 ```
 
 Or from Python:
@@ -91,7 +91,7 @@ Or from Python:
 ```python
 from regpoly.search_primitive import PrimitiveSearch
 
-search = PrimitiveSearch.from_yaml("fullperiodsearch.TGFSRGen.w32r3.yaml")
+search = PrimitiveSearch.from_yaml("fullperiodsearch.TGFSR.w32r3.yaml")
 results = search.run()
 ```
 
@@ -101,7 +101,7 @@ results = search.run()
 |--------|---------------|----------------|
 | Polynomial LCG | `PolyLCG` | `polylcg` |
 | Tausworthe | `Tausworthe` | `taus`, `taus2` |
-| Twisted GFSR | `TGFSRGen` | `tgfsr` |
+| Twisted GFSR | `TGFSR` | `tgfsr`, `TGFSRGen` |
 | Mersenne Twister | `MersenneTwister` | `MT` |
 | GF(2^w) Poly LCG | `GenF2wPolyLCG` | `genf2w` |
 | GF(2^w) LFSR | `GenF2wLFSR` | `genf2w` (with type=lfsr) |

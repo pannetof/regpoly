@@ -4,9 +4,9 @@
 #include <memory>
 #include <string>
 
-class TGFSRGen : public Generateur {
+class TGFSR : public Generateur {
 public:
-    TGFSRGen(int w, int r, int m, const BitVect& a, int L);
+    TGFSR(int w, int r, int m, const BitVect& a, int L);
 
     static std::unique_ptr<Generateur> from_params(const Params& params, int L);
     static std::vector<ParamSpec> param_specs();

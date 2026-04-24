@@ -16,12 +16,16 @@ from regpoly.web.config import (
     STATIC_DIR,
     TEMPLATES_DIR,
     Settings,
+    find_library_dir,
+    find_papers_dir,
 )
+from regpoly.library import Catalog
 from regpoly.web.database import init_sync, open_async
 from regpoly.web.routes import (
     families,
     generators,
     import_export,
+    library,
     pages,
     primitive_search,
     tempering_search,
@@ -37,8 +41,37 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 # Imported lazily to avoid a circular import with routes/families.py, which
 # in turn imports from regpoly._regpoly_cpp.
 from regpoly.web.routes.families import KNOWN_FAMILIES as _KNOWN_FAMILIES
-templates.env.globals["families"] = [{"name": f} for f in _KNOWN_FAMILIES]
+
+# Sidebar split: the five flagship families come first in a fixed
+# order; anything else the C++ registry exposes lands under an
+# "Other families" heading, preserving KNOWN_FAMILIES order.
+_PRIMARY_FAMILIES = [
+    "Tausworthe", "TGFSR", "MersenneTwister", "WELLRNG", "MELG",
+]
+_primary_set = set(_PRIMARY_FAMILIES)
+templates.env.globals["families_primary"] = [
+    {"name": f} for f in _PRIMARY_FAMILIES if f in _KNOWN_FAMILIES
+]
+templates.env.globals["families_other"] = [
+    {"name": f} for f in _KNOWN_FAMILIES if f not in _primary_set
+]
+# Kept for templates that still iterate the flat list.
+templates.env.globals["families"] = (
+    templates.env.globals["families_primary"]
+    + templates.env.globals["families_other"]
+)
 templates.env.globals.setdefault("active_family", None)
+
+# Published-generators catalog — loaded once at import so the sidebar
+# can surface papers without a per-request fetch.  The dev reload path
+# lives in routes/library.py::_catalog.
+_library_catalog = Catalog(find_library_dir())
+_library_catalog.load()
+templates.env.globals["library_papers"] = [
+    {"id": p.id, "display": p.display(),
+     "starred": p.starred, "year": p.year}
+    for p in _library_catalog.papers()
+]
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -52,6 +85,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.settings = settings
         app.state.db = await open_async(settings.db_path)
         app.state.templates = templates
+        app.state.library = _library_catalog
         app.state.pool = TaskPool(
             db_path=settings.db_path, max_workers=settings.pool_size
         )
@@ -94,9 +128,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "/static", NoCacheStaticFiles(directory=str(STATIC_DIR)), name="static"
     )
 
+    # Serve committed paper PDFs (see docs/library/*.yaml#reference.pdf).
+    _papers_dir = find_papers_dir()
+    if _papers_dir is not None:
+        app.mount(
+            "/papers",
+            StaticFiles(directory=str(_papers_dir)),
+            name="papers",
+        )
+
     app.include_router(pages.router)
     app.include_router(families.router, prefix="/api")
     app.include_router(generators.router, prefix="/api")
+    app.include_router(library.router, prefix="/api")
     app.include_router(primitive_search.router, prefix="/api")
     app.include_router(tempering_search.router, prefix="/api")
     app.include_router(tested_generators.router, prefix="/api")

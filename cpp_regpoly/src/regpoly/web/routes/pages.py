@@ -104,3 +104,38 @@ async def tested_generator_detail(request: Request, tg_id: int):
     return _render(
         request, "tested_generators/detail.html", tg_id=tg_id
     )
+
+
+@router.get("/library", response_class=HTMLResponse)
+async def library_page(request: Request):
+    return _render(request, "library/list.html")
+
+
+@router.get("/library/papers", response_class=HTMLResponse)
+async def library_papers_page(request: Request):
+    return _render(request, "library/papers.html")
+
+
+@router.get("/library/{paper_id}", response_class=HTMLResponse)
+async def library_paper_page(request: Request, paper_id: str):
+    cat = request.app.state.library
+    if cat.paper(paper_id) is None:
+        raise HTTPException(404, f"Unknown paper id: {paper_id}")
+    return _render(request, "library/paper.html", paper_id=paper_id)
+
+
+@router.get("/library/{paper_id}/{gen_id}", response_class=HTMLResponse)
+async def library_generator_page(
+    request: Request, paper_id: str, gen_id: str,
+):
+    cat = request.app.state.library
+    loc = cat.generator(gen_id)
+    if loc is None:
+        raise HTTPException(404, f"Unknown generator id: {gen_id}")
+    if loc[0].id != paper_id:
+        # Redirect callers who used the wrong paper slug.
+        raise HTTPException(
+            404, f"Generator {gen_id!r} belongs to {loc[0].id!r}")
+    return _render(
+        request, "library/detail.html",
+        paper_id=paper_id, gen_id=gen_id)

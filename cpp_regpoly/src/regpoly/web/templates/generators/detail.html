@@ -20,6 +20,14 @@
 
             <p><a href="/generators">← back to list</a></p>
 
+            <p x-show="gen.library_id">
+                <mark class="filter-pill">
+                    Published configuration:
+                    <a :href="libraryHref()" target="_top"
+                       x-text="libraryLabel()"></a>
+                </mark>
+            </p>
+
             <section>
                 <h3>Parameters</h3>
                 <table class="compact">
@@ -204,17 +212,48 @@ function generatorDetail(id) {
         canvasPx: 800,
         _panStart: null,
 
+        libPaperId: null,
+        libDisplay: null,
+
         async load() {
             const r = await fetch('/api/generators/' + id);
             if (r.ok) this.gen = await r.json();
             if (this.gen && this.gen.pis_computed_at === null) {
                 setTimeout(() => this.load(), 2000);
             }
+            if (this.gen && this.gen.library_id && !this.libPaperId) {
+                try {
+                    const lr = await fetch(
+                        '/api/library/generators/'
+                        + encodeURIComponent(this.gen.library_id));
+                    if (lr.ok) {
+                        const d = await lr.json();
+                        this.libPaperId = d.paper.id;
+                        this.libDisplay = d.display
+                            + ' — ' + d.paper.display;
+                    }
+                } catch (_) {}
+            }
+        },
+
+        libraryHref() {
+            if (!this.gen || !this.gen.library_id) return '#';
+            if (this.libPaperId) {
+                return '/library/' + this.libPaperId
+                    + '/' + this.gen.library_id;
+            }
+            return '/library';
+        },
+        libraryLabel() {
+            return this.libDisplay
+                || (this.gen && this.gen.library_id) || '';
         },
 
         formatVal(key, v) {
+            // Bitmask fields are pre-formatted server-side as "0x…"
+            // strings; arrays render as "[a, b, c]"; everything else
+            // shows its native representation.
             if (Array.isArray(v)) return '[' + v.join(', ') + ']';
-            if (typeof v === 'number' && v > 1024) return v + ' (0x' + v.toString(16) + ')';
             return String(v);
         },
 

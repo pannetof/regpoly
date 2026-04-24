@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Library — all papers{% endblock %}
+
+{% block content %}
+<hgroup>
+    <h1>All papers</h1>
+    <p>Every paper in the library.  Click a row to open the paper's
+        page with its full citation, abstract and the list of
+        generators it proposed.  The <a href="/library">starred
+        generators</a> landing page lists the curated subset.</p>
+</hgroup>
+
+<div x-data="paperList()" x-init="load()">
+    <p><span x-text="papers.length"></span> paper<span
+        x-show="papers.length !== 1">s</span>.</p>
+
+    <table class="compact">
+        <thead>
+            <tr>
+                <th>Year</th>
+                <th>Authors</th>
+                <th>Title</th>
+                <th>Venue</th>
+                <th>Generators</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <template x-for="p in papers" :key="p.id">
+                <tr>
+                    <td x-text="p.year"></td>
+                    <td>
+                        <strong x-text="p.authors_short"></strong>
+                        <template x-if="p.starred">
+                            <span title="Featured paper">★</span>
+                        </template>
+                    </td>
+                    <td x-text="p.title"></td>
+                    <td x-text="p.venue"></td>
+                    <td x-text="p.num_generators"></td>
+                    <td><a :href="'/library/' + p.id">view</a></td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function paperList() {
+    return {
+        papers: [],
+        async load() {
+            const r = await fetch('/api/library/papers');
+            this.papers = await r.json();
+        },
+    };
+}
+</script>
+{% endblock %}

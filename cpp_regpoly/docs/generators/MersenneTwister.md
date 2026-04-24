@@ -126,3 +126,16 @@ fixed_params:
   m:     # randomized in [1, 2]
   a:     # randomized 32-bit mask
 ```
+
+---
+
+## References
+
+- M. Matsumoto and T. Nishimura. *Mersenne Twister: A 623-dimensionally
+  equidistributed uniform pseudo-random number generator.*
+  ACM Trans. Model. Comput. Simul. **8** (1998), 3–30.
+  [DOI](https://doi.org/10.1145/272991.272995).  Published as
+  [`mt19937`](/library/mt19937) in the library.
+- T. Nishimura. *Tables of 64-bit Mersenne Twisters.*
+  ACM Trans. Model. Comput. Simul. **10** (2000), 348–357.
+  [DOI](https://doi.org/10.1145/369534.369540).

@@ -17,7 +17,8 @@ _FAMILY_ALIASES: dict[str, str] = {
     "polylcg":       "PolyLCG",
     "taus":          "Tausworthe",
     "taus2":         "Tausworthe",
-    "tgfsr":         "TGFSRGen",
+    "tgfsr":         "TGFSR",
+    "TGFSRGen":      "TGFSR",   # legacy C++ class name before rename
     "MT":            "MersenneTwister",
     "matsumoto":     "MatsumotoGen",
     "marsaxorshift": "MarsaXorshiftGen",
@@ -76,11 +77,11 @@ class Generateur(Parametric):
         Examples::
 
             # All params explicit — no randomization
-            gen = Generateur.create("TGFSRGen", L=32, w=32, r=3, m=1,
+            gen = Generateur.create("TGFSR", L=32, w=32, r=3, m=1,
                                     a=0x9908b0df)
 
             # m and a omitted — randomized
-            gen = Generateur.create("TGFSRGen", L=32, w=32, r=3)
+            gen = Generateur.create("TGFSR", L=32, w=32, r=3)
 
         Accepts both C++ class names and legacy aliases.
         """
