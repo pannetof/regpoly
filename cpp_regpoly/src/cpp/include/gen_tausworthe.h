@@ -1,9 +1,25 @@
 #pragma once
 #include "generateur.h"
+#include "gen_enumerator.h"
 #include "param_spec.h"
+#include "params.h"
 #include <vector>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <cstdint>
+
+// Sampled parameter value plus any side-effect params the family's
+// sampler wants to splice back into the caller's params bag.  (Used
+// today by Tausworthe's poly sampler, which also chooses `s`.)  Kept
+// adjacent to the first family that needs it; hoist to a shared
+// header when a second family registers a sampler.
+struct RandomParamResult {
+    bool is_vec = false;
+    int64_t int_val = 0;
+    std::vector<int> vec_val;
+    std::unordered_map<std::string, int64_t> side_ints;
+};
 
 class Tausworthe : public Generateur {
 public:
@@ -24,6 +40,19 @@ public:
     static std::vector<int> random_poly(
         int k, int nb_terms, bool quicktaus, int L, int s);
 
+    // Handle rand_type values owned by Tausworthe
+    // ("tausworthe_s", "tausworthe_poly").  Reads k, nb_terms,
+    // quicktaus, poly, s from `params` as needed.  For
+    // "tausworthe_poly" when `s` is unset, picks an admissible s and
+    // returns it via side_ints so the caller can propagate that
+    // exact value to the generator constructor (the poly was sampled
+    // to match it).  Throws std::invalid_argument for unsupported
+    // rand_type or invalid inputs.
+    static RandomParamResult generate_random(
+        const std::string& rand_type,
+        const std::string& rand_args,
+        const Params& params, int L);
+
     // True iff the sorted polynomial Q_sorted together with (s,
     // quicktaus, L) satisfies the quicktaus inequality
     //   0 < s <= k - q_{t-2} < k <= L
@@ -33,6 +62,14 @@ public:
     static bool is_admissible(
         const std::vector<int>& Q_sorted,
         int s, bool quicktaus, int L);
+
+    // Build the exhaustive-search enumerator for this family.  The
+    // Params bag carries the structural inputs (k, nb_terms,
+    // quicktaus) plus an optional `s` that, if present, fixes the
+    // decimation step.  Throws std::invalid_argument with a
+    // "needs_<reason>" message when a required axis is missing.
+    static std::unique_ptr<GenEnumerator> make_enumerator(
+        const Params& resolved, int L);
 
     std::string name() const override;
     std::string display_str() const override;

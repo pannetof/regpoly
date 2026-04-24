@@ -19,6 +19,13 @@ public:
     std::vector<uint64_t> get_uint_vec(const std::string& key) const;
     bool has(const std::string& key) const;
 
+    // Read-only views for serialisers (e.g. params_to_dict in bindings).
+    const std::unordered_map<std::string, int64_t>& ints() const { return ints_; }
+    const std::unordered_map<std::string, bool>& bools() const { return bools_; }
+    const std::unordered_map<std::string, std::string>& strings() const { return strings_; }
+    const std::unordered_map<std::string, std::vector<int>>& int_vecs() const { return int_vecs_; }
+    const std::unordered_map<std::string, std::vector<uint64_t>>& uint_vecs() const { return uint_vecs_; }
+
 private:
     std::unordered_map<std::string, int64_t> ints_;
     std::unordered_map<std::string, bool> bools_;

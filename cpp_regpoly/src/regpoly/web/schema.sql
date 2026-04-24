@@ -25,7 +25,12 @@ CREATE TABLE IF NOT EXISTS primitive_search_run (
     error_message     TEXT,
     created_at        TEXT    NOT NULL DEFAULT (datetime('now')),
     started_at        TEXT,
-    finished_at       TEXT
+    finished_at       TEXT,
+    -- Exhaustive-search mode bookkeeping.
+    search_mode       TEXT    NOT NULL DEFAULT 'random',
+    enum_index        INTEGER NOT NULL DEFAULT 0,
+    enum_total        TEXT,
+    enum_axes         TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_psr_family ON primitive_search_run(family);

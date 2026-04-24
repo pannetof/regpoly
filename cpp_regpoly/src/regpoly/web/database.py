@@ -44,6 +44,12 @@ def _migrate(conn: sqlite3.Connection) -> None:
             ("pis_computed_at", "TEXT"),
             ("pis_error", "TEXT"),
         ],
+        "primitive_search_run": [
+            ("search_mode", "TEXT NOT NULL DEFAULT 'random'"),
+            ("enum_index",  "INTEGER NOT NULL DEFAULT 0"),
+            ("enum_total",  "TEXT"),
+            ("enum_axes",   "TEXT"),
+        ],
     }
     for table, columns in expected.items():
         existing = {row[1] for row in conn.execute(

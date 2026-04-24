@@ -115,6 +115,20 @@ static Params dict_to_params(const py::dict& d) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Params -> py::dict conversion (mirror of dict_to_params)
+// ═══════════════════════════════════════════════════════════════════════════
+
+static py::dict params_to_dict(const Params& p) {
+    py::dict d;
+    for (const auto& kv : p.ints())      d[py::str(kv.first)] = py::int_(kv.second);
+    for (const auto& kv : p.bools())     d[py::str(kv.first)] = py::bool_(kv.second);
+    for (const auto& kv : p.strings())   d[py::str(kv.first)] = py::str(kv.second);
+    for (const auto& kv : p.int_vecs())  d[py::str(kv.first)] = py::cast(kv.second);
+    for (const auto& kv : p.uint_vecs()) d[py::str(kv.first)] = py::cast(kv.second);
+    return d;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Module definition
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -365,6 +379,84 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
        "Sample a random admissible Tausworthe polynomial.  Returns the "
        "sorted exponent list [0, q_1, ..., q_{t-2}, k].  Throws if the "
        "(k, nb_terms, quicktaus, L, s) combination is inadmissible.");
+
+    // ── random_param: dispatch a non-generic rand_type to its family ──
+    //
+    // parametric.py owns the generic samplers (bitmask, range,
+    // poly_exponents, bitmask_vec) and hands anything else off here.
+    // Currently only Tausworthe registers samplers; adding a new
+    // family means one more if-branch below plus a static
+    // `generate_random` method on that family.
+    m.def("random_param",
+          [](const std::string& rand_type,
+             const std::string& rand_args,
+             const py::dict& params_dict,
+             int L) -> py::tuple {
+        Params p = dict_to_params(params_dict);
+        RandomParamResult r;
+        if (rand_type == "tausworthe_s"
+            || rand_type == "tausworthe_poly") {
+            r = Tausworthe::generate_random(
+                rand_type, rand_args, p, L);
+        } else {
+            throw std::invalid_argument(
+                "random_param: unsupported rand_type '"
+                + rand_type + "'");
+        }
+        py::object value = r.is_vec
+            ? py::cast(r.vec_val)
+            : py::object(py::int_(r.int_val));
+        py::dict side;
+        for (const auto& kv : r.side_ints)
+            side[py::str(kv.first)] = py::int_(kv.second);
+        return py::make_tuple(value, side);
+    }, py::arg("rand_type"), py::arg("rand_args"),
+       py::arg("params"), py::arg("L"),
+       "Sample a random value for a family-specific rand_type.  "
+       "Returns (value, side_effects) where side_effects is a dict of "
+       "extra params to splice into the caller's bag (e.g. the `s` "
+       "paired with a freshly-sampled Tausworthe poly).");
+
+    // ── Exhaustive-search enumerator ──────────────────────────────────
+
+    py::class_<GenEnumerator, std::shared_ptr<GenEnumerator>>(m, "GenEnumerator")
+        .def("size", [](const GenEnumerator& e) {
+            // Lift decimal-string count to a Python int of arbitrary precision.
+            return py::module_::import("builtins").attr("int")(e.size_dec());
+        })
+        .def("at", [](const GenEnumerator& e, const py::object& idx) {
+            return params_to_dict(e.at(py::str(idx).cast<std::string>()));
+        }, py::arg("idx"))
+        .def("axes", [](const GenEnumerator& e) {
+            py::list out;
+            auto to_int = py::module_::import("builtins").attr("int");
+            for (const auto& a : e.axes()) {
+                py::dict d;
+                d["name"]     = a.name;
+                d["size"]     = to_int(a.size_dec);
+                d["describe"] = a.describe;
+                out.append(d);
+            }
+            return out;
+        });
+
+    m.def("make_gen_enumerator",
+          [](const std::string& family, const py::dict& d, int L) -> py::object {
+        auto e = make_gen_enumerator(family, dict_to_params(d), L);
+        if (!e) return py::none();
+        std::shared_ptr<GenEnumerator> shared(std::move(e));
+        return py::cast(shared);
+    }, py::arg("family"), py::arg("resolved"), py::arg("L"),
+       "Build the exhaustive-search enumerator for a family.  Returns "
+       "None when the family has no registered enumerator.  Throws "
+       "std::invalid_argument('needs_<reason>') when the resolved "
+       "inputs are insufficient.");
+
+    m.def("family_is_enumerable",
+          [](const std::string& family) {
+        return family_is_enumerable(family);
+    }, py::arg("family"),
+       "True iff the family has a registered exhaustive enumerator.");
 
     // ── Generator subclass registrations ────────────────────────────────
     register_generator_types(m);

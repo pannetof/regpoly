@@ -31,7 +31,7 @@
                     </template>
                 </table>
                 <p x-show="gen.search_run_id">
-                    Found by primitive search
+                    Found by full-period search
                     <a :href="'/primitive-search/' + gen.search_run_id"
                        x-text="'#' + gen.search_run_id"></a>
                     at try <span x-text="gen.found_at_try"></span>.

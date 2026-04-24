@@ -4,43 +4,57 @@
 
 {% block content %}
 <hgroup>
-    <h1>Primitive generators</h1>
+    <h1>Full-period generators</h1>
     <p>All full-period generators stored in the database.</p>
 </hgroup>
 
-<div x-data="generatorBrowser()" x-init="init()">
+<div x-data="generatorPool()" x-init="init()">
+
+    <template x-if="familyLocked">
+        <p>
+            <mark class="filter-pill">
+                Family: <strong x-text="filter.family"></strong>
+                <a href="/generators" title="Clear family filter">×</a>
+            </mark>
+        </p>
+    </template>
 
     <div class="grid">
-        <label>
-            Family
-            <select x-model="family" @change="onFamilyChange()">
+        <label x-show="!familyLocked">Family
+            <select x-model="filter.family" @change="onFamilyChange()">
                 <option value="">(any)</option>
                 <template x-for="f in families" :key="f.name">
                     <option :value="f.name" x-text="f.name"></option>
                 </template>
             </select>
         </label>
-
-        <label>
-            k
-            <select x-model="kFilter" @change="onFilterChange()">
+        <label>k
+            <select x-model="filter.k" @change="onFilterChange()">
                 <option value="">(any)</option>
                 <template x-for="v in kValues" :key="v">
                     <option :value="v" x-text="v"></option>
                 </template>
             </select>
         </label>
+        <label>Search
+            <select x-model="filter.search_run_id" @change="onFilterChange()">
+                <option value="">(any)</option>
+                <template x-for="v in searchRunIds" :key="v">
+                    <option :value="v" x-text="'#' + v"></option>
+                </template>
+            </select>
+        </label>
     </div>
 
-    <template x-if="family && params.length">
+    <template x-if="filter.family && paramSpecs.length">
         <div class="grid">
-            <template x-for="p in params" :key="p.name">
+            <template x-for="p in paramSpecs" :key="p.name">
                 <label>
                     <span x-text="p.name"></span>
-                    <select x-model="paramFilter[p.name]" @change="onFilterChange()">
+                    <select x-model="filter.p[p.name]" @change="onFilterChange()">
                         <option value="">(any)</option>
-                        <template x-for="v in paramValues[p.name] || []" :key="v">
-                            <option :value="v" x-text="formatValue(p, v)"></option>
+                        <template x-for="v in (paramValues[p.name] || [])" :key="v">
+                            <option :value="v" x-text="formatVal(p, v)"></option>
                         </template>
                     </select>
                 </label>
@@ -56,102 +70,250 @@
     <table class="compact">
         <thead>
             <tr>
-                <th>ID</th>
-                <th x-show="!family">Family</th>
-                <th>k</th>
-                <th>L</th>
-                <template x-for="p in params" :key="p.name">
-                    <th x-text="p.name"></th>
+                <template x-for="col in columns()" :key="col.key">
+                    <th class="sortable"
+                        :class="sort.key === col.key ? 'active' : ''"
+                        @click="clickSort(col.key)">
+                        <span x-text="col.label"></span>
+                        <span class="sort-arrow"
+                              x-text="sortArrow(col.key)"></span>
+                        <button type="button" class="filter-btn"
+                                :class="filterActive(col.key) ? 'active' : ''"
+                                @click.stop="toggleFilter(col.key, $event)"
+                                title="Filter">▾</button>
+                    </th>
                 </template>
                 <th></th>
             </tr>
         </thead>
-        <tbody>
-            <template x-for="g in items" :key="g.id">
-                <tr>
-                    <td x-text="g.id"></td>
-                    <td x-show="!family" x-text="g.family"></td>
-                    <td x-text="g.k"></td>
-                    <td x-text="g.L"></td>
-                    <template x-for="p in params" :key="p.name">
-                        <td class="mono" x-text="formatValue(p, g.all_params[p.name])"></td>
-                    </template>
-                    <td><a :href="'/generators/' + g.id">view</a></td>
-                </tr>
-            </template>
-        </tbody>
+        <tbody x-html="tbodyHtml()"></tbody>
     </table>
 
     <nav>
         <button @click="prev()" :disabled="page <= 1">Prev</button>
         <button @click="next()" :disabled="page * 50 >= total">Next</button>
     </nav>
+
+    <div class="filter-popover"
+         x-show="openFilter"
+         :style="filterPopoverStyle()"
+         @click.stop
+         @click.away="openFilter = null">
+        <template x-if="openFilter">
+            <div>
+                <label class="filter-all">
+                    <input type="checkbox"
+                           :checked="allChecked(openFilter)"
+                           @change="toggleAll(openFilter)">
+                    (Select all)
+                </label>
+                <template x-for="d in filterDistinctDisplay(openFilter)"
+                          :key="d.value">
+                    <label>
+                        <input type="checkbox"
+                               :checked="isChecked(openFilter, d.value)"
+                               @change="toggleOne(openFilter, d.value)">
+                        <span class="filter-val"
+                              x-text="displayLabel(columnByKey(openFilter), d)"></span>
+                    </label>
+                </template>
+            </div>
+        </template>
+    </div>
 </div>
 
 <script>
-function generatorBrowser() {
+function generatorPool() {
     return {
+        ...rngTableFilterMethods(),
+
         families: [],
-        family: '',
-        kFilter: '',
+        familyLocked: false,
+        paramSpecs: [],
+        paramValues: {},
         kValues: [],
-        params: [],              // ParamSpec list for the selected family
-        paramFilter: {},         // {name: value} from the dropdowns
-        paramValues: {},         // {name: [distinct values]}
-        items: [], total: 0, page: 1,
+        searchRunIds: [],
+        items: [],
+        total: 0,
+        page: 1,
+
+        filter: { family: '', k: '', search_run_id: '', p: {} },
+        sort: { key: null, dir: null },
+        colFilters: {},
+
+        rowsForFilter() { return this.items; },
+        rowValue(r, key) {
+            if (key.startsWith('p:')) {
+                const v = r.all_params
+                    ? r.all_params[key.slice(2)] : undefined;
+                if (Array.isArray(v)) return JSON.stringify(v);
+                return v;
+            }
+            return r[key];
+        },
+
+        columns() {
+            const cols = [{ key: 'id', label: 'ID', mono: false }];
+            if (!this.filter.family) {
+                cols.push({ key: 'family', label: 'Family', mono: false });
+            }
+            cols.push({ key: 'k', label: 'k', mono: false });
+            cols.push({ key: 'L', label: 'L', mono: false });
+            for (const p of this.paramSpecs) {
+                cols.push({
+                    key: 'p:' + p.name, label: p.name,
+                    mono: true, paramSpec: p,
+                });
+            }
+            cols.push({ key: 'search_run_id', label: 'Search', mono: false });
+            return cols;
+        },
+        columnByKey(key) {
+            return this.columns().find(c => c.key === key)
+                || { key, label: key, mono: false };
+        },
+
+        cellText(g, col) {
+            if (col.key.startsWith('p:')) {
+                return this.formatVal(col.paramSpec,
+                    g.all_params ? g.all_params[col.paramSpec.name] : undefined);
+            }
+            if (col.key === 'search_run_id') {
+                return g.search_run_id == null ? '' : '#' + g.search_run_id;
+            }
+            const v = g[col.key];
+            if (v === null || v === undefined) return '';
+            return String(v);
+        },
+
+        displayRows() {
+            return rngTableApply(this.items, this.sort, this.colFilters,
+                                 (r, k) => this.rowValue(r, k));
+        },
+
+        _escape(s) {
+            return String(s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        },
+        tbodyHtml() {
+            const cols = this.columns();
+            return this.displayRows().map(g => {
+                const tds = cols.map(col => {
+                    const cls = col.mono ? ' class="mono"' : '';
+                    return `<td${cls}>${this._escape(this.cellText(g, col))}</td>`;
+                }).join('');
+                const link =
+                    `<td><a href="/generators/${g.id}">view</a></td>`;
+                return `<tr>${tds}${link}</tr>`;
+            }).join('');
+        },
+
+        displayLabel(col, d) {
+            if (col.paramSpec) return this.formatVal(col.paramSpec, d.display);
+            if (col.key === 'search_run_id') {
+                if (d.value === '' || d.value === null || d.value === undefined)
+                    return '(none)';
+                return '#' + d.value;
+            }
+            if (d.value === null || d.value === undefined || d.value === '')
+                return '(empty)';
+            return d.value;
+        },
+
+        clickSort(key) { this.sort = rngTableToggleSort(this.sort, key); },
+        sortArrow(key) { return rngTableSortArrow(this.sort, key); },
+
+        formatVal(p, v) {
+            if (v === null || v === undefined) return '';
+            if (Array.isArray(v)) return '[' + v.join(', ') + ']';
+            if (typeof v === 'number' && p && p.rand_type === 'bitmask') {
+                return '0x' + v.toString(16);
+            }
+            return String(v);
+        },
 
         async init() {
-            // Only list families that actually have generators in the DB.
             const res = await fetch('/api/generators/families');
             this.families = await res.json();
-            // Populate the global k dropdown (no family selected yet).
+
+            const qs = new URLSearchParams(window.location.search);
+            if (qs.has('family')) {
+                this.filter.family = qs.get('family');
+                this.familyLocked = true;
+            }
+            const pendingK = qs.get('k') || '';
+            const pendingSRI = qs.get('search_run_id') || '';
+            const pendingP = {};
+            for (const [k, v] of qs.entries()) {
+                if (k.startsWith('p_')) pendingP[k.slice(2)] = v;
+            }
+
+            if (this.filter.family) {
+                const famRes = await fetch(
+                    '/api/families/' + encodeURIComponent(this.filter.family));
+                const fam = await famRes.json();
+                this.paramSpecs = fam.params;
+                const seededP = {}, seededValues = {};
+                for (const p of this.paramSpecs) {
+                    seededP[p.name] = String(pendingP[p.name] ?? '');
+                    seededValues[p.name] = [];
+                }
+                this.filter.p = seededP;
+                this.paramValues = seededValues;
+            }
+            this.filter.k = pendingK;
+            this.filter.search_run_id = pendingSRI;
+
             await this.refreshDropdowns();
             await this.reload();
         },
 
         async onFamilyChange() {
-            this.params = [];
-            this.paramFilter = {};
+            this.paramSpecs = [];
             this.paramValues = {};
-            this.kFilter = '';
-            this.kValues = [];
+            this.filter.p = {};
+            this.filter.k = '';
+            this.filter.search_run_id = '';
             this.page = 1;
-            if (this.family) {
-                const famRes = await fetch('/api/families/' + this.family);
+            if (this.filter.family) {
+                const famRes = await fetch(
+                    '/api/families/' + encodeURIComponent(this.filter.family));
                 const fam = await famRes.json();
-                this.params = fam.params;
-                // Seed reactive entries before async fills them
-                const seededFilter = {}, seededValues = {};
-                for (const p of this.params) {
-                    seededFilter[p.name] = '';
+                this.paramSpecs = fam.params;
+                const seededP = {}, seededValues = {};
+                for (const p of this.paramSpecs) {
+                    seededP[p.name] = '';
                     seededValues[p.name] = [];
                 }
-                this.paramFilter = seededFilter;
+                this.filter.p = seededP;
                 this.paramValues = seededValues;
-                await this.refreshDropdowns();
             }
+            await this.refreshDropdowns();
             await this.reload();
         },
 
         async onFilterChange() {
             this.page = 1;
-            // Drop any current selection whose value is no longer
-            // available (e.g. after narrowing another filter).  The
-            // refreshDropdowns call below fetches the new value lists;
-            // if the current selection vanishes, clear it.
             await this.refreshDropdowns();
             let cleared = false;
-            if (this.kFilter !== '' &&
-                !this.kValues.map(String).includes(String(this.kFilter))) {
-                this.kFilter = '';
+            if (this.filter.k !== '' &&
+                !this.kValues.map(String).includes(String(this.filter.k))) {
+                this.filter.k = '';
                 cleared = true;
             }
-            for (const p of this.params) {
-                const sel = this.paramFilter[p.name];
+            if (this.filter.search_run_id !== '' &&
+                !this.searchRunIds.map(String)
+                    .includes(String(this.filter.search_run_id))) {
+                this.filter.search_run_id = '';
+                cleared = true;
+            }
+            for (const p of this.paramSpecs) {
+                const sel = this.filter.p[p.name];
                 if (sel !== '' && sel != null) {
                     const avail = (this.paramValues[p.name] || []).map(String);
                     if (!avail.includes(String(sel))) {
-                        this.paramFilter[p.name] = '';
+                        this.filter.p[p.name] = '';
                         cleared = true;
                     }
                 }
@@ -160,62 +322,50 @@ function generatorBrowser() {
             await this.reload();
         },
 
-        buildFilterQS() {
+        buildFilterQS(excludeKey = null) {
             const qs = new URLSearchParams();
-            if (this.family) qs.set('family', this.family);
-            if (this.kFilter !== '') qs.set('k', this.kFilter);
-            for (const [k, v] of Object.entries(this.paramFilter)) {
-                if (v !== '' && v !== null && v !== undefined) {
-                    qs.set('p_' + k, v);
-                }
+            if (this.filter.family) qs.set('family', this.filter.family);
+            if (excludeKey !== 'k' && this.filter.k !== '')
+                qs.set('k', this.filter.k);
+            if (excludeKey !== 'search_run_id'
+                && this.filter.search_run_id !== '')
+                qs.set('search_run_id', this.filter.search_run_id);
+            for (const [k, v] of Object.entries(this.filter.p)) {
+                if (excludeKey === k) continue;
+                if (v !== '' && v != null) qs.set('p_' + k, v);
             }
             return qs;
         },
 
         async refreshDropdowns() {
-            const baseQS = this.buildFilterQS();
-            const fetchValues = async (name) => {
-                const qs = new URLSearchParams(baseQS);
+            const fetchVals = async (name) => {
+                const qs = this.buildFilterQS(name);
                 qs.set('name', name);
-                const r = await fetch('/api/generators/param-values?' + qs.toString());
-                return [name, (await r.json()).values];
+                const r = await fetch(
+                    '/api/generators/param-values?' + qs.toString());
+                return [name, (await r.json()).values || []];
             };
-            const names = ['k', ...this.params.map(p => p.name)];
-            const results = await Promise.all(names.map(fetchValues));
+            const names = ['k', 'search_run_id',
+                           ...this.paramSpecs.map(p => p.name)];
+            const results = await Promise.all(names.map(fetchVals));
             const map = Object.fromEntries(results);
             this.kValues = map.k || [];
+            this.searchRunIds = map.search_run_id || [];
             const filled = {};
-            for (const p of this.params) {
+            for (const p of this.paramSpecs) {
                 filled[p.name] = map[p.name] || [];
             }
             this.paramValues = filled;
         },
 
-        formatValue(p, v) {
-            if (v === null || v === undefined) return '';
-            if (Array.isArray(v)) return '[' + v.join(', ') + ']';
-            if (typeof v === 'number' && p.rand_type === 'bitmask') {
-                // Display bitmasks in hex
-                return '0x' + v.toString(16);
-            }
-            return String(v);
-        },
-
         async reload() {
-            const qs = new URLSearchParams();
-            qs.set('page', this.page);
-            qs.set('per_page', 50);
-            if (this.family) qs.set('family', this.family);
-            if (this.kFilter !== '') qs.set('k', this.kFilter);
-            for (const [k, v] of Object.entries(this.paramFilter)) {
-                if (v !== '' && v !== null && v !== undefined) {
-                    qs.set('p_' + k, v);
-                }
-            }
-            const res = await fetch('/api/generators?' + qs.toString());
-            const data = await res.json();
-            this.items = data.items;
-            this.total = data.total;
+            const qs = this.buildFilterQS();
+            qs.set('per_page', '50');
+            qs.set('page', String(this.page));
+            const r = await fetch('/api/generators?' + qs.toString());
+            const data = await r.json();
+            this.items = data.items || [];
+            this.total = data.total || 0;
         },
 
         prev() { if (this.page > 1) { this.page--; this.reload(); } },

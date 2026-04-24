@@ -33,6 +33,13 @@ from regpoly.web.tasks.pool import TaskPool
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+# Shared Jinja globals used by every template (sidebar, highlighting, etc.)
+# Imported lazily to avoid a circular import with routes/families.py, which
+# in turn imports from regpoly._regpoly_cpp.
+from regpoly.web.routes.families import KNOWN_FAMILIES as _KNOWN_FAMILIES
+templates.env.globals["families"] = [{"name": f} for f in _KNOWN_FAMILIES]
+templates.env.globals.setdefault("active_family", None)
+
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     if settings is None:
@@ -75,8 +82,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
 
+    class NoCacheStaticFiles(StaticFiles):
+        async def get_response(self, path, scope):
+            resp = await super().get_response(path, scope)
+            # Dev UI files change constantly; force the browser to
+            # revalidate so edits don't get masked by a stale cache.
+            resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+            return resp
+
     app.mount(
-        "/static", StaticFiles(directory=str(STATIC_DIR)), name="static"
+        "/static", NoCacheStaticFiles(directory=str(STATIC_DIR)), name="static"
     )
 
     app.include_router(pages.router)

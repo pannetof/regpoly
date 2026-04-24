@@ -83,3 +83,19 @@ std::vector<ParamSpec> get_trans_param_specs(const std::string& type)
     if (type == "laggedTempering")               return LaggedTempering::param_specs();
     throw std::invalid_argument("Unknown transformation type: " + type);
 }
+
+// ── Exhaustive-search enumerator registry ─────────────────────────────────
+
+bool family_is_enumerable(const std::string& family)
+{
+    if (family == "Tausworthe") return true;
+    return false;
+}
+
+std::unique_ptr<GenEnumerator> make_gen_enumerator(
+    const std::string& family, const Params& resolved, int L)
+{
+    if (family == "Tausworthe")
+        return Tausworthe::make_enumerator(resolved, L);
+    return nullptr;
+}

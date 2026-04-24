@@ -5,12 +5,279 @@
                Consolas, "Liberation Mono", monospace;
 }
 
-.top-nav {
-    border-bottom: 1px solid var(--pico-muted-border-color);
-    margin-bottom: 1rem;
+/* --- App shell: permanent left sidebar --------------------------- */
+
+.app-shell {
+    display: grid;
+    grid-template-columns: 16rem 1fr;
+    min-height: 100vh;
 }
 
-.top-nav .brand { text-decoration: none; }
+/* When hide_chrome is set the sidebar isn't rendered; collapse the
+ * grid to a single column so embedded iframes don't leave a gap. */
+.app-shell:not(:has(> .sidebar)) {
+    grid-template-columns: 1fr;
+}
+
+.sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 1rem;
+    overflow-y: auto;
+    background: var(--pico-background-color);
+    border-right: 1px solid var(--pico-muted-border-color);
+}
+
+.sidebar .brand {
+    display: block;
+    text-decoration: none;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+}
+
+.sidebar h4 {
+    margin: 1.25rem 0 0.35rem;
+    font-size: 0.72em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--pico-muted-color);
+}
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.sidebar-section a {
+    display: block;
+    padding: 0.3rem 0.55rem;
+    border-radius: 0.3rem;
+    text-decoration: none;
+    font-size: 0.95em;
+    color: var(--pico-color);
+}
+
+.sidebar-section a:hover {
+    background: var(--pico-card-background-color);
+}
+
+.sidebar-section a.active {
+    background: var(--pico-primary);
+    color: var(--pico-primary-inverse);
+    font-weight: 600;
+}
+
+.app-main {
+    min-width: 0;           /* grid child: allow content to wrap */
+}
+
+.top-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    min-height: 2.75rem;
+}
+
+.hamburger { display: none; }
+
+/* Primitive-search form: non-structural Random toggle + bool cell */
+.ns-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: nowrap;   /* keep the Random checkbox on the same line */
+    min-width: 0;        /* allow the row to shrink if needed */
+}
+.ns-cell label.rand-toggle {
+    margin: 0;
+    white-space: nowrap;
+}
+.ns-cell input[type="text"] {
+    margin: 0;
+    flex: 0 0 auto;
+}
+.ns-cell input[type="text"]:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+/* Structural cells use the same sizing helpers. */
+.param-grid input[type="text"] {
+    margin: 0;
+    flex: 0 0 auto;
+}
+.bool-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+}
+.bool-cell input[type="checkbox"] { margin: 0; }
+.bool-cell input[type="checkbox"]:disabled + span { opacity: 0.45; }
+
+/* Width helpers for text inputs. */
+input[type="text"].input-int {
+    /* Room for a 10-digit integer plus small padding. */
+    width: 12ch;
+    font-family: var(--rp-mono);
+}
+input[type="text"].input-bitmask {
+    /* Preferred width: 77ch (0x-prefixed 256-bit hex, ~75 chars).
+       Shrinks when the grid cell is narrower so the Random checkbox
+       keeps sitting on the same row. */
+    flex: 0 1 77ch;
+    width: 77ch;
+    min-width: 8ch;
+    max-width: 100%;
+    font-family: var(--rp-mono);
+}
+
+/* Primitive-search form: mode + estimate panels */
+fieldset.mode-select {
+    margin: 0.75rem 0;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 0.35rem;
+}
+fieldset.mode-select legend {
+    padding: 0 0.35rem;
+    font-weight: 600;
+}
+fieldset.mode-select label {
+    display: block;
+    margin: 0.2rem 0;
+}
+.estimate-panel {
+    margin: 0.75rem 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 0.35rem;
+    background: var(--pico-card-background-color);
+}
+
+/* Home page task list */
+dl.home-task-list { margin: 1rem 0 2rem; }
+dl.home-task-list dt {
+    margin-top: 1rem;
+    font-weight: 600;
+}
+dl.home-task-list dt a {
+    text-decoration: none;
+    font-size: 1.05em;
+}
+dl.home-task-list dt a:hover { text-decoration: underline; }
+dl.home-task-list dd {
+    margin: 0.15rem 0 0 0;
+    color: var(--pico-color);
+    line-height: 1.5;
+}
+
+/* Family landing: tabular launcher — as compact as possible */
+.launcher-table {
+    width: 100%;
+    margin: 0.5rem 0;
+    border-collapse: collapse;
+}
+.launcher-table td {
+    padding: 0.15rem 0.6rem;
+    vertical-align: middle;
+    border-top: 1px solid var(--pico-muted-border-color);
+    line-height: 1.3;
+}
+.launcher-table tr.active td {
+    background: var(--pico-card-background-color);
+}
+.launcher-table td.launcher-label {
+    width: 14rem;
+    white-space: nowrap;
+}
+.launcher-table td.launcher-label a {
+    font-weight: 600;
+    text-decoration: none;
+}
+.launcher-table td.launcher-label a:hover { text-decoration: underline; }
+.launcher-table td.launcher-desc {
+    color: var(--pico-muted-color);
+    font-size: 0.95em;
+}
+.launcher-panel {
+    /* Pull the panel leftwards so it sits almost flush with the main
+       content frame, and keep the inner padding small on the left so
+       the embedded content hugs the panel's border. */
+    margin: 1rem 0 1rem calc(-1 * var(--pico-spacing, 1rem) + 0.25rem);
+    padding: 0.75rem 1rem 0.75rem 0.4rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 0.4rem;
+    background: var(--pico-card-background-color);
+}
+.launcher-panel iframe {
+    width: 100%;
+    border: 0;
+    background: var(--pico-background-color);
+    overflow: hidden;
+    display: block;
+}
+
+/* When a page is loaded inside the iframe (embed=1) we don't want the
+ * embedded document to grow its own scrollbar — the host page handles
+ * scrolling. */
+body.embed, body.embed .app-main, body.embed .container {
+    overflow: visible;
+}
+
+/* Also strip Pico's container padding so embedded content sits flush
+ * with the host panel's left edge (the panel already draws its own
+ * small left padding). */
+body.embed main.container {
+    padding-inline: 0.25rem;
+    max-width: none;
+}
+body.embed .app-main {
+    padding: 0;
+}
+.launcher-panel .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 0.5rem;
+    min-height: 1.25em;
+}
+.launcher-panel .panel-header a.panel-open-full {
+    font-size: 0.9em;
+}
+
+/* Documentation panel: no scrollbar — let the page flow naturally. */
+.launcher-panel .docs-panel {
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+    background: transparent;
+}
+
+.active-family-badge {
+    background: var(--pico-card-background-color);
+    border-radius: 0.4rem;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.9em;
+}
+.active-family-badge a {
+    margin-left: 0.4rem;
+    text-decoration: none;
+}
+
+.filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.2em 0.7em;
+    border-radius: 0.5rem;
+    background: var(--pico-card-background-color);
+}
+.filter-pill a { text-decoration: none; }
+
 
 .status-pill {
     display: inline-block;
@@ -29,9 +296,22 @@
 
 .param-grid {
     display: grid;
-    grid-template-columns: max-content 1fr max-content;
-    gap: 0.5rem 1rem;
+    /* Columns: type tag · param name · value cell.
+       Fixed-width leading columns so every row — structural and
+       non-structural alike — starts its value cell at the same x
+       position.  The tag column wraps on overflow so wide random
+       hints don't push the cell right. */
+    grid-template-columns: 20rem 7rem 1fr;
+    gap: 0.35rem 1rem;
     align-items: baseline;
+    justify-items: start;
+}
+.param-grid .param-flag {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.param-grid .param-name {
+    justify-self: start;
 }
 
 .param-name { font-family: var(--rp-mono); font-weight: 600; }
@@ -65,9 +345,132 @@ table.compact td, table.compact th {
     font-size: 0.9em;
 }
 
+/* Bounded, scrollable container for the "Selected generators" list in
+ * the combined generator search form.  Keeps the selection visible
+ * without letting a 200-row pool push the rest of the form off-screen. */
+.selected-scroll {
+    max-height: 14rem;
+    overflow-y: auto;
+    border: 1px solid var(--pico-muted-border-color, #e5e5e5);
+    border-radius: 0.25rem;
+}
+.selected-scroll table.compact td,
+.selected-scroll table.compact th {
+    padding: 0.1rem 0.4rem;
+    font-size: 0.85em;
+    line-height: 1.15;
+}
+.selected-scroll table.compact thead th {
+    position: sticky;
+    top: 0;
+    background: var(--pico-background-color, #fff);
+    z-index: 1;
+}
+.selected-scroll button {
+    padding: 0 0.35rem;
+    margin: 0;
+    font-size: 0.8em;
+    line-height: 1.2;
+}
+
 .equidist-cell-ok   { background: #d3f9d8; }
 .equidist-cell-warn { background: #fff3bf; }
 .equidist-cell-bad  { background: #ffc9c9; }
+
+/* Client-side table sort/filter controls (see app.js rngTable*). */
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+th.sortable .sort-arrow {
+    opacity: 0.35;
+    font-size: 0.8em;
+    margin-left: 0.25em;
+}
+th.sortable.active .sort-arrow {
+    opacity: 1;
+}
+tr.filter-row th {
+    background: var(--pico-card-background-color);
+    padding: 0.2rem 0.35rem;
+}
+tr.filter-row input[type="text"] {
+    margin: 0;
+    width: 100%;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.88em;
+}
+
+/* Excel-style column filter: small button after the header label,
+ * opens a popover with a checkboxed list of distinct values. */
+th.sortable .filter-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.25em;
+    padding: 0 0.3em;
+    border: none;
+    background: transparent;
+    color: var(--pico-muted-color);
+    cursor: pointer;
+    font-size: 0.85em;
+    line-height: 1;
+    border-radius: 0.2em;
+}
+th.sortable .filter-btn:hover {
+    background: var(--pico-card-background-color);
+    color: var(--pico-color);
+}
+th.sortable .filter-btn.active {
+    color: var(--pico-primary);
+    font-weight: 700;
+}
+.filter-popover {
+    position: absolute;
+    z-index: 20;
+    margin-top: 0.25rem;
+    min-width: 12rem;
+    max-width: 22rem;
+    max-height: 20rem;
+    overflow-y: auto;
+    padding: 0.35rem 0.5rem;
+    background: var(--pico-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 0.35rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.9em;
+}
+.filter-popover label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0.1rem 0;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.filter-popover label.filter-all {
+    font-weight: 600;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
+}
+.filter-popover input[type="checkbox"] {
+    margin: 0;
+    flex: 0 0 auto;
+}
+.filter-popover .filter-val {
+    font-family: var(--rp-mono);
+    font-size: 0.88em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+th.sortable { position: relative; }
 
 /* Transition-matrix canvas: always 800×800, crisp pixels. */
 .matrix-canvas {

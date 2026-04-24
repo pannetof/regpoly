@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Tested generator #{{ tg_id }}{% endblock %}
+{% block title %}Combined generator #{{ tg_id }}{% endblock %}
 
 {% block content %}
 <div x-data="testedDetail({{ tg_id }})" x-init="load()">
     <template x-if="tg">
         <div>
             <hgroup>
-                <h1>Tested generator #<span x-text="tg.id"></span></h1>
+                <h1>Combined generator #<span x-text="tg.id"></span></h1>
                 <p>J=<span x-text="tg.J"></span>
                    · k_g=<span x-text="tg.k_g"></span>
                    · Lmax=<span x-text="tg.Lmax"></span></p>
             </hgroup>
 
             <p x-show="tg.search_run_id">
-                Produced by tempering search
+                Produced by combined generator search
                 <a :href="'/tempering-search/' + tg.search_run_id"
                    x-text="'#' + tg.search_run_id"></a>
             </p>

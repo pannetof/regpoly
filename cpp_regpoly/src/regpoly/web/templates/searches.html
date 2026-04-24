@@ -5,7 +5,7 @@
 {% block content %}
 <hgroup>
     <h1>Searches</h1>
-    <p>All primitive and tempering searches — current and past.
+    <p>All full-period and combined generator searches — current and past.
         Pause, resume, cancel, or restart from here.</p>
 </hgroup>
 
@@ -14,8 +14,8 @@
         <label>Type
             <select x-model="filter.type" @change="reload()">
                 <option value="">all</option>
-                <option value="primitive">primitive</option>
-                <option value="tempering">tempering</option>
+                <option value="primitive">full-period generator</option>
+                <option value="tempering">combined generator</option>
             </select>
         </label>
         <label>Family
@@ -66,7 +66,7 @@
         <tbody>
             <template x-for="s in items" :key="s.type + '-' + s.id">
                 <tr>
-                    <td x-text="s.type"></td>
+                    <td x-text="typeLabel(s)"></td>
                     <td>
                         <a :href="detailUrl(s)" x-text="s.id"></a>
                     </td>
@@ -86,6 +86,10 @@
                                     :disabled="!canCancel(s)">Cancel</button>
                             <button class="outline" @click="act(s, 'restart')"
                                     :disabled="!canRestart(s)">Restart</button>
+                            <button class="outline secondary"
+                                    @click="deleteFound(s)">
+                                Delete found
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -93,6 +97,36 @@
         </tbody>
     </table>
     <p x-show="items.length === 0"><em>No searches match the filters.</em></p>
+
+    <!-- In-page delete confirmation dialog -->
+    <dialog :open="confirmDelete !== null">
+        <article x-show="confirmDelete !== null">
+            <header><strong>Delete search</strong></header>
+            <template x-if="confirmDelete">
+                <div>
+                    <p>
+                        Delete search
+                        <strong x-text="'#' + confirmDelete.id"></strong>
+                        (<span x-text="typeLabel(confirmDelete)"></span>)
+                        and all of its results?
+                    </p>
+                    <p><small>This removes the run row from the list
+                        and every generator it produced.  It cannot
+                        be undone.</small></p>
+                </div>
+            </template>
+            <footer>
+                <button class="secondary"
+                        @click="confirmDelete = null"
+                        :disabled="deleting">Cancel</button>
+                <button @click="doDelete()" :disabled="deleting">
+                    <span x-text="deleting ? 'Deleting…' : 'Delete'"></span>
+                </button>
+            </footer>
+            <p x-show="deleteError" style="color:#c92a2a"
+               x-text="deleteError"></p>
+        </article>
+    </dialog>
 </div>
 
 <script>
@@ -104,6 +138,10 @@ function searchesPage() {
         filter: { type: '', status: '', family: '', k: '' },
         autoRefreshSecs: 5,
         timer: null,
+        // Delete-confirmation modal
+        confirmDelete: null,
+        deleting: false,
+        deleteError: '',
 
         async init() {
             const r = await fetch('/api/generators/families');
@@ -200,6 +238,54 @@ function searchesPage() {
         canResume(s)  { return ['paused', 'cancelled', 'failed'].includes(s.status); },
         canCancel(s)  { return ['pending', 'running', 'paused'].includes(s.status); },
         canRestart(s) { return ['completed', 'cancelled', 'failed'].includes(s.status); },
+
+        typeLabel(s) {
+            if (s.type === 'primitive') {
+                return (s.search_mode === 'exhaustive')
+                    ? 'full-period generator (exhaustive)'
+                    : 'full-period generator';
+            }
+            if (s.type === 'tempering') return 'combined generator';
+            return s.type;
+        },
+
+        // Step 1: open the in-page confirmation dialog for a row.
+        deleteFound(s) {
+            this.deleteError = '';
+            this.confirmDelete = s;
+        },
+
+        // Step 2: actually perform the delete once the user confirms
+        // in the dialog.  On success the row is removed from the
+        // local list immediately so the UI reflects the DB state
+        // without a round-trip to reload.
+        async doDelete() {
+            const s = this.confirmDelete;
+            if (!s || this.deleting) return;
+            this.deleting = true;
+            this.deleteError = '';
+            try {
+                const url = s.type === 'primitive'
+                    ? `/api/primitive-searches/${s.id}/generators`
+                    : `/api/tempering-searches/${s.id}/results`;
+                const res = await fetch(url, {method: 'DELETE'});
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    this.deleteError = 'Failed: '
+                        + (body.detail || res.statusText);
+                    return;
+                }
+                // Drop the row locally so it disappears even if the
+                // auto-refresh hasn't ticked yet.
+                this.items = this.items.filter(
+                    x => !(x.type === s.type && x.id === s.id));
+                this.confirmDelete = null;
+            } catch (err) {
+                this.deleteError = err.message || String(err);
+            } finally {
+                this.deleting = false;
+            }
+        },
 
         async act(s, action) {
             const prefix = s.type === 'primitive'

@@ -10,12 +10,24 @@ from fastapi.responses import StreamingResponse
 
 import regpoly._regpoly_cpp as _cpp
 from regpoly.generateur import Generateur, resolve_family
+from regpoly.parametric import NotEnumerable, build_gen_enumerator
 from regpoly.web.database import json_dumps, json_loads
 from regpoly.web.models import PrimitiveSearchCreate
 from regpoly.web.tasks.primitive import run_primitive_search
 
 
+HUGE_SPACE_THRESHOLD = 10 ** 12
+
+
 router = APIRouter()
+
+
+def _row_field(row, name, default=None):
+    """Graceful accessor for optional columns added by migration."""
+    try:
+        return row[name]
+    except (KeyError, IndexError):
+        return default
 
 
 def _row_to_run(row) -> dict:
@@ -36,7 +48,77 @@ def _row_to_run(row) -> dict:
         "created_at": row["created_at"],
         "started_at": row["started_at"],
         "finished_at": row["finished_at"],
+        "search_mode": _row_field(row, "search_mode", "random"),
+        "enum_index":  _row_field(row, "enum_index", 0) or 0,
+        "enum_total":  _row_field(row, "enum_total"),
+        "enum_axes":   json_loads(_row_field(row, "enum_axes")),
     }
+
+
+def _resolved_for_enum(body: PrimitiveSearchCreate) -> dict:
+    """Merge structural + fixed (non-None) params into one dict; strip
+    ``poly`` because it is the enumerated output, never a user input."""
+    resolved = dict(body.structural_params)
+    for key, val in body.fixed_params.items():
+        if val is not None:
+            resolved[key] = val
+    return resolved
+
+
+def _probe_k(body: PrimitiveSearchCreate, fixed: dict) -> int:
+    """Instantiate the generator with a large probe L to compute k.
+
+    Raises HTTPException(400) on invalid inputs.  The chosen probe L
+    is large enough that quicktaus-style k<=L constraints always hold.
+    """
+    probe_L = body.L if body.L and body.L > 0 else 65536
+    try:
+        probe = Generateur.create(body.family, probe_L, **fixed)
+        return probe.k
+    except Exception as exc:
+        raise HTTPException(400, f"Invalid parameters: {exc}")
+
+
+def _effective_L(body: PrimitiveSearchCreate, k: int) -> int:
+    """Output resolution L to use for the actual search.
+
+    Tausworthe-family generators always run at L=64 (fixed convention);
+    all other families use L=k unless the caller supplied a positive
+    explicit L.
+    """
+    if body.L and body.L > 0:
+        return body.L
+    family = resolve_family(body.family, body.structural_params)
+    if family == "Tausworthe":
+        return 64
+    return k
+
+
+def _build_enumerator_or_400(body: PrimitiveSearchCreate, L: int):
+    """Return an `Enumerator` for the request or raise HTTPException(400).
+
+    Reject ``poly`` in fixed_params when in exhaustive mode.
+    """
+    if "poly" in body.fixed_params and body.fixed_params["poly"] is not None:
+        raise HTTPException(400, detail={
+            "code": "poly_in_exhaustive",
+            "message": "poly is the enumerated output; it cannot be fixed "
+                       "in exhaustive mode.",
+        })
+    resolved = _resolved_for_enum(body)
+    try:
+        enumerator = build_gen_enumerator(body.family, L, resolved)
+    except NotEnumerable as exc:
+        raise HTTPException(400, detail={
+            "code": exc.reason,
+            "message": f"Exhaustive mode requires additional inputs: {exc.reason}.",
+        })
+    if enumerator is None:
+        raise HTTPException(400, detail={
+            "code": "family_not_enumerable",
+            "message": f"Family '{body.family}' has no exhaustive-search enumerator.",
+        })
+    return enumerator
 
 
 @router.post("/primitive-searches")
@@ -55,30 +137,48 @@ async def create_primitive_search(
     except Exception as exc:
         raise HTTPException(400, f"Unknown family '{family}': {exc}")
 
-    try:
-        fixed = dict(body.structural_params)
-        for key, val in body.fixed_params.items():
-            if val is not None:
-                fixed[key] = val
-        # Generateur.create does its own randomization and injects L so
-        # samplers like tausworthe_poly see the correct output width.
-        probe = Generateur.create(family_raw, body.L, **fixed)
-        k = probe.k
-    except Exception as exc:
-        raise HTTPException(400, f"Invalid parameters: {exc}")
+    fixed = dict(body.structural_params)
+    for key, val in body.fixed_params.items():
+        if val is not None:
+            fixed[key] = val
+
+    # L is not user-facing; it is derived automatically (L=64 for
+    # Tausworthe, L=k otherwise — see _effective_L).
+    k = _probe_k(body, fixed)
+    effective_L = _effective_L(body, k)
+
+    # Exhaustive-mode pre-flight: build the enumerator up front to fail
+    # fast, compute the space size, and store axes metadata on the row.
+    enum_total_str: str | None = None
+    enum_axes_json: str | None = None
+    if body.search_mode == "exhaustive":
+        enumerator = _build_enumerator_or_400(body, effective_L)
+        total = enumerator.total
+        if total > HUGE_SPACE_THRESHOLD and not body.confirm_huge:
+            raise HTTPException(400, detail={
+                "code": "confirm_huge_required",
+                "message": (f"Exhaustive space has {total} combinations "
+                            f"(> {HUGE_SPACE_THRESHOLD}); re-submit with "
+                            f"confirm_huge=true to proceed."),
+                "total": str(total),
+            })
+        enum_total_str = str(total)
+        enum_axes_json = json_dumps(enumerator.axes)
 
     cur = await db.execute(
         """
         INSERT INTO primitive_search_run
             (family, L, k, structural_params, fixed_params,
-             max_tries, max_seconds, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+             max_tries, max_seconds, status,
+             search_mode, enum_index, enum_total, enum_axes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?)
         """,
         (
-            family, body.L, k,
+            family, effective_L, k,
             json_dumps(body.structural_params),
             json_dumps(body.fixed_params),
             body.max_tries, body.max_seconds,
+            body.search_mode, enum_total_str, enum_axes_json,
         ),
     )
     await db.commit()
@@ -86,7 +186,33 @@ async def create_primitive_search(
 
     pool.submit("primitive", run_id, run_primitive_search)
 
-    return {"id": run_id, "status": "pending", "k": k}
+    return {
+        "id": run_id, "status": "pending", "k": k, "L": effective_L,
+        "search_mode": body.search_mode,
+        "enum_total": enum_total_str,
+    }
+
+
+@router.post("/primitive-searches/estimate")
+async def estimate_primitive_search(body: PrimitiveSearchCreate) -> dict:
+    """Dry-run the exhaustive-mode configuration and report the total
+    enumeration size + per-axis metadata.  Always returns a success
+    response for random mode (with total=null)."""
+    if body.search_mode != "exhaustive":
+        return {"search_mode": body.search_mode, "total": None, "axes": []}
+    # Probe for k so the enumerator sees a self-consistent L.
+    fixed = dict(body.structural_params)
+    for key, val in body.fixed_params.items():
+        if val is not None:
+            fixed[key] = val
+    k = _probe_k(body, fixed)
+    enumerator = _build_enumerator_or_400(body, _effective_L(body, k))
+    return {
+        "search_mode": "exhaustive",
+        "total": str(enumerator.total),
+        "axes": enumerator.axes,
+        "huge": enumerator.total > HUGE_SPACE_THRESHOLD,
+    }
 
 
 @router.get("/primitive-searches")
@@ -206,7 +332,8 @@ async def restart_primitive_search(request: Request, run_id: int) -> dict:
     pool = request.app.state.pool
     async with db.execute(
         "SELECT family, L, k, structural_params, fixed_params, "
-        "max_tries, max_seconds FROM primitive_search_run WHERE id = ?",
+        "max_tries, max_seconds, search_mode, enum_total, enum_axes "
+        "FROM primitive_search_run WHERE id = ?",
         (run_id,),
     ) as cur:
         row = await cur.fetchone()
@@ -216,12 +343,16 @@ async def restart_primitive_search(request: Request, run_id: int) -> dict:
         """
         INSERT INTO primitive_search_run
             (family, L, k, structural_params, fixed_params,
-             max_tries, max_seconds, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+             max_tries, max_seconds, status,
+             search_mode, enum_index, enum_total, enum_axes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?)
         """,
         (row["family"], row["L"], row["k"],
          row["structural_params"], row["fixed_params"],
-         row["max_tries"], row["max_seconds"]),
+         row["max_tries"], row["max_seconds"],
+         _row_field(row, "search_mode", "random"),
+         _row_field(row, "enum_total"),
+         _row_field(row, "enum_axes")),
     )
     await db.commit()
     new_id = cur.lastrowid
@@ -235,6 +366,32 @@ async def _current_status(db, run_id: int) -> str | None:
     ) as cur:
         row = await cur.fetchone()
     return row["status"] if row else None
+
+
+@router.delete("/primitive-searches/{run_id}/generators")
+async def delete_primitive_search_generators(
+    request: Request, run_id: int
+) -> dict:
+    """Delete every primitive generator attributed to this search run,
+    then delete the run row itself so the search disappears from
+    ``/searches`` entirely."""
+    db = request.app.state.db
+    cur_gen = await db.execute(
+        "DELETE FROM primitive_generator WHERE search_run_id = ?",
+        (run_id,),
+    )
+    generators_deleted = cur_gen.rowcount
+    cur_run = await db.execute(
+        "DELETE FROM primitive_search_run WHERE id = ?",
+        (run_id,),
+    )
+    run_deleted = cur_run.rowcount
+    await db.commit()
+    return {
+        "run_id": run_id,
+        "deleted": generators_deleted,
+        "run_deleted": bool(run_deleted),
+    }
 
 
 @router.get("/primitive-searches/{run_id}/generators")

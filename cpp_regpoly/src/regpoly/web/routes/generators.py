@@ -156,7 +156,7 @@ async def generator_param_values(
     """
     db = request.app.state.db
 
-    if name not in ("k", "L") and not name.replace("_", "").isalnum():
+    if name not in ("k", "L", "search_run_id") and not name.replace("_", "").isalnum():
         from fastapi import HTTPException
         raise HTTPException(400, "invalid parameter name")
 
@@ -184,6 +184,15 @@ async def generator_param_values(
         except ValueError:
             pass
 
+    # Apply search_run_id filter except when computing values for it
+    sri_raw = request.query_params.get("search_run_id")
+    if name != "search_run_id" and sri_raw not in (None, ""):
+        try:
+            where.append("search_run_id = ?")
+            params.append(int(sri_raw))
+        except ValueError:
+            pass
+
     # Apply each p_<x> filter except when x == name
     for key, val in request.query_params.multi_items():
         if not key.startswith("p_") or val == "":
@@ -198,8 +207,10 @@ async def generator_param_values(
         )
         params.append(_coerce_param_value(val))
 
+    if name == "search_run_id":
+        where.append("search_run_id IS NOT NULL")
     where_clause = (" WHERE " + " AND ".join(where)) if where else ""
-    if name in ("k", "L"):
+    if name in ("k", "L", "search_run_id"):
         sql = (
             f"SELECT DISTINCT {name} AS v FROM primitive_generator"
             f"{where_clause} ORDER BY v"

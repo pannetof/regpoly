@@ -20,7 +20,7 @@ router = APIRouter()
 
 # All C++ generator class names exposed by the factory.
 # (The factory also accepts legacy aliases — see _FAMILY_ALIASES.)
-_KNOWN_FAMILIES: list[str] = [
+KNOWN_FAMILIES: list[str] = [
     "PolyLCG",
     "Tausworthe",
     "TGFSRGen",
@@ -57,7 +57,7 @@ def _aliases_for(family: str) -> list[str]:
 @router.get("/families")
 async def list_families() -> list[dict]:
     result = []
-    for fam in _KNOWN_FAMILIES:
+    for fam in KNOWN_FAMILIES:
         try:
             specs = _cpp.get_gen_param_specs(fam)
         except Exception as e:
@@ -77,10 +77,15 @@ async def family_detail(family: str) -> dict:
         specs = _cpp.get_gen_param_specs(family)
     except Exception:
         raise HTTPException(404, f"Unknown family: {family}")
+    try:
+        enumerable = bool(_cpp.family_is_enumerable(family))
+    except Exception:
+        enumerable = False
     return {
         "name": family,
         "aliases": _aliases_for(family),
         "params": list(specs),
+        "enumerable": enumerable,
     }
 
 
@@ -162,10 +167,43 @@ async def list_tests() -> list[dict]:
 # ── Markdown rendering ────────────────────────────────────────────────────
 
 def _markdown_to_html(md: str) -> str:
+    """Render a markdown string, preserving LaTeX math spans verbatim.
+
+    Python-Markdown will happily mangle LaTeX: underscores become
+    <em>, backslash-commands get stripped, and display math wrapped in
+    `$$…$$` may be split across `<p>` boundaries.  We pull math spans
+    out before conversion, replace them with opaque placeholder tokens,
+    run markdown, then reinsert the originals so KaTeX auto-render can
+    typeset them in the browser.
+    """
+    import re
     try:
         import markdown
     except ImportError:
         return f"<pre>{md}</pre>"
-    return markdown.markdown(
-        md, extensions=["fenced_code", "tables", "toc"]
+
+    spans: list[str] = []
+
+    def _stash(match: "re.Match[str]") -> str:
+        spans.append(match.group(0))
+        return f"@@MATH{len(spans) - 1}@@"
+
+    # Order matters: match the longest delimiter first.
+    patterns = [
+        r"\$\$[\s\S]+?\$\$",           # $$ ... $$ (display)
+        r"\\\[[\s\S]+?\\\]",           # \[ ... \] (display)
+        r"\\\([\s\S]+?\\\)",           # \( ... \) (inline)
+        r"(?<!\\)\$(?!\$)[^\n$]+?(?<!\\)\$",  # $ ... $ (inline)
+    ]
+    combined = re.compile("|".join(patterns))
+    stashed = combined.sub(_stash, md)
+
+    html = markdown.markdown(
+        stashed, extensions=["fenced_code", "tables", "toc"]
     )
+
+    def _unstash(match: "re.Match[str]") -> str:
+        idx = int(match.group(1))
+        return spans[idx]
+
+    return re.sub(r"@@MATH(\d+)@@", _unstash, html)

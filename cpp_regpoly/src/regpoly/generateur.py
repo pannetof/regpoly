@@ -99,6 +99,26 @@ class Generateur(Parametric):
         gen._params = full
         return gen
 
+    @classmethod
+    def create_at_index(cls, family: str, L: int,
+                        enumerator, idx: int, **fixed) -> "Generateur":
+        """Build a generator for the given exhaustive-enumeration index.
+
+        The enumerator's ``at(idx)`` contribution wins over stale
+        values in ``fixed`` — enumerated axes are authoritative.  Skips
+        ``fill_params`` because the enumerator emits every
+        non-structural value the factory needs.
+        """
+        resolved_family = resolve_family(family, fixed)
+        enumerated = enumerator.at(idx)
+        full = {**fixed, **enumerated}
+        full.pop("L", None)
+        cpp_gen = _cpp.create_generator(resolved_family, full, L)
+        gen = cls(cpp_gen)
+        gen._type_name = resolved_family
+        gen._params = full
+        return gen
+
     # -- Generator-specific methods ---------------------------------------
 
     def name(self) -> str:

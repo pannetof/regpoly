@@ -27,6 +27,7 @@ ext_modules = [
             "src/cpp/src/gen_wellrng.cpp",
             "src/cpp/src/gen_melg.cpp",
             "src/cpp/src/factory.cpp",
+            "src/cpp/src/gen_enumerator.cpp",
             "src/cpp/src/trans_permutation.cpp",
             "src/cpp/src/trans_temper_mk.cpp",
             "src/cpp/src/trans_lag_mask.cpp",

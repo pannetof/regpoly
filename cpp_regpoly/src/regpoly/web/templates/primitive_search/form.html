@@ -1,13 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}New primitive search{% endblock %}
+{% block title %}New full-period generator search{% endblock %}
 
 {% block content %}
-<h1>New primitive search</h1>
+<h1>New full-period generator search</h1>
 
 <div x-data="primitiveSearchForm()" x-init="init()">
+    <template x-if="familyLocked">
+        <p>
+            <mark class="filter-pill">
+                Family: <strong x-text="family"></strong>
+            </mark>
+        </p>
+    </template>
+
     <div class="grid">
-        <label>
+        <label x-show="!familyLocked">
             Generator family
             <select x-model="family" @change="onFamilyChange()">
                 <option value="">Choose a family…</option>
@@ -16,60 +24,98 @@
                 </template>
             </select>
         </label>
-
-        <label>
-            Output resolution L
-            <input type="number" x-model.number="L" min="1" required>
-        </label>
     </div>
 
-    <template x-if="docs_html">
-        <details>
-            <summary>Generator documentation</summary>
-            <div class="docs-panel" x-html="docs_html"></div>
-        </details>
+    <template x-if="family && enumerable">
+        <fieldset class="mode-select">
+            <legend>Search mode</legend>
+            <label>
+                <input type="radio" name="search_mode" value="random"
+                       x-model="mode" @change="onModeChange()">
+                Random — sample parameters at each try.
+            </label>
+            <label>
+                <input type="radio" name="search_mode" value="exhaustive"
+                       x-model="mode" @change="onModeChange()">
+                Exhaustive — enumerate every admissible combination.
+            </label>
+        </fieldset>
     </template>
 
     <template x-if="family">
         <div>
             <h3>Structural parameters</h3>
-            <p><small>These define k (the state size) and must be specified.</small></p>
+            <p><small>These define k.</small></p>
             <div class="param-grid">
                 <template x-for="p in params.filter(p => p.structural)" :key="p.name">
                     <template x-if="true">
                         <div class="contents" style="display:contents">
-                            <span class="param-name" x-text="p.name"></span>
-                            <input type="text" x-model="inputs[p.name]"
-                                   :placeholder="p.has_default ? '(default)' : 'required'">
                             <span class="param-flag">
                                 <span x-text="p.type"></span>
-                                <template x-if="p.has_default">
-                                    <span>· default: <span x-text="JSON.stringify(p.default)"></span></span>
-                                </template>
                             </span>
+                            <span class="param-name" x-text="p.name"></span>
+                            <template x-if="p.type === 'bool'">
+                                <label class="bool-cell">
+                                    <input type="checkbox"
+                                           x-model="inputs[p.name]"
+                                           @change="onInputChange()">
+                                    <span x-text="inputs[p.name] ? 'true' : 'false'"></span>
+                                </label>
+                            </template>
+                            <template x-if="p.type !== 'bool'">
+                                <input type="text" x-model="inputs[p.name]"
+                                       @input="onInputChange()"
+                                       :class="inputWidthClass(p)">
+                            </template>
                         </div>
                     </template>
                 </template>
             </div>
 
             <h3>Non-structural parameters</h3>
-            <p><small>Leave unchecked to randomize, or enter an explicit value.</small></p>
+            <p x-show="mode === 'exhaustive'"><small>
+                In exhaustive mode the enumerated axes are hidden —
+                they are produced by the search itself.  Remaining
+                non-structural parameters may be left blank to auto-
+                randomize or fixed to an explicit value.</small>
+            </p>
             <div class="param-grid">
-                <template x-for="p in params.filter(p => !p.structural)" :key="p.name">
+                <template x-for="p in visibleNonStructural()" :key="p.name">
                     <template x-if="true">
                         <div style="display:contents">
-                            <span class="param-name" x-text="p.name"></span>
-                            <input type="text" x-model="inputs[p.name]"
-                                   :placeholder="randHint(p)">
                             <span class="param-flag">
                                 <span x-text="p.type"></span>
                                 <template x-if="p.rand_type && p.rand_type !== 'none'">
                                     <span> · random: <span x-text="p.rand_type"></span>(<span x-text="p.rand_args"></span>)</span>
                                 </template>
-                                <template x-if="p.has_default">
-                                    <span> · default: <span x-text="JSON.stringify(p.default)"></span></span>
-                                </template>
                             </span>
+                            <span class="param-name" x-text="p.name"></span>
+                            <div class="ns-cell">
+                                <template x-if="p.type === 'bool'">
+                                    <label class="bool-cell">
+                                        <input type="checkbox"
+                                               x-model="inputs[p.name]"
+                                               @change="onInputChange()"
+                                               :disabled="isParamDisabled(p)">
+                                        <span x-text="inputs[p.name] ? 'true' : 'false'"></span>
+                                    </label>
+                                </template>
+                                <template x-if="p.type !== 'bool'">
+                                    <input type="text"
+                                           x-model="inputs[p.name]"
+                                           @input="onInputChange()"
+                                           :disabled="isParamDisabled(p)"
+                                           :class="inputWidthClass(p)">
+                                </template>
+                                <template x-if="mode === 'random' && p.rand_type && p.rand_type !== 'none'">
+                                    <label class="rand-toggle">
+                                        <input type="checkbox"
+                                               x-model="paramRandom[p.name]"
+                                               @change="onInputChange()">
+                                        Random
+                                    </label>
+                                </template>
+                            </div>
                         </div>
                     </template>
                 </template>
@@ -77,15 +123,54 @@
         </div>
     </template>
 
-    <h3>Search limits</h3>
-    <div class="grid">
-        <label>Max tries (blank = unlimited)
-            <input type="number" x-model.number="max_tries" min="1">
-        </label>
-        <label>Max seconds (blank = unlimited)
-            <input type="number" x-model.number="max_seconds" min="1" step="any">
-        </label>
-    </div>
+    <template x-if="mode === 'exhaustive'">
+        <section class="estimate-panel">
+            <template x-if="estimateLoading">
+                <p><em>Estimating…</em></p>
+            </template>
+            <template x-if="!estimateLoading && estimateError">
+                <p style="color:#c92a2a"><strong>Cannot enumerate: </strong>
+                    <span x-text="estimateError"></span></p>
+            </template>
+            <template x-if="!estimateLoading && estimate && !estimateError">
+                <div>
+                    <p>
+                        <strong>Space:</strong>
+                        <span x-text="formatTotal(estimate.total)"></span>
+                        combination(s)
+                        <template x-for="(a, i) in estimate.axes" :key="a.name">
+                            <span class="mono"
+                                  x-text="(i === 0 ? ' = ' : ' × ')
+                                          + a.name + '(' + a.size + ')'"></span>
+                        </template>
+                    </p>
+                    <template x-if="estimate.huge">
+                        <p style="color:#c92a2a">
+                            <strong>⚠ Huge space.</strong>
+                            <label>
+                                <input type="checkbox" x-model="confirmHuge">
+                                I understand this may run for a long time.
+                            </label>
+                        </p>
+                    </template>
+                </div>
+            </template>
+        </section>
+    </template>
+
+    <template x-if="mode !== 'exhaustive'">
+        <div>
+            <h3>Search limits</h3>
+            <div class="grid">
+                <label>Max tries (blank = unlimited)
+                    <input type="number" x-model.number="max_tries" min="1">
+                </label>
+                <label>Max seconds (blank = unlimited)
+                    <input type="number" x-model.number="max_seconds" min="1" step="any">
+                </label>
+            </div>
+        </div>
+    </template>
 
     <button @click="submit()" :disabled="!canSubmit() || busy">
         <span x-text="busy ? 'Launching…' : 'Launch search'"></span>
@@ -96,55 +181,186 @@
 
 <script>
 function primitiveSearchForm() {
+    // Parameters whose values are produced by the exhaustive enumerator
+    // (not user input).  Hidden from the non-structural section when
+    // mode === 'exhaustive'.
+    const ENUMERATED_RAND_TYPES = new Set([
+        'tausworthe_poly', 'poly_exponents', 'bitmask_vec',
+    ]);
     return {
         families: [],
         family: '',
-        L: 32,
+        familyLocked: false,
+        enumerable: false,
+        mode: 'random',
         params: [],
         inputs: {},
-        docs_html: '',
+        paramRandom: {},   // per non-structural param: true = randomize
         max_tries: 10000,
         max_seconds: null,
         busy: false,
         error: '',
+        // Estimate panel state
+        estimate: null,
+        estimateLoading: false,
+        estimateError: '',
+        confirmHuge: false,
+        _estimateTimer: null,
 
         async init() {
             const res = await fetch('/api/families');
             this.families = await res.json();
+            const qs = new URLSearchParams(window.location.search);
+            if (qs.has('family')) {
+                this.family = qs.get('family');
+                this.familyLocked = true;
+                await this.onFamilyChange();
+            }
         },
 
         async onFamilyChange() {
             this.params = [];
             this.inputs = {};
-            this.docs_html = '';
+            this.paramRandom = {};
+            this.enumerable = false;
+            this.mode = 'random';
+            this.estimate = null;
+            this.estimateError = '';
             if (!this.family) return;
-            const [famRes, docsRes] = await Promise.all([
-                fetch('/api/families/' + this.family),
-                fetch('/api/families/' + this.family + '/docs'),
-            ]);
+            const famRes = await fetch('/api/families/' + this.family);
             const fam = await famRes.json();
             this.params = fam.params;
+            this.enumerable = !!fam.enumerable;
+            const inputs = {};
+            const paramRandom = {};
             for (const p of this.params) {
-                this.inputs[p.name] = '';
+                // Booleans are stored as native booleans; other types
+                // are stored as text for the <input type="text">.
+                if (p.type === 'bool') {
+                    inputs[p.name] = p.has_default ? Boolean(p.default) : false;
+                } else {
+                    inputs[p.name] = '';
+                }
+                // Default non-structural params with a rand_type to
+                // "Random" (checkbox checked).  Params without a
+                // rand_type have no meaningful random behaviour — the
+                // checkbox isn't rendered for them.
+                if (!p.structural && p.rand_type && p.rand_type !== 'none') {
+                    paramRandom[p.name] = true;
+                } else {
+                    paramRandom[p.name] = false;
+                }
             }
-            const docs = await docsRes.json();
-            this.docs_html = docs.html || '';
+            this.inputs = inputs;
+            this.paramRandom = paramRandom;
         },
 
-        randHint(p) {
-            if (!p.rand_type || p.rand_type === 'none') {
-                return p.has_default ? '(use default)' : 'required';
+        onModeChange() {
+            // Switching away from exhaustive clears the estimate; the
+            // confirm-huge flag resets automatically.
+            if (this.mode !== 'exhaustive') {
+                this.estimate = null;
+                this.estimateError = '';
+                this.confirmHuge = false;
+            } else {
+                this.scheduleEstimate();
             }
-            return '(randomize automatically)';
+        },
+
+        onInputChange() {
+            if (this.mode === 'exhaustive') this.scheduleEstimate();
+        },
+
+        scheduleEstimate() {
+            // Debounce /estimate calls by 250 ms.
+            if (this._estimateTimer) clearTimeout(this._estimateTimer);
+            this._estimateTimer = setTimeout(() => this.runEstimate(), 250);
+        },
+
+        async runEstimate() {
+            this.estimateLoading = true;
+            this.estimateError = '';
+            try {
+                const body = this.buildBody();
+                const res = await fetch('/api/primitive-searches/estimate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body),
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    const d = data.detail || data;
+                    this.estimateError = (d && d.message) || 'Not enumerable.';
+                    this.estimate = null;
+                    return;
+                }
+                this.estimate = data;
+                // Reset confirmHuge when the space shrinks below the threshold.
+                if (!data.huge) this.confirmHuge = false;
+            } catch (err) {
+                this.estimateError = err.message;
+            } finally {
+                this.estimateLoading = false;
+            }
+        },
+
+        formatTotal(totalStr) {
+            if (!totalStr) return '?';
+            const s = String(totalStr);
+            if (s.length <= 12) return Number(s).toLocaleString();
+            // Show 3-sig-fig scientific notation for huge numbers.
+            const exp = s.length - 1;
+            const mantissa = s[0] + '.' + s.substring(1, 3);
+            return `${mantissa}e${exp}`;
+        },
+
+        visibleNonStructural() {
+            return this.params.filter(p => {
+                if (p.structural) return false;
+                if (this.mode === 'exhaustive'
+                    && ENUMERATED_RAND_TYPES.has(p.rand_type)) return false;
+                return true;
+            });
+        },
+
+        // True when the value input for a non-structural param should
+        // be greyed out (disabled).  Only happens in random mode, for
+        // a param that has a rand_type, when the user has checked
+        // "Random".  Booleans use the same logic.
+        isParamDisabled(p) {
+            if (p.structural) return false;
+            if (this.mode !== 'random') return false;
+            if (!p.rand_type || p.rand_type === 'none') return false;
+            return !!this.paramRandom[p.name];
+        },
+
+        // CSS class driving the width of a text input.  int → 10
+        // digits + breathing room.  bitmask → room for a 256-bit hex
+        // value (66 chars) plus padding.  Everything else gets the
+        // default flex layout.
+        inputWidthClass(p) {
+            if (p.rand_type === 'bitmask') return 'input-bitmask';
+            if (p.type === 'int')         return 'input-int';
+            return '';
         },
 
         canSubmit() {
-            if (!this.family || !this.L) return false;
+            if (!this.family) return false;
             for (const p of this.params) {
-                if (p.structural && !p.has_default
-                    && (this.inputs[p.name] === '' || this.inputs[p.name] == null)) {
-                    return false;
-                }
+                if (!p.structural) continue;
+                if (p.type === 'bool') continue;  // checkbox is always valid
+                // Every non-bool structural parameter must have an
+                // explicit value, including those flagged
+                // has_default=true on the C++ side (that flag exists
+                // for library back-compat, not as a UI default).
+                const v = this.inputs[p.name];
+                if (v === '' || v == null) return false;
+            }
+            if (this.mode === 'exhaustive') {
+                if (this.estimateLoading) return false;
+                if (this.estimateError) return false;
+                if (!this.estimate) return false;
+                if (this.estimate.huge && !this.confirmHuge) return false;
             }
             return true;
         },
@@ -161,22 +377,50 @@ function primitiveSearchForm() {
             return trimmed;
         },
 
+        _readValue(p) {
+            // Returns the value the user has provided for `p`, or
+            // `undefined` when unset / skipped.
+            const raw = this.inputs[p.name];
+            if (p.type === 'bool') {
+                // Bool inputs are backed by an actual boolean.
+                if (raw == null || raw === '') return undefined;
+                return Boolean(raw);
+            }
+            return this.parseValue(raw);
+        },
+
         buildBody() {
             const structural = {};
             const fixed = {};
             for (const p of this.params) {
-                const v = this.parseValue(this.inputs[p.name]);
+                // Hidden enumerated axes never make it into the payload.
+                if (this.mode === 'exhaustive'
+                    && !p.structural
+                    && ENUMERATED_RAND_TYPES.has(p.rand_type)) continue;
+                // Random-mode: skip non-structural params whose Random
+                // checkbox is ticked — the server will fill them in.
+                if (this.mode === 'random' && !p.structural
+                    && p.rand_type && p.rand_type !== 'none'
+                    && this.paramRandom[p.name]) continue;
+
+                const v = this._readValue(p);
                 if (v === undefined) continue;
                 if (p.structural) structural[p.name] = v;
                 else fixed[p.name] = v;
             }
+            // In exhaustive mode the sweep is bounded by enum_total;
+            // we do not send max_tries / max_seconds even if they
+            // still carry a value from an earlier random-mode session.
+            const in_exhaustive = this.mode === 'exhaustive';
             return {
                 family: this.family,
-                L: this.L,
+                // L is intentionally omitted; the server sets L = k.
                 structural_params: structural,
                 fixed_params: fixed,
-                max_tries: this.max_tries || null,
-                max_seconds: this.max_seconds || null,
+                max_tries:   in_exhaustive ? null : (this.max_tries || null),
+                max_seconds: in_exhaustive ? null : (this.max_seconds || null),
+                search_mode: this.mode,
+                confirm_huge: this.confirmHuge,
             };
         },
 
@@ -191,11 +435,22 @@ function primitiveSearchForm() {
                 });
                 if (!res.ok) {
                     const body = await res.json().catch(() => ({}));
-                    this.error = body.detail || 'Request failed';
+                    const d = body.detail;
+                    if (d && typeof d === 'object' && d.message) {
+                        this.error = d.message;
+                    } else {
+                        this.error = d || 'Request failed';
+                    }
                     return;
                 }
                 const data = await res.json();
-                window.location.href = '/primitive-search/' + data.id;
+                // If we're inside an iframe (embed=1 panel on the
+                // family landing), navigate the top-level window so
+                // the detail page replaces the host — otherwise the
+                // sidebar would render twice.
+                const topWin = (window.top && window.top !== window.self)
+                    ? window.top : window;
+                topWin.location.href = '/primitive-search/' + data.id;
             } catch (err) {
                 this.error = err.message;
             } finally {

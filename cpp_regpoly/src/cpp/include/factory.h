@@ -3,6 +3,7 @@
 #include "transformation.h"
 #include "params.h"
 #include "param_spec.h"
+#include "gen_enumerator.h"
 #include <memory>
 #include <string>
 #include <vector>

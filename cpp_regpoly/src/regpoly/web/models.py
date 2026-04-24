@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -35,11 +35,17 @@ class TransformationInfo(BaseModel):
 
 class PrimitiveSearchCreate(BaseModel):
     family: str
-    L: int
+    # L is no longer user-facing; the server sets L = k.  Kept for
+    # backward compatibility with API clients that still send it.
+    L: int = 0
     structural_params: dict[str, Any]
     fixed_params: dict[str, Any] = Field(default_factory=dict)
     max_tries: int | None = None
     max_seconds: float | None = None
+    search_mode: Literal["random", "exhaustive"] = "random"
+    # Required when an exhaustive run's total exceeds the huge-space
+    # threshold (10**12).  Ignored for random runs.
+    confirm_huge: bool = False
 
 
 class PrimitiveSearchRun(BaseModel):
@@ -59,6 +65,12 @@ class PrimitiveSearchRun(BaseModel):
     created_at: str
     started_at: str | None
     finished_at: str | None
+    # Exhaustive-mode bookkeeping; present (with defaults) for all
+    # runs after the schema migration.
+    search_mode: str = "random"
+    enum_index:  int = 0
+    enum_total:  str | None = None     # decimal; may exceed 2^63
+    enum_axes:   list[dict] | None = None
 
 
 class PrimitiveGenerator(BaseModel):

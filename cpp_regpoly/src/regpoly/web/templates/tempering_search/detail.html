@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Tempering search #{{ run_id }}{% endblock %}
+{% block title %}Combined generator search #{{ run_id }}{% endblock %}
 
 {% block content %}
 <div x-data="temperingSearchDetail({{ run_id }})" x-init="init()">
     <hgroup>
-        <h1>Tempering search #{{ run_id }}</h1>
+        <h1>Combined generator search #{{ run_id }}</h1>
         <p><template x-if="run">
             <span><span x-text="run.test_type"></span>
                 · Lmax=<span x-text="run.Lmax"></span>
@@ -42,34 +42,182 @@
                         :disabled="run.status !== 'running' && run.status !== 'pending'">
                     Cancel
                 </button>
+                <button class="secondary" @click="restart()">
+                    Restart (edit parameters)
+                </button>
             </footer>
         </article>
     </template>
 
-    <h3>Results (<span x-text="results.length"></span>)</h3>
-    <table class="compact">
+    <!-- ─── Search configuration ─────────────────────────────────── -->
+
+    <template x-if="run">
+        <section>
+            <h3>Search configuration</h3>
+            <table class="compact">
+                <tbody>
+                    <tr><td>Test</td>
+                        <td class="mono" x-text="JSON.stringify(run.test_config)"></td></tr>
+                    <tr><td>Lmax</td>
+                        <td x-text="run.Lmax"></td></tr>
+                    <tr><td>nb_tries</td>
+                        <td x-text="run.nb_tries"></td></tr>
+                    <tr><td>Optimizer</td>
+                        <td class="mono"
+                            x-text="run.optimizer_config
+                                    ? JSON.stringify(run.optimizer_config)
+                                    : '(none)'"></td></tr>
+                    <tr><td>Created</td>
+                        <td x-text="run.created_at"></td></tr>
+                </tbody>
+            </table>
+
+            <h4 style="margin-top: 1rem">Components</h4>
+            <template x-for="c in (run.components || [])"
+                      :key="c.component_index">
+                <article>
+                    <header>
+                        <strong>Component
+                            <span x-text="c.component_index"></span></strong>
+                        <template x-if="c.shared_with_component !== null
+                                        && c.shared_with_component !== undefined">
+                            <span>
+                                · shares pool with component
+                                <span x-text="c.shared_with_component"></span>
+                            </span>
+                        </template>
+                    </header>
+
+                    <details>
+                        <summary>
+                            Generator pool
+                            (<span x-text="(c.generators
+                                || c.generator_ids
+                                || []).length"></span>)
+                        </summary>
+                        <div x-html="poolTable(c)"></div>
+                    </details>
+
+                    <details>
+                        <summary>
+                            Tempering chain
+                            (<span x-text="(c.tempering_config
+                                || []).length"></span>
+                            transform<span x-show="(c.tempering_config
+                                || []).length !== 1">s</span>)
+                        </summary>
+                        <template x-if="!c.tempering_config
+                                        || !c.tempering_config.length">
+                            <p><em>(none)</em></p>
+                        </template>
+                        <table class="compact"
+                               x-show="c.tempering_config
+                                       && c.tempering_config.length">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Type</th>
+                                    <th>Parameters</th>
+                                </tr>
+                            </thead>
+                            <tbody x-html="temperingTbody(c)"></tbody>
+                        </table>
+                    </details>
+                </article>
+            </template>
+        </section>
+    </template>
+
+    <!-- ─── Combined generators found by this search ────────────── -->
+
+    <h3 style="margin-top: 1rem">Results
+        (<span x-text="results.length"></span>)
+    </h3>
+
+    <p x-show="results.length === 0">
+        <em>No combined generators saved yet for this search.</em>
+    </p>
+
+    <table class="compact" x-show="results.length">
         <thead>
-            <tr><th>ID</th><th>J</th><th>k_g</th><th>se</th><th>ME?</th><th></th></tr>
+            <tr>
+                <template x-for="col in columns()" :key="col.key">
+                    <th class="sortable"
+                        :class="sort.key === col.key ? 'active' : ''"
+                        @click="clickSort(col.key)">
+                        <span x-text="col.label"></span>
+                        <span class="sort-arrow"
+                              x-text="sortArrow(col.key)"></span>
+                        <button type="button" class="filter-btn"
+                                :class="filterActive(col.key) ? 'active' : ''"
+                                @click.stop="toggleFilter(col.key, $event)"
+                                title="Filter">▾</button>
+                    </th>
+                </template>
+                <th></th>
+            </tr>
         </thead>
         <tbody>
-            <template x-for="tg in results" :key="tg.id">
+            <template x-for="row in tableRows()" :key="row.id">
                 <tr>
-                    <td x-text="tg.id"></td>
-                    <td x-text="tg.J"></td>
-                    <td x-text="tg.k_g"></td>
-                    <td x-text="resultSe(tg) ?? '—'"></td>
-                    <td x-text="isMe(tg) ? '✓' : ''"></td>
-                    <td><a :href="'/tested-generators/' + tg.id">view</a></td>
+                    <template x-for="cell in row.cells" :key="cell.key">
+                        <td :class="cell.mono ? 'mono' : ''"
+                            x-text="cell.text"></td>
+                    </template>
+                    <td><a :href="'/tested-generators/' + row.id"
+                           target="_top">view</a></td>
                 </tr>
             </template>
         </tbody>
     </table>
+
+    <!-- Shared popover, rendered once outside the thead x-for. -->
+    <div class="filter-popover"
+         x-show="openFilter"
+         :style="filterPopoverStyle()"
+         @click.stop
+         @click.away="openFilter = null">
+        <template x-if="openFilter">
+            <div>
+                <label class="filter-all">
+                    <input type="checkbox"
+                           :checked="allChecked(openFilter)"
+                           @change="toggleAll(openFilter)">
+                    (Select all)
+                </label>
+                <template x-for="d in filterDistinctDisplay(openFilter)"
+                          :key="d.value">
+                    <label>
+                        <input type="checkbox"
+                               :checked="isChecked(openFilter, d.value)"
+                               @change="toggleOne(openFilter, d.value)">
+                        <span class="filter-val"
+                              x-text="d.value || '(empty)'"></span>
+                    </label>
+                </template>
+            </div>
+        </template>
+    </div>
 </div>
 
 <script>
 function temperingSearchDetail(id) {
     return {
+        ...rngTableFilterMethods(),
+
         run: null, progress: null, results: [], sse: null,
+
+        // Table-level sort + filter state (rngTable* helpers in app.js).
+        sort: { key: null, dir: null },
+        colFilters: {},
+
+        // Helpers required by rngTableFilterMethods().
+        rowsForFilter() { return this.results; },
+        rowValue(r, key) {
+            const v = this.cellValue(r, key);
+            if (Array.isArray(v)) return JSON.stringify(v);
+            return v;
+        },
 
         async init() {
             await this.loadRun();
@@ -82,6 +230,103 @@ function temperingSearchDetail(id) {
             if (r.ok) this.run = await r.json();
         },
 
+        _esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        },
+
+        // Pre-render the generator-pool tbody as HTML.  Using innerHTML
+        // via x-html avoids Alpine's unreliable handling of nested
+        // <template x-for> inside <tbody> (which leaves the pool
+        // invisible once inside a <details>).
+        _formatParamValue(v) {
+            if (v === null || v === undefined) return '';
+            if (Array.isArray(v)) return '[' + v.join(', ') + ']';
+            return String(v);
+        },
+
+        // Union of parameter names across every generator in the pool,
+        // preserving first-seen order so columns line up with the
+        // family's natural parameter layout.
+        _paramNames(rows) {
+            const seen = new Set(), order = [];
+            for (const g of rows) {
+                if (!g.all_params) continue;
+                for (const name of Object.keys(g.all_params)) {
+                    if (!seen.has(name)) {
+                        seen.add(name); order.push(name);
+                    }
+                }
+            }
+            return order;
+        },
+
+        // Whole pool table (thead + tbody) rendered as HTML.  Columns
+        // are ID, Family, k, L, <one per parameter>, Search.
+        poolTable(c) {
+            const rows = c && c.generators ? c.generators : [];
+            const names = this._paramNames(rows);
+            const headCells = [
+                '<th>ID</th>', '<th>Family</th>',
+                '<th>k</th>', '<th>L</th>',
+                ...names.map(n => `<th>${this._esc(n)}</th>`),
+                '<th>Search</th>',
+            ].join('');
+            const body = rows.map(g => {
+                const paramCells = names.map(n => {
+                    const v = g.all_params ? g.all_params[n] : undefined;
+                    return '<td class="mono">' +
+                        this._esc(this._formatParamValue(v)) + '</td>';
+                }).join('');
+                const search = g.search_run_id
+                    ? `<a href="/primitive-search/${g.search_run_id}">` +
+                      `#${g.search_run_id}</a>`
+                    : '';
+                return '<tr>' +
+                    `<td><a href="/generators/${g.id}">${g.id}</a></td>` +
+                    `<td>${this._esc(g.family)}</td>` +
+                    `<td>${this._esc(g.k)}</td>` +
+                    `<td>${this._esc(g.L)}</td>` +
+                    paramCells +
+                    `<td>${search}</td>` +
+                '</tr>';
+            }).join('');
+            return '<table class="compact">' +
+                `<thead><tr>${headCells}</tr></thead>` +
+                `<tbody>${body}</tbody></table>`;
+        },
+
+        temperingTbody(c) {
+            const rows = c && c.tempering_config ? c.tempering_config : [];
+            return rows.map((t, ti) => {
+                return '<tr>' +
+                    `<td>${ti}</td>` +
+                    `<td>${this._esc(t.type)}</td>` +
+                    `<td class="mono">${this._esc(this.formatTransParams(t))}</td>` +
+                '</tr>';
+            }).join('');
+        },
+
+        // Render a transformation's parameter dict as "k=v, k=v…",
+        // omitting the `type` key which is shown in its own column.
+        formatTransParams(t) {
+            if (!t || typeof t !== 'object') return '';
+            const parts = [];
+            for (const [k, v] of Object.entries(t)) {
+                if (k === 'type') continue;
+                let rendered;
+                if (Array.isArray(v)) rendered = '[' + v.join(', ') + ']';
+                else if (typeof v === 'number' && !Number.isInteger(v)) {
+                    rendered = String(v);
+                } else {
+                    rendered = String(v);
+                }
+                parts.push(k + '=' + rendered);
+            }
+            return parts.length ? parts.join(', ') : '(no parameters)';
+        },
+
         async loadResults() {
             const r = await fetch('/api/tempering-searches/' + id + '/results');
             if (r.ok) {
@@ -90,14 +335,126 @@ function temperingSearchDetail(id) {
             }
         },
 
+        // ── Column model ───────────────────────────────────────────
+        // One column per meaningful value: ID, se, ME, then per
+        // component (c{j}:family, c{j}:k, c{j}:<param>, c{j}:temp).
+        // The column set is derived from the actual rows so every
+        // attribute that appears in any result has a visible column.
+        columns() {
+            const fixed = [
+                {key: 'id',    label: 'ID',   mono: false},
+                {key: 'se',    label: 'se',   mono: false},
+                {key: 'is_me', label: 'ME?',  mono: false},
+                {key: 'k_g',   label: 'k_g',  mono: false},
+                {key: 'J',     label: 'J',    mono: false},
+            ];
+            if (!this.results.length) return fixed;
+            // Determine max J
+            let maxJ = 0;
+            for (const tg of this.results) {
+                if ((tg.J || 0) > maxJ) maxJ = tg.J;
+            }
+            // Collect parameter names per component index
+            const perComp = [];
+            for (let j = 0; j < maxJ; j++) perComp.push(new Set());
+            let anyTemp = new Array(maxJ).fill(false);
+            for (const tg of this.results) {
+                for (const c of (tg.components || [])) {
+                    const j = c.component_index;
+                    if (j < 0 || j >= maxJ) continue;
+                    for (const k of Object.keys(c.all_params || {})) {
+                        perComp[j].add(k);
+                    }
+                    if ((c.tempering_params || []).length) anyTemp[j] = true;
+                }
+            }
+            const out = [...fixed];
+            for (let j = 0; j < maxJ; j++) {
+                out.push({key: `c${j}:family`, label: `c${j}.family`, mono: false});
+                const names = Array.from(perComp[j]).sort();
+                for (const n of names) {
+                    out.push({key: `c${j}:p:${n}`, label: `c${j}.${n}`, mono: true});
+                }
+                if (anyTemp[j]) {
+                    out.push({key: `c${j}:temp`, label: `c${j}.tempering`, mono: true});
+                }
+            }
+            return out;
+        },
+
+        // ── Value extraction for sort / filter / display ──────────
+        _componentAt(tg, j) {
+            return (tg.components || []).find(c => c.component_index === j);
+        },
+        cellValue(tg, key) {
+            if (key === 'id')    return tg.id;
+            if (key === 'se')    return this.resultSe(tg);
+            if (key === 'is_me') return this.isMe(tg) ? 1 : 0;
+            if (key === 'k_g')   return tg.k_g;
+            if (key === 'J')     return tg.J;
+            const m = /^c(\d+):(family|temp|p:(.+))$/.exec(key);
+            if (!m) return '';
+            const j = parseInt(m[1], 10);
+            const c = this._componentAt(tg, j);
+            if (!c) return '';
+            if (m[2] === 'family') return c.family;
+            if (m[2] === 'temp')   return c.tempering_params || [];
+            if (m[3])              return c.all_params ? c.all_params[m[3]] : undefined;
+            return '';
+        },
+        cellText(tg, key) {
+            const v = this.cellValue(tg, key);
+            if (key === 'is_me') {
+                return this.isMe(tg) ? '✓' : '';
+            }
+            if (key === 'se') {
+                const s = this.resultSe(tg);
+                return (s === null || s === undefined) ? '—' : s;
+            }
+            if (key.endsWith(':temp')) {
+                if (!v || !v.length) return '';
+                return JSON.stringify(v);
+            }
+            if (Array.isArray(v))   return JSON.stringify(v);
+            if (v === null || v === undefined) return '';
+            return String(v);
+        },
+
         resultSe(tg) {
-            const eq = tg.results.find(r => r.test_type === 'equidistribution');
+            const eq = (tg.results || []).find(r => r.test_type === 'equidistribution');
             return eq ? eq.se : null;
         },
         isMe(tg) {
-            const eq = tg.results.find(r => r.test_type === 'equidistribution');
-            return eq && eq.is_me;
+            const eq = (tg.results || []).find(r => r.test_type === 'equidistribution');
+            return !!(eq && eq.is_me);
         },
+
+        displayRows() {
+            return rngTableApply(this.results, this.sort, this.colFilters,
+                                 (r, k) => {
+                const v = this.cellValue(r, k);
+                if (Array.isArray(v)) return JSON.stringify(v);
+                return v;
+            });
+        },
+
+        // Pre-expand each row into its list of (key, text, mono) cells.
+        // Building the cell list in JS avoids a double-nested
+        // <template x-for> inside <tbody>, which Alpine handles
+        // unreliably when the outer row set is initially empty.
+        tableRows() {
+            const cols = this.columns();
+            return this.displayRows().map(tg => ({
+                id: tg.id,
+                cells: cols.map(col => ({
+                    key: col.key,
+                    mono: col.mono,
+                    text: this.cellText(tg, col.key),
+                })),
+            }));
+        },
+        clickSort(key) { this.sort = rngTableToggleSort(this.sort, key); },
+        sortArrow(key) { return rngTableSortArrow(this.sort, key); },
 
         openSSE() {
             this.sse = new EventSource('/api/tempering-searches/' + id + '/progress');
@@ -105,7 +462,6 @@ function temperingSearchDetail(id) {
                 try {
                     const data = JSON.parse(e.data);
                     if (data.status) {
-                        // Run-level update
                         if (this.run) {
                             Object.assign(this.run, {
                                 status: data.status,
@@ -118,7 +474,6 @@ function temperingSearchDetail(id) {
                     } else {
                         this.progress = data;
                     }
-                    // Reload results when combo count advances
                     this.loadResults();
                 } catch (_) {}
             };
@@ -133,6 +488,15 @@ function temperingSearchDetail(id) {
             await fetch('/api/tempering-searches/' + id + '/cancel',
                 {method: 'POST'});
             this.loadRun();
+        },
+
+        restart() {
+            // Jump out of the family-landing iframe if we're nested
+            // there — otherwise the new-search form renders inside
+            // the tiny panel.
+            const topWin = (window.top && window.top !== window.self)
+                ? window.top : window;
+            topWin.location.href = '/tempering-search?restart_from=' + id;
         },
     };
 }

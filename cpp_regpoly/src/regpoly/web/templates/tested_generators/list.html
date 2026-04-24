@@ -1,17 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}Tested generators{% endblock %}
+{% block title %}Combined generators{% endblock %}
 
 {% block content %}
 <hgroup>
-    <h1>Tested combined generators</h1>
-    <p>Generators that passed a tempering search.  Trace them back to the
-        search run that found them.</p>
+    <h1>Combined generators</h1>
+    <p>Generators that passed a combined generator search.  Trace them
+        back to the search run that found them.</p>
 </hgroup>
 
 <div x-data="testedBrowser()" x-init="init()">
+    <template x-if="familyLocked">
+        <p>
+            <mark class="filter-pill">
+                Family: <strong x-text="filter.family"></strong>
+                <a href="/tested-generators" title="Clear family filter">×</a>
+            </mark>
+        </p>
+    </template>
+
     <form @submit.prevent="reload()" class="grid">
-        <label>Family
+        <label x-show="!familyLocked">Family
             <select x-model="filter.family" @change="reload()">
                 <option value="">(any)</option>
                 <template x-for="f in families" :key="f.name">
@@ -39,11 +48,24 @@
 
     <table class="compact">
         <thead>
-            <tr><th>ID</th><th>J</th><th>k_g</th><th>Families</th>
-                <th>se</th><th>ME?</th><th>Search</th><th></th></tr>
+            <tr>
+                <template x-for="col in columns" :key="col">
+                    <th class="sortable"
+                        :class="sort.key === col ? 'active' : ''"
+                        @click="clickSort(col)">
+                        <span x-text="colLabel(col)"></span>
+                        <span class="sort-arrow" x-text="sortArrow(col)"></span>
+                        <button type="button" class="filter-btn"
+                                :class="filterActive(col) ? 'active' : ''"
+                                @click.stop="toggleFilter(col, $event)"
+                                title="Filter">▾</button>
+                    </th>
+                </template>
+                <th></th>
+            </tr>
         </thead>
         <tbody>
-            <template x-for="tg in items" :key="tg.id">
+            <template x-for="tg in displayRows()" :key="tg.id">
                 <tr>
                     <td x-text="tg.id"></td>
                     <td x-text="tg.J"></td>
@@ -57,7 +79,8 @@
                                x-text="'#' + tg.search_run_id"></a>
                         </template>
                     </td>
-                    <td><a :href="'/tested-generators/' + tg.id">view</a></td>
+                    <td><a :href="'/tested-generators/' + tg.id"
+                           target="_top">view</a></td>
                 </tr>
             </template>
         </tbody>
@@ -67,16 +90,85 @@
         <button @click="prev()" :disabled="page <= 1">Prev</button>
         <button @click="next()" :disabled="page * 50 >= total">Next</button>
     </nav>
+
+    <!-- Shared popover for whichever column's filter button is open.
+         Kept outside the thead x-for to avoid nested templates. -->
+    <div class="filter-popover"
+         x-show="openFilter"
+         :style="filterPopoverStyle()"
+         @click.stop
+         @click.away="openFilter = null">
+        <template x-if="openFilter">
+            <div>
+                <label class="filter-all">
+                    <input type="checkbox"
+                           :checked="allChecked(openFilter)"
+                           @change="toggleAll(openFilter)">
+                    (Select all)
+                </label>
+                <template x-for="d in filterDistinctDisplay(openFilter)"
+                          :key="d.value">
+                    <label>
+                        <input type="checkbox"
+                               :checked="isChecked(openFilter, d.value)"
+                               @change="toggleOne(openFilter, d.value)">
+                        <span class="filter-val"
+                              x-text="displayLabel(openFilter, d)"></span>
+                    </label>
+                </template>
+            </div>
+        </template>
+    </div>
 </div>
 
 <script>
 function testedBrowser() {
     return {
+        ...rngTableFilterMethods(),
+
         families: [], items: [], total: 0, page: 1,
+        familyLocked: false,
         filter: { family: '', test_type: '', max_se: null, is_me: false },
+        sort: { key: null, dir: null },
+        colFilters: {},
+
+        columns: ['id','J','k_g','families','se','is_me','search'],
+
+        colLabel(col) {
+            return { id:'ID', J:'J', k_g:'k_g', families:'Families',
+                     se:'se', is_me:'ME?', search:'Search' }[col] || col;
+        },
+        _rowValue(tg, col) {
+            if (col === 'families') return tg.components.map(c => c.family).join(' + ');
+            if (col === 'se')       return this.se(tg);
+            if (col === 'is_me')    return this.isMe(tg) ? 1 : 0;
+            if (col === 'search')   return tg.search_run_id;
+            return tg[col];
+        },
+        displayLabel(col, d) {
+            if (col === 'is_me') return d.value === '1' ? '✓' : '(no)';
+            if (d.value === '') return '(empty)';
+            return d.value;
+        },
+
+        // Required by rngTableFilterMethods().
+        rowsForFilter() { return this.items; },
+        rowValue(r, key) { return this._rowValue(r, key); },
+
+        displayRows() {
+            return rngTableApply(this.items, this.sort, this.colFilters,
+                                 (r, k) => this._rowValue(r, k));
+        },
+        clickSort(key) { this.sort = rngTableToggleSort(this.sort, key); },
+        sortArrow(key)  { return rngTableSortArrow(this.sort, key); },
         async init() {
             const r = await fetch('/api/families');
             this.families = await r.json();
+            const qs = new URLSearchParams(window.location.search);
+            if (qs.has('family')) {
+                this.filter.family = qs.get('family');
+                this.familyLocked = true;
+            }
             this.reload();
         },
         se(tg) {

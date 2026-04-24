@@ -1,11 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}New tempering search{% endblock %}
+{% block title %}New combined generator search{% endblock %}
 
 {% block content %}
-<h1>New tempering search</h1>
+<h1>New combined generator search</h1>
 
 <div x-data="temperingSearchForm()" x-init="init()">
+    <template x-if="lockedFamily">
+        <p>
+            <mark class="filter-pill">
+                Family locked to <strong x-text="lockedFamily"></strong>
+                <a href="/tempering-search" title="Clear family lock">×</a>
+            </mark>
+        </p>
+    </template>
 
     <h3>Components</h3>
     <p><small>Each component contributes one generator to the combined
@@ -24,6 +32,100 @@
 
             <details>
                 <summary>
+                    Selected generators
+                    (<span x-text="comp.generator_ids.length"></span>)
+                </summary>
+                <template x-if="!comp.generator_ids.length">
+                    <p><em>No generators selected yet.</em></p>
+                </template>
+                <div x-show="comp.generator_ids.length">
+                    <button type="button" class="secondary outline"
+                            @click="clearSelection(ci)"
+                            style="margin-bottom: 0.4rem">
+                        Clear all
+                    </button>
+                    <div class="selected-scroll">
+                        <table class="compact">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <template x-for="col in compColumns(comp)"
+                                              :key="col.key">
+                                        <th class="sortable"
+                                            :class="comp.selSort.key === col.key ? 'active' : ''"
+                                            @click="selClickSort(ci, col.key)">
+                                            <span x-text="col.label"></span>
+                                            <span class="sort-arrow"
+                                                  x-text="selSortArrow(ci, col.key)"></span>
+                                            <button type="button" class="filter-btn"
+                                                    :class="selFilterActive(ci, col.key) ? 'active' : ''"
+                                                    @click.stop="selToggleFilter(ci, col.key, $event)"
+                                                    title="Filter">▾</button>
+                                        </th>
+                                    </template>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="row in selTableRows(ci)"
+                                          :key="row.id">
+                                    <tr>
+                                        <td>
+                                            <button type="button"
+                                                    class="secondary outline"
+                                                    @click="removeSelected(ci, row.id)"
+                                                    title="Remove">×</button>
+                                        </td>
+                                        <template x-for="cell in row.cells"
+                                                  :key="cell.key">
+                                            <td :class="cell.mono ? 'mono' : ''">
+                                                <template x-if="cell.key === 'id'">
+                                                    <a :href="'/generators/' + row.id"
+                                                       target="_blank"
+                                                       x-text="cell.text"></a>
+                                                </template>
+                                                <template x-if="cell.key !== 'id'">
+                                                    <span x-text="cell.text"></span>
+                                                </template>
+                                            </td>
+                                        </template>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+
+                        <!-- Popover for the selected table's column filter. -->
+                        <div class="filter-popover"
+                             x-show="comp.selOpenFilter"
+                             :style="comp._selPopoverStyle || ''"
+                             @click.stop
+                             @click.away="comp.selOpenFilter = null">
+                            <template x-if="comp.selOpenFilter">
+                                <div>
+                                    <label class="filter-all">
+                                        <input type="checkbox"
+                                               :checked="selAllChecked(ci, comp.selOpenFilter)"
+                                               @change="selToggleAll(ci, comp.selOpenFilter)">
+                                        (Select all)
+                                    </label>
+                                    <template x-for="d in selFilterDistinctDisplay(ci, comp.selOpenFilter)"
+                                              :key="d.value">
+                                        <label>
+                                            <input type="checkbox"
+                                                   :checked="selIsChecked(ci, comp.selOpenFilter, d.value)"
+                                                   @change="selToggleOne(ci, comp.selOpenFilter, d.value)">
+                                            <span class="filter-val"
+                                                  x-text="compDisplayLabel(comp, compColumnByKey(comp, comp.selOpenFilter), d)"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details>
+                <summary>
                     Generator pool
                     (<span x-text="comp.generator_ids.length"></span> selected)
                 </summary>
@@ -36,7 +138,7 @@
 
                 <div x-show="!comp.shareWithFirst || ci === 0">
                     <div class="grid">
-                        <label>Family
+                        <label x-show="!lockedFamily">Family
                             <select x-model="comp.filter.family"
                                     @change="onCompFamilyChange(ci)">
                                 <option value="">(any)</option>
@@ -51,6 +153,17 @@
                                 <option value="">(any)</option>
                                 <template x-for="v in comp.kValues" :key="v">
                                     <option :value="v" x-text="v"></option>
+                                </template>
+                            </select>
+                        </label>
+                        <label>Search
+                            <select x-model="comp.filter.search_run_id"
+                                    @change="onCompFilterChange(ci)">
+                                <option value="">(any)</option>
+                                <template x-for="v in comp.searchRunIds"
+                                          :key="v">
+                                    <option :value="v"
+                                            x-text="'#' + v"></option>
                                 </template>
                             </select>
                         </label>
@@ -78,6 +191,9 @@
                             Select all
                             <span x-text="comp.matchingTotal"></span> matching
                         </button>
+                        <button type="button" @click="selectVisible(ci)">
+                            Select visible
+                        </button>
                         <button type="button" class="secondary"
                                 @click="deselectAllMatching(ci)">
                             Deselect matching
@@ -104,31 +220,35 @@
                         <thead>
                             <tr>
                                 <th></th>
-                                <th>ID</th>
-                                <th x-show="!comp.filter.family">Family</th>
-                                <th>k</th>
-                                <th>L</th>
-                                <template x-for="p in comp.paramSpecs" :key="p.name">
-                                    <th x-text="p.name"></th>
+                                <template x-for="col in compColumns(comp)"
+                                          :key="col.key">
+                                    <th class="sortable"
+                                        :class="comp.sort.key === col.key ? 'active' : ''"
+                                        @click="compClickSort(ci, col.key)">
+                                        <span x-text="col.label"></span>
+                                        <span class="sort-arrow"
+                                              x-text="compSortArrow(ci, col.key)"></span>
+                                        <button type="button" class="filter-btn"
+                                                :class="compFilterActive(ci, col.key) ? 'active' : ''"
+                                                @click.stop="compToggleFilter(ci, col.key, $event)"
+                                                title="Filter">▾</button>
+                                    </th>
                                 </template>
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="g in comp.availableGens" :key="g.id">
+                            <template x-for="row in compTableRows(comp)"
+                                      :key="row.id">
                                 <tr>
                                     <td>
                                         <input type="checkbox"
-                                               :value="g.id"
+                                               :value="row.id"
                                                x-model="comp.generator_ids">
                                     </td>
-                                    <td x-text="g.id"></td>
-                                    <td x-show="!comp.filter.family"
-                                        x-text="g.family"></td>
-                                    <td x-text="g.k"></td>
-                                    <td x-text="g.L"></td>
-                                    <template x-for="p in comp.paramSpecs" :key="p.name">
-                                        <td class="mono"
-                                            x-text="formatVal(p, g.all_params[p.name])"></td>
+                                    <template x-for="cell in row.cells"
+                                              :key="cell.key">
+                                        <td :class="cell.mono ? 'mono' : ''"
+                                            x-text="cell.text"></td>
                                     </template>
                                 </tr>
                             </template>
@@ -143,6 +263,34 @@
                             Next
                         </button>
                     </nav>
+
+                    <!-- Shared popover for this component's columns. -->
+                    <div class="filter-popover"
+                         x-show="comp.openFilter"
+                         :style="comp._popoverStyle || ''"
+                         @click.stop
+                         @click.away="comp.openFilter = null">
+                        <template x-if="comp.openFilter">
+                            <div>
+                                <label class="filter-all">
+                                    <input type="checkbox"
+                                           :checked="compAllChecked(ci, comp.openFilter)"
+                                           @change="compToggleAll(ci, comp.openFilter)">
+                                    (Select all)
+                                </label>
+                                <template x-for="d in compFilterDistinctDisplay(ci, comp.openFilter)"
+                                          :key="d.value">
+                                    <label>
+                                        <input type="checkbox"
+                                               :checked="compIsChecked(ci, comp.openFilter, d.value)"
+                                               @change="compToggleOne(ci, comp.openFilter, d.value)">
+                                        <span class="filter-val"
+                                              x-text="compDisplayLabel(comp, compColumnByKey(comp, comp.openFilter), d)"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
                 </div>
             </details>
 
@@ -227,28 +375,32 @@
         <label>Lmax
             <input type="number" x-model.number="Lmax" min="1">
         </label>
-        <label>nb_tries
+        <label x-show="hasAnyTempering()">nb_tries
             <input type="number" x-model.number="nb_tries" min="1">
         </label>
     </div>
 
-    <h3>Bitmask optimizer (optional)</h3>
-    <label><input type="checkbox" x-model="useOptimizer">
-        Use TemperingOptimizer for optimizable bitmasks (tempMK b/c, lag b)
-    </label>
-    <div class="grid" x-show="useOptimizer">
-        <label>max_essais
-            <input type="number" x-model.number="optimizer.max_essais">
-        </label>
-        <label>n_restarts
-            <input type="number" x-model.number="optimizer.n_restarts">
-        </label>
-    </div>
+    <template x-if="hasOptimizableTempering()">
+        <div>
+            <h3>Bitmask optimizer (optional)</h3>
+            <label><input type="checkbox" x-model="useOptimizer">
+                Use TemperingOptimizer for optimizable bitmasks (tempMK b/c, lag b)
+            </label>
+            <div class="grid" x-show="useOptimizer">
+                <label>max_essais
+                    <input type="number" x-model.number="optimizer.max_essais">
+                </label>
+                <label>n_restarts
+                    <input type="number" x-model.number="optimizer.n_restarts">
+                </label>
+            </div>
+        </div>
+    </template>
 
     <hr>
 
     <button @click="submit()" :disabled="!canSubmit() || busy">
-        <span x-text="busy ? 'Launching…' : 'Launch tempering search'"></span>
+        <span x-text="busy ? 'Launching…' : 'Launch combined generator search'"></span>
     </button>
 
     <p x-show="error" style="color:#c92a2a" x-text="error"></p>
@@ -260,6 +412,7 @@ function temperingSearchForm() {
         families: [],
         transformations: [],
         components: [],   // seeded in init() once `this` is bound
+        lockedFamily: '', // set from URL ?family=; all component pools inherit it
         test: { type: 'equidistribution', max_gap_sum: 0, method: 'matricial' },
         Lmax: 32,
         nb_tries: 100,
@@ -277,11 +430,203 @@ function temperingSearchForm() {
                 page: 1,
                 shareWithFirst: false,
                 tempering: [],
-                filter: { family: '', k: '', p: {} },
+                filter: { family: this.lockedFamily || '', k: '',
+                          search_run_id: '', p: {} },
                 paramSpecs: [],
                 paramValues: {},
                 kValues: [],
+                searchRunIds: [],
+                // Cache of generator records by id, populated from the
+                // pool as the user sees them plus lazy fetches for
+                // items selected via bulk actions that never showed up
+                // in the current-page rows.  Used by selectedTable().
+                _selectedById: {},
+                // Independent sort/filter state for the "Selected
+                // generators" table so it can be navigated separately
+                // from the pool above it.
+                selSort: { key: null, dir: null },
+                selColFilters: {},
+                selOpenFilter: null,
+                _selPopoverStyle: '',
+                // Per-component client-side sort/filter over the
+                // visible rows in this pool.
+                sort: { key: null, dir: null },
+                colFilters: {},
+                openFilter: null,
+                _popoverStyle: '',
             };
+        },
+
+        // Select every generator currently visible in this component's
+        // table (i.e., everything that survives the filter+sort).
+        selectVisible(ci) {
+            const comp = this.components[ci];
+            const visible = this.compDisplayRows(comp);
+            const ids = new Set(comp.generator_ids.map(Number));
+            for (const g of visible) ids.add(g.id);
+            comp.generator_ids = Array.from(ids);
+        },
+
+        compRowValue(comp, row, key) {
+            if (key.startsWith('p:')) {
+                const v = row.all_params
+                    ? row.all_params[key.slice(2)] : undefined;
+                if (Array.isArray(v)) return JSON.stringify(v);
+                return v;
+            }
+            return row[key];
+        },
+        compDisplayRows(comp) {
+            return rngTableApply(comp.availableGens, comp.sort,
+                comp.colFilters, (r, k) => this.compRowValue(comp, r, k));
+        },
+        compClickSort(ci, key) {
+            const comp = this.components[ci];
+            comp.sort = rngTableToggleSort(comp.sort, key);
+        },
+        compSortArrow(ci, key) {
+            return rngTableSortArrow(this.components[ci].sort, key);
+        },
+
+        // Per-component column list.  Non-parameter columns are
+        // fixed; parameter columns come from the family's ParamSpec
+        // list (or, failing that, the union of keys in the visible
+        // rows).
+        compColumns(comp) {
+            const cols = [{ key: 'id', label: 'ID', mono: false }];
+            if (!comp.filter.family) {
+                cols.push({ key: 'family', label: 'Family', mono: false });
+            }
+            cols.push({ key: 'k', label: 'k', mono: false });
+            cols.push({ key: 'L', label: 'L', mono: false });
+            for (const name of this.columnKeys(comp)) {
+                const spec = (comp.paramSpecs || [])
+                    .find(p => p.name === name);
+                cols.push({
+                    key: 'p:' + name, label: name,
+                    mono: true, paramSpec: spec,
+                });
+            }
+            cols.push({ key: 'search_run_id', label: 'Search', mono: false });
+            return cols;
+        },
+
+        compCellText(comp, g, col) {
+            if (col.key.startsWith('p:')) {
+                return this.columnValue(comp, g, col.key.slice(2));
+            }
+            if (col.key === 'search_run_id') {
+                return g.search_run_id == null ? '' : '#' + g.search_run_id;
+            }
+            const v = g[col.key];
+            if (v === null || v === undefined) return '';
+            return String(v);
+        },
+        // Pre-expand each visible row into its {key, mono, text} cells.
+        // Avoids a double-nested <template x-for> inside <tbody>, which
+        // Alpine handles unreliably when the outer set starts empty.
+        compTableRows(comp) {
+            const cols = this.compColumns(comp);
+            return this.compDisplayRows(comp).map(g => ({
+                id: g.id,
+                cells: cols.map(col => ({
+                    key: col.key,
+                    mono: col.mono,
+                    text: this.compCellText(comp, g, col),
+                })),
+            }));
+        },
+        compDisplayLabel(comp, col, d) {
+            if (col.paramSpec) return this.formatVal(col.paramSpec, d.display);
+            if (col.key === 'search_run_id') {
+                if (d.value === '' || d.value === null || d.value === undefined)
+                    return '(none)';
+                return '#' + d.value;
+            }
+            if (d.value === null || d.value === undefined || d.value === '')
+                return '(empty)';
+            return d.value;
+        },
+
+        // Per-component filter helpers.  Mirror rngTableFilterMethods()
+        // but operate on `this.components[ci]` so each pool has its
+        // own popover state.
+        compToggleFilter(ci, key, ev) {
+            if (ev) ev.stopPropagation();
+            const comp = this.components[ci];
+            if (comp.openFilter === key) {
+                comp.openFilter = null;
+                comp._popoverStyle = '';
+            } else {
+                comp.openFilter = key;
+                const el = ev && ev.currentTarget;
+                if (el && el.getBoundingClientRect) {
+                    const r = el.getBoundingClientRect();
+                    const top  = r.bottom + window.scrollY;
+                    const left = r.left   + window.scrollX;
+                    comp._popoverStyle =
+                        `position:absolute;top:${top}px;left:${left}px;`;
+                } else {
+                    comp._popoverStyle = '';
+                }
+            }
+        },
+        compColumnByKey(comp, key) {
+            return this.compColumns(comp).find(c => c.key === key)
+                || { key, label: key, mono: false };
+        },
+        _compDistinctValues(ci, key) {
+            const comp = this.components[ci];
+            return rngTableDistinct(comp.availableGens, key,
+                (r, k) => this.compRowValue(comp, r, k)).map(d => d.value);
+        },
+        compFilterDistinctDisplay(ci, key) {
+            const comp = this.components[ci];
+            return rngTableDistinct(comp.availableGens, key,
+                (r, k) => this.compRowValue(comp, r, k));
+        },
+        compFilterActive(ci, key) {
+            const s = this.components[ci].colFilters[key];
+            if (!(s instanceof Set)) return false;
+            const all = this._compDistinctValues(ci, key);
+            return all.some(v => !s.has(v)) || s.size === 0;
+        },
+        compAllChecked(ci, key) {
+            return !(this.components[ci].colFilters[key] instanceof Set);
+        },
+        compIsChecked(ci, key, value) {
+            const s = this.components[ci].colFilters[key];
+            if (!(s instanceof Set)) return true;
+            return s.has(value);
+        },
+        compToggleAll(ci, key) {
+            const comp = this.components[ci];
+            if (this.compAllChecked(ci, key)) {
+                comp.colFilters = { ...comp.colFilters, [key]: new Set() };
+            } else {
+                const cf = { ...comp.colFilters };
+                delete cf[key];
+                comp.colFilters = cf;
+            }
+        },
+        compToggleOne(ci, key, value) {
+            const comp = this.components[ci];
+            let s = comp.colFilters[key];
+            const all = this._compDistinctValues(ci, key);
+            if (!(s instanceof Set)) {
+                s = new Set(all);
+                s.delete(value);
+            } else {
+                if (s.has(value)) s.delete(value);
+                else              s.add(value);
+            }
+            if (s.size === all.length && all.every(v => s.has(v))) {
+                const cf = { ...comp.colFilters };
+                delete cf[key];
+                comp.colFilters = cf;
+            } else {
+                comp.colFilters = { ...comp.colFilters, [key]: s };
+            }
         },
 
         async init() {
@@ -294,8 +639,129 @@ function temperingSearchForm() {
             for (const t of this.transformations) {
                 this._transSpecCache[t.name] = t.params;
             }
+            const qs = new URLSearchParams(window.location.search);
+            if (qs.has('family')) this.lockedFamily = qs.get('family');
+
+            if (qs.has('restart_from')) {
+                await this._prefillFromRun(qs.get('restart_from'));
+                return;
+            }
+
             this.components = [this._makeComponent()];
-            await this.onCompFilterChange(0);   // initial pool load
+            if (this.lockedFamily) {
+                await this.onCompFamilyChange(0); // loads specs for locked family
+            } else {
+                await this.onCompFilterChange(0);
+            }
+        },
+
+        // Preload every knob from an existing tempering-search run so
+        // the user can tweak and re-launch.  The API already exposes
+        // generator_ids, tempering_config, test_config, optimizer_config,
+        // Lmax, nb_tries.  We derive each component's family filter
+        // from the first generator in its pool.
+        async _prefillFromRun(runId) {
+            const res = await fetch('/api/tempering-searches/' + runId);
+            if (!res.ok) {
+                this.error = 'Could not load run ' + runId;
+                this.components = [this._makeComponent()];
+                await this.onCompFilterChange(0);
+                return;
+            }
+            const run = await res.json();
+
+            // Top-level scalars
+            this.Lmax = run.Lmax ?? 32;
+            this.nb_tries = run.nb_tries ?? 100;
+            if (run.test_config) {
+                this.test = {
+                    type: run.test_config.type
+                          || run.test_type || 'equidistribution',
+                    max_gap_sum: run.test_config.max_gap_sum ?? 0,
+                    method: run.test_config.method || 'matricial',
+                };
+            }
+            if (run.optimizer_config) {
+                this.useOptimizer = true;
+                this.optimizer = {
+                    max_essais: run.optimizer_config.max_essais ?? 400,
+                    n_restarts: run.optimizer_config.n_restarts ?? 1,
+                };
+            } else {
+                this.useOptimizer = false;
+            }
+
+            // Components
+            const sourceComps = run.components || [];
+            this.components = sourceComps.length
+                ? sourceComps.map(() => this._makeComponent())
+                : [this._makeComponent()];
+
+            for (let ci = 0; ci < sourceComps.length; ci++) {
+                const src = sourceComps[ci];
+                const comp = this.components[ci];
+
+                // Preload tempering chain
+                comp.tempering = (src.tempering_config || []).map(t => {
+                    const spec = { type: t.type || '', params: {} };
+                    const specs = this.getTransSpecs(spec.type);
+                    for (const p of specs) {
+                        const raw = t[p.name];
+                        if (raw === undefined || raw === null) {
+                            spec.params[p.name] = '';
+                        } else if (Array.isArray(raw)) {
+                            spec.params[p.name] = JSON.stringify(raw);
+                        } else {
+                            spec.params[p.name] = String(raw);
+                        }
+                    }
+                    return spec;
+                });
+
+                // Shared pool with component 1
+                if (src.shared_with_component !== null
+                    && src.shared_with_component !== undefined
+                    && ci > 0) {
+                    comp.shareWithFirst = true;
+                    // Pool is managed by component 0; nothing else to do
+                    continue;
+                }
+
+                // Preselect generators
+                comp.generator_ids = (src.generator_ids || []).slice();
+
+                // Derive family filter from the first generator's family
+                const firstGen = (src.generators || [])[0];
+                if (firstGen && firstGen.family) {
+                    comp.filter.family = firstGen.family;
+                } else if (this.lockedFamily) {
+                    comp.filter.family = this.lockedFamily;
+                }
+
+                if (comp.filter.family) {
+                    const famRes = await fetch(
+                        '/api/families/'
+                        + encodeURIComponent(comp.filter.family));
+                    const fam = await famRes.json();
+                    comp.paramSpecs = fam.params;
+                    const seededFilter = {}, seededValues = {};
+                    for (const p of fam.params) {
+                        seededFilter[p.name] = '';
+                        seededValues[p.name] = [];
+                    }
+                    comp.filter.p = seededFilter;
+                    comp.paramValues = seededValues;
+                }
+                await this.refreshCompDropdowns(ci);
+                await this.reloadCompPool(ci);
+                // Pre-seed the selected-table cache with the run's
+                // generator records so they show up immediately even
+                // though they may not be on the first pool page.
+                if (src.generators && src.generators.length) {
+                    this._mergeSelectedCache(comp, src.generators);
+                }
+                await this.syncSelected(ci);
+            }
         },
 
         _compBaseQS(ci, includeKey = null) {
@@ -308,6 +774,9 @@ function temperingSearchForm() {
             if (comp.filter.family) qs.set('family', comp.filter.family);
             if (includeKey !== 'k' && comp.filter.k !== '')
                 qs.set('k', comp.filter.k);
+            if (includeKey !== 'search_run_id'
+                && comp.filter.search_run_id !== '')
+                qs.set('search_run_id', comp.filter.search_run_id);
             for (const [name, val] of Object.entries(comp.filter.p)) {
                 if (includeKey === name) continue;
                 if (val !== '' && val != null) qs.set('p_' + name, val);
@@ -321,6 +790,7 @@ function temperingSearchForm() {
             comp.paramValues = {};
             comp.filter.p = {};
             comp.filter.k = '';
+            comp.filter.search_run_id = '';
             comp.page = 1;
 
             if (comp.filter.family) {
@@ -350,6 +820,12 @@ function temperingSearchForm() {
                 comp.filter.k = '';
                 cleared = true;
             }
+            if (comp.filter.search_run_id !== '' &&
+                !comp.searchRunIds.map(String)
+                    .includes(String(comp.filter.search_run_id))) {
+                comp.filter.search_run_id = '';
+                cleared = true;
+            }
             for (const p of comp.paramSpecs) {
                 const sel = comp.filter.p[p.name];
                 if (sel !== '' && sel != null) {
@@ -372,10 +848,12 @@ function temperingSearchForm() {
                 const r = await fetch('/api/generators/param-values?' + qs.toString());
                 return [name, (await r.json()).values || []];
             };
-            const names = ['k', ...comp.paramSpecs.map(p => p.name)];
+            const names = ['k', 'search_run_id',
+                           ...comp.paramSpecs.map(p => p.name)];
             const results = await Promise.all(names.map(fetchVals));
             const map = Object.fromEntries(results);
             comp.kValues = map.k || [];
+            comp.searchRunIds = map.search_run_id || [];
             const filled = {};
             for (const p of comp.paramSpecs) {
                 filled[p.name] = map[p.name] || [];
@@ -392,6 +870,153 @@ function temperingSearchForm() {
             const data = await r.json();
             comp.availableGens = data.items || [];
             comp.matchingTotal = data.total || 0;
+            // Fold any rows we just saw into the selected-generator
+            // cache; they may be toggled on/off later.
+            this._mergeSelectedCache(comp, comp.availableGens);
+            await this.syncSelected(ci);
+        },
+
+        _mergeSelectedCache(comp, rows) {
+            if (!rows || !rows.length) return;
+            const next = { ...comp._selectedById };
+            for (const g of rows) next[g.id] = g;
+            comp._selectedById = next;
+        },
+
+        // Fetch any selected-but-unknown generator records so the
+        // "Selected generators" table can show their family + params
+        // even after the user has filtered them out of the pool view.
+        async syncSelected(ci) {
+            const comp = this.components[ci];
+            const missing = comp.generator_ids.filter(
+                id => !(id in comp._selectedById));
+            if (!missing.length) return;
+            const fetched = await Promise.all(
+                missing.map(id =>
+                    fetch('/api/generators/' + id)
+                        .then(r => r.ok ? r.json() : null)
+                        .catch(() => null)));
+            const next = { ...comp._selectedById };
+            for (const g of fetched) if (g && g.id != null) next[g.id] = g;
+            comp._selectedById = next;
+        },
+
+        // Row set powering the "Selected generators" table — every id
+        // currently in the selection whose details we have cached.
+        _selectedRows(comp) {
+            const out = [];
+            for (const id of comp.generator_ids) {
+                const g = comp._selectedById[id];
+                if (g) out.push(g);
+            }
+            return out;
+        },
+
+        selDisplayRows(comp) {
+            return rngTableApply(this._selectedRows(comp), comp.selSort,
+                comp.selColFilters,
+                (r, k) => this.compRowValue(comp, r, k));
+        },
+
+        selTableRows(ci) {
+            const comp = this.components[ci];
+            const cols = this.compColumns(comp);
+            return this.selDisplayRows(comp).map(g => ({
+                id: g.id,
+                cells: cols.map(col => ({
+                    key: col.key,
+                    mono: col.mono,
+                    text: this.compCellText(comp, g, col),
+                })),
+            }));
+        },
+
+        selClickSort(ci, key) {
+            const comp = this.components[ci];
+            comp.selSort = rngTableToggleSort(comp.selSort, key);
+        },
+        selSortArrow(ci, key) {
+            return rngTableSortArrow(this.components[ci].selSort, key);
+        },
+
+        selToggleFilter(ci, key, ev) {
+            if (ev) ev.stopPropagation();
+            const comp = this.components[ci];
+            if (comp.selOpenFilter === key) {
+                comp.selOpenFilter = null;
+                comp._selPopoverStyle = '';
+            } else {
+                comp.selOpenFilter = key;
+                const el = ev && ev.currentTarget;
+                if (el && el.getBoundingClientRect) {
+                    const r = el.getBoundingClientRect();
+                    const top  = r.bottom + window.scrollY;
+                    const left = r.left   + window.scrollX;
+                    comp._selPopoverStyle =
+                        `position:absolute;top:${top}px;left:${left}px;`;
+                } else {
+                    comp._selPopoverStyle = '';
+                }
+            }
+        },
+        _selDistinctValues(ci, key) {
+            const comp = this.components[ci];
+            return rngTableDistinct(this._selectedRows(comp), key,
+                (r, k) => this.compRowValue(comp, r, k)).map(d => d.value);
+        },
+        selFilterDistinctDisplay(ci, key) {
+            const comp = this.components[ci];
+            return rngTableDistinct(this._selectedRows(comp), key,
+                (r, k) => this.compRowValue(comp, r, k));
+        },
+        selFilterActive(ci, key) {
+            const s = this.components[ci].selColFilters[key];
+            if (!(s instanceof Set)) return false;
+            const all = this._selDistinctValues(ci, key);
+            return all.some(v => !s.has(v)) || s.size === 0;
+        },
+        selAllChecked(ci, key) {
+            return !(this.components[ci].selColFilters[key] instanceof Set);
+        },
+        selIsChecked(ci, key, value) {
+            const s = this.components[ci].selColFilters[key];
+            if (!(s instanceof Set)) return true;
+            return s.has(value);
+        },
+        selToggleAll(ci, key) {
+            const comp = this.components[ci];
+            if (this.selAllChecked(ci, key)) {
+                comp.selColFilters = { ...comp.selColFilters, [key]: new Set() };
+            } else {
+                const cf = { ...comp.selColFilters };
+                delete cf[key];
+                comp.selColFilters = cf;
+            }
+        },
+        selToggleOne(ci, key, value) {
+            const comp = this.components[ci];
+            let s = comp.selColFilters[key];
+            const all = this._selDistinctValues(ci, key);
+            if (!(s instanceof Set)) {
+                s = new Set(all);
+                s.delete(value);
+            } else {
+                if (s.has(value)) s.delete(value);
+                else              s.add(value);
+            }
+            if (s.size === all.length && all.every(v => s.has(v))) {
+                const cf = { ...comp.selColFilters };
+                delete cf[key];
+                comp.selColFilters = cf;
+            } else {
+                comp.selColFilters = { ...comp.selColFilters, [key]: s };
+            }
+        },
+
+        removeSelected(ci, id) {
+            const comp = this.components[ci];
+            comp.generator_ids = comp.generator_ids.filter(
+                x => Number(x) !== Number(id));
         },
 
         formatVal(p, v) {
@@ -400,6 +1025,32 @@ function temperingSearchForm() {
             if (typeof v === 'number' && p && p.rand_type === 'bitmask') {
                 return '0x' + v.toString(16);
             }
+            return String(v);
+        },
+
+        // Column names rendered after `k`/`L` — one per generator
+        // parameter.  When the component filters by family we use its
+        // canonical ParamSpec order; otherwise we union the parameter
+        // names that actually appear in the visible rows.
+        columnKeys(comp) {
+            if (comp.paramSpecs && comp.paramSpecs.length) {
+                return comp.paramSpecs.map(p => p.name);
+            }
+            const keys = new Set();
+            for (const g of comp.availableGens || []) {
+                if (g && g.all_params) {
+                    for (const k of Object.keys(g.all_params)) keys.add(k);
+                }
+            }
+            return Array.from(keys).sort();
+        },
+
+        columnValue(comp, g, name) {
+            const v = g && g.all_params ? g.all_params[name] : undefined;
+            const spec = (comp.paramSpecs || []).find(p => p.name === name);
+            if (spec) return this.formatVal(spec, v);
+            if (v === null || v === undefined) return '';
+            if (Array.isArray(v)) return '[' + v.join(', ') + ']';
             return String(v);
         },
 
@@ -421,17 +1072,22 @@ function temperingSearchForm() {
             const qs = this._compBaseQS(ci);
             qs.set('per_page', '500');
             const ids = new Set(comp.generator_ids.map(Number));
+            const seen = [];
             let page = 1;
             while (true) {
                 qs.set('page', String(page));
                 const r = await fetch('/api/generators?' + qs.toString());
                 const data = await r.json();
-                for (const g of data.items) ids.add(g.id);
+                for (const g of data.items) {
+                    ids.add(g.id);
+                    seen.push(g);
+                }
                 if (page * 500 >= (data.total || 0)) break;
                 page++;
                 if (page > 200) break;   // safety cap: 100k rows
             }
             comp.generator_ids = Array.from(ids);
+            this._mergeSelectedCache(comp, seen);
         },
 
         async deselectAllMatching(ci) {
@@ -459,7 +1115,11 @@ function temperingSearchForm() {
 
         addComponent() {
             this.components.push(this._makeComponent());
-            this.onCompFilterChange(this.components.length - 1);
+            if (this.lockedFamily) {
+                this.onCompFamilyChange(this.components.length - 1);
+            } else {
+                this.onCompFilterChange(this.components.length - 1);
+            }
         },
 
         removeComponent(i) {
@@ -475,6 +1135,24 @@ function temperingSearchForm() {
 
         getTransSpecs(type) {
             return this._transSpecCache[type] || [];
+        },
+
+        // True iff any component has at least one transformation
+        // chosen (regardless of whether its params are filled).
+        hasAnyTempering() {
+            return this.components.some(c =>
+                c.tempering.some(t => t.type));
+        },
+
+        // True iff any chosen transformation exposes an optimizable
+        // parameter (e.g., bitmask `b`/`c` on tempMK, `b` on lag).
+        hasOptimizableTempering() {
+            return this.components.some(c =>
+                c.tempering.some(t => {
+                    if (!t.type) return false;
+                    const specs = this.getTransSpecs(t.type);
+                    return specs.some(p => p.optimizable);
+                }));
         },
 
         transHint(p) {
@@ -546,11 +1224,16 @@ function temperingSearchForm() {
                     Object.entries(this.test).filter(([_, v]) => v !== '' && v != null)
                 ),
                 Lmax: this.Lmax,
-                nb_tries: this.nb_tries,
-                optimizer: this.useOptimizer ? {
-                    max_essais: this.optimizer.max_essais,
-                    n_restarts: this.optimizer.n_restarts,
-                } : null,
+                // With no tempering chosen each try would repeat the
+                // same deterministic test; collapse to a single try.
+                nb_tries: this.hasAnyTempering() ? this.nb_tries : 1,
+                optimizer: (this.useOptimizer
+                            && this.hasOptimizableTempering())
+                    ? {
+                        max_essais: this.optimizer.max_essais,
+                        n_restarts: this.optimizer.n_restarts,
+                      }
+                    : null,
             };
         },
 
@@ -569,7 +1252,11 @@ function temperingSearchForm() {
                     return;
                 }
                 const data = await res.json();
-                window.location.href = '/tempering-search/' + data.id;
+                // Navigate the top-level window so the detail page
+                // isn't nested inside the family-landing iframe.
+                const topWin = (window.top && window.top !== window.self)
+                    ? window.top : window;
+                topWin.location.href = '/tempering-search/' + data.id;
             } catch (err) {
                 this.error = err.message;
             } finally {

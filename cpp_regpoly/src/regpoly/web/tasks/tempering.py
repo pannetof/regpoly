@@ -187,6 +187,14 @@ def _search_one_combo(conn, run_id: int, comb: Combinaison, test,
     if best_params is None:
         return None
 
+    # Honour the test's acceptance criterion — for equidistribution
+    # that's is_presque_me() (all per-v gaps within delta[v] AND
+    # se <= mse).  If the best try across nb_tries still fails the
+    # criterion, do not save the combination.  This is what makes
+    # mse=0 act as a hard filter.
+    if not _result_passes(best_result):
+        return None
+
     _restore_params(comb, best_params)
 
     return {
@@ -194,6 +202,22 @@ def _search_one_combo(conn, run_id: int, comb: Combinaison, test,
         "result": best_result,
         "params": best_params,
     }
+
+
+def _result_passes(result) -> bool:
+    """True iff the result meets the test's canonical acceptance
+    predicate.  For equidistribution this is ``is_presque_me``
+    (gaps + mse); for collision-free, ``is_cf``; for tuplets,
+    ``is_ok``.  A result with none of these predicates is accepted
+    unconditionally."""
+    for name in ("is_presque_me", "is_ok", "is_cf"):
+        fn = getattr(result, name, None)
+        if callable(fn):
+            try:
+                return bool(fn())
+            except Exception:
+                continue
+    return True
 
 
 # ── Saving a single tested-generator record ──────────────────────────────
@@ -366,7 +390,14 @@ def _build_gen_and_trans(components: list[dict], Lmax: int):
             pool = []
             for g in c["generators"]:
                 pool.append(
-                    Generateur.create(g["family"], g["L"], **g["all_params"])
+                    # Always rebuild each component at Lmax so every
+                    # component of the combined generator emits the
+                    # same output width as the one the test analyses.
+                    # Using the stored per-generator L (e.g. 64 for
+                    # Tausworthe) while the combined Lmax is 32 would
+                    # produce a different sequence than the one the
+                    # paper / test assumes.
+                    Generateur.create(g["family"], Lmax, **g["all_params"])
                 )
         gen_pools.append(pool)
         pool_by_index[c["component_index"]] = pool

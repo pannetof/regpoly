@@ -6,11 +6,14 @@ Provides the Parametric base class with:
   - fill_params(specs, user_params): auto-randomize missing params
   - get_param / set_param: read/write parameter values
   - structural_params / optimizable_params: filter by spec flags
+
+Also exposes the exhaustive-search enumerator wrapper: `Enumerator`,
+`NotEnumerable`, and `build_gen_enumerator()` — a thin shim over the
+C++ registry.
 """
 
 from __future__ import annotations
 
-import math as _math
 import random as _random
 
 
@@ -178,53 +181,94 @@ def generate_random(spec: dict, params: dict) -> object:
         length = len(params[length_param.strip()])
         return [_random.getrandbits(bits) for _ in range(length)]
 
-    if rt == "tausworthe_poly":
-        # rand_args: "k,nb_terms".  When nb_terms is missing / 0 we
-        # default to 3 (trinomial); when s is 0 / missing we pick a
-        # random admissible s so both the poly and the decimation step
-        # vary between tries.  We stash the chosen s into `params` so
-        # the downstream C++ constructor uses exactly that value
-        # instead of re-deriving it from the polynomial.
-        k_expr, nbt_expr = ra.split(",", 1)
-        k = int(eval_expr(k_expr.strip(), params))
-        nbt_key = nbt_expr.strip()
-        if nbt_key in params:
-            nb_terms = int(params[nbt_key])
-        elif nbt_key.lstrip("-").isdigit():
-            nb_terms = int(nbt_key)
-        else:
-            nb_terms = 0
-        if nb_terms <= 0:
-            nb_terms = 3
-        quicktaus = bool(params.get("quicktaus", True))
-        L = int(params.get("L", 0))      # injected by Generateur.create
-        s = int(params.get("s", 0))
-        if s <= 0:
-            s_max = (k - (nb_terms - 2)) if quicktaus else (k - 1)
-            if s_max < 1:
-                raise ValueError(
-                    f"Tausworthe: nb_terms={nb_terms} too large for k={k}"
-                )
-            # Decimation step s must be coprime with 2^k - 1 for the
-            # decimated LFSR sequence to have full period.  Re-roll
-            # until we hit a coprime value; for most k the success
-            # probability is > 50%, so a small retry budget suffices.
-            period = (1 << k) - 1
-            for _ in range(256):
-                s = _random.randint(1, s_max)
-                if _math.gcd(s, period) == 1:
-                    break
-            else:
-                raise ValueError(
-                    f"Tausworthe: could not find s in [1, {s_max}] with "
-                    f"gcd(s, 2^{k}-1)=1 after 256 tries"
-                )
-            params["s"] = s    # propagate to the generator constructor
-        import regpoly._regpoly_cpp as _cpp
-        return list(_cpp.tausworthe_random_poly(
-            k, nb_terms, quicktaus, L, s))
+    # Anything else is a family-specific rand_type — the matching
+    # generator implementation owns the sampling logic and exposes it
+    # via the C++ `random_param` dispatcher.  Side-effect params
+    # returned by the sampler (e.g. the `s` Tausworthe paired with a
+    # freshly-sampled poly) are spliced back into the caller's bag.
+    import regpoly._regpoly_cpp as _cpp
+    try:
+        value, side = _cpp.random_param(
+            rt, ra, params, int(params.get("L", 0)))
+    except ValueError:
+        raise
+    except Exception as exc:
+        raise ValueError(
+            f"Parameter '{spec['name']}' has rand_type='{rt}' which is "
+            f"not randomizable: {exc}"
+        )
+    for key, val in side.items():
+        params[key] = val
+    return value
 
-    raise ValueError(
-        f"Parameter '{spec['name']}' has rand_type='{rt}' which is not "
-        f"randomizable — it must be provided explicitly"
-    )
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Exhaustive-search enumerator wrapper
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class NotEnumerable(Exception):
+    """Raised when a family's resolved inputs are insufficient to build
+    an exhaustive enumerator (e.g. Tausworthe missing ``nb_terms``).
+
+    The ``reason`` attribute is a short tag (``"needs_nb_terms"``) that
+    the API layer forwards to the client as an error code.
+    """
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
+
+class Enumerator:
+    """Python-side wrapper around the C++ ``GenEnumerator``.
+
+    Attributes
+    ----------
+    total : int
+        Total number of admissible combinations (arbitrary precision).
+    axes : list[dict]
+        Per-axis metadata ``[{"name", "size", "describe"}, ...]``, in
+        declaration order (outer-most axis first).
+    """
+
+    def __init__(self, cpp):
+        self._cpp = cpp
+
+    @property
+    def total(self) -> int:
+        return int(self._cpp.size())
+
+    @property
+    def axes(self) -> list[dict]:
+        return list(self._cpp.axes())
+
+    def at(self, idx: int) -> dict:
+        return self._cpp.at(idx)
+
+
+def build_gen_enumerator(
+    family: str, L: int, resolved: dict
+) -> "Enumerator | None":
+    """Return an exhaustive-search enumerator for ``family``.
+
+    ``resolved`` is the fully merged parameter dict (structural + any
+    fixed non-structural values, minus enumerated axes).  Returns
+    ``None`` when the family has no registered enumerator.  Raises
+    :class:`NotEnumerable` with a ``needs_*`` reason when the family is
+    enumerable in principle but the inputs are incomplete.
+    """
+    import regpoly._regpoly_cpp as _cpp
+    try:
+        cpp = _cpp.make_gen_enumerator(family, resolved, L)
+    except Exception as exc:
+        # C++ throws std::invalid_argument("needs_*") for incomplete
+        # inputs.  Treat that family of exceptions as NotEnumerable.
+        msg = str(exc).strip()
+        # pybind prepends the C++ exception class name; strip it.
+        if ":" in msg:
+            msg = msg.split(":", 1)[1].strip()
+        if msg.startswith("needs_"):
+            raise NotEnumerable(msg) from exc
+        raise
+    return Enumerator(cpp) if cpp is not None else None

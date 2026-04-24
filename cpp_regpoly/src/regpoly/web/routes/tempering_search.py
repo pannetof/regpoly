@@ -191,16 +191,30 @@ async def get_tempering_search(request: Request, run_id: int) -> dict:
     components = []
     for c in comp_rows:
         async with db.execute(
-            "SELECT generator_id FROM tempering_search_generator "
-            "WHERE component_id = ?",
+            "SELECT g.id, g.family, g.L, g.k, g.all_params, "
+            "       g.search_run_id "
+            "FROM tempering_search_generator tsg "
+            "JOIN primitive_generator g ON g.id = tsg.generator_id "
+            "WHERE tsg.component_id = ? "
+            "ORDER BY g.id",
             (c["id"],),
         ) as cur:
-            gens = [g[0] for g in await cur.fetchall()]
+            rows = await cur.fetchall()
+        gen_ids = [r["id"] for r in rows]
+        gen_records = [
+            {
+                "id": r["id"], "family": r["family"], "L": r["L"],
+                "k": r["k"], "all_params": json_loads(r["all_params"]),
+                "search_run_id": r["search_run_id"],
+            }
+            for r in rows
+        ]
         components.append({
             "component_index": c["component_index"],
             "shared_with_component": c["shared_with_component"],
             "tempering_config": json_loads(c["tempering_config"]),
-            "generator_ids": gens,
+            "generator_ids": gen_ids,
+            "generators": gen_records,
         })
 
     result = _row_to_run(row)
@@ -323,6 +337,32 @@ async def _current_status(db, run_id: int) -> str | None:
     ) as cur:
         row = await cur.fetchone()
     return row["status"] if row else None
+
+
+@router.delete("/tempering-searches/{run_id}/results")
+async def delete_tempering_search_results(
+    request: Request, run_id: int
+) -> dict:
+    """Delete every combined generator attributed to this search run
+    (cascades to components and test results), then delete the search
+    run row itself (which cascades to its component pool rows)."""
+    db = request.app.state.db
+    cur_tg = await db.execute(
+        "DELETE FROM tested_generator WHERE search_run_id = ?",
+        (run_id,),
+    )
+    tested_deleted = cur_tg.rowcount
+    cur_run = await db.execute(
+        "DELETE FROM tempering_search_run WHERE id = ?",
+        (run_id,),
+    )
+    run_deleted = cur_run.rowcount
+    await db.commit()
+    return {
+        "run_id": run_id,
+        "deleted": tested_deleted,
+        "run_deleted": bool(run_deleted),
+    }
 
 
 @router.get("/tempering-searches/{run_id}/results")
