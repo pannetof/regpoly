@@ -33,3 +33,13 @@ pyregpoly/.venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local dev database
+cpp_regpoly/regpoly.db
+cpp_regpoly/regpoly.db-journal
+cpp_regpoly/regpoly.db-wal
+cpp_regpoly/regpoly.db-shm
+regpoly.db
+regpoly.db-journal
+regpoly.db-wal
+regpoly.db-shm
