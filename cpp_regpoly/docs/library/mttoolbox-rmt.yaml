@@ -1,0 +1,36 @@
+id: mttoolbox-rmt
+authors:
+  - {family: Harase, given: Shin}
+year: 2014
+title: "On the F2-linear relations of Mersenne Twister pseudorandom number generators"
+venue: "Mathematics and Computers in Simulation"
+volume: "100"
+pages: "103–113"
+doi: https://doi.org/10.1016/j.matcom.2014.02.002
+pdf: papers/harase-2014-f2-linear.pdf
+bibkey: Harase2014F2Linear
+starred: false
+deferred: true
+tags: [MT, RMT, reducible-period, 64bit]
+
+abstract: |
+  RMT64 is the 64-bit Reducible Mersenne Twister shipped as a sample
+  in MTToolBox (``samples/RMT/``). Unlike standard MT, the
+  characteristic polynomial is reducible, giving a composite period
+  rather than a Mersenne prime. The non-primitive equidistribution
+  analysis path (``notprimitive_de`` in regpoly's C++ backend)
+  computes per-resolution k(v) and d(v) over the chosen invariant
+  subspace.
+
+notes: |
+  RMT64 is the 64-bit Reducible Mersenne Twister sample shipped in
+  MTToolBox (``samples/RMT/``). Harase's 2014 Math. Comp. Simul.
+  paper is the closest standalone academic treatment of the
+  F₂-linear relations underlying reducible-period MT variants — the
+  upstream MTToolBox repository remains the practical source of
+  truth for RMT64 parameters.
+
+  Cross-check parameter sets for RMT64 at multiple MEXP values live
+  in ``docs/library/rmt_params.yaml``.
+
+generators: []
