@@ -12,7 +12,11 @@
 #include "gen_wellrng.h"
 #include "gen_melg.h"
 #include "gen_sfmt.h"
+#include "gen_dsfmt.h"
 #include "gen_mtgp.h"
+#include "gen_xorshift.h"
+#include "gen_tinymt.h"
+#include "gen_rmt.h"
 #include "trans_permutation.h"
 #include "trans_temper_mk.h"
 #include "trans_lag_mask.h"
@@ -35,7 +39,11 @@ void register_generator_types(py::module_& m) {
     py::class_<WELLRNG, Generateur, std::unique_ptr<WELLRNG>>(m, "WELLRNG");
     py::class_<MELG, Generateur, std::unique_ptr<MELG>>(m, "MELG");
     py::class_<SFMT, Generateur, std::unique_ptr<SFMT>>(m, "SFMT");
+    py::class_<dSFMTGen, Generateur, std::unique_ptr<dSFMTGen>>(m, "dSFMTGen");
     py::class_<MTGP, Generateur, std::unique_ptr<MTGP>>(m, "MTGP");
+    py::class_<XorShift128, Generateur, std::unique_ptr<XorShift128>>(m, "XorShift128");
+    py::class_<TinyMT32, Generateur, std::unique_ptr<TinyMT32>>(m, "TinyMT32");
+    py::class_<RMT64, Generateur, std::unique_ptr<RMT64>>(m, "RMT64");
 }
 
 std::unique_ptr<Generateur> create_generator(
@@ -54,7 +62,11 @@ std::unique_ptr<Generateur> create_generator(
     if (family == "WELLRNG")          return WELLRNG::from_params(params, L);
     if (family == "MELG")             return MELG::from_params(params, L);
     if (family == "SFMT")             return SFMT::from_params(params, L);
+    if (family == "dSFMTGen")         return dSFMTGen::from_params(params, L);
     if (family == "MTGP")             return MTGP::from_params(params, L);
+    if (family == "XorShift128")      return XorShift128::from_params(params, L);
+    if (family == "TinyMT32")         return TinyMT32::from_params(params, L);
+    if (family == "RMT64")            return RMT64::from_params(params, L);
     throw std::invalid_argument("Unknown generator family: " + family);
 }
 
@@ -82,7 +94,11 @@ std::vector<ParamSpec> get_gen_param_specs(const std::string& family)
     if (family == "WELLRNG")          return WELLRNG::param_specs();
     if (family == "MELG")             return MELG::param_specs();
     if (family == "SFMT")             return SFMT::param_specs();
+    if (family == "dSFMTGen")         return dSFMTGen::param_specs();
     if (family == "MTGP")             return MTGP::param_specs();
+    if (family == "XorShift128")      return XorShift128::param_specs();
+    if (family == "TinyMT32")         return TinyMT32::param_specs();
+    if (family == "RMT64")            return RMT64::param_specs();
     throw std::invalid_argument("Unknown generator family: " + family);
 }
 

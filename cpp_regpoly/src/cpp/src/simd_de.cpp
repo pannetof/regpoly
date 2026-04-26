@@ -86,8 +86,11 @@ PhiPick select_phi(const NTL::GF2X& chi) {
 BitVect step_once(const Generateur& proto, const BitVect& r) {
     auto g = proto.copy();
     g->set_raw_state(r);
-    int kbits = g->k();
-    int n_per_word = kbits / 128;
+    // Use the generator's declared full-step word count so dSFMT (which
+    // carries an extra "lung" word in its F2-linear state) advances by
+    // N words per step rather than N+1.  SFMT and any future
+    // lung-less SIMD gen has simd_full_step_words() == k/128 = N.
+    int n_per_word = g->simd_full_step_words();
     if (n_per_word <= 0) {
         // Non-SIMD fallback: one next() = one full f-step.
         g->simd_reset_word_index();

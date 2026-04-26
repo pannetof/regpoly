@@ -113,6 +113,16 @@ public:
     // Default: no-op (non-SIMD generators have no such index).
     virtual void simd_reset_word_index() {}
 
+    // Number of simd_advance_one_word() calls that compose one full
+    // f-application (= one generate_all batch).  For SFMT this equals
+    // k/128 = N, but for dSFMT k = 128*(N+1) (lung is part of the
+    // F2-linear state) while one full batch is still N do_recursion
+    // calls — dSFMT overrides to return N.  Default = k/128 (assumes
+    // every 128-bit slot of state corresponds to one per-word advance,
+    // which matches SFMT and any future SIMD generator without a
+    // separate carry register).
+    virtual int simd_full_step_words() const { return k_ / 128; }
+
     // Algorithms (use the virtual interface above)
     // Default: Berlekamp-Massey. Overridden by TGFSR, MT, PolyLCG, MELG.
     virtual BitVect char_poly() const;

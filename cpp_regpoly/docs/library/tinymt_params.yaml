@@ -1,0 +1,24 @@
+# TinyMT (Saito–Matsumoto 2011) catalog.
+#
+# Sources:
+#   - Standard TinyMT32 distribution params (id=0): canonical from the
+#     TinyMT32 reference implementation header
+#     (mat1=0x8f7011ee, mat2=0xfc78ff1f, tmat=0x3793fdff).
+#
+# Tested against MTToolBox/samples/TinyMTDC/calc_equidist (custom
+# binary authored for regpoly's cross-check; see
+# tests/_mttoolbox_build.md).
+
+family: TinyMT32
+mttoolbox_binary: TinyMTDC/calc_equidist
+slow_threshold_mexp: 20000
+
+generators:
+  - id: tinymt32_default
+    mexp: 127
+    regpoly:
+      mat1: 0x8f7011ee
+      mat2: 0xfc78ff1f
+      tmat: 0x3793fdff
+    mttoolbox_argv:
+      - "0,0x8f7011ee,0xfc78ff1f,0x3793fdff"

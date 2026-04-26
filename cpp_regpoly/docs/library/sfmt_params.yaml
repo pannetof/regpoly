@@ -1,0 +1,136 @@
+# SFMT (Saito–Matsumoto 2008) standard parameter catalog.
+#
+# Sources:
+#   - mexp/pos1/sl1/sl2/sr1/sr2/msk: docs/library/saito-matsumoto-2008.yaml
+#     (originally from sfmt-1.5.1 SFMT-paramsNNN.h).
+#   - parity: src/cpp/src/gen_sfmt.cpp `parity_for()` table (originally
+#     from sfmt-1.5.1).
+#
+# Schema: see docs/library/README.md.
+#
+# Tested against MTToolBox/samples/sfmtdc/calc_equidist.
+
+family: SFMT
+mttoolbox_binary: sfmtdc/calc_equidist
+slow_threshold_mexp: 20000
+
+generators:
+  - id: sfmt607
+    mexp: 607
+    regpoly:
+      pos1: 2
+      sl1: 15
+      sl2: 3
+      sr1: 13
+      sr2: 3
+      msk: [0xfdff37ff, 0xef7f3f7d, 0xff777b7d, 0x7ff7fb2f]
+    mttoolbox_argv:
+      - "607,2,15,3,13,3,0xfdff37ff,0xef7f3f7d,0xff777b7d,0x7ff7fb2f,0x00000001,0x00000000,0x00000000,0x5986f054"
+
+  - id: sfmt1279
+    mexp: 1279
+    regpoly:
+      pos1: 7
+      sl1: 14
+      sl2: 3
+      sr1: 5
+      sr2: 1
+      msk: [0xf7fefffd, 0x7fefcfff, 0xaff3ef3f, 0xb5ffff7f]
+    mttoolbox_argv:
+      - "1279,7,14,3,5,1,0xf7fefffd,0x7fefcfff,0xaff3ef3f,0xb5ffff7f,0x00000001,0x00000000,0x00000000,0x20000000"
+
+  - id: sfmt2281
+    mexp: 2281
+    regpoly:
+      pos1: 12
+      sl1: 19
+      sl2: 1
+      sr1: 5
+      sr2: 1
+      msk: [0xbff7ffbf, 0xfdfffffe, 0xf7ffef7f, 0xf2f7cbbf]
+    mttoolbox_argv:
+      - "2281,12,19,1,5,1,0xbff7ffbf,0xfdfffffe,0xf7ffef7f,0xf2f7cbbf,0x00000001,0x00000000,0x00000000,0x41dfa600"
+
+  - id: sfmt4253
+    mexp: 4253
+    regpoly:
+      pos1: 17
+      sl1: 20
+      sl2: 1
+      sr1: 7
+      sr2: 1
+      msk: [0x9f7bffff, 0x9fffff5f, 0x3efffffb, 0xfffff7bb]
+    mttoolbox_argv:
+      - "4253,17,20,1,7,1,0x9f7bffff,0x9fffff5f,0x3efffffb,0xfffff7bb,0xa8000001,0xaf5390a3,0xb740b3f8,0x6c11486d"
+
+  - id: sfmt11213
+    mexp: 11213
+    regpoly:
+      pos1: 68
+      sl1: 14
+      sl2: 3
+      sr1: 7
+      sr2: 3
+      msk: [0xeffff7fb, 0xffffffef, 0xdfdfbfff, 0x7fffdbfd]
+    mttoolbox_argv:
+      - "11213,68,14,3,7,3,0xeffff7fb,0xffffffef,0xdfdfbfff,0x7fffdbfd,0x00000001,0x00000000,0xe8148000,0xd0c7afa3"
+
+  - id: sfmt19937
+    mexp: 19937
+    regpoly:
+      pos1: 122
+      sl1: 18
+      sl2: 1
+      sr1: 11
+      sr2: 1
+      msk: [0xdfffffef, 0xddfecb7f, 0xbffaffff, 0xbffffff6]
+    mttoolbox_argv:
+      - "19937,122,18,1,11,1,0xdfffffef,0xddfecb7f,0xbffaffff,0xbffffff6,0x00000001,0x00000000,0x00000000,0x13c9e684"
+
+  - id: sfmt44497
+    mexp: 44497
+    regpoly:
+      pos1: 330
+      sl1: 5
+      sl2: 3
+      sr1: 9
+      sr2: 3
+      msk: [0xeffffffb, 0xdfbebfff, 0xbfbf7bef, 0x9ffd7bff]
+    mttoolbox_argv:
+      - "44497,330,5,3,9,3,0xeffffffb,0xdfbebfff,0xbfbf7bef,0x9ffd7bff,0x00000001,0x00000000,0xa3ac4000,0xecc1327a"
+
+  - id: sfmt86243
+    mexp: 86243
+    regpoly:
+      pos1: 366
+      sl1: 6
+      sl2: 7
+      sr1: 19
+      sr2: 1
+      msk: [0xfdbffbff, 0xbff7ff3f, 0xfd77efff, 0xbf9ff3ff]
+    mttoolbox_argv:
+      - "86243,366,6,7,19,1,0xfdbffbff,0xbff7ff3f,0xfd77efff,0xbf9ff3ff,0x00000001,0x00000000,0x00000000,0xe9528d85"
+
+  - id: sfmt132049
+    mexp: 132049
+    regpoly:
+      pos1: 110
+      sl1: 19
+      sl2: 1
+      sr1: 21
+      sr2: 1
+      msk: [0xffffbb5f, 0xfb6ebf95, 0xfffefffa, 0xcff77fff]
+    mttoolbox_argv:
+      - "132049,110,19,1,21,1,0xffffbb5f,0xfb6ebf95,0xfffefffa,0xcff77fff,0x00000001,0x00000000,0xcb520000,0xc7e91c7d"
+
+  - id: sfmt216091
+    mexp: 216091
+    regpoly:
+      pos1: 627
+      sl1: 11
+      sl2: 3
+      sr1: 10
+      sr2: 1
+      msk: [0xbff7bff7, 0xbfffffff, 0xbffffa7f, 0xffddfbfb]
+    mttoolbox_argv:
+      - "216091,627,11,3,10,1,0xbff7bff7,0xbfffffff,0xbffffa7f,0xffddfbfb,0xf8000001,0x89e80709,0x3bd2b64b,0x0c64b1e4"
