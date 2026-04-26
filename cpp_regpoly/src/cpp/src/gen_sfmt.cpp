@@ -67,17 +67,22 @@ static void parity_for(int mexp, uint32_t p[4]) {
 SFMT::SFMT(int mexp, int pos1, int sl1, int sl2, int sr1, int sr2,
            uint32_t msk1, uint32_t msk2, uint32_t msk3, uint32_t msk4,
            int L)
-    : Generateur(mexp, L),
+    : Generateur(128 * (mexp / 128 + 1), L),
       mexp_(mexp), N_(mexp / 128 + 1),
       pos1_(pos1), sl1_(sl1), sl2_(sl2), sr1_(sr1), sr2_(sr2),
       msk1_(msk1), msk2_(msk2), msk3_(msk3), msk4_(msk4),
       buf_idx_(4 * (mexp / 128 + 1)),
       last_output_(0)
 {
-    // state_ (inherited) is k = MEXP bits — the true state.
-    state_ = BitVect(mexp);
-    // work_ is 128·N bits of private scratch for the recurrence.
-    work_ = BitVect(128 * N_);
+    // state_ (inherited) is k = 128·N bits — the true F2-linear state of
+    // the SFMT recurrence.  The earlier convention used k = MEXP, which
+    // is the period exponent but not the dimension of the linear state
+    // space; that was wrong for non-full-period analyses.  work_ is kept
+    // as a parallel buffer for the lane-oriented recurrence code below
+    // and is the same size as state_; the two are kept in sync via
+    // rebuild_work_from_state() / sync_state_from_work().
+    state_ = BitVect(128 * N_);
+    work_  = BitVect(128 * N_);
 
     uint32_t p[4];
     parity_for(mexp, p);
@@ -99,21 +104,15 @@ std::string SFMT::display_str() const {
 // ── work buffer ↔ state_ sync ─────────────────────────────────────────
 
 void SFMT::rebuild_work_from_state() {
-    // Populate work_ from state_ by a straightforward linear
-    // embedding: state_ bits land in the low MEXP bits of work_, the
-    // remaining 128·N − MEXP bits are set to 0.  This must stay
-    // strictly linear (no conditional XOR) because regpoly's
-    // matricial test perturbs state_ bit-by-bit and requires a
-    // linear transition function.  Period certification is therefore
-    // NOT applied here; the caller is responsible for supplying a
-    // state that already satisfies the parity constraint, which is
-    // the standard convention for F2-linear generators in this
-    // framework.
-    work_ = BitVect(128 * N_);
-    work_.copy_part_from(state_, mexp_);
-
-    // Avoid the all-zero trap — a no-op rather than a conditional
-    // XOR, so still linear on the vast majority of non-zero states.
+    // state_ and work_ now have the same size (128·N bits) and the
+    // same meaning — work_ is just the lane-addressable view used by
+    // the recurrence code.  The sync is a straight copy, which is
+    // exactly linear in state_, so the matricial test (which perturbs
+    // state_ by canonical basis vectors) sees the true F2-linear
+    // transition.  The all-zero guard remains for the only realistic
+    // case it triggers — init() called with an all-zero seed; the
+    // matricial test never feeds an all-zero perturbation.
+    work_ = state_.copy();
     bool any = false;
     for (int i = 0; i < 4 * N_ && !any; i++) {
         if (work_.get_word(i, 32) != 0) any = true;
@@ -121,11 +120,27 @@ void SFMT::rebuild_work_from_state() {
     if (!any) set_lane(0, 0, 1);
 }
 
+void SFMT::set_raw_state(const BitVect& s) {
+    // Set state_ to s (truncated/padded to 128*N bits), mirror state_
+    // into work_ via DIRECT identity copy.  buf_idx and last_output_
+    // are intentionally left untouched: PIS expects subsequent next()
+    // calls to read the SAME lane positions as before the state XOR,
+    // just with the new (XOR'd) state values.
+    //
+    // Critical: do NOT call rebuild_work_from_state — its all-zero
+    // guard inserts a synthetic 1-bit when state collapses to zero,
+    // which BREAKS F2-linearity for the SIMD-PIS standard basis vectors
+    // (which legitimately need zero gen state with nonzero `next` bits).
+    BitVect new_state(128 * N_);
+    new_state.copy_part_from(s, std::min(s.nbits(), 128 * N_));
+    state_ = std::move(new_state);
+    work_ = state_.copy();
+}
+
 void SFMT::sync_state_from_work() {
-    // state_ takes the first MEXP bits of work_.
-    BitVect new_state(mexp_);
-    new_state.copy_part_from(work_, mexp_);
-    state_ = new_state;
+    // Identity copy: state_ and work_ are the same size and mean the
+    // same thing.
+    state_ = work_.copy();
 }
 
 void SFMT::period_certify() {
@@ -147,11 +162,13 @@ void SFMT::period_certify() {
 }
 
 void SFMT::init(const BitVect& init_bv) {
-    // Accept any bit-length init; take the first MEXP bits as the
-    // true state and reconstruct the private work buffer from there.
-    state_ = BitVect(mexp_);
+    // Accept any bit-length init; take the first 128·N bits as the
+    // true state.  Shorter inits get zero-padded; longer inits get
+    // truncated.  rebuild_work_from_state() handles the all-zero
+    // guard so the SFMT recurrence never starts in the trivial orbit.
+    state_ = BitVect(128 * N_);
     state_.copy_part_from(init_bv,
-                          std::min(init_bv.nbits(), mexp_));
+                          std::min(init_bv.nbits(), 128 * N_));
     rebuild_work_from_state();
     // Run one generate-all immediately so get_output() returns a valid
     // first output word without requiring a next() call.  Matches how
@@ -211,7 +228,136 @@ std::unique_ptr<Generateur> SFMT::copy() const {
     p->work_ = work_.copy();
     p->buf_idx_ = buf_idx_;
     p->last_output_ = last_output_;
+    p->pword_idx_ = pword_idx_;
     return p;
+}
+
+// ── SIMD-aware overrides for METHOD_SIMD_NOTPRIMITIVE (Phase 3) ───────
+
+void SFMT::simd_advance_one_word() {
+    // Increment pword_idx_ modulo N, then update work_[pword_idx_] via
+    // do_recursion using the same lane reads as one iteration of
+    // generate_all's body (i = pword_idx_).  Mirrors MTToolBox SFMT
+    // next_state (sfmtsearch.hpp lines 309–317).
+    pword_idx_ = (pword_idx_ + 1) % N_;
+    int i = pword_idx_;
+    const uint32_t msk[4] = { msk1_, msk2_, msk3_, msk4_ };
+    uint32_t a[4], b[4], c[4], d[4];
+    for (int l = 0; l < 4; l++) {
+        a[l] = lane(i,                  l);
+        b[l] = lane((i + pos1_) % N_,   l);
+        c[l] = lane((i + N_ - 2) % N_,  l);
+        d[l] = lane((i + N_ - 1) % N_,  l);
+    }
+    uint32_t x[4], y[4];
+    auto lshift128 = [](uint32_t out[4], const uint32_t in[4], int bytes) {
+        const int bits = bytes * 8;
+        uint64_t tl = ((uint64_t)in[1] << 32) | in[0];
+        uint64_t th = ((uint64_t)in[3] << 32) | in[2];
+        uint64_t oh, ol;
+        if (bits == 0)       { oh = th; ol = tl; }
+        else if (bits < 64)  { oh = (th << bits) | (tl >> (64 - bits)); ol = tl << bits; }
+        else if (bits == 64) { oh = tl; ol = 0; }
+        else if (bits < 128) { oh = tl << (bits - 64); ol = 0; }
+        else                 { oh = 0; ol = 0; }
+        out[0] = (uint32_t)ol; out[1] = (uint32_t)(ol >> 32);
+        out[2] = (uint32_t)oh; out[3] = (uint32_t)(oh >> 32);
+    };
+    auto rshift128 = [](uint32_t out[4], const uint32_t in[4], int bytes) {
+        const int bits = bytes * 8;
+        uint64_t tl = ((uint64_t)in[1] << 32) | in[0];
+        uint64_t th = ((uint64_t)in[3] << 32) | in[2];
+        uint64_t oh, ol;
+        if (bits == 0)       { oh = th; ol = tl; }
+        else if (bits < 64)  { ol = (tl >> bits) | (th << (64 - bits)); oh = th >> bits; }
+        else if (bits == 64) { ol = th; oh = 0; }
+        else if (bits < 128) { ol = th >> (bits - 64); oh = 0; }
+        else                 { ol = 0; oh = 0; }
+        out[0] = (uint32_t)ol; out[1] = (uint32_t)(ol >> 32);
+        out[2] = (uint32_t)oh; out[3] = (uint32_t)(oh >> 32);
+    };
+    lshift128(x, a, sl2_);
+    rshift128(y, c, sr2_);
+    for (int l = 0; l < 4; l++) {
+        uint32_t r =
+            a[l]
+          ^ x[l]
+          ^ ((b[l] >> sr1_) & msk[l])
+          ^ y[l]
+          ^ (d[l] << sl1_);
+        set_lane(i, l, r);
+    }
+    // state_ mirrors work_ (set_raw_state convention); keep them in sync.
+    sync_state_from_work();
+}
+
+BitVect SFMT::simd_read_super_word(int sm) const {
+    // Mirror MTToolBox sfmt::generate (sfmtsearch.hpp:334-359):
+    //   sm=0:  r.u[0..3] = state[idx].u[0..3]                          (no rotation)
+    //   sm=1:  r.u[0..2] = state[prev].u[1..3], r.u[3]   = state[idx].u[0]
+    //   sm=2:  r.u[0..1] = state[prev].u[2..3], r.u[2..3]= state[idx].u[0..1]
+    //   sm=3:  r.u[0]    = state[prev].u[3],    r.u[1..3]= state[idx].u[0..2]
+    // Pack lane u[i] MSB-first into BitVect bits [i·L .. (i+1)·L - 1].
+    BitVect out(128);
+    int idx  = pword_idx_;
+    int prev = (idx + N_ - 1) % N_;
+    int lc = 128 / L_;
+    for (int i = 0; i < lc; i++) {
+        int src_word, src_lane;
+        if (sm == 0) {
+            src_word = idx;
+            src_lane = i;
+        } else if (i + sm < lc) {
+            src_word = prev;
+            src_lane = i + sm;
+        } else {
+            src_word = idx;
+            src_lane = i + sm - lc;
+        }
+        uint32_t v = (uint32_t)lane(src_word, src_lane);
+        for (int b = 0; b < L_; b++) {
+            if (v & (1u << (L_ - 1 - b)))
+                out.set_bit(i * L_ + b, 1);
+        }
+    }
+    return out;
+}
+
+void SFMT::simd_add_state(const Generateur& other) {
+    // INDEX-ALIGNED XOR per MTToolBox sfmt::add (sfmtsearch.hpp:549-562):
+    //   for i in [0, N): state[(i + my_idx) % N] ^= other.state[(i + other_idx) % N]
+    // The "logical position 0" of each generator is at array index = its
+    // pword_idx_ (= MTToolBox's `index`).  Aligning by index ensures the
+    // SFMT recurrence remains coherent after add(), so subsequent
+    // simd_advance_one_word calls advance the summed state correctly.
+    //
+    // pword_idx_ itself is per-vector metadata, not F2-linear state, and
+    // is left unchanged by add (matches MTToolBox).
+    const SFMT* that = dynamic_cast<const SFMT*>(&other);
+    if (!that || that->N_ != N_) {
+        // Defensive fallback: if `other` isn't an SFMT (shouldn't happen
+        // in PIS), fall back to flat XOR.
+        BitVect s = state_.copy();
+        s.xor_with(other.state());
+        state_ = std::move(s);
+        work_ = state_.copy();
+        return;
+    }
+    int my_idx    = pword_idx_;
+    int other_idx = that->pword_idx_;
+    for (int i = 0; i < N_; i++) {
+        int dst_w = (i + my_idx)    % N_;
+        int src_w = (i + other_idx) % N_;
+        for (int l = 0; l < 4; l++) {
+            uint32_t v = (uint32_t)lane(dst_w, l)
+                       ^ (uint32_t)that->lane(src_w, l);
+            set_lane(dst_w, l, v);
+        }
+    }
+    // Mirror state_ into work_ directly (identity copy, no zero guard
+    // — PIS legitimately produces zero states; rebuild_work_from_state's
+    // synthetic 1-bit guard would break F2-linearity).
+    state_ = work_.copy();
 }
 
 BitVect SFMT::get_output() const {

@@ -10,6 +10,7 @@ ext_modules = [
         "regpoly._regpoly_cpp",
         sources=[
             "src/cpp/src/generateur.cpp",
+            "src/cpp/src/bm.cpp",
             "src/cpp/src/gen_polylcg.cpp",
             "src/cpp/src/gen_tausworthe.cpp",
             "src/cpp/src/gen_tgfsr.cpp",
@@ -36,6 +37,8 @@ ext_modules = [
             "src/cpp/src/poly_lattice.cpp",
             "src/cpp/src/lattice_polys.cpp",
             "src/cpp/src/harase_lattice.cpp",
+            "src/cpp/src/notprimitive_de.cpp",
+            "src/cpp/src/simd_de.cpp",
             "src/cpp/src/lattice_optimizer.cpp",
             "src/cpp/src/bindings.cpp",
         ],

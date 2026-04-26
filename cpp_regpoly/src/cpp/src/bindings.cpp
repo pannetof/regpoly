@@ -9,6 +9,8 @@
 #include "factory.h"
 #include "lattice_polys.h"
 #include "harase_lattice.h"
+#include "notprimitive_de.h"
+#include "simd_de.h"
 #include "lattice_optimizer.h"
 #include "gen_tausworthe.h"
 
@@ -298,6 +300,60 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
             trans.push_back(chain);
         }
         auto result = test_me_lat_harase(gens, trans, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gens"), py::arg("trans"),
+       py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
+    // ── test_me_notprimitive (matricial DE on the BM-recovered
+    //                         invariant subspace; no full-period
+    //                         assumption) ───────────────────────────────
+
+    m.def("test_me_notprimitive",
+          [](const py::list& gens_py,
+             const py::list& trans_py,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        std::vector<Generateur*> gens;
+        for (auto item : gens_py)
+            gens.push_back(item.cast<Generateur*>());
+        std::vector<std::vector<Transformation*>> trans;
+        for (auto comp_trans : trans_py) {
+            std::vector<Transformation*> chain;
+            for (auto t : comp_trans)
+                chain.push_back(t.cast<Transformation*>());
+            trans.push_back(chain);
+        }
+        auto result = test_me_notprimitive(gens, trans, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gens"), py::arg("trans"),
+       py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
+    // ── test_me_simd_notprimitive (SIMD-aware variant for SFMT etc.) ─
+
+    m.def("test_me_simd_notprimitive",
+          [](const py::list& gens_py,
+             const py::list& trans_py,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        std::vector<Generateur*> gens;
+        for (auto item : gens_py)
+            gens.push_back(item.cast<Generateur*>());
+        std::vector<std::vector<Transformation*>> trans;
+        for (auto comp_trans : trans_py) {
+            std::vector<Transformation*> chain;
+            for (auto t : comp_trans)
+                chain.push_back(t.cast<Transformation*>());
+            trans.push_back(chain);
+        }
+        auto result = test_me_simd_notprimitive(gens, trans, kg, L, maxL, delta, mse);
         py::dict d;
         d["ecart"] = result.ecart;
         d["se"] = result.se;
