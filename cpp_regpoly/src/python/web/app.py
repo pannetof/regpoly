@@ -89,6 +89,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.pool = TaskPool(
             db_path=settings.db_path, max_workers=settings.pool_size
         )
+        # In-memory registry for "Run test" jobs kicked off from the
+        # library detail page.  Each entry is keyed by a uuid and tracks
+        # status ('running' | 'completed' | 'failed') plus the result
+        # payload once available.  Cleared on server restart — clients
+        # that poll a missing job_id are told the job is unknown.
+        app.state.run_test_jobs = {}
         analysis_task = asyncio.create_task(
             _analysis_scheduler(app, settings.db_path)
         )

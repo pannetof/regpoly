@@ -111,19 +111,52 @@
                     </button>
 
                     <label style="margin-left: 0.75rem">
-                        Test
-                        <select x-model="testType"
-                                style="min-width: 12rem">
-                            <option value="equidistribution">equidistribution</option>
-                            <option value="collision_free">collision_free</option>
-                            <option value="tuplets">tuplets</option>
+                        Equidistribution method
+                        <select x-model="method"
+                                @change="onMethodChange()"
+                                style="min-width: 18rem">
+                            <option value="matricial">matricial — Gaussian elimination</option>
+                            <option value="lattice">lattice — Couture–L'Ecuyer–Tezuka dual lattice</option>
+                            <option value="harase">harase — primal lattice (full-period only)</option>
+                            <option value="notprimitive">notprimitive — Berlekamp–Massey on subspace</option>
+                            <option value="simd_notprimitive">simd_notprimitive — SFMT/dSFMT/MTGP</option>
                         </select>
                     </label>
                     <button type="button" class="secondary"
-                            @click="runTest()" :disabled="busy">
+                            @click="runTest()"
+                            :disabled="busy || methodBlocked()"
+                            :title="methodBlocked()
+                                ? 'harase does not terminate on this '
+                                  + 'generator (reducible χ); pick '
+                                  + 'simd_notprimitive or lattice'
+                                : ''">
                         <span x-text="busy ? 'Running…' : 'Run test'"></span>
                     </button>
                 </div>
+
+                <template x-if="methodBlocked()">
+                    <article style="margin-top: 0.75rem;
+                                    border-color: #c92a2a;
+                                    background: #fff5f5">
+                        <header><strong>harase is disabled for this
+                            generator</strong></header>
+                        <p>The primal-lattice search does not terminate
+                            on a reducible characteristic polynomial,
+                            which is the case here. Pick
+                            <code x-text="recommendedMethod()"></code>
+                            instead.</p>
+                    </article>
+                </template>
+                <template x-if="!methodBlocked() && methodWarning()">
+                    <article style="margin-top: 0.75rem;
+                                    border-color: #f08c00;
+                                    background: #fff4e6">
+                        <header><strong>Warning</strong></header>
+                        <p x-text="methodWarning()"></p>
+                        <p><small>Recommended for this generator:
+                            <code x-text="recommendedMethod()"></code>.</small></p>
+                    </article>
+                </template>
 
                 <template x-if="instantiatedLink()">
                     <p style="margin-top: 0.75rem">
@@ -137,7 +170,7 @@
                 <template x-if="lastResult">
                     <p style="margin-top: 0.75rem">
                         Latest test:
-                        <strong x-text="lastResult.test_type"></strong>
+                        <strong x-text="'equidistribution / ' + (lastResult.method || method)"></strong>
                         · se =
                         <strong x-text="lastResult.se ?? '—'"></strong>
                         <template x-if="lastResult.is_me">
@@ -168,13 +201,90 @@ function generatorDetail(paperId, genId) {
         entry: null,
         busy: false,
         error: '',
-        testType: 'equidistribution',
+        // Equidistribution method.  The default is set per-family on
+        // load() (see recommendedMethod): SIMD-style families default to
+        // simd_notprimitive, combined generators (J>1) default to lattice,
+        // single full-period families default to matricial.
+        method: 'lattice',
         lastResult: null,
+        // Tracks the in-flight job so we can abandon it (clear `busy`)
+        // if the user picks a different method while a worker is still
+        // running.  The worker keeps going server-side — its result is
+        // cached in `test_result` for next time — but the UI stops
+        // waiting on it and is free to launch a new test.
+        currentJobId: null,
+
+        // Families whose characteristic polynomial is reducible due to
+        // SIMD-lane redundancy.  Picking matricial/harase on these gives
+        // results against the wrong (full-state) baseline, not the
+        // reachable invariant subspace.  We also list the legacy YAML
+        // spellings (``SFMT``, ``dSFMT``, ``DSFMT``, ``MTGP``, ``RMT64``)
+        // because library entries may use those names directly without
+        // going through resolve_family() before reaching the front-end.
+        SIMD_FAMILIES: [
+            'SFMTGen', 'DSFMTGen', 'MTGPGen', 'RMT64Gen',
+            'SFMT', 'dSFMT', 'DSFMT', 'MTGP', 'RMT64',
+        ],
+
+        isReducibleChi() {
+            if (!this.entry) return false;
+            const fams = this.entry.components.map(c => c.family);
+            if (this.entry.components.length > 1) return true;
+            return fams.some(f => this.SIMD_FAMILIES.includes(f));
+        },
+        recommendedMethod() {
+            if (!this.entry) return 'lattice';
+            const fams = this.entry.components.map(c => c.family);
+            if (this.entry.components.length === 1
+                && this.SIMD_FAMILIES.includes(fams[0]))
+                return 'simd_notprimitive';
+            if (this.entry.components.length > 1) return 'lattice';
+            return 'matricial';
+        },
+        methodBlocked() {
+            // harase on reducible χ is a hard block, not just a
+            // warning: the primal-lattice search has no finite upper
+            // bound on the resolution loop when χ is reducible, so it
+            // can run for hours without producing a result.  See
+            // SFMT-607 / dSFMT / MTGP / any combined generator.
+            return this.isReducibleChi() && this.method === 'harase';
+        },
+        methodWarning() {
+            if (!this.isReducibleChi()) return '';
+            if (this.method === 'matricial' || this.method === 'harase') {
+                const why = this.entry.components.length > 1
+                    ? 'this is a combined generator (J>'
+                        + (this.entry.components.length - 1)
+                        + '), so χ is the product of the per-component '
+                        + 'characteristic polynomials and is reducible.'
+                    : 'this is a SIMD-style family — its state carries '
+                        + 'lane-redundancy bits that make χ reducible.';
+                return this.method
+                    + ' assumes χ is irreducible primitive (full period). '
+                    + 'But ' + why
+                    + ' Equidistribution will be measured against the '
+                    + 'unreachable full-state baseline floor(k/l) instead '
+                    + 'of the orbit dimension floor(p/l), so the reported '
+                    + 'gaps and se will be inaccurate. The harase method '
+                    + 'may also run very slowly or not terminate on '
+                    + 'reducible χ.';
+            }
+            return '';
+        },
 
         async load() {
             const r = await fetch(
                 '/api/library/generators/' + encodeURIComponent(genId));
-            if (r.ok) this.entry = await r.json();
+            if (r.ok) {
+                this.entry = await r.json();
+                // Pick a sensible default method for this family on first
+                // load only — don't override an explicit user selection
+                // when load() is called again after instantiate/runTest.
+                if (!this._methodInitialized) {
+                    this.method = this.recommendedMethod();
+                    this._methodInitialized = true;
+                }
+            }
         },
         formatParam(v) {
             // Bitmask fields arrive from the API already formatted as
@@ -203,35 +313,105 @@ function generatorDetail(paperId, genId) {
             } catch (err) { this.error = err.message; }
             finally { this.busy = false; }
         },
+        onMethodChange() {
+            // Abandon any in-flight poll so the button frees up
+            // immediately — picking a new method should never be
+            // gated on a previous (now-irrelevant) test finishing.
+            this.currentJobId = null;
+            this.busy = false;
+            this.error = '';
+            this.lastResult = null;
+        },
         async runTest() {
             if (this.busy) return;
             this.busy = true; this.error = ''; this.lastResult = null;
             try {
-                const body = {test: {type: this.testType}};
-                if (this.testType === 'equidistribution') {
-                    // `lattice` (Couture–L'Ecuyer–Tezuka) works for
-                    // every F2-linear family in the library, including
-                    // SFMT/MTGP where the Harase specialisation does
-                    // not terminate (its basis-reduction loop assumes
-                    // ME-style convergence that non-ME generators
-                    // don't satisfy).  Speed is comparable for
-                    // Tausworthe and MELG, and it's the fastest
-                    // method that scales to MEXP=19937-class SFMTs.
-                    body.test.method = 'lattice';
-                }
+                const body = {
+                    test: {type: 'equidistribution', method: this.method},
+                };
+                // The POST kicks off a background worker and returns a
+                // job_id immediately so the page never blocks on the
+                // C++ equidistribution computation.  We then poll the
+                // status endpoint until the job reaches a terminal
+                // state (completed / failed via HTTP 400).
                 const r = await fetch(
                     '/api/library/generators/' + encodeURIComponent(genId)
                     + '/run-test',
                     {method: 'POST',
                      headers: {'Content-Type': 'application/json'},
                      body: JSON.stringify(body)});
-                if (!r.ok) { this.error = 'Failed: ' + r.status; }
-                else {
-                    this.lastResult = await r.json();
-                    await this.load();
+                if (!r.ok) {
+                    this.error = await this._extractError(r);
+                    return;
                 }
-            } catch (err) { this.error = err.message; }
-            finally { this.busy = false; }
+                const job = await r.json();
+                if (!job || !job.job_id) {
+                    this.error = 'Server did not return a job id';
+                    return;
+                }
+                this.currentJobId = job.job_id;
+                const result = await this._pollJob(job.job_id);
+                // The user may have switched methods (or fired a newer
+                // test) while we were polling — in that case
+                // currentJobId no longer points to *us*, so silently
+                // discard our result instead of overwriting whatever
+                // the user is now looking at.
+                if (this.currentJobId !== job.job_id) return;
+                if (result === null) return;   // error already set
+                this.lastResult = result;
+                this.lastResult.method = this.method;
+                try { await this.load(); } catch (e) {
+                    // Don't let a refresh failure trap the UI in the
+                    // "Running…" state — the test itself succeeded.
+                    console.error('reload after run-test failed', e);
+                }
+            } catch (err) {
+                console.error('runTest failed', err);
+                this.error = err.message || String(err);
+            } finally {
+                this.busy = false;
+            }
+        },
+        async _extractError(resp) {
+            // Surface the structured `detail.message` from
+            // HTTPException(400, …) when present; fall back to the bare
+            // status code for unexpected 5xx errors.
+            let msg = 'Failed: ' + resp.status;
+            try {
+                const err = await resp.json();
+                const d = err && err.detail;
+                if (d && typeof d === 'object' && d.message) {
+                    msg = d.message;
+                } else if (typeof d === 'string') {
+                    msg = d;
+                }
+            } catch (_) { /* response wasn't JSON */ }
+            return msg;
+        },
+        async _pollJob(jobId) {
+            // Backoff: 250 ms for the first second, then 1 s.  Long
+            // equidistribution runs can take many minutes — never time
+            // out from the client side, the user can navigate away if
+            // they no longer care.
+            let delay = 250;
+            for (let i = 0; ; i++) {
+                if (i === 4) delay = 1000;
+                await new Promise(res => setTimeout(res, delay));
+                // Bail out early if the user abandoned this job (e.g.
+                // by switching methods).  Keeps the UI responsive
+                // without waiting for the final poll to come back.
+                if (this.currentJobId !== jobId) return null;
+                const r = await fetch(
+                    '/api/library/run-test-jobs/'
+                    + encodeURIComponent(jobId));
+                if (!r.ok) {
+                    this.error = await this._extractError(r);
+                    return null;
+                }
+                const data = await r.json();
+                if (data.status === 'completed') return data;
+                // status === 'running': keep polling.
+            }
         },
         renderMath() {
             if (typeof renderMathInElement !== 'function') return;

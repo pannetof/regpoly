@@ -29,9 +29,17 @@ def _render(request: Request, template: str, **context) -> HTMLResponse:
     context.setdefault(
         "hide_chrome", request.query_params.get("embed") == "1"
     )
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request=request, name=template, context=context
     )
+    # The HTML pages embed inline JS that drives the UI (Alpine `x-data`
+    # blocks).  When the JS changes between server restarts, browsers
+    # were silently keeping the old HTML and running the stale handler
+    # — which manifested as the "Running…" button hang after the
+    # synchronous→async run-test refactor.  Force revalidation so edits
+    # always reach the browser on reload.
+    response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
 
 
 @router.get("/", response_class=HTMLResponse)

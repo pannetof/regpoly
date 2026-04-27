@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import uuid
+from concurrent.futures import Future
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -12,9 +14,31 @@ from regpoly.web.param_format import (
     format_gen_params, format_tempering_list,
 )
 from regpoly.web.routes.families import _markdown_to_html
+from regpoly.web.tasks.library_test import run_library_test
 
 
 router = APIRouter()
+
+
+# Canonical names of families whose characteristic polynomial is
+# reducible due to SIMD-lane redundancy.  YAML entries can spell these
+# in several legacy forms (``SFMT``, ``dSFMT``, ``DSFMT``, ``MTGP`` …),
+# so callers must normalise via :func:`resolve_family` before checking.
+_SIMD_FAMILIES = {"SFMTGen", "DSFMTGen", "MTGPGen", "RMT64Gen"}
+
+
+def _has_reducible_chi(g: Generator) -> bool:
+    """True iff χ of this combined generator is provably reducible
+    (combined generators have χ = ∏ χ_j; SIMD-lane families carry
+    redundant bits that factor the per-component χ)."""
+    from regpoly.core.generator import resolve_family
+    if len(g.components) > 1:
+        return True
+    fams = {
+        resolve_family(c.get("family", ""), c.get("params") or {})
+        for c in g.components
+    }
+    return bool(fams & _SIMD_FAMILIES)
 
 
 def _catalog(request: Request) -> Catalog:
@@ -222,6 +246,15 @@ async def instantiate(request: Request, gen_id: str) -> dict:
 
 @router.post("/library/generators/{gen_id}/run-test")
 async def run_test(request: Request, gen_id: str) -> dict:
+    """Kick off a test on a library generator in a worker process.
+
+    Returns a job_id immediately; the client polls
+    ``GET /library/run-test-jobs/{job_id}`` until the status is
+    ``completed`` or ``failed``.  This matches how primitive- and
+    tempering-search runs are dispatched (cf. routes/primitive_search.py)
+    and prevents the C++ equidistribution computation from blocking the
+    HTTP request thread.
+    """
     cat = _catalog(request)
     loc = cat.generator(gen_id)
     if loc is None:
@@ -239,19 +272,87 @@ async def run_test(request: Request, gen_id: str) -> dict:
     test_config = (body or {}).get("test") or {
         "type": "equidistribution", "method": "matricial"}
 
+    # Reject harase on reducible χ at the API boundary as well — the
+    # primal-lattice search has no finite upper bound when χ is
+    # reducible (SIMD families, J>1) and would peg a worker forever.
+    if (test_config.get("type") == "equidistribution"
+            and test_config.get("method") == "harase"
+            and _has_reducible_chi(g)):
+        raise HTTPException(
+            400,
+            {"code": "method_not_supported",
+             "method": "harase",
+             "message": "harase does not terminate on this generator "
+                        "(reducible characteristic polynomial). "
+                        "Pick simd_notprimitive (single SIMD-family "
+                        "component) or lattice (combined generator) "
+                        "instead."},
+        )
+
     db_path = request.app.state.settings.db_path
-    tested_id, test_result_id, se, is_me, created = (
-        await asyncio.to_thread(
-            _run_test_sync, db_path, g, test_config))
-    return {
+    jobs: dict = request.app.state.run_test_jobs
+    job_id = uuid.uuid4().hex
+    jobs[job_id] = {
+        "status": "running",
         "library_id": g.id,
-        "tested_generator_id": tested_id,
-        "test_result_id": test_result_id,
         "test_type": test_config.get("type"),
-        "se": se,
-        "is_me": is_me,
-        "instantiated": created,
+        "method": test_config.get("method"),
     }
+
+    fut: Future = request.app.state.pool.executor.submit(
+        run_library_test, db_path, g.id, test_config
+    )
+
+    def _on_done(f: Future, jid: str = job_id,
+                 method: str = test_config.get("method", ""),
+                 ttype: str = test_config.get("type", "")) -> None:
+        entry = jobs.get(jid)
+        if entry is None:
+            return
+        exc = f.exception()
+        if exc is not None:
+            entry["status"] = "failed"
+            entry["error"] = {
+                "code": "test_failed",
+                "method": method,
+                "message": str(exc),
+            }
+            return
+        result = f.result() or {}
+        entry["status"] = "completed"
+        entry["result"] = {
+            **result,
+            "test_type": ttype,
+            "method": method,
+        }
+
+    fut.add_done_callback(_on_done)
+
+    return {
+        "job_id": job_id,
+        "status": "running",
+        "library_id": g.id,
+        "test_type": test_config.get("type"),
+        "method": test_config.get("method"),
+    }
+
+
+@router.get("/library/run-test-jobs/{job_id}")
+async def run_test_status(request: Request, job_id: str) -> dict:
+    jobs: dict = request.app.state.run_test_jobs
+    entry = jobs.get(job_id)
+    if entry is None:
+        raise HTTPException(404, f"Unknown job id: {job_id}")
+    if entry["status"] == "failed":
+        # Surface the same shape the synchronous endpoint used to raise
+        # via HTTPException(400, …) so the front-end's existing error
+        # handling keeps working.
+        raise HTTPException(400, entry.get("error") or {
+            "code": "test_failed", "message": "unknown failure"})
+    payload = {"job_id": job_id, "status": entry["status"]}
+    if entry["status"] == "completed":
+        payload.update(entry.get("result") or {})
+    return payload
 
 
 # ─── Sync workers ─────────────────────────────────────────────────────────
@@ -303,44 +404,3 @@ def _instantiate_sync(db_path: str, g: Generator) -> tuple[int, bool]:
         return int(tested_id), True
 
 
-def _run_test_sync(
-    db_path: str, g: Generator, test_config: dict,
-) -> tuple[int, int, int | None, bool, bool]:
-    tested_id, created = _instantiate_sync(db_path, g)
-
-    from regpoly.core.combination import Combination
-    from regpoly.core.combination_build import build_combinaison_inputs
-    from regpoly.web.tasks._test_build import build_test
-    from regpoly.web.tasks.tempering import (
-        _build_result_detail, _is_me)
-
-    gen_lists, temperings = build_combinaison_inputs(
-        g.components, g.Lmax)
-    comb = Combination.CreateFromFiles(gen_lists, g.Lmax, temperings)
-    comb.reset()
-    test = build_test(test_config, g.Lmax)
-    result = test.run(comb)
-
-    se = getattr(result, "se", None)
-    is_me = bool(_is_me(result)) if se is not None else False
-    detail = _build_result_detail(result)
-
-    with sync_connect(db_path) as conn:
-        cur = conn.execute(
-            "INSERT INTO test_result"
-            "(tested_gen_id, test_type, test_config, "
-            " se, is_me, secf, is_cf, score, detail) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (tested_id,
-             test_config.get("type", "equidistribution"),
-             json_dumps(test_config),
-             se,
-             1 if is_me else 0,
-             None, None,
-             float(se) if se is not None else None,
-             json_dumps(detail)),
-        )
-        conn.commit()
-        return (int(tested_id), int(cur.lastrowid),
-                int(se) if se is not None else None,
-                is_me, created)
