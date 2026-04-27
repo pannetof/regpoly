@@ -2,7 +2,7 @@
 
 Loads the per-family parameter catalogs from
 ``docs/library/*_params.yaml``, builds the corresponding regpoly
-``Generateur``, computes d(1..5) via the appropriate equidistribution
+``Generator``, computes d(1..5) via the appropriate equidistribution
 method, and asserts equality with the reference values captured by
 ``tests/_gen_mttoolbox_reference.py`` from MTToolBox's binaries.
 
@@ -26,9 +26,9 @@ from pathlib import Path
 import pytest
 import yaml
 
-from regpoly.generateur import Generateur
-from regpoly.combinaison import Combinaison
-from regpoly.transformation import Transformation
+from regpoly.core.generator import Generator
+from regpoly.core.combination import Combination
+from regpoly.core.transformation import Transformation
 from regpoly.analyses.equidistribution_test import (
     EquidistributionTest,
     METHOD_NOTPRIMITIVE,
@@ -56,7 +56,7 @@ def _method_for(family: str) -> int:
 
 
 def _family_for_create(family: str) -> str:
-    """Map yaml `family` field to the string Generateur.create() accepts."""
+    """Map yaml `family` field to the string Generator.create() accepts."""
     aliases = {
         "MersenneTwister": "MT",
         "XORSHIFT128": "xorshift",
@@ -150,14 +150,14 @@ def test_regpoly_matches_mttoolbox_d5(case: dict) -> None:
     if case["mexp"] is not None and "mexp" not in full_params and \
        case["family"] not in ("XORSHIFT128", "TinyMT32"):
         full_params["mexp"] = case["mexp"]
-    gen = Generateur.create(family_alias, L=L, **full_params)
+    gen = Generator.create(family_alias, L=L, **full_params)
     # Build any tempering chain declared in the catalog (e.g. MT19937's
     # standard 4-stage temper).  Each entry is {type: <str>, params: <dict>}.
     temper_chain = [
         Transformation.create(t["type"], **t.get("params", {}))
         for t in case.get("tempering", [])
     ]
-    C = Combinaison.CreateFromFiles([[gen]], Lmax=L, temperings=[temper_chain])
+    C = Combination.CreateFromFiles([[gen]], Lmax=L, temperings=[temper_chain])
     C.reset()
 
     method = _method_for(case["family"])

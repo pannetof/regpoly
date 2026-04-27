@@ -19,8 +19,8 @@ a follow-up in /home/frpan/.claude/plans/i-want-to-build-compiled-swing.md.
 
 import pytest
 
-from regpoly import Generateur
-from regpoly.combinaison import Combinaison
+from regpoly import Generator
+from regpoly.core.combination import Combination
 from regpoly.analyses.equidistribution_test import (
     EquidistributionTest,
     METHOD_MATRICIAL,
@@ -60,15 +60,15 @@ def _normalize(ecart):
 
 @pytest.mark.parametrize("name, mkgen", [
     ("Tausworthe k=7",
-     lambda: Generateur.create(
+     lambda: Generator.create(
          "Tausworthe", 7, poly=[0, 3, 7], s=3, quicktaus=True)),
     ("Tausworthe k=31",
-     lambda: Generateur.create(
+     lambda: Generator.create(
          "Tausworthe", 32, poly=[0, 13, 31], s=18, quicktaus=True)),
 ])
 def test_notprimitive_matches_dual_lattice_for_full_period(name, mkgen):
     gen = mkgen()
-    C = Combinaison.CreateFromFiles([[gen]], Lmax=gen.L, temperings=[[]])
+    C = Combination.CreateFromFiles([[gen]], Lmax=gen.L, temperings=[[]])
     C.reset()
 
     dl_ecart           = _run(C, METHOD_DUALLATTICE)
@@ -92,7 +92,7 @@ def test_sfmt_k_equals_128_times_N(mexp, expected_N):
     """k for any SFMT must be 128·N where N = MEXP/128 + 1, NOT MEXP."""
     # All these MEXP values use the SFMT607 mask shape.  The masks
     # don't matter for this structural assertion.
-    gen = Generateur.create(
+    gen = Generator.create(
         "SFMT", 32,
         mexp=mexp, pos1=2, sl1=15, sl2=3, sr1=13, sr2=3,
         msk=[0xfdff37ff, 0xef7f3f7d, 0xff777b7d, 0x7ff7fb2f])
@@ -111,12 +111,12 @@ def test_notprimitive_runs_on_sfmt607():
     ecart[1] = 607 (which would mean the algorithm collapsed); a sane
     SFMT607 should report ecart[v] near zero.
     """
-    gen = Generateur.create(
+    gen = Generator.create(
         "SFMT", 32,
         mexp=607, pos1=2, sl1=15, sl2=3, sr1=13, sr2=3,
         msk=[0xfdff37ff, 0xef7f3f7d, 0xff777b7d, 0x7ff7fb2f])
     assert gen.k == 640
-    C = Combinaison.CreateFromFiles([[gen]], Lmax=32, temperings=[[]])
+    C = Combination.CreateFromFiles([[gen]], Lmax=32, temperings=[[]])
     C.reset()
     assert C.k_g == 640
     assert C.L == 32

@@ -1,0 +1,31 @@
+id: saito-matsumoto-2013-mtgp
+authors:
+  - {family: Saito, given: Mutsuo}
+  - {family: Matsumoto, given: Makoto}
+year: 2013
+title: "Variants of Mersenne Twister suitable for graphic processors"
+venue: "ACM Transactions on Mathematical Software (TOMS)"
+volume: "39"
+issue: "2"
+pages: "1–20"
+doi: https://doi.org/10.1145/2427023.2427030
+bibkey: SaitoMatsumoto2013MTGP
+starred: true
+deferred: true
+tags: [MT, MTGP, GPU, parallel]
+
+abstract: |
+  MTGP is a Mersenne-Twister variant whose state is partitioned across
+  small "blocks" so that each step of the recurrence can be evaluated
+  cooperatively by GPU threads. The construction preserves the
+  Mersenne-prime period of standard MT while admitting parallel state
+  updates suitable for GPU execution. Tabulated parametrisations cover
+  block sizes from MEXP=11213 up to MEXP=216091.
+
+notes: |
+  Cross-check fixture: ``docs/library/mtgp_params.yaml`` — currently
+  marked deferred because upstream MTToolBox does not ship a
+  per-MEXP ``calc_equidist`` binary for MTGP, only an aggregate
+  parameter-search tool.
+
+generators: []

@@ -22,11 +22,15 @@ web = [
 ]
 
 [project.scripts]
-regpoly = "regpoly.cli:main"
+regpoly = "regpoly.io.cli:main"
 regpoly-web = "regpoly.web.app:main"
 
+[tool.setuptools]
+package-dir = {"regpoly" = "src/python"}
+
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src/python"]
+namespaces = false
 
 [tool.setuptools.package-data]
 "regpoly.web" = ["schema.sql", "templates/**/*.html", "static/**/*"]

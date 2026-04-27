@@ -1,7 +1,7 @@
 """Smoke tests to verify the package loads and basic operations work."""
 
-from regpoly import BitVect, BitMatrix, Generateur, Transformation
-from regpoly.generateur import resolve_family
+from regpoly import BitVect, BitMatrix, Generator, Transformation
+from regpoly.core.generator import resolve_family
 
 
 # ── BitVect ──────────────────────────────────────────────────────────────
@@ -45,17 +45,17 @@ def test_bitmatrix_display():
     assert "1" in text
 
 
-# ── Generateur.create ────────────────────────────────────────────────────
+# ── Generator.create ────────────────────────────────────────────────────
 
 def test_create_polylcg():
-    gen = Generateur.create("PolyLCG", 3, k=3, poly=[1])
+    gen = Generator.create("PolyLCG", 3, k=3, poly=[1])
     assert gen.k == 3
     assert gen.L == 3
     assert gen.name() != ""
 
 
 def test_polylcg_iteration():
-    gen = Generateur.create("PolyLCG", 3, k=3, poly=[1])
+    gen = Generator.create("PolyLCG", 3, k=3, poly=[1])
     init_bv = BitVect.zeros(3)
     init_bv.put_bit(0, 1)
     gen.initialize_state(init_bv)
@@ -64,38 +64,39 @@ def test_polylcg_iteration():
 
 
 def test_create_tausworthe():
-    gen = Generateur.create("Tausworthe", 7, poly=[3, 7], s=3, quicktaus=True)
+    # Canonical poly form is [0, q_1, ..., q_{t-2}, k]; nb_terms must be odd >= 3.
+    gen = Generator.create("Tausworthe", 7, poly=[0, 3, 7], s=3, quicktaus=True)
     assert gen.k == 7
 
 
 def test_create_tausworthe_auto_s():
-    gen = Generateur.create("Tausworthe", 7, poly=[3, 7])
+    gen = Generator.create("Tausworthe", 7, poly=[0, 3, 7])
     assert gen.k == 7
 
 
 def test_create_tgfsr():
-    gen = Generateur.create("TGFSR", 8, w=8, r=3, m=1, a=0b10110011)
+    gen = Generator.create("TGFSR", 8, w=8, r=3, m=1, a=0b10110011)
     assert gen.k == 24  # w * r
 
 
 def test_create_with_legacy_name():
-    gen = Generateur.create("polylcg", 3, k=3, poly=[1])
+    gen = Generator.create("polylcg", 3, k=3, poly=[1])
     assert gen.k == 3
 
 
 def test_create_with_random_params():
-    gen = Generateur.create("TGFSR", 32, w=32, r=3)
+    gen = Generator.create("TGFSR", 32, w=32, r=3)
     assert gen.k == 96  # w * r = 32 * 3
 
 
 def test_generateur_display_returns_string():
-    gen = Generateur.create("PolyLCG", 3, k=3, poly=[1])
+    gen = Generator.create("PolyLCG", 3, k=3, poly=[1])
     result = gen.display()
     assert isinstance(result, str)
 
 
 def test_char_poly():
-    gen = Generateur.create("PolyLCG", 3, k=3, poly=[1])
+    gen = Generator.create("PolyLCG", 3, k=3, poly=[1])
     init_bv = BitVect.zeros(3)
     init_bv.put_bit(0, 1)
     gen.initialize_state(init_bv)
@@ -104,17 +105,17 @@ def test_char_poly():
 
 
 def test_transition_matrix():
-    gen = Generateur.create("PolyLCG", 3, k=3, poly=[1])
+    gen = Generator.create("PolyLCG", 3, k=3, poly=[1])
     mat = gen.transition_matrix()
     assert isinstance(mat, BitMatrix)
     assert mat.nblignes == 3
     assert mat.l == 3
 
 
-# ── Generateur.parameters ────────────────────────────────────────────────
+# ── Generator.parameters ────────────────────────────────────────────────
 
 def test_parameters_tgfsr():
-    specs = Generateur.parameters("TGFSR")
+    specs = Generator.parameters("TGFSR")
     names = [s["name"] for s in specs]
     assert "w" in names
     assert "r" in names
@@ -128,33 +129,37 @@ def test_parameters_tgfsr():
 
 
 def test_parameters_legacy_alias():
-    specs = Generateur.parameters("tgfsr")
-    assert len(specs) == len(Generateur.parameters("TGFSR"))
+    specs = Generator.parameters("tgfsr")
+    assert len(specs) == len(Generator.parameters("TGFSR"))
 
 
 # ── resolve_family ───────────────────────────────────────────────────────
 
 def test_resolve_family_aliases():
-    assert resolve_family("polylcg") == "PolyLCG"
-    assert resolve_family("taus") == "Tausworthe"
-    assert resolve_family("taus2") == "Tausworthe"
-    assert resolve_family("tgfsr") == "TGFSR"
-    assert resolve_family("MT") == "MersenneTwister"
+    assert resolve_family("polylcg") == "PolyLCGGen"
+    assert resolve_family("taus") == "TauswortheGen"
+    assert resolve_family("taus2") == "TauswortheGen"
+    assert resolve_family("tgfsr") == "TGFSRGen"
+    assert resolve_family("MT") == "MTGen"
     assert resolve_family("matsumoto") == "MatsumotoGen"
     assert resolve_family("marsaxorshift") == "MarsaXorshiftGen"
     assert resolve_family("AC1D") == "AC1DGen"
-    assert resolve_family("carry") == "WELLRNG"
+    assert resolve_family("carry") == "WELLGen"
 
 
 def test_resolve_family_passthrough():
-    assert resolve_family("PolyLCG") == "PolyLCG"
-    assert resolve_family("MersenneTwister") == "MersenneTwister"
+    # Old canonical names resolve forward to the new -Gen names.
+    assert resolve_family("PolyLCG") == "PolyLCGGen"
+    assert resolve_family("MersenneTwister") == "MTGen"
+    # New canonical names pass through unchanged.
+    assert resolve_family("PolyLCGGen") == "PolyLCGGen"
+    assert resolve_family("MTGen") == "MTGen"
 
 
 def test_resolve_family_genf2w():
-    assert resolve_family("genf2w", {"type": "lfsr"}) == "GenF2wLFSR"
-    assert resolve_family("genf2w", {"type": "polylcg"}) == "GenF2wPolyLCG"
-    assert resolve_family("genf2w") == "GenF2wPolyLCG"
+    assert resolve_family("genf2w", {"type": "lfsr"}) == "F2wLFSRGen"
+    assert resolve_family("genf2w", {"type": "polylcg"}) == "F2wPolyLCGGen"
+    assert resolve_family("genf2w") == "F2wPolyLCGGen"
 
 
 # ── Transformation ───────────────────────────────────────────────────────
