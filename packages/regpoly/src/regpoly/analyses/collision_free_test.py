@@ -51,32 +51,29 @@ class CollisionFreeTest(AbstractTest):
         **kwargs,
     ) -> CollisionFreeResults:
         """
-        TestCF: compute the CF rank deficit for each t in Phi_4.
+        TestCF: compute the CF rank deficit for each t in Phi_4. Phase 2.3:
+        the inner loop now runs in C++.
         """
         if not self.cfverif:
             return CollisionFreeResults(
                 ecart_cf=[], secf=0, verified=False, msecf=self.msecf
             )
 
-        L = me_results.L if me_results is not None else C.L
+        import regpoly._regpoly_cpp as _cpp
 
-        phi4     = self._compute_phi4(C, L)
-        ecart_cf = [0] * (C.k_g + 1)
-        secf     = 0
+        L_for_phi4 = me_results.L if me_results is not None else C.L
 
-        mat_full = self._prepare_mat(C, C.k_g)
+        gens = [C[j]._cpp_gen for j in range(C.J)]
+        trans = [
+            [t._cpp_trans for t in comp.trans if hasattr(t, '_cpp_trans')]
+            for comp in C.components
+        ]
+        combined = _cpp.CombinedGenerator(gens, trans, C.L)
 
-        for t in range(C.k_g, 1, -1):
-            if phi4[t]:
-                l       = C.k_g // t
-                mat     = mat_full.copy()
-                rank    = self._rang_cf(mat, C.k_g, t, l + 1, C.L)
-                gap     = C.k_g - rank
-                ecart_cf[l]  = gap
-                secf        += gap
-
+        result = _cpp.run_collision_free(combined, C.k_g, C.L, L_for_phi4)
         return CollisionFreeResults(
-            ecart_cf=ecart_cf, secf=secf, verified=True, msecf=self.msecf
+            ecart_cf=list(result['ecart_cf']), secf=result['secf'],
+            verified=result['verified'], msecf=self.msecf,
         )
 
     # -- Private helpers --------------------------------------------------

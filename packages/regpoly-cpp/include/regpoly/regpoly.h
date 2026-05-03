@@ -23,6 +23,7 @@
 
 #include <regpoly/bitvect.h>
 #include <regpoly/combined.h>
+#include <regpoly/equidistribution_runner.h>
 #include <regpoly/gauss.h>
 #include <regpoly/generator.h>
 #include <regpoly/me_harase.h>

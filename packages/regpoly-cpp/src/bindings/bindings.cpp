@@ -4,6 +4,7 @@
 
 #include "bitvect.h"
 #include "combined.h"
+#include "equidistribution_runner.h"
 #include "generator.h"
 #include "transformation.h"
 #include "gauss.h"
@@ -498,6 +499,34 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
           py::arg("kg"), py::arg("L"),
           "Dimensions t in {2..kg} whose collision-free rank must be "
           "checked for a combined generator with state size kg.");
+
+    // ── Equidistribution / collision-free runners (Phase 2.3) ──────────
+    //
+    // Free functions that own the outer test-orchestration loop in C++.
+    // The Python EquidistributionTest / CollisionFreeTest classes are
+    // now thin wrappers around these.
+
+    m.def("run_matricial_equidistribution",
+          [](const Generator& gen, int kg, int L, int Lmax,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        auto r = run_matricial_equidistribution(gen, kg, L, Lmax, delta, mse);
+        py::dict d;
+        d["ecart"] = r.ecart;
+        d["se"] = r.se;
+        d["verified"] = r.verified;
+        return d;
+    }, py::arg("gen"), py::arg("kg"), py::arg("L"), py::arg("Lmax"),
+       py::arg("delta"), py::arg("mse"));
+
+    m.def("run_collision_free",
+          [](const Generator& gen, int kg, int L, int L_for_phi4) -> py::dict {
+        auto r = run_collision_free(gen, kg, L, L_for_phi4);
+        py::dict d;
+        d["ecart_cf"] = r.ecart_cf;
+        d["secf"] = r.secf;
+        d["verified"] = r.verified;
+        return d;
+    }, py::arg("gen"), py::arg("kg"), py::arg("L"), py::arg("L_for_phi4"));
 
     // ── TemperOptCache (dual lattice StackBase for optimizer) ─────────
 

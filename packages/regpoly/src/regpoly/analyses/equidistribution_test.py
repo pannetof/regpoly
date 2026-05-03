@@ -6,7 +6,6 @@ METHOD_DUALLATTICE raises NotImplementedError if requested.
 
 from __future__ import annotations
 
-import sys
 from typing import TYPE_CHECKING
 
 from regpoly.analyses.abstract_test import AbstractTest
@@ -130,48 +129,30 @@ class EquidistributionTest(AbstractTest):
                 f"TestME: EquidistributionTest.L ({self.L}) < generator L ({C.L})"
             )
 
-        ecart = [-1] * (self.L + 1)
-        se    = 0
+        return self._run_matricial(C)
+
+    def _run_matricial(self, C: "Combination") -> EquidistributionResults:
+        """Phase 2.3: matricial orchestration loop now lives in C++."""
+        import regpoly._regpoly_cpp as _cpp
+
+        INT_MAX = 2**31 - 1
+        delta_capped = [min(d, INT_MAX) for d in self.delta]
+        mse_capped = min(self.mse, INT_MAX)
+
+        gens = [C[j]._cpp_gen for j in range(C.J)]
+        trans = [
+            [t._cpp_trans for t in comp.trans if hasattr(t, '_cpp_trans')]
+            for comp in C.components
+        ]
+        combined = _cpp.CombinedGenerator(gens, trans, C.L)
+
+        result = _cpp.run_matricial_equidistribution(
+            combined, C.k_g, C.L, self.L, delta_capped, mse_capped,
+        )
         psi12 = self._compute_psi12(C)
-
-        indice_max = C.k_g
-        mat_full = self._prepare_mat(C, indice_max)
-
-        verif = False
-        maxl  = self.L
-        l     = 1
-        while l <= self.L:
-            if ecart[l] == -1 and (psi12[l] or verif):
-                t   = C.k_g // l
-                mat = mat_full.copy()
-                t_l = self._dimension_equid(mat, C.k_g, l, C.L)
-                ecart[l] = t - t_l
-                se       += ecart[l]
-
-                if ecart[l] > self.delta[l] or se > self.mse:
-                    maxl = l
-                    break
-
-                if ecart[l] != 0:
-                    verif = True
-                    if l != 1:
-                        l -= 2
-                else:
-                    verif = False
-            l += 1
-
-        se = 0
-        for l in range(1, maxl + 1):
-            if ecart[l] == -1:
-                ecart[l] = 0
-            se += ecart[l]
-        for l in range(maxl + 1, self.L + 1):
-            if ecart[l] == -1:
-                ecart[l] = sys.maxsize
-
         return EquidistributionResults(
-            L=self.L, ecart=ecart, psi12=psi12, se=se,
-            verified=True, mse=self.mse,
+            L=self.L, ecart=list(result['ecart']), psi12=psi12,
+            se=result['se'], verified=result['verified'], mse=self.mse,
             meverif=self.meverif, delta=self.delta,
         )
 
