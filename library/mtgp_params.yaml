@@ -1,0 +1,19 @@
+# MTGP (Mersenne Twister for Graphic Processors, Saito–Matsumoto 2013)
+# catalog.
+#
+# DEFERRED.  Like RMT64 / TinyMT, MTGP has no upstream `calc_equidist`
+# binary that emits per-v `k(v)/d(v)` — only `samples/MTGPDC/MTGP32dc`
+# which is a parameter-search tool printing aggregate delta, and
+# `test_linearity.cpp` which only checks linearity.  Cross-check
+# therefore xfail until either:
+#   (a) upstream ships a calc_equidist tool, or
+#   (b) we author one (using MTToolBox::AlgorithmEquidistribution
+#       on the existing MTGP32search class).
+
+family: MTGP
+mttoolbox_binary: null
+slow_threshold_mexp: 20000
+deferred: true
+deferred_reason: "MTGPDC has no per-v calc_equidist binary"
+
+generators: []

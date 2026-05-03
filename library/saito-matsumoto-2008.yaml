@@ -1,0 +1,233 @@
+id: saito-matsumoto-2008
+authors:
+  - {family: Saito, given: Mutsuo}
+  - {family: Matsumoto, given: Makoto}
+year: 2008
+title: "SIMD-oriented Fast Mersenne Twister: a 128-bit Pseudorandom Number Generator"
+venue: "Monte Carlo and Quasi-Monte Carlo Methods 2006 (Springer)"
+pages: "607–622"
+doi: https://doi.org/10.1007/978-3-540-74496-2_36
+bibkey: SaitoMatsumoto2008
+starred: true
+tags: [MT, SFMT, 128bit]
+
+abstract: |
+  Parameters of a 128-bit pseudorandom number generator named SFMT
+  (SIMD-oriented Fast Mersenne Twister) are reported.  It is a Mersenne
+  Twister variant using a 128-bit integer recursion, designed to
+  exploit the 128-bit SIMD operations available on modern CPUs.  The
+  generator has a period of $2^{\text{MEXP}} - 1$ where MEXP is a
+  Mersenne exponent; tabulated parametrisations cover MEXP from 607
+  up to 216091.
+
+notes: |
+  SFMT uses a 128-bit word and a state of $N = \lceil (\text{MEXP} +
+  128) / 128 \rceil$ words.  The recurrence (Algorithm 1 of the
+  paper) combines a 128-bit-wide left byte-shift by SL2, a
+  128-bit-wide right byte-shift by SR2, per-32-bit-lane shifts SL1
+  and SR1, and a 128-bit lane-wise mask (MSK1, MSK2, MSK3, MSK4).
+
+  Output of our `next()` is one 128-bit word (produced by one
+  `do_recursion`); the Combinaison pipeline consumes the first `L`
+  bits of it.
+
+  The reference `period_certification` step from the paper is not
+  replicated here: regpoly's combined-generator pipeline seeds the
+  state to a non-degenerate bit pattern via `Combinaison.reset()`,
+  which takes the state out of any degenerate subspace before the
+  first `next()`.
+
+generators:
+  - id: sfmt607
+    display: SFMT-607
+    family: SFMT
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: SFMT
+        L: 32
+        params:
+          mexp: 607
+          pos1: 2
+          sl1: 15
+          sl2: 3
+          sr1: 13
+          sr2: 3
+          msk: [0xfdff37ff, 0xef7f3f7d, 0xff777b7d, 0x7ff7fb2f]
+        tempering: []
+
+  - id: sfmt1279
+    display: SFMT-1279
+    family: SFMT
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: SFMT
+        L: 32
+        params:
+          mexp: 1279
+          pos1: 7
+          sl1: 14
+          sl2: 3
+          sr1: 5
+          sr2: 1
+          msk: [0xf7fefffd, 0x7fefcfff, 0xaff3ef3f, 0xb5ffff7f]
+        tempering: []
+
+  - id: sfmt2281
+    display: SFMT-2281
+    family: SFMT
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: SFMT
+        L: 32
+        params:
+          mexp: 2281
+          pos1: 12
+          sl1: 19
+          sl2: 1
+          sr1: 5
+          sr2: 1
+          msk: [0xbff7ffbf, 0xfdfffffe, 0xf7ffef7f, 0xf2f7cbbf]
+        tempering: []
+
+  - id: sfmt4253
+    display: SFMT-4253
+    family: SFMT
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: SFMT
+        L: 32
+        params:
+          mexp: 4253
+          pos1: 17
+          sl1: 20
+          sl2: 1
+          sr1: 7
+          sr2: 1
+          msk: [0x9f7bffff, 0x9fffff5f, 0x3efffffb, 0xfffff7bb]
+        tempering: []
+
+  - id: sfmt11213
+    display: SFMT-11213
+    family: SFMT
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: SFMT
+        L: 32
+        params:
+          mexp: 11213
+          pos1: 68
+          sl1: 14
+          sl2: 3
+          sr1: 7
+          sr2: 3
+          msk: [0xeffff7fb, 0xffffffef, 0xdfdfbfff, 0x7fffdbfd]
+        tempering: []
+
+  - id: sfmt19937
+    display: SFMT-19937
+    family: SFMT
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: SFMT
+        L: 32
+        params:
+          mexp: 19937
+          pos1: 122
+          sl1: 18
+          sl2: 1
+          sr1: 11
+          sr2: 1
+          msk: [0xdfffffef, 0xddfecb7f, 0xbffaffff, 0xbffffff6]
+        tempering: []
+    notes: |
+      The flagship SFMT variant with period $2^{19937}-1$ — the
+      direct 128-bit successor of MT19937.
+
+  - id: sfmt44497
+    display: SFMT-44497
+    family: SFMT
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: SFMT
+        L: 32
+        params:
+          mexp: 44497
+          pos1: 330
+          sl1: 5
+          sl2: 3
+          sr1: 9
+          sr2: 3
+          msk: [0xeffffffb, 0xdfbebfff, 0xbfbf7bef, 0x9ffd7bff]
+        tempering: []
+
+  - id: sfmt86243
+    display: SFMT-86243
+    family: SFMT
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: SFMT
+        L: 32
+        params:
+          mexp: 86243
+          pos1: 366
+          sl1: 6
+          sl2: 7
+          sr1: 19
+          sr2: 1
+          msk: [0xfdbffbff, 0xbff7ff3f, 0xfd77efff, 0xbf9ff3ff]
+        tempering: []
+
+  - id: sfmt132049
+    display: SFMT-132049
+    family: SFMT
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: SFMT
+        L: 32
+        params:
+          mexp: 132049
+          pos1: 110
+          sl1: 19
+          sl2: 1
+          sr1: 21
+          sr2: 1
+          msk: [0xffffbb5f, 0xfb6ebf95, 0xfffefffa, 0xcff77fff]
+        tempering: []
+
+  - id: sfmt216091
+    display: SFMT-216091
+    family: SFMT
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: SFMT
+        L: 32
+        params:
+          mexp: 216091
+          pos1: 627
+          sl1: 11
+          sl2: 3
+          sr1: 10
+          sr2: 1
+          msk: [0xbff7bff7, 0xbfffffff, 0xbffffa7f, 0xffddfbfb]
+        tempering: []

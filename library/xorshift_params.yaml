@@ -1,0 +1,43 @@
+# Marsaglia 2003 XORSHIFT128 catalog.
+#
+# 128-bit state (4 × uint32 lanes named x,y,z,w), 32-bit output,
+# parametrized by a shift triple (a, b, c).  Recurrence (per
+# MTToolBox samples/XORSHIFT/xorshift-2.cpp):
+#     t = x ^ (x << a)
+#     x = y; y = z; z = w
+#     w = (w ^ (w >> c)) ^ (t ^ (t >> b))
+#     return w
+# Seed (used by MTToolBox calc_equidist):
+#     w = ~v;  x = y = z = v
+#
+# Each entry corresponds to one MTToolBox `xorshift-N` binary that
+# prints d(v) for ONE fixed shift triple — no positional argv.
+# The `pattern` field selects between gen_xorshift's two supported
+# recurrence shapes:
+#   pattern=0 — matches xorshift-2.cpp (canonical Marsaglia 2003 form).
+#   pattern=1 — matches xorshift-5.cpp (search-result form with
+#               t^=t>>c and w=(w^(w<<a))^t).
+
+family: XORSHIFT128
+slow_threshold_mexp: 20000
+
+generators:
+  - id: marsaglia_5_14_1
+    mexp: 128
+    mttoolbox_binary: XORSHIFT/xorshift-2
+    regpoly:
+      a: 5
+      b: 14
+      c: 1
+      pattern: 0
+    mttoolbox_argv: []
+
+  - id: marsaglia_20_11_7
+    mexp: 128
+    mttoolbox_binary: XORSHIFT/xorshift-5
+    regpoly:
+      a: 20
+      b: 11
+      c: 7
+      pattern: 1
+    mttoolbox_argv: []

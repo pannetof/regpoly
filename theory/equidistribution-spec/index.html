@@ -1,0 +1,3259 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="F₂-linear pseudo-random number generator analysis and search">
+      
+      
+      
+        <link rel="canonical" href="https://pannetof.github.io/regpoly/theory/equidistribution-spec/">
+      
+      
+        <link rel="prev" href="../f2-linear-generators/">
+      
+      
+        <link rel="next" href="../antithetic-check/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Equidistribution - REGPOLY</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#matricial-computation-of-equidistribution-for-black-box-f_2-linear-generators" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="REGPOLY" class="md-header__button md-logo" aria-label="REGPOLY" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            REGPOLY
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Equidistribution
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/pannetof/regpoly" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pannetof/regpoly
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../generators/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Generators
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../library/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Library
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../papers/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Papers
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/python/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Usage
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dev/architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Dev
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="REGPOLY" class="md-nav__button md-logo" aria-label="REGPOLY" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    REGPOLY
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/pannetof/regpoly" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pannetof/regpoly
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../f2-linear-generators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    F₂-linear generators
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Equidistribution
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Equidistribution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-algorithm-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Algorithm Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-stage-1-recover-_f-via-berlekampmassey" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Stage 1 — Recover χ_f via Berlekamp–Massey
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Stage 1 — Recover χ_f via Berlekamp–Massey">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Cost
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-stage-2-factor-_f-over-f_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Stage 2 — Factor χ_f over F_2
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Stage 2 — Factor χ_f over F_2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-expected-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Expected runtime
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-stage-3-select-the-invariant-subspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Stage 3 — Select the Invariant Subspace
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Stage 3 — Select the Invariant Subspace">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-selection-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Selection rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-note-on-multiplicity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Note on multiplicity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-stage-4-construct-a-basis-b-of-v" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Stage 4 — Construct a Basis B of V
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Stage 4 — Construct a Basis B of V">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-route-b-orbit-based-preferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Route B (orbit-based — preferred)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-route-a-annihilator-based-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Route A (annihilator-based — fallback)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-representation-of-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Representation of B
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-stage-5-the-matricial-de-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Stage 5 — The Matricial DE Core
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Stage 5 — The Matricial DE Core">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-object-maintained" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Object maintained
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-key-structural-observation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Key structural observation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-the-inner-loop-single-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 The inner loop (single phase)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-phase-handling-for-w_output-w_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Phase handling (for w_output &lt; w_state)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-lazy-output-generation-the-trick-that-makes-this-affordable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 Lazy output generation (the trick that makes this affordable)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#66-bit-packed-echelon-reduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.6 Bit-packed echelon reduction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#67-total-complexity-per-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.7 Total complexity per phase
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#68-optional-refinement-weighted-norm-prioritization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.8 Optional refinement: weighted-norm prioritization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-stage-6-initial-state-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Stage 6 — Initial-State Guard
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Stage 6 — Initial-State Guard">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-stage-7-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Stage 7 — Verification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Stage 7 — Verification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-period-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Period check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-trivial-de-bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Trivial DE bounds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-cross-check-against-a-known-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Cross-check against a known generator
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-data-structures-and-file-layout-for-regpoly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Data Structures and File Layout (for regpoly)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-limits-of-this-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Limits of This Specification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../antithetic-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Antithetic check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lattice_method_couture_lecuyer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lattice (Couture–L'Ecuyer)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lattice_method_harase/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lattice (Harase)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tempering_optimization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tempering optimization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../LCP%20Irreducibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LCP irreducibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimzer_temper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tempering optimizer notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search_format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Search format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../generators/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generators
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generators
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/MTGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/SFMTGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SFMT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/DSFMTGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dSFMT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/MTGPGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MTGP
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/TinyMT32Gen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TinyMT32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/RMT64Gen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RMT64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/WELLGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WELL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/TauswortheGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tausworthe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/TGFSRGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TGFSR
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/PolyLCGGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PolyLCG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/F2wLFSRGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    F2w-LFSR
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/F2wPolyLCGGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    F2w-PolyLCG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/MatsumotoGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Matsumoto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/MarsaXorshiftGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Marsaglia XORShift
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/AC1DGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AC1D
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/XorShift128Gen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    XorShift128
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/MELGGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MELG
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../library/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Library
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Library
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../library/about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About the catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../papers/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Papers
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Papers
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../papers/about/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About the bibliography
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Usage
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/cpp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C++
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/web/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/notebooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notebooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dev
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Dev
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/building/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-algorithm-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Algorithm Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-stage-1-recover-_f-via-berlekampmassey" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Stage 1 — Recover χ_f via Berlekamp–Massey
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Stage 1 — Recover χ_f via Berlekamp–Massey">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Cost
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-stage-2-factor-_f-over-f_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Stage 2 — Factor χ_f over F_2
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Stage 2 — Factor χ_f over F_2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-expected-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Expected runtime
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-stage-3-select-the-invariant-subspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Stage 3 — Select the Invariant Subspace
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Stage 3 — Select the Invariant Subspace">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-selection-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Selection rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-note-on-multiplicity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Note on multiplicity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-stage-4-construct-a-basis-b-of-v" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Stage 4 — Construct a Basis B of V
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Stage 4 — Construct a Basis B of V">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-route-b-orbit-based-preferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Route B (orbit-based — preferred)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-route-a-annihilator-based-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Route A (annihilator-based — fallback)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-representation-of-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Representation of B
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-stage-5-the-matricial-de-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Stage 5 — The Matricial DE Core
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Stage 5 — The Matricial DE Core">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-object-maintained" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Object maintained
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-key-structural-observation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Key structural observation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-the-inner-loop-single-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 The inner loop (single phase)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-phase-handling-for-w_output-w_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Phase handling (for w_output &lt; w_state)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-lazy-output-generation-the-trick-that-makes-this-affordable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 Lazy output generation (the trick that makes this affordable)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#66-bit-packed-echelon-reduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.6 Bit-packed echelon reduction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#67-total-complexity-per-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.7 Total complexity per phase
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#68-optional-refinement-weighted-norm-prioritization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.8 Optional refinement: weighted-norm prioritization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-stage-6-initial-state-guard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Stage 6 — Initial-State Guard
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Stage 6 — Initial-State Guard">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-procedure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Procedure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-stage-7-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Stage 7 — Verification
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Stage 7 — Verification">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-period-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Period check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-trivial-de-bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Trivial DE bounds
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-cross-check-against-a-known-generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Cross-check against a known generator
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-data-structures-and-file-layout-for-regpoly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Data Structures and File Layout (for regpoly)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-limits-of-this-specification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Limits of This Specification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/pannetof/regpoly/edit/master/docs/theory/equidistribution-spec.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="matricial-computation-of-equidistribution-for-black-box-f_2-linear-generators">Matricial Computation of Equidistribution for Black-Box F_2-Linear Generators<a class="headerlink" href="#matricial-computation-of-equidistribution-for-black-box-f_2-linear-generators" title="Permanent link">&para;</a></h1>
+<p><strong>Scope.</strong> This document specifies an algorithm and implementation plan for computing
+the dimension-of-equidistribution profile <code>k(v)</code>, <code>v = 1, …, w</code>, of a pseudorandom
+number generator that is known to be <code>F_2</code>-linear but whose internal structure
+(characteristic polynomial, invariant subspaces, factorization) is not assumed to
+be known in advance. The generator may be non-full-period: no assumption is made
+that the characteristic polynomial is primitive.</p>
+<p><strong>Inputs required from the generator.</strong></p>
+<ol>
+<li>A state of dimension <code>n</code> over <code>F_2</code> (so the full state is <code>n</code> bits; <code>n = w·N</code>
+   in the usual LFSR-array formulation).</li>
+<li>Word size <code>w</code> of the output (32, 64, or 128).</li>
+<li>A <code>step()</code> routine advancing the internal state by one step.</li>
+<li>A routine to read the current <code>w</code>-bit output word.</li>
+<li>The ability to set the state to an arbitrary <code>n</code>-bit value.</li>
+</ol>
+<p>No knowledge of <code>χ_f</code>, no access to <code>f</code> as a matrix, no tempering assumptions.</p>
+<p><strong>Output.</strong> The array <code>k(v)</code> for <code>v = 1, …, w</code>, together with the recovered factor
+<code>φ(t)</code> of the characteristic polynomial on which equidistribution is certified,
+the dimension <code>p = deg φ</code> of the invariant subspace <code>V</code>, and the certified defect
+ratio <code>2^(-p)</code>.</p>
+<hr />
+<h2 id="1-algorithm-overview">1. Algorithm Overview<a class="headerlink" href="#1-algorithm-overview" title="Permanent link">&para;</a></h2>
+<p>The pipeline is seven stages:</p>
+<ol>
+<li>Recover <code>χ_f(t)</code> via Berlekamp–Massey on scalar output sub-streams.</li>
+<li>Factor <code>χ_f</code> over <code>F_2</code>.</li>
+<li>Select the largest-period irreducible factor <code>φ</code>; set <code>p = deg φ</code>,
+   <code>V = Ker φ(f)</code>.</li>
+<li>Construct a basis <code>B</code> of <code>V</code> as an <code>n × p</code> bit-matrix.</li>
+<li>Run the matricial DE core on <code>V</code> to extract all <code>k(v)</code> in one sweep.</li>
+<li>Initialize-state guard: ensure the user-facing initializer produces states
+   with nonzero <code>V</code>-component.</li>
+<li>Verify via three sanity checks and a cross-check against a known generator.</li>
+</ol>
+<p>Each stage is specified below.</p>
+<hr />
+<h2 id="2-stage-1-recover-_f-via-berlekampmassey">2. Stage 1 — Recover <code>χ_f</code> via Berlekamp–Massey<a class="headerlink" href="#2-stage-1-recover-_f-via-berlekampmassey" title="Permanent link">&para;</a></h2>
+<h3 id="21-procedure">2.1 Procedure<a class="headerlink" href="#21-procedure" title="Permanent link">&para;</a></h3>
+<p>Pick a nonzero initial state <code>s_0</code>. Define a scalar <code>F_2</code>-valued output functional
+<code>ℓ : state → F_2</code> — the simplest viable choice is "bit 0 of the first output word
+after one step." Produce the sequence</p>
+<div class="highlight"><pre><span></span><code>b_j = ℓ(f^j · s_0),   j = 0, 1, …, 2n + 32.
+</code></pre></div>
+<p>Run Berlekamp–Massey on <code>(b_j)</code>. It returns a polynomial <code>μ_{s_0, ℓ}(t)</code> which
+divides <code>χ_f(t)</code>.</p>
+<p>Repeat with 5 independent random initial states and/or 2–3 different scalar
+functionals <code>ℓ</code> (e.g. bit 0 of word 0, bit 7 of word 0, bit 0 of word 1). Compute</p>
+<div class="highlight"><pre><span></span><code>χ_f(t)  :=  lcm of all recovered minimal polynomials.
+</code></pre></div>
+<h3 id="22-verification">2.2 Verification<a class="headerlink" href="#22-verification" title="Permanent link">&para;</a></h3>
+<p>Before proceeding, require <code>deg χ_f = n</code>. If not, repeat with more sampling
+functionals. Failure to reach degree <code>n</code> after ~20 trials indicates either that
+the generator has a minimal polynomial genuinely smaller than <code>n</code> (i.e. the
+declared state dimension is larger than the reachable state space), or a bug in
+the <code>step()</code> wiring.</p>
+<h3 id="23-cost">2.3 Cost<a class="headerlink" href="#23-cost" title="Permanent link">&para;</a></h3>
+<p><code>O(n²)</code> per Berlekamp–Massey run, <code>O(n)</code> generator steps per sequence. With
+<code>n ≈ 20000</code>, this stage runs in well under a minute.</p>
+<h3 id="24-implementation-notes">2.4 Implementation notes<a class="headerlink" href="#24-implementation-notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Bit-packed state, bit-packed sequences. BM over <code>F_2</code> is dominated by XORs.</li>
+<li>Do <em>not</em> use NTL's generic <code>MinPolySeq</code> over a prime field; use a dedicated
+  <code>F_2</code> BM implementation for speed. A from-scratch C implementation is ~100
+  lines.</li>
+</ul>
+<hr />
+<h2 id="3-stage-2-factor-_f-over-f_2">3. Stage 2 — Factor <code>χ_f</code> over <code>F_2</code><a class="headerlink" href="#3-stage-2-factor-_f-over-f_2" title="Permanent link">&para;</a></h2>
+<p>Use distinct-degree factorization followed by equal-degree (Cantor–Zassenhaus).
+Output the full factorization</p>
+<div class="highlight"><pre><span></span><code>χ_f(t) = ∏_j φ_j(t)^{e_j}
+</code></pre></div>
+<p>with <code>φ_j</code> irreducible, <code>deg φ_j = d_j</code>, multiplicity <code>e_j</code>.</p>
+<h3 id="31-implementation">3.1 Implementation<a class="headerlink" href="#31-implementation" title="Permanent link">&para;</a></h3>
+<p>Delegate to NTL (<code>CanZass</code> on <code>GF2X</code>) or FLINT (<code>nmod_poly_factor</code> with
+modulus 2, or the dedicated <code>F2</code> routines). Do not reimplement.</p>
+<h3 id="32-expected-runtime">3.2 Expected runtime<a class="headerlink" href="#32-expected-runtime" title="Permanent link">&para;</a></h3>
+<p>For <code>n ≈ 20000</code>, seconds to low minutes. For <code>n ≈ 100000</code>, still tractable but
+benefits from NTL's tuned implementations.</p>
+<hr />
+<h2 id="4-stage-3-select-the-invariant-subspace">4. Stage 3 — Select the Invariant Subspace<a class="headerlink" href="#4-stage-3-select-the-invariant-subspace" title="Permanent link">&para;</a></h2>
+<h3 id="41-selection-rule">4.1 Selection rule<a class="headerlink" href="#41-selection-rule" title="Permanent link">&para;</a></h3>
+<p>Among the irreducible factors <code>{φ_j}</code> of <code>χ_f</code>, select the one of largest degree
+whose period <code>ord(φ_j)</code> in <code>F_2[t] / φ_j</code> can be certified maximal (i.e. equal to
+<code>2^{d_j} − 1</code>).</p>
+<ul>
+<li><strong>Primary path:</strong> if the largest-degree irreducible factor has degree <code>p</code> equal
+  to a Mersenne exponent, <code>2^p − 1</code> is prime and <code>φ</code> is automatically primitive
+  provided <code>φ(0) ≠ 0</code>. Verify <code>φ(0) = 1</code> (for nonzero constant term) — done.</li>
+<li><strong>Secondary path:</strong> if <code>p</code> is not a Mersenne exponent, attempt to obtain the
+  prime factorization of <code>2^p − 1</code> via local tables (Cunningham, Wagstaff) and
+  FactorDB fallback. With the factorization in hand, check primitivity by the
+  standard Knuth TAOCP Vol. 2 §3.2.2 algorithm.</li>
+<li><strong>Fallback:</strong> if <code>2^p − 1</code> cannot be factored, either</li>
+<li>use the largest irreducible factor without certifying primitivity — the
+    period on <code>V</code> divides <code>2^p − 1</code> and equidistribution bounds remain valid
+    with defect ratio <code>2^{−p}</code>; the claimed period is a lower bound, or</li>
+<li>use the largest factor for which primitivity <em>can</em> be certified, even at
+    smaller <code>p</code>.</li>
+</ul>
+<p>Set</p>
+<div class="highlight"><pre><span></span><code>φ  := the selected factor,
+p  := deg φ,
+V  := Ker φ(f)  ⊂  F_2^n,    dim V = p.
+</code></pre></div>
+<h3 id="42-note-on-multiplicity">4.2 Note on multiplicity<a class="headerlink" href="#42-note-on-multiplicity" title="Permanent link">&para;</a></h3>
+<p>If <code>φ</code> appears in <code>χ_f</code> with multiplicity <code>e &gt; 1</code>, <code>Ker φ(f)</code> still has dimension
+<code>p</code>, not <code>e·p</code> — it is the simple kernel, not the generalized kernel. This is the
+subspace we want.</p>
+<hr />
+<h2 id="5-stage-4-construct-a-basis-b-of-v">5. Stage 4 — Construct a Basis <code>B</code> of <code>V</code><a class="headerlink" href="#5-stage-4-construct-a-basis-b-of-v" title="Permanent link">&para;</a></h2>
+<p>Two routes. Use <strong>Route B</strong> by default; fall back to Route A if Route B's rank
+check fails.</p>
+<h3 id="51-route-b-orbit-based-preferred">5.1 Route B (orbit-based — preferred)<a class="headerlink" href="#51-route-b-orbit-based-preferred" title="Permanent link">&para;</a></h3>
+<p>Let <code>ψ(t) := χ_f(t) / φ(t)</code>, a polynomial of degree <code>n − p</code>.</p>
+<ol>
+<li>Pick a random state <code>s ∈ F_2^n</code>.</li>
+<li>Compute <code>s' := ψ(f) · s</code> by evaluating <code>ψ</code> at <code>f</code> via Horner's scheme:
+   iterate <code>step()</code> from <code>s</code> and accumulate the <code>ψ</code>-coefficients. Cost:
+   <code>n − p</code> generator steps, <code>n − p</code> state-XORs.</li>
+<li>Verify <code>s' ≠ 0</code> and <code>φ(f) · s' = 0</code>. If <code>s' = 0</code>, retry with new <code>s</code>
+   (this happens with probability <code>2^{−p}</code>, so effectively never).</li>
+<li>Collect the orbit <code>{f^k · s' : k = 0, 1, …, p − 1}</code> as columns of an
+   <code>n × p</code> matrix <code>B</code>.</li>
+<li>Check <code>rank_{F_2}(B) = p</code>. If yes, done: the columns of <code>B</code> span <code>V</code>.</li>
+<li>If rank <code>&lt; p</code> (generically impossible but possible for pathological
+   generators where the minimal polynomial of <code>s'</code> is a proper divisor of <code>φ</code>),
+   repeat from step 1.</li>
+</ol>
+<h3 id="52-route-a-annihilator-based-fallback">5.2 Route A (annihilator-based — fallback)<a class="headerlink" href="#52-route-a-annihilator-based-fallback" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Pick random <code>s</code>, compute <code>s' := ψ(f) · s</code> as above. Now <code>s' ∈ V</code> by
+   construction.</li>
+<li>Repeat until <code>p</code> linearly independent such <code>s'</code> have been collected.</li>
+<li>Gauss-eliminate to confirm dim = <code>p</code> and to obtain a clean basis.</li>
+</ol>
+<p>Route A is more robust but costs <code>~p</code> applications of <code>ψ(f)</code> instead of <code>~1</code>.</p>
+<h3 id="53-representation-of-b">5.3 Representation of <code>B</code><a class="headerlink" href="#53-representation-of-b" title="Permanent link">&para;</a></h3>
+<p>Store <code>B</code> as a bit-packed <code>n × p</code> matrix, rows as <code>p/W</code>-word bitstrings
+(<code>W = 64</code>). Memory: <code>n · p / 8</code> bytes. For <code>n = p = 20000</code>: 50 MB. Fine.</p>
+<hr />
+<h2 id="6-stage-5-the-matricial-de-core">6. Stage 5 — The Matricial DE Core<a class="headerlink" href="#6-stage-5-the-matricial-de-core" title="Permanent link">&para;</a></h2>
+<h3 id="61-object-maintained">6.1 Object maintained<a class="headerlink" href="#61-object-maintained" title="Permanent link">&para;</a></h3>
+<p>For each output phase <code>i</code> (see §6.4), maintain a single echelon form <code>E_i</code> over
+<code>F_2</code> with <code>p</code> columns. Rows are successively inserted; at most <code>p</code> pivots exist.</p>
+<p>Also maintain, for each accuracy <code>v ∈ {1, …, w}</code>:
+- <code>c_i(v)</code>: current rank of the <code>v</code>-restricted submatrix for phase <code>i</code>;
+- <code>alive_i(v)</code>: boolean flag, true while <code>c_i(v) = k·v</code> has kept up.</p>
+<h3 id="62-key-structural-observation">6.2 Key structural observation<a class="headerlink" href="#62-key-structural-observation" title="Permanent link">&para;</a></h3>
+<p>Order the rows of the output matrix bit-by-bit within each output word, MSB
+first:</p>
+<div class="highlight"><pre><span></span><code>output 0 bit 1, output 0 bit 2, …, output 0 bit w,
+output 1 bit 1, output 1 bit 2, …, output 1 bit w,
+…
+</code></pre></div>
+<p>Then the matrix <code>M_k(v)</code> for accuracy <code>v</code> is obtained from <code>M_k(w)</code> by keeping,
+within each block of <code>w</code> consecutive rows, only the first <code>v</code>. <strong>A single echelon
+form on the full-precision rows, maintained in this order, gives every <code>k(v)</code>
+simultaneously.</strong></p>
+<h3 id="63-the-inner-loop-single-phase">6.3 The inner loop (single phase)<a class="headerlink" href="#63-the-inner-loop-single-phase" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>initialize E empty; c(v) ← 0, alive(v) ← true for v = 1..w
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>for k = 1, 2, 3, …:
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    compute this step&#39;s p dual vectors for bits 1..w of the output word,
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        represented as p-bit rows over the basis B of V
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    for j = 1, …, w:
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        r ← dual vector of bit j
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        attempt F_2-echelon insertion of r into E
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        if r was linearly independent:
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>            for every v ≥ j with alive(v):
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                c(v) ← c(v) + 1
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        for every v ≥ j with alive(v):
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>            if c(v) &lt; k·v:            // only possible if r was dependent
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>                alive(v) ← false
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                k(v) ← k − 1
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    if no v is still alive: break
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    if k·w ≥ p: break                   // upper bound k(v) ≤ ⌊p/v⌋ saturated
+</code></pre></div>
+<h3 id="64-phase-handling-for-w_output-w_state">6.4 Phase handling (for <code>w_output &lt; w_state</code>)<a class="headerlink" href="#64-phase-handling-for-w_output-w_state" title="Permanent link">&para;</a></h3>
+<p>If the generator emits <code>w</code>-bit words but is designed around a larger internal
+word (e.g. SFMT emits 32-bit words from a 128-bit internal word, giving four
+phases <code>i ∈ {0, 1, 2, 3}</code> per internal step), maintain <strong>four independent
+echelon forms</strong> <code>E_0, …, E_3</code>, one per phase, sharing the same <code>V</code>-basis <code>B</code>
+and the same advance of the generator state. Each <code>E_i</code> sees only the output
+bits of phase <code>i</code>.</p>
+<p>The reported <code>k(v)</code> for the generator is</p>
+<div class="highlight"><pre><span></span><code>k(v) = min_i k_i(v).
+</code></pre></div>
+<p>For generators with no phase mismatch, use a single phase (<code>i = 0</code>).</p>
+<h3 id="65-lazy-output-generation-the-trick-that-makes-this-affordable">6.5 Lazy output generation (the trick that makes this affordable)<a class="headerlink" href="#65-lazy-output-generation-the-trick-that-makes-this-affordable" title="Permanent link">&para;</a></h3>
+<p>Never materialize <code>f</code> as an <code>n × n</code> matrix. Instead:</p>
+<ol>
+<li>Pack the <code>p</code> basis vectors of <code>V</code> (the columns of <code>B</code>) as <code>p</code> "virtual
+   registers," each an <code>n</code>-bit state of the generator.</li>
+<li>At each <code>k</code>-step, advance all <code>p</code> virtual registers by one call to <code>step()</code>
+   each. This is <code>p</code> independent generator steps — parallelizable, and each
+   is as cheap as a single generator step.</li>
+<li>Read the <code>w</code>-bit output from each virtual register. Transpose the resulting
+   <code>p × w</code> slab to obtain <code>w</code> dual vectors, each of length <code>p</code> bits — exactly
+   the rows we need to insert.</li>
+</ol>
+<p>Cost per <code>k</code>-step: <code>p</code> generator steps. For SFMT19937 with <code>p ≈ 20000</code>: a few
+hundred thousand XOR/shift operations, i.e. ~millisecond.</p>
+<h3 id="66-bit-packed-echelon-reduction">6.6 Bit-packed echelon reduction<a class="headerlink" href="#66-bit-packed-echelon-reduction" title="Permanent link">&para;</a></h3>
+<p>Each row of <code>E</code> is <code>p</code> bits, stored as <code>⌈p/64⌉</code> <code>uint64_t</code> words. Insertion:</p>
+<ul>
+<li>Find the highest set bit of the incoming row <code>r</code>.</li>
+<li>If no pivot exists at that position: <code>r</code> is independent, store as new pivot.</li>
+<li>If a pivot exists: XOR the pivot into <code>r</code>, repeat.</li>
+</ul>
+<p>Worst case: <code>O(p² / 64)</code> word-ops per insertion. Total insertions: at most <code>p</code>
+(rank is capped). Total echelon work per phase: <strong><code>O(p³ / 64)</code></strong> word-ops.</p>
+<h3 id="67-total-complexity-per-phase">6.7 Total complexity per phase<a class="headerlink" href="#67-total-complexity-per-phase" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>Echelon maintenance:    O(p³ / W)     ← dominant
+Generator advance:      O(p · n / W) per k-step × O(p/w) k-steps
+                      = O(p² · n / (w · W))
+</code></pre></div>
+<p>For <code>p = n = 19937</code>, <code>w = 32</code>, <code>W = 64</code>: echelon is <code>~10^{11}</code> word-ops, i.e.
+seconds to a minute. Generator advance is <code>~10^{10}</code>, i.e. comparable but
+slightly faster.</p>
+<p>Four phases (SFMT case) multiply by 4. Total: minutes on a single core.</p>
+<h3 id="68-optional-refinement-weighted-norm-prioritization">6.8 Optional refinement: weighted-norm prioritization<a class="headerlink" href="#68-optional-refinement-weighted-norm-prioritization" title="Permanent link">&para;</a></h3>
+<p>The Couture–L'Ecuyer 1993 weighted-norm trick (and the Harase refinements on
+top of it) reorder <em>which</em> new dual vectors to insert, prioritizing by a weight
+reflecting how close each <code>v</code> is to its bound <code>⌊p/v⌋</code>. Savings are a 3–10×
+constant factor. <strong>Defer to a second pass</strong> — implement §6.3 first, validate,
+then optimize if the base version is too slow for a parameter-search loop.</p>
+<hr />
+<h2 id="7-stage-6-initial-state-guard">7. Stage 6 — Initial-State Guard<a class="headerlink" href="#7-stage-6-initial-state-guard" title="Permanent link">&para;</a></h2>
+<p>To use the generator correctly, the public <code>seed()</code> routine must produce states
+with nonzero <code>V</code>-component. Analogue of SFMT's <code>6d736d6d</code> MSB trick.</p>
+<h3 id="71-procedure">7.1 Procedure<a class="headerlink" href="#71-procedure" title="Permanent link">&para;</a></h3>
+<ol>
+<li>After seeding, compute the <code>V</code>-projection: <code>s_V := (a specific projector)(s)</code>
+   where the projector is expressible in terms of <code>φ</code> and <code>ψ = χ_f / φ</code>. A clean
+   choice: <code>s_V := ψ(f) · s / normalizer</code>, but for guarding purposes we only
+   need <code>s_V ≠ 0</code>, which holds iff <code>ψ(f) · s ≠ 0</code>.</li>
+<li>If <code>ψ(f) · s = 0</code>, perturb <code>s</code> (e.g. flip one bit in a predetermined
+   location) and retry. This happens with probability <code>2^{−p}</code>.</li>
+</ol>
+<p>For generators where the state has a natural "magic value" position (cf. SFMT),
+hardcoding that value into the initializer is sufficient and cheaper than
+runtime projection.</p>
+<hr />
+<h2 id="8-stage-7-verification">8. Stage 7 — Verification<a class="headerlink" href="#8-stage-7-verification" title="Permanent link">&para;</a></h2>
+<p>Three mandatory sanity checks, in order. A failure in any check means <code>k(v)</code> is
+not to be trusted.</p>
+<h3 id="81-period-check">8.1 Period check<a class="headerlink" href="#81-period-check" title="Permanent link">&para;</a></h3>
+<p>From a random state with <code>s_V ≠ 0</code>, iterate the generator and confirm the
+orbit on <code>V</code> does not close before <code>ord(φ)</code> steps. For Mersenne-exponent <code>p</code>,
+confirm <code>f^{(2^p − 1)/q} · s_V ≠ s_V</code> for every small prime <code>q</code> dividing <code>2^p − 1</code>
+(standard primitivity test on the orbit, Knuth Vol. 2 §3.2.2).</p>
+<h3 id="82-trivial-de-bounds">8.2 Trivial DE bounds<a class="headerlink" href="#82-trivial-de-bounds" title="Permanent link">&para;</a></h3>
+<p>Confirm:</p>
+<ul>
+<li><code>k(w) ≥ 1</code> (a single <code>w</code>-bit output should be <code>w</code>-uniform; failure here means
+  output tempering is catastrophically broken or <code>B</code> is wrong).</li>
+<li><code>k(1) ≤ p</code> (upper bound always holds; violation means the echelon
+  bookkeeping is buggy).</li>
+<li><code>k(v) ≤ ⌊p/v⌋</code> for all <code>v</code> (same: upper bound must hold).</li>
+</ul>
+<h3 id="83-cross-check-against-a-known-generator">8.3 Cross-check against a known generator<a class="headerlink" href="#83-cross-check-against-a-known-generator" title="Permanent link">&para;</a></h3>
+<p>Run the <em>entire</em> pipeline — stages 1 through 5 — on MT19937, for which the
+<code>k(v)</code> profile is published (cf. Matsumoto–Nishimura 1998, Table 2; also SFMT
+paper Table 3). Require exact agreement on all 32 values of <code>k(v)</code>. This is
+the single most important test; it catches basis-construction bugs,
+phase-handling bugs, and off-by-one errors in the echelon loop.</p>
+<p>A secondary cross-check against SFMT19937 (Table 3 of Saito–Matsumoto 2008) is
+recommended once the four-phase handling is implemented.</p>
+<hr />
+<h2 id="9-data-structures-and-file-layout-for-regpoly">9. Data Structures and File Layout (for <code>regpoly</code>)<a class="headerlink" href="#9-data-structures-and-file-layout-for-regpoly" title="Permanent link">&para;</a></h2>
+<p>Proposed module layout within the existing <code>MinimalCode</code> structure:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>src/
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  de/
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    bm.c, bm.h              ← Berlekamp–Massey over F_2
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    factor.c, factor.h      ← wrapper around NTL/FLINT factorization
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    basis.c, basis.h        ← Route A / Route B basis construction
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    echelon.c, echelon.h    ← bit-packed F_2 echelon maintenance
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    de_core.c, de_core.h    ← §6 main loop, phase handling
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    guard.c, guard.h        ← initial-state guard
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    verify.c, verify.h      ← §8 sanity checks
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>  de_driver.c               ← CLI: takes a generator, emits k(v) table
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>tests/
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>  de/
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    mt19937_kv.c            ← cross-check against MT19937 published k(v)
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    sfmt19937_kv.c          ← cross-check against SFMT19937 Table 3
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    small_known.c           ← degenerate small-n generators with
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>                                hand-computed k(v)
+</code></pre></div>
+<p><strong>Key types.</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="kt">uint64_t</span><span class="w"> </span><span class="o">*</span><span class="n">words</span><span class="p">;</span><span class="w">   </span><span class="c1">// ⌈p/64⌉ words</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="kt">size_t</span><span class="w">    </span><span class="n">p</span><span class="p">;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">}</span><span class="w"> </span><span class="n">bitrow_t</span><span class="p">;</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="n">bitrow_t</span><span class="w"> </span><span class="o">*</span><span class="n">pivots</span><span class="p">;</span><span class="w">  </span><span class="c1">// indexed by leading-bit position</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="kt">size_t</span><span class="w">    </span><span class="n">p</span><span class="p">;</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="kt">size_t</span><span class="w">    </span><span class="n">rank</span><span class="p">;</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">}</span><span class="w"> </span><span class="n">echelon_t</span><span class="p">;</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span><span class="kt">size_t</span><span class="w">   </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">w</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">;</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">    </span><span class="n">bitrow_t</span><span class="w"> </span><span class="o">*</span><span class="n">B_cols</span><span class="p">;</span><span class="w"> </span><span class="c1">// p columns of B, each n bits — stored col-major</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">    </span><span class="c1">// ... generator-specific callbacks:</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">step</span><span class="p">)(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">state</span><span class="p">);</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">read</span><span class="p">)(</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">out_w_bytes</span><span class="p">);</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">set_state</span><span class="p">)(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="o">*</span><span class="n">in_n_bytes</span><span class="p">);</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">state_size</span><span class="p">;</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="p">}</span><span class="w"> </span><span class="n">de_context_t</span><span class="p">;</span>
+</code></pre></div>
+<hr />
+<h2 id="10-limits-of-this-specification">10. Limits of This Specification<a class="headerlink" href="#10-limits-of-this-specification" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Nonlinear generators</strong> are out of scope. The entire framework rests on
+  <code>F_2</code>-linearity of <code>f</code> and of the output functionals.</li>
+<li><strong>Tempered generators with nonlinear tempering</strong> (e.g. XOR-shift-multiply on
+  output) break the linearity of the output functionals. This pipeline computes
+  <code>k(v)</code> for the <em>pre-tempering</em> sequence only; post-tempering DE requires
+  separate analysis.</li>
+<li><strong>Generators with <code>n &gt; 10^5</code></strong> are in principle handled but factorization
+  (stage 2) and <code>ψ(f)</code> evaluation (stage 4) become the bottleneck. Consider
+  whether the generator's design already exposes <code>φ</code> — if so, skip stages 1–3.</li>
+</ul>
+<hr />
+<h2 id="11-references">11. References<a class="headerlink" href="#11-references" title="Permanent link">&para;</a></h2>
+<ol>
+<li>M. Saito, M. Matsumoto. <em>SIMD-oriented Fast Mersenne Twister: a 128-bit
+   Pseudorandom Number Generator.</em> In <em>Monte Carlo and Quasi-Monte Carlo
+   Methods 2006</em>, Springer, 2008.</li>
+<li>R. Couture, P. L'Ecuyer, S. Tezuka. <em>On the distribution of k-dimensional
+   vectors for simple and combined Tausworthe sequences.</em> Math. Comp. 60 (1993),
+   749–761.</li>
+<li>M. Matsumoto, T. Nishimura. <em>Mersenne Twister: A 623-dimensionally
+   equidistributed uniform pseudorandom number generator.</em> ACM TOMACS 8 (1998),
+   3–30.</li>
+<li>S. Harase. <em>On the F_2-linear relations of Mersenne Twister pseudorandom
+   number generators.</em> Math. Comput. Simulation 100 (2014), 103–113, and
+   subsequent refinements.</li>
+<li>D. E. Knuth. <em>The Art of Computer Programming, Vol. 2: Seminumerical
+   Algorithms.</em> 3rd ed., Addison-Wesley, 1997. §3.2.2.</li>
+<li>F. Panneton. (author's own paper — fill in citation locally: "Random Number
+   Generators Based on Linear Recurrences in <code>GF(2^w)</code>," with P. L'Ecuyer.)</li>
+</ol>
+<hr />
+<p><em>Document version: draft 1. Amend in-repo as implementation reveals gaps.</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.indexes", "navigation.top", "content.code.copy", "content.action.edit", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
