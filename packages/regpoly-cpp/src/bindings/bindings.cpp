@@ -13,6 +13,7 @@
 #include "me_harase.h"
 #include "me_notprimitive.h"
 #include "me_notprimitive_simd.h"
+#include "primitivity.h"
 #include "resolution_sets.h"
 #include "temper_optimizer.h"
 #include "tausworthe.h"
@@ -770,6 +771,31 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
             return false;
         return NTL::IterIrredTest(f) != 0;
     }, py::arg("char_poly"), py::arg("k"));
+
+    // ── Primitivity (Phase 2.4): full-period testing in C++ ────────────
+    //
+    // Replaces packages/regpoly/src/regpoly/search/primitivity.py. The
+    // Cunningham-style factor table is embedded via
+    // src/algebra/primitive_factors_data.cpp.
+
+    m.def("is_mersenne_prime_exponent", &is_mersenne_prime_exponent,
+          py::arg("k"),
+          "True iff 2^k - 1 is a Mersenne prime (single-factor primitivity).");
+
+    m.def("get_primitive_factors_for_k",
+          [](int k) -> py::object {
+        auto facs = get_primitive_factors_for_k(k);
+        if (!facs) return py::none();
+        return py::cast(*facs);
+    }, py::arg("k"),
+       "Sorted list of prime factors of 2^k - 1 as decimal strings, or "
+       "None when the factorisation is unavailable.");
+
+    m.def("is_full_period",
+          [](const Generator& gen) -> bool { return is_full_period(gen); },
+          py::arg("gen"),
+          "True iff the generator's characteristic polynomial is "
+          "primitive (period 2^k - 1).");
 
     auto specs_to_list = [](const std::vector<ParamSpec>& specs) -> py::list {
         py::list result;

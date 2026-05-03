@@ -188,12 +188,11 @@ class Generator(Parametric):
         """Returns True if the characteristic polynomial is primitive,
         meaning the generator has maximum period 2^k - 1.
 
-        For Mersenne prime exponents (2^k - 1 is prime), only an
-        irreducibility test is needed.  For other k, uses precomputed
-        prime factors of 2^k - 1 from the Cunningham tables.
+        Delegates entirely to C++ since Phase 2.4. The Mersenne
+        fast-path and the Cunningham-style factor lookup live in
+        packages/regpoly-cpp/src/algebra/primitivity.cpp.
         """
-        from regpoly.search.primitivity import is_full_period as _is_full_period
-        return _is_full_period(self._cpp_gen, self.k)
+        return _cpp.is_full_period(self._cpp_gen)
 
     def transition_matrix(self) -> "BitMatrix":
         from regpoly.core.matrix import BitMatrix

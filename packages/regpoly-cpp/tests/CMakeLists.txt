@@ -18,6 +18,7 @@ include(GoogleTest)
 add_executable(regpoly_cpp_tests
     test_smoke.cpp
     test_combined_generator.cpp
+    test_primitivity.cpp
     test_resolution_sets.cpp
 )
 target_include_directories(regpoly_cpp_tests PRIVATE

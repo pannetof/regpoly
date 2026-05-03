@@ -48,6 +48,7 @@ set(REGPOLY_CPP_INCLUDE_DIRS
 set(REGPOLY_PUBLIC_INCLUDE_DIR include)
 set(REGPOLY_PUBLIC_HEADER_BASES
     src/include/algebra/bitvect.h
+    src/include/algebra/primitivity.h
     src/include/core/generator.h
     src/include/core/transformation.h
     src/include/core/params.h
@@ -114,6 +115,7 @@ endif()
 set(REGPOLY_PUBLIC_HEADERS
     include/regpoly/regpoly.h
     src/include/algebra/bitvect.h
+    src/include/algebra/primitivity.h
     src/include/core/generator.h
     src/include/core/transformation.h
     src/include/core/params.h
