@@ -16,6 +16,7 @@
 #include "resolution_sets.h"
 #include "temper_optimizer.h"
 #include "tausworthe.h"
+#include "tuplets_runner.h"
 
 #include <NTL/GF2X.h>
 #include <NTL/GF2XFactoring.h>
@@ -527,6 +528,25 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
         d["verified"] = r.verified;
         return d;
     }, py::arg("gen"), py::arg("kg"), py::arg("L"), py::arg("L_for_phi4"));
+
+    m.def("run_tuplets",
+          [](const Generator& gen, int kg, int L, int tupd,
+             const std::vector<int>& tuph, double threshold,
+             int testtype) -> py::dict {
+        auto r = run_tuplets(gen, kg, L, tupd, tuph, threshold, testtype);
+        py::dict d;
+        d["tupd"] = r.tupd;
+        d["tuph"] = r.tuph;
+        d["gap"] = r.gap;
+        d["DELTA"] = r.DELTA;
+        d["pourcentage"] = r.pourcentage;
+        d["firstpart_max"] = r.firstpart_max;
+        d["firstpart_sum"] = r.firstpart_sum;
+        d["secondpart_max"] = r.secondpart_max;
+        d["secondpart_sum"] = r.secondpart_sum;
+        return d;
+    }, py::arg("gen"), py::arg("kg"), py::arg("L"), py::arg("tupd"),
+       py::arg("tuph"), py::arg("threshold"), py::arg("testtype"));
 
     // ── TemperOptCache (dual lattice StackBase for optimizer) ─────────
 

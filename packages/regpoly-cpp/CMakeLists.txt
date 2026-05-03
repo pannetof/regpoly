@@ -54,6 +54,7 @@ set(REGPOLY_PUBLIC_HEADER_BASES
     src/include/algebra/gauss.h
     src/include/analyses/resolution_sets.h
     src/include/analyses/equidistribution_runner.h
+    src/include/analyses/tuplets_runner.h
     src/include/generators/combined.h
     src/include/lattice/me_helpers.h
     src/include/lattice/me_harase.h
@@ -119,6 +120,7 @@ set(REGPOLY_PUBLIC_HEADERS
     src/include/algebra/gauss.h
     src/include/analyses/resolution_sets.h
     src/include/analyses/equidistribution_runner.h
+    src/include/analyses/tuplets_runner.h
     src/include/generators/combined.h
     src/include/lattice/me_helpers.h
     src/include/lattice/me_harase.h
