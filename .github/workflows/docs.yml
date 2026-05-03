@@ -24,10 +24,13 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install docs deps
+      - name: Install docs deps (skip workspace packages — site is markdown-only)
         run: |
           uv python install 3.11
-          uv sync --group docs
+          uv sync --group docs \
+            --no-install-package regpoly-cpp \
+            --no-install-package regpoly \
+            --no-install-package regpoly-web
 
       - name: Configure git for gh-deploy
         run: |

@@ -41,8 +41,10 @@ jobs:
       - name: ruff check
         run: uv run ruff check .
 
-      - name: ruff format check
-        run: uv run ruff format --check .
+      # ruff format --check is intentionally not run during the v2.0 redesign:
+      # the existing research codebase predates ruff format and reformatting
+      # would create churn that obscures the C++/Python migration diffs.
+      # Re-enable in a later phase after the Python wrapper layer is rewritten.
 
       - name: import-linter
         run: uv run lint-imports
