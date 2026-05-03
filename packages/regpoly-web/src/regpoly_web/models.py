@@ -6,7 +6,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-
 # ── ParamSpec and family metadata ────────────────────────────────────────
 
 class ParamSpecModel(BaseModel):

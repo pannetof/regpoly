@@ -7,7 +7,7 @@ venue: "Mathematics and Computers in Simulation"
 volume: "100"
 pages: "103–113"
 doi: https://doi.org/10.1016/j.matcom.2014.02.002
-pdf: papers/harase-2014-f2-linear.pdf
+pdf: docs/papers/harase-2014-f2-linear.pdf
 bibkey: Harase2014F2Linear
 starred: false
 deferred: true

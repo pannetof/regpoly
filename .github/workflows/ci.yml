@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libntl-dev cmake build-essential pybind11-dev
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install Python and workspace
+        run: |
+          uv python install 3.11
+          uv sync --group test --group lint
+
+      - name: Build C++ tests
+        run: |
+          cmake -S packages/regpoly-cpp -B build -DREGPOLY_BUILD_TESTS=ON
+          cmake --build build -j
+
+      - name: Run ctest
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run pytest (default lane)
+        run: uv run pytest
+
+      - name: ruff check
+        run: uv run ruff check .
+
+      - name: ruff format check
+        run: uv run ruff format --check .
+
+      - name: import-linter
+        run: uv run lint-imports

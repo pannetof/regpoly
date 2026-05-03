@@ -17,7 +17,6 @@ from functools import lru_cache
 
 import regpoly._regpoly_cpp as _cpp
 
-
 HEX_MASK_64 = (1 << 64) - 1
 
 

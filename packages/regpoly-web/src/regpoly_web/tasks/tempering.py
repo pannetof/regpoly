@@ -18,7 +18,6 @@ from regpoly.core.generator import Generator
 from regpoly.core.transformation import Transformation
 from regpoly.web.database import json_dumps, json_loads, sync_connect
 
-
 _CANCEL_POLL_EVERY = 1   # check cancellation once per combo
 
 

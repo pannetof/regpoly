@@ -1,0 +1,106 @@
+site_name: REGPOLY
+site_description: F₂-linear pseudo-random number generator analysis and search
+site_url: https://pannetof.github.io/regpoly/
+repo_url: https://github.com/pannetof/regpoly
+repo_name: pannetof/regpoly
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Theory:
+      - theory/index.md
+      - F₂-linear generators: theory/f2-linear-generators.md
+      - Equidistribution: theory/equidistribution-spec.md
+      - Antithetic check: theory/antithetic-check.md
+      - Lattice (Couture–L'Ecuyer): theory/lattice_method_couture_lecuyer.md
+      - Lattice (Harase): theory/lattice_method_harase.md
+      - Tempering optimization: theory/tempering_optimization.md
+      - LCP irreducibility: theory/LCP Irreducibility.md
+      - Tempering optimizer notes: theory/optimzer_temper.md
+      - Search format: theory/search_format.md
+  - Generators:
+      - generators/index.md
+      - MT: generators/MTGen.md
+      - SFMT: generators/SFMTGen.md
+      - dSFMT: generators/DSFMTGen.md
+      - MTGP: generators/MTGPGen.md
+      - TinyMT32: generators/TinyMT32Gen.md
+      - RMT64: generators/RMT64Gen.md
+      - WELL: generators/WELLGen.md
+      - Tausworthe: generators/TauswortheGen.md
+      - TGFSR: generators/TGFSRGen.md
+      - PolyLCG: generators/PolyLCGGen.md
+      - F2w-LFSR: generators/F2wLFSRGen.md
+      - F2w-PolyLCG: generators/F2wPolyLCGGen.md
+      - Matsumoto: generators/MatsumotoGen.md
+      - Marsaglia XORShift: generators/MarsaXorshiftGen.md
+      - AC1D: generators/AC1DGen.md
+      - XorShift128: generators/XorShift128Gen.md
+      - MELG: generators/MELGGen.md
+  - Library:
+      - library/index.md
+      - About the catalog: library/about.md
+  - Papers:
+      - papers/index.md
+      - About the bibliography: papers/about.md
+  - Usage:
+      - Python: usage/python.md
+      - C++: usage/cpp.md
+      - Web: usage/web.md
+      - Notebooks: usage/notebooks.md
+  - Dev:
+      - Architecture: dev/architecture.md
+      - Building: dev/building.md
+      - Contributing: dev/contributing.md

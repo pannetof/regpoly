@@ -13,8 +13,8 @@ is computed and printed.
 
 import sys
 
-from regpoly.io.legacy_reader import LegacyReader
 from regpoly.core.component import Component
+from regpoly.io.legacy_reader import LegacyReader
 
 
 def main() -> None:

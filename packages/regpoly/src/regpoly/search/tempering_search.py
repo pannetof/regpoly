@@ -28,12 +28,16 @@ from __future__ import annotations
 
 import sys
 import time
+from typing import TYPE_CHECKING
 
-from regpoly.core.combination import Combination
-from regpoly.analyses.abstract_test import AbstractTest
 from regpoly.analyses.abstract_results import AbstractTestResults
+from regpoly.analyses.abstract_test import AbstractTest
 from regpoly.analyses.equidistribution_test import EquidistributionTest
+from regpoly.core.combination import Combination
 from regpoly.io.tested_generator import save_tested_generator
+
+if TYPE_CHECKING:
+    from regpoly.search.tempering_optimizer import TemperingOptimizer
 
 
 class TemperingSearchResult:

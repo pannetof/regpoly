@@ -66,9 +66,9 @@ import re
 
 import yaml
 
+from regpoly.core.combination import Combination
 from regpoly.core.generator import Generator
 from regpoly.core.transformation import Transformation
-from regpoly.core.combination import Combination
 
 
 def structural_filename(gen: Generator) -> str:

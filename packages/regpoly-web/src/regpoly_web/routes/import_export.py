@@ -9,10 +9,8 @@ import yaml
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
-
 from regpoly.core.generator import Generator, resolve_family
 from regpoly.web.database import json_dumps, json_loads
-
 
 router = APIRouter()
 

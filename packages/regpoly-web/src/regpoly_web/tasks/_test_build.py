@@ -6,8 +6,8 @@ from __future__ import annotations
 
 def build_test(test_config: dict, Lmax: int):
     """Instantiate the test class matching ``test_config['type']``."""
-    from regpoly.analyses.equidistribution_test import EquidistributionTest
     from regpoly.analyses.collision_free_test import CollisionFreeTest
+    from regpoly.analyses.equidistribution_test import EquidistributionTest
     from regpoly.analyses.tuplets_test import TupletsTest
 
     dispatch = {

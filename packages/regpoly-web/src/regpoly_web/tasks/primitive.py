@@ -15,7 +15,6 @@ from regpoly.core.generator import Generator, resolve_family
 from regpoly.core.parametric import build_gen_enumerator
 from regpoly.web.database import json_dumps, json_loads, sync_connect
 
-
 _CANCEL_POLL_EVERY = 200   # check status for cancellation every N tries
 _PROGRESS_EVERY = 100      # write a progress row at least every N tries
 _PROGRESS_MIN_SECONDS = 2.0  # ...or every N seconds, whichever comes first

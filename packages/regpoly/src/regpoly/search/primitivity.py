@@ -17,7 +17,6 @@ import os
 
 import regpoly._regpoly_cpp as _cpp
 
-
 # ═══════════════════════════════════════════════════════════════════════════
 # Precomputed prime factors of Φ_k(2) for primitivity testing
 # ═══════════════════════════════════════════════════════════════════════════

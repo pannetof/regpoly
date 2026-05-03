@@ -12,8 +12,8 @@ from regpoly.analyses.abstract_test import AbstractTest
 from regpoly.analyses.collision_free_results import CollisionFreeResults
 
 if TYPE_CHECKING:
-    from regpoly.core.combination import Combination
     from regpoly.analyses.equidistribution_results import EquidistributionResults
+    from regpoly.core.combination import Combination
 
 
 class CollisionFreeTest(AbstractTest):

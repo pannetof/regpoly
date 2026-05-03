@@ -8,7 +8,7 @@ volume: "8"
 issue: "14"
 pages: "1–6"
 doi: https://doi.org/10.18637/jss.v008.i14
-pdf: papers/marsaglia-2003-xorshift.pdf
+pdf: docs/papers/marsaglia-2003-xorshift.pdf
 bibkey: Marsaglia2003Xorshift
 starred: true
 tags: [xorshift, 128bit, Marsaglia]

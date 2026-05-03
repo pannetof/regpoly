@@ -7,13 +7,19 @@ import time
 from pathlib import Path
 
 from regpoly.library import Catalog, Paper, config_hash
-from regpoly.web.config import find_library_dir
+
+
+def _find_library_dir() -> Path:
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        candidate = parent / "docs" / "library"
+        if candidate.is_dir():
+            return candidate
+    raise RuntimeError("docs/library dir not found")
 
 
 def _repo_catalog() -> Catalog:
-    d = find_library_dir()
-    assert d is not None, "docs/library dir not found"
-    c = Catalog(d)
+    c = Catalog(_find_library_dir())
     c.load()
     return c
 
@@ -78,7 +84,7 @@ def test_config_hash_stable_under_key_reorder():
 
 
 def test_reload_if_stale(tmp_path: Path):
-    src = find_library_dir() / "matsumoto-nishimura-1998.yaml"
+    src = _find_library_dir() / "matsumoto-nishimura-1998.yaml"
     tgt = tmp_path / "matsumoto-nishimura-1998.yaml"
     tgt.write_text(src.read_text())
     c = Catalog(tmp_path)

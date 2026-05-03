@@ -20,12 +20,12 @@ import os
 import re
 import sys
 import time
-import urllib.request
 import urllib.parse
+import urllib.request
 
 from sympy import divisors, isprime
-from sympy.ntheory import factorint as sym_factorint
 from sympy.functions.combinatorial.numbers import mobius
+from sympy.ntheory import factorint as sym_factorint
 
 URL_MINUS = "https://homes.cerias.purdue.edu/~ssw/cun/pmain126.txt"
 

@@ -7,15 +7,14 @@ import uuid
 from concurrent.futures import Future
 
 from fastapi import APIRouter, HTTPException, Request
-
 from regpoly.library import Catalog, Generator, Paper
 from regpoly.web.database import json_dumps, sync_connect
 from regpoly.web.param_format import (
-    format_gen_params, format_tempering_list,
+    format_gen_params,
+    format_tempering_list,
 )
 from regpoly.web.routes.families import _markdown_to_html
 from regpoly.web.tasks.library_test import run_library_test
-
 
 router = APIRouter()
 

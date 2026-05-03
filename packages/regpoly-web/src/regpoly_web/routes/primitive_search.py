@@ -5,16 +5,14 @@ from __future__ import annotations
 import asyncio
 import json
 
+import regpoly._regpoly_cpp as _cpp
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-
-import regpoly._regpoly_cpp as _cpp
 from regpoly.core.generator import Generator, resolve_family
 from regpoly.core.parametric import NotEnumerable, build_gen_enumerator
 from regpoly.web.database import json_dumps, json_loads
 from regpoly.web.models import PrimitiveSearchCreate
 from regpoly.web.tasks.primitive import run_primitive_search
-
 
 HUGE_SPACE_THRESHOLD = 10 ** 12
 

@@ -22,14 +22,13 @@ Tests:
 
 import pytest
 from regpoly import Generator
-from regpoly.core.combination import Combination
 from regpoly.analyses.equidistribution_test import (
-    EquidistributionTest,
     METHOD_DUALLATTICE,
     METHOD_NOTPRIMITIVE,
     METHOD_SIMD_NOTPRIMITIVE,
+    EquidistributionTest,
 )
-
+from regpoly.core.combination import Combination
 
 # Reference d(v) for SFMT-19937 (paper parameters: pos1=122, sl1=18,
 # sl2=1, sr1=11, sr2=1, msk=[dfffffef, ddfecb7f, bffaffff, bffffff6])

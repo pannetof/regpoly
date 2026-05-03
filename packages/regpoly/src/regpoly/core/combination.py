@@ -32,8 +32,8 @@ from __future__ import annotations
 
 import sys
 
-from regpoly.core.generator import Generator
 from regpoly.core.component import Component
+from regpoly.core.generator import Generator
 
 
 def product_no_repeat_ordered(*lists):

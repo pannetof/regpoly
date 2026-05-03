@@ -14,7 +14,6 @@ import logging
 from concurrent.futures import Future, ProcessPoolExecutor
 from typing import Callable
 
-
 logger = logging.getLogger(__name__)
 
 

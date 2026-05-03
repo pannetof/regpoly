@@ -11,7 +11,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 import regpoly._regpoly_cpp as _cpp
-
 from regpoly.analyses.abstract_results import AbstractTestResults
 
 if TYPE_CHECKING:
@@ -55,8 +54,9 @@ class AbstractTest(ABC):
         Returns a list of AbstractTest instances.
         """
         import yaml
-        from regpoly.analyses.equidistribution_test import EquidistributionTest
+
         from regpoly.analyses.collision_free_test import CollisionFreeTest
+        from regpoly.analyses.equidistribution_test import EquidistributionTest
         from regpoly.analyses.tuplets_test import TupletsTest
 
         _dispatch = {

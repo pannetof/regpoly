@@ -1,8 +1,7 @@
 """Smoke tests to verify the package loads and basic operations work."""
 
-from regpoly import BitVect, BitMatrix, Generator, Transformation
+from regpoly import BitMatrix, BitVect, Generator, Transformation
 from regpoly.core.generator import resolve_family
-
 
 # ── BitVect ──────────────────────────────────────────────────────────────
 
@@ -181,8 +180,8 @@ def test_transformation_copy():
 
 def test_analyses_importable():
     from regpoly.analyses import (
-        EquidistributionTest,
         CollisionFreeTest,
+        EquidistributionTest,
         TupletsTest,
     )
     assert EquidistributionTest is not None

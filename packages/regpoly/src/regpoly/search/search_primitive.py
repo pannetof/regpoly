@@ -25,9 +25,9 @@ import time
 
 import yaml
 
+import regpoly._regpoly_cpp as _cpp
 from regpoly.core.generator import Generator, resolve_family
 from regpoly.core.parametric import generate_random
-import regpoly._regpoly_cpp as _cpp
 
 
 class PrimitiveSearch:

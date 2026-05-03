@@ -15,3 +15,13 @@ __pycache__/
 regpoly.db
 regpoly.db-wal
 regpoly.db-shm
+
+# MkDocs build output
+site/
+
+# IDE
+.vscode/
+.idea/
+
+# Ruff cache
+.ruff_cache/

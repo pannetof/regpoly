@@ -7,10 +7,14 @@ No Python subclasses needed — one class wraps any generator type.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import regpoly._regpoly_cpp as _cpp
 from regpoly.core.bitvect import BitVect
 from regpoly.core.parametric import Parametric
 
+if TYPE_CHECKING:
+    from regpoly.core.matrix import BitMatrix
 
 # Family-name resolution: short tags and legacy class names → canonical
 # C++ class names used by the factory. The factory itself (factory.cpp)

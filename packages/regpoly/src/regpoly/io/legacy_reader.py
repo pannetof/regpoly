@@ -11,7 +11,6 @@ from __future__ import annotations
 import re
 
 
-
 class LegacyReader:
     """Parsers for legacy text-based generator and transformation files."""
 

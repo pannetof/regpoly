@@ -4,3 +4,72 @@ members = ["packages/*"]
 [tool.uv.sources]
 regpoly-cpp = { workspace = true }
 regpoly     = { workspace = true }
+
+[dependency-groups]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "pymdown-extensions>=10.7",
+    "mkdocs-gen-files>=0.5",
+    "mkdocs-jupyter>=0.25",
+]
+lint = [
+    "ruff>=0.6",
+    "import-linter>=2.0",
+]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "nbmake>=1.5",
+]
+e2e = [
+    "playwright>=1.45",
+    "pytest-playwright>=0.5",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+    "third_party",
+    "notebooks",
+    "docs/notebooks",
+]
+
+# Phase 0 baseline: enforce only pyflakes (undefined names, unused imports)
+# and import sorting. The full lint + format gate will be tightened in later
+# phases as Python code gets rewritten as thin wrappers around regpoly_cpp.
+[tool.ruff.lint]
+select = ["F", "I"]
+ignore = ["F401", "F841"]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: long-running tests (MTToolBox cross-checks, nbmake notebooks)",
+    "e2e: end-to-end browser tests via Playwright",
+]
+testpaths = [
+    "packages/regpoly-cpp/tests/python",
+    "packages/regpoly/tests",
+    "packages/regpoly-web/tests",
+]
+addopts = "-m 'not slow and not e2e' --import-mode=importlib"
+
+[tool.importlinter]
+root_packages = ["regpoly_cpp", "regpoly", "regpoly_web"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers: regpoly_web > regpoly > regpoly_cpp (one-way only)"
+type = "layers"
+layers = ["regpoly_web", "regpoly", "regpoly_cpp"]
+
+# Phase 5 will tighten this further: web routes/workers must NOT import
+# regpoly_cpp directly (only via regpoly). Captured here as a separate
+# contract using `forbidden` with `allow_indirect_imports = true`.
+[[tool.importlinter.contracts]]
+name = "regpoly-web does not import regpoly_cpp directly (must go through regpoly)"
+type = "forbidden"
+source_modules = ["regpoly_web"]
+forbidden_modules = ["regpoly_cpp", "_regpoly_cpp"]
+allow_indirect_imports = true

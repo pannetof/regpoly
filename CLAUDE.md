@@ -18,38 +18,56 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 regpoly_monorepo/
-├── pyproject.toml                       workspace declaration only (no [project])
+├── pyproject.toml                       workspace declaration + dependency-groups
+│                                          (docs/lint/test/e2e), ruff, pytest,
+│                                          import-linter contracts
 ├── README.md
 ├── CLAUDE.md                            this file
+├── .github/workflows/                   ci.yml, ci-slow.yml, docs.yml
 ├── packages/
 │   ├── regpoly-cpp/
 │   │   ├── pyproject.toml
-│   │   ├── CMakeLists.txt               drives the C++ build via scikit-build-core
-│   │   ├── src/                         was cpp_regpoly/src/cpp/{algebra,core,generators,transforms,lattice,bindings,include}/
+│   │   ├── CMakeLists.txt               C++ build via scikit-build-core; -DREGPOLY_BUILD_TESTS=ON
+│   │   │                                  enables the GoogleTest target via ctest
+│   │   ├── src/                         {algebra,core,generators,transforms,lattice,bindings,include}/
 │   │   │   └── regpoly_cpp/__init__.py  thin Python re-export of the .so
-│   │   └── tests/                       (empty — C++ tests via ctest go here)
+│   │   └── tests/                       GoogleTest C++ tests (ctest) +
+│   │       ├── CMakeLists.txt           FetchContent googletest
+│   │       ├── test_smoke.cpp
+│   │       └── python/                  pytest tests for the pybind11 binding ABI
 │   ├── regpoly/
 │   │   ├── pyproject.toml
-│   │   ├── src/regpoly/                 was cpp_regpoly/src/python/{core,library,analyses,search,io,data,tools,__init__.py}
-│   │   └── tests/                       was cpp_regpoly/tests/* (ALL pytest tests live here for now — split per-package later if useful)
+│   │   ├── src/regpoly/                 {core,library,analyses,search,io,data,tools,__init__.py}
+│   │   └── tests/                       pytest tests for the Python wrapper layer
+│   │                                      (incl. MTToolBox cross-check, marked @pytest.mark.slow)
 │   └── regpoly-web/
 │       ├── pyproject.toml
-│       ├── src/regpoly_web/             was cpp_regpoly/src/python/web/
+│       ├── src/regpoly_web/             FastAPI web app (was cpp_regpoly/src/python/web/)
 │       ├── scripts/                     regpoly-web.sh, wipe-db.sh
-│       └── var/                         regpoly.db lives here (user data, gitignored)
+│       ├── var/                         regpoly.db (user data, gitignored)
+│       └── tests/                       pytest + (Phase 5) Playwright e2e
 ├── third_party/
-│   ├── MTToolBox/                       vendored MTToolBox; only used by regpoly/tests/test_mttoolbox_crosscheck.py
-│   └── dSMFT/                           vendored reference for dSFMT recurrence (used as comment reference only)
-├── shared/
-│   ├── yaml/                            YAML configs for the search CLI (equidist, fullperiodsearch, generators, …)
-│   ├── legacy_parameters/               legacy *.dat / example* parameter files (input fixtures)
-│   ├── papers/                          papers served by the web app's /papers endpoint
-│   ├── docs/                            cross-cutting algorithm specs — see "Specs" below
-│   └── cpp_regpoly_docs/                ports of the old per-module documentation
-└── notebooks/                           research notebooks — not packaged
+│   ├── MTToolBox/                       vendored; used only by the slow-lane cross-check
+│   └── dSMFT/                           vendored reference for dSFMT recurrence (comments only)
+├── shared/                              runtime data only
+│   ├── yaml/                            YAML configs for the search CLI
+│   └── legacy_parameters/               legacy *.dat / example* parameter files (test fixtures)
+├── docs/                                MkDocs Material site (workspace-root)
+│   ├── mkdocs.yml
+│   ├── index.md
+│   ├── theory/                          F₂-linear theory + algorithm specs (was shared/docs and
+│   │                                      shared/cpp_regpoly_docs/*.md)
+│   ├── generators/                      one .md per family (was shared/cpp_regpoly_docs/generators/)
+│   ├── library/                         catalog YAML + index (was shared/cpp_regpoly_docs/library/);
+│   │                                      this is the **runtime catalog source** — the web app and
+│   │                                      C++ Catalog both read from here. CMake will install it to
+│   │                                      ${prefix}/share/regpoly/catalog/.
+│   ├── papers/                          PDFs + bibliography (was shared/papers/)
+│   ├── usage/                           {python,cpp,web,notebooks}.md
+│   ├── dev/                             architecture, building, contributing
+│   └── notebooks/                       (Phase 7) per-family + research + utility notebooks
+└── notebooks/                           legacy notebooks (Phase 7 will rewrite under docs/notebooks/)
 ```
-
-`packages/regpoly/tests/` currently holds the entire pytest suite from `cpp_regpoly`. It's fine to leave it here until the boundaries naturally pull tests apart; do not pre-emptively split.
 
 ## Build & Run
 
@@ -65,17 +83,33 @@ uv run regpoly shared/yaml/equidist/well19937a.yml
 # Run the web app:
 uv run regpoly-web --db packages/regpoly-web/var/regpoly.db
 
-# Run tests (default skips slow MTToolBox cross-checks):
-uv run pytest packages/regpoly/tests
-uv run pytest -m slow packages/regpoly/tests        # cross-checks too
+# Run tests (default skips slow + e2e):
+uv run pytest                         # all default-lane tests across packages
+uv run pytest -m slow                 # MTToolBox cross-checks, nbmake notebooks
+uv run pytest -m e2e                  # Playwright golden paths (after Phase 5)
+
+# C++ tests:
+cmake -S packages/regpoly-cpp -B build -DREGPOLY_BUILD_TESTS=ON
+cmake --build build -j
+ctest --test-dir build --output-on-failure
+
+# Docs site:
+uv sync --group docs
+cd docs && uv run mkdocs serve
 ```
 
 The `tests/_mttoolbox_build.md` doc inside the regpoly package describes how to (re-)build `MTToolBox/samples/*/calc_equidist` binaries used by the cross-check tests; the `MTToolBox/Makefile`s have been refreshed to point at this monorepo's path. **Bypass autotools** when building those samples — the documented `g++` recipe works directly.
 
 ## Specs (read these when relevant)
 
-- `shared/docs/equidistribution-spec.md` — **the design of record** for matricial equidistribution computation on F_2-linear generators that are not assumed full-period (Berlekamp–Massey → factor χ_f → invariant subspace → matricial DE core → guard → verify). Read whenever working on equidistribution where the characteristic polynomial may not be primitive.
-- `shared/docs/antithetic-check.md` — algorithm for testing local antitheticity of a linear RNG point set.
+- `docs/theory/equidistribution-spec.md` — **the design of record** for matricial equidistribution computation on F_2-linear generators that are not assumed full-period (Berlekamp–Massey → factor χ_f → invariant subspace → matricial DE core → guard → verify). Read whenever working on equidistribution where the characteristic polynomial may not be primitive.
+- `docs/theory/antithetic-check.md` — algorithm for testing local antitheticity of a linear RNG point set.
+
+## Active redesign — v2.0 plan
+
+A 9-phase migration is in progress (started 2026-05-03). Plan file: `~/.claude/plans/i-want-to-have-rippling-starlight.md`. Goal: push all algorithmic logic to C++; Python becomes a thin wrapper; the web app uses only Python; a C++-only user has full feature parity with a Python user. Per-phase commit + push to `origin/master` is authorized **for the duration of this plan only** (overrides the general "no auto commit/push" rule).
+
+Current phase: **Phase 0 (scaffolding)**.
 
 ## History (for context — don't act on it)
 
@@ -91,18 +125,20 @@ The previous home of the C++ port was `MinimalCode/cpp_regpoly/`. Its contents h
 
 ## Conventions
 
-- **One-way deps.** `regpoly-web` may import `regpoly`; `regpoly` may import `regpoly_cpp`; nothing goes backwards. Add `import-linter` to CI if drift becomes a risk.
-- **`shared/` is data, not code.** Anything code-shared between packages = a fourth package, not a `shared/` import.
+- **One-way deps.** `regpoly-web` may import `regpoly`; `regpoly` may import `regpoly_cpp`; nothing goes backwards. Enforced by `import-linter` (contracts in workspace `pyproject.toml`).
+- **`shared/` is runtime data only.** YAML config templates and legacy `.dat` test fixtures. Documentation, papers, and the catalog live under `docs/`.
 - **`var/` and `regpoly.db` are user data.** Never commit DB files or move them into `src/`.
 - **C++ extension stays in `regpoly-cpp`.** The `.so` is a build artefact of `regpoly-cpp`; `regpoly` consumes it via the `regpoly_cpp` package interface only.
 - **Git is per-monorepo, not per-package.** Run `git init` once at the workspace root.
 
 ## Deferred decisions (call out before changing)
 
-- **Test split.** Tests are unsplit on purpose. Move tests to a per-package `tests/` only when you have a concrete reason (e.g. CI job differentiation, or a test that genuinely belongs to web).
 - **Workspace lockfile.** `uv.lock` will appear after the first `uv sync`. Commit it.
 - **`MTToolBox/Makefile`** absolute paths were re-baked via `config.status` after the move; a future relocation needs another `cd third_party/MTToolBox && ./config.status --recheck`.
 
 ## Auto-memory
 
-User auto-memory has been migrated into this project's memory directory (`~/.claude/projects/-home-frpan-projets-claude-projects-regpoly_monorepo/memory/`). The two preserved feedback rules — *no auto commit/push* and *safe masks only for the tempering optimiser* — apply unchanged here.
+User auto-memory lives at `~/.claude/projects/-home-frpan-projets-claude-projects-regpoly-monorepo/memory/`. Preserved feedback rules:
+
+- *No auto commit/push* in general — but the active v2.0 redesign explicitly authorizes per-phase commit + push for its duration; see `MEMORY.md → project_redesign_v2.md`.
+- *Safe masks only for the tempering optimiser*.

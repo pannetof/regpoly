@@ -23,8 +23,3 @@ package-dir = {"" = "src"}
 where = ["src"]
 namespaces = false
 
-[tool.pytest.ini_options]
-markers = [
-    "slow: heavy cross-checks (mexp > 20000); opt in with `pytest -m slow`",
-]
-addopts = "-m 'not slow'"

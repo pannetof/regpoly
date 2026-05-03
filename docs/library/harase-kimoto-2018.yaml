@@ -9,7 +9,7 @@ volume: "44"
 issue: "3"
 pages: "Article 30, 11 pages"
 doi: https://doi.org/10.1145/3159444
-pdf: papers/melg-64-app.pdf
+pdf: docs/papers/melg-64-app.pdf
 bibkey: HaraseKimoto2018
 starred: true
 tags: [MELG, 64bit, ME]

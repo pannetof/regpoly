@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-
+from regpoly.library import Catalog
 from regpoly.web.config import (
     STATIC_DIR,
     TEMPLATES_DIR,
@@ -19,7 +19,6 @@ from regpoly.web.config import (
     find_library_dir,
     find_papers_dir,
 )
-from regpoly.library import Catalog
 from regpoly.web.database import init_sync, open_async
 from regpoly.web.routes import (
     families,
@@ -33,7 +32,6 @@ from regpoly.web.routes import (
 )
 from regpoly.web.tasks.analysis import analyze_generator
 from regpoly.web.tasks.pool import TaskPool
-
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 

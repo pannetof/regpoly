@@ -108,7 +108,7 @@ class TupletsResults(AbstractTestResults):
             lines.append("===========" + "+" + "======+" * w)
 
         delta_val = max(self.firstpart_max, self.secondpart_max)
-        lines.append(f"Value of DELTA( " +
+        lines.append("Value of DELTA( " +
               ", ".join(str(self.tuph[i]) for i in range(1, self.tupd + 1)) +
               f" ) = {delta_val:5.3f}")
         lines.append(f"Sum of all gaps observed = {self.firstpart_sum + self.secondpart_sum:5.3f}")

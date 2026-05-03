@@ -14,20 +14,20 @@ import socket
 import sys
 import time
 
+from regpoly.analyses.collision_free_test import CollisionFreeTest
+from regpoly.analyses.equidistribution_test import (
+    METHOD_DUALLATTICE,
+    METHOD_MATRICIAL,
+    METHOD_NOTHING,
+    EquidistributionTest,
+)
+from regpoly.analyses.tuplets_results import _MAX_TYPE
+from regpoly.analyses.tuplets_test import TupletsTest
+from regpoly.core.combination import Combination
 from regpoly.core.generator import Generator
 from regpoly.core.transformation import Transformation
-from regpoly.core.combination import Combination
 from regpoly.io.legacy_reader import LegacyReader
 from regpoly.io.tested_generator import save_tested_generator
-from regpoly.analyses.equidistribution_test import (
-    EquidistributionTest,
-    METHOD_MATRICIAL,
-    METHOD_DUALLATTICE,
-    METHOD_NOTHING,
-)
-from regpoly.analyses.collision_free_test import CollisionFreeTest
-from regpoly.analyses.tuplets_test import TupletsTest
-from regpoly.analyses.tuplets_results import _MAX_TYPE
 
 _SEP      = "\n\n" + "+" * 104
 _EQ66     = "=" * 66

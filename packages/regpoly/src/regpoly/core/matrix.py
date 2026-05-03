@@ -7,7 +7,6 @@ Bit 0 (MSB) is at the highest position of the int.
 
 from regpoly.core.bitvect import BitVect
 
-
 _BLOCK = [" ", "▄", "▀", "█"]  # index = top*2 + bot
 
 

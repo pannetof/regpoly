@@ -8,8 +8,8 @@ import sys
 from itertools import combinations as _itertools_combinations
 
 from regpoly.analyses.abstract_test import AbstractTest
-from regpoly.analyses.tuplets_results import TupletsResults, _MAX_TYPE, _SUM_TYPE
 from regpoly.analyses.equidistribution_test import EquidistributionTest
+from regpoly.analyses.tuplets_results import _MAX_TYPE, _SUM_TYPE, TupletsResults
 from regpoly.core.combination import Combination
 
 

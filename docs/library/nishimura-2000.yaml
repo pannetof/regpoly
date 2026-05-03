@@ -8,7 +8,7 @@ volume: "10"
 issue: "4"
 pages: "348–357"
 doi: https://doi.org/10.1145/369534.369540
-pdf: papers/tablesOf64bitMT.pdf
+pdf: docs/papers/tablesOf64bitMT.pdf
 bibkey: Nishimura2000
 starred: true
 tags: [MT, 64bit, classic]

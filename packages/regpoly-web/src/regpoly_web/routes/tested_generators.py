@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
-
 from regpoly.web.database import json_loads
 from regpoly.web.param_format import (
-    format_gen_params, format_tempering_list,
+    format_gen_params,
+    format_tempering_list,
 )
-
 
 router = APIRouter()
 

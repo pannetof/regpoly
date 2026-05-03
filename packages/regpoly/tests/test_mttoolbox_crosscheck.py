@@ -25,16 +25,14 @@ from pathlib import Path
 
 import pytest
 import yaml
-
-from regpoly.core.generator import Generator
-from regpoly.core.combination import Combination
-from regpoly.core.transformation import Transformation
 from regpoly.analyses.equidistribution_test import (
-    EquidistributionTest,
     METHOD_NOTPRIMITIVE,
     METHOD_SIMD_NOTPRIMITIVE,
+    EquidistributionTest,
 )
-
+from regpoly.core.combination import Combination
+from regpoly.core.generator import Generator
+from regpoly.core.transformation import Transformation
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DOCS_LIB = REPO_ROOT / "docs" / "library"

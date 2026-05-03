@@ -8,12 +8,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
-
 import regpoly._regpoly_cpp as _cpp
+from fastapi import APIRouter, HTTPException
 from regpoly.core.generator import _FAMILY_ALIASES
 from regpoly.web.config import find_docs_dir
-
 
 router = APIRouter()
 

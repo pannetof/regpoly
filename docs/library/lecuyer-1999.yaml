@@ -8,7 +8,7 @@ volume: "68"
 issue: "225"
 pages: "261–269"
 doi: https://www.jstor.org/stable/2585109
-pdf: papers/tausme2.pdf
+pdf: docs/papers/tausme2.pdf
 bibkey: LEcuyer1999
 starred: true
 tags: [LFSR, Tausworthe, ME, classic]

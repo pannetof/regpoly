@@ -7,14 +7,13 @@ import json
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-
 from regpoly.web.database import json_dumps, json_loads
 from regpoly.web.models import TemperingSearchCreate
 from regpoly.web.param_format import (
-    format_gen_params, format_tempering_list,
+    format_gen_params,
+    format_tempering_list,
 )
 from regpoly.web.tasks.tempering import run_tempering_search
-
 
 router = APIRouter()
 
