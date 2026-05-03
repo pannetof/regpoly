@@ -38,5 +38,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Build and deploy MkDocs site to gh-pages
-        working-directory: docs
-        run: uv run mkdocs gh-deploy --force --remote-name origin
+        run: uv run --no-sync mkdocs gh-deploy --force --remote-name origin
