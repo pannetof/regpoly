@@ -1,0 +1,33 @@
+#pragma once
+
+#include <vector>
+
+// Resolution-set helpers used by the equidistribution and collision-free
+// test orchestration. Phase 2 migrates these from regpoly.analyses (Python)
+// to C++ so a C++-only user can drive the same tests without going through
+// the Python wrapper.
+//
+// Convention: both functions return a vector<bool> indexed by resolution
+// (size kg+1 for Phi_4, size L+1 for Psi_12). out[r] is true iff
+// resolution r belongs to the set.
+
+// Psi_12: the resolutions l ∈ {1..L} whose dimension-equidistribution gap
+// must be tested for combined generator with combined state size kg.
+//
+// Algorithm (mirrors regpoly.analyses.equidistribution_test._compute_psi12):
+//   1. Mark l = 1..min(isqrt(kg), L).
+//   2. For t = max(2, kg/L) .. isqrt(kg-1), mark min(kg/t, L).
+//
+// Returns a vector of size L+1 (out[0] always false; out[l] is true iff
+// l is in Psi_12).
+std::vector<bool> compute_psi12(int kg, int L);
+
+// Phi_4: the dimensions t ∈ {2..kg} whose collision-free rank must be
+// checked for a combined generator with combined state size kg.
+//
+// Algorithm (mirrors regpoly.analyses.collision_free_test._compute_phi4):
+//   For each t in {2..kg} where kg % t != 0, let lt = kg / t and require
+//   lt < L && kg % (lt + 1) != 0 && kg / (t - 1) > lt.
+//
+// Returns a vector of size kg+1 (out[0] = out[1] = false).
+std::vector<bool> compute_phi4(int kg, int L);

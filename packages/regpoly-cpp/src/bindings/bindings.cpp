@@ -12,6 +12,7 @@
 #include "me_harase.h"
 #include "me_notprimitive.h"
 #include "me_notprimitive_simd.h"
+#include "resolution_sets.h"
 #include "temper_optimizer.h"
 #include "tausworthe.h"
 
@@ -482,6 +483,21 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
           [](const Generator& gen, int kg, int v) -> int {
         return compute_kv(gen, kg, v);
     }, py::arg("gen"), py::arg("kg"), py::arg("v"));
+
+    // ── Resolution-set helpers (Phase 2.1) ─────────────────────────────
+    //
+    // Returns a list of bools indexed 0..L (psi12) or 0..kg (phi4),
+    // where out[r] == True iff resolution r is in the set.
+
+    m.def("compute_psi12", &compute_psi12,
+          py::arg("kg"), py::arg("L"),
+          "Resolutions l in {1..L} whose dimension-equidistribution gap "
+          "must be tested for a combined generator with state size kg.");
+
+    m.def("compute_phi4", &compute_phi4,
+          py::arg("kg"), py::arg("L"),
+          "Dimensions t in {2..kg} whose collision-free rank must be "
+          "checked for a combined generator with state size kg.");
 
     // ── TemperOptCache (dual lattice StackBase for optimizer) ─────────
 

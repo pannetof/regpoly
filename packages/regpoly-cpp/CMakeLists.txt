@@ -19,6 +19,7 @@ find_package(pybind11 CONFIG REQUIRED)
 file(GLOB_RECURSE REGPOLY_ALL_SOURCES
      CONFIGURE_DEPENDS
      src/algebra/*.cpp
+     src/analyses/*.cpp
      src/core/*.cpp
      src/generators/*.cpp
      src/transforms/*.cpp
@@ -34,6 +35,7 @@ endforeach()
 set(REGPOLY_CPP_INCLUDE_DIRS
     src/include/core
     src/include/algebra
+    src/include/analyses
     src/include/generators
     src/include/transforms
     src/include/lattice)
@@ -50,6 +52,7 @@ set(REGPOLY_PUBLIC_HEADER_BASES
     src/include/core/transformation.h
     src/include/core/params.h
     src/include/algebra/gauss.h
+    src/include/analyses/resolution_sets.h
     src/include/generators/combined.h
     src/include/lattice/me_helpers.h
     src/include/lattice/me_harase.h
@@ -113,6 +116,7 @@ set(REGPOLY_PUBLIC_HEADERS
     src/include/core/transformation.h
     src/include/core/params.h
     src/include/algebra/gauss.h
+    src/include/analyses/resolution_sets.h
     src/include/generators/combined.h
     src/include/lattice/me_helpers.h
     src/include/lattice/me_harase.h

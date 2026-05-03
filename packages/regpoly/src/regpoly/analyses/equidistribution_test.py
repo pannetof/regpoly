@@ -6,7 +6,6 @@ METHOD_DUALLATTICE raises NotImplementedError if requested.
 
 from __future__ import annotations
 
-import math
 import sys
 from typing import TYPE_CHECKING
 
@@ -179,18 +178,9 @@ class EquidistributionTest(AbstractTest):
     # -- Private helpers --------------------------------------------------
 
     def _compute_psi12(self, C: "Combination") -> list[bool]:
-        """SetPsi12: compute Psi_12 — resolutions l whose gap must be tested."""
-        psi = [False] * (self.L + 1)
-        r = int(math.isqrt(C.k_g))
-        for l in range(1, min(r, self.L) + 1):
-            psi[l] = True
-        r2 = int(math.isqrt(C.k_g - 1))
-        m  = C.k_g // self.L
-        if m < 2:
-            m = 2
-        for t in range(m, r2 + 1):
-            psi[min(C.k_g // t, self.L)] = True
-        return psi
+        """SetPsi12: resolutions whose gap must be tested. Delegates to C++."""
+        import regpoly._regpoly_cpp as _cpp
+        return list(_cpp.compute_psi12(C.k_g, self.L))
 
     @staticmethod
     def _dimension_equid(mat, kg: int, l: int, L: int) -> int:

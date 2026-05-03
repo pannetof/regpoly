@@ -83,16 +83,9 @@ class CollisionFreeTest(AbstractTest):
 
     @staticmethod
     def _compute_phi4(C: "Combination", L: int) -> list[bool]:
-        """
-        SetPhi4: compute Phi_4 — dimensions t whose CF rank must be checked.
-        """
-        phi4 = [False] * (C.k_g + 1)
-        for t in range(2, C.k_g + 1):
-            if C.k_g % t:
-                lt = C.k_g // t
-                if lt < L and C.k_g % (lt + 1) and C.k_g // (t - 1) > lt:
-                    phi4[t] = True
-        return phi4
+        """SetPhi4: dimensions whose CF rank must be checked. Delegates to C++."""
+        import regpoly._regpoly_cpp as _cpp
+        return list(_cpp.compute_phi4(C.k_g, L))
 
     @staticmethod
     def _rang_cf(mat, kg: int, t: int, l: int, L: int) -> int:
