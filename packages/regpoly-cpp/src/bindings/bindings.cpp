@@ -3,6 +3,7 @@
 #include <pybind11/numpy.h>
 
 #include "bitvect.h"
+#include "combined.h"
 #include "generator.h"
 #include "transformation.h"
 #include "gauss.h"
@@ -185,6 +186,62 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
 
     // Backwards-compat: legacy French class name still resolves to the same type.
     m.attr("Generateur") = m.attr("Generator");
+
+    // ── CombinedGenerator ───────────────────────────────────────────────
+    //
+    // First-class Generator subclass that owns J components and presents
+    // itself as a single Generator. The factory used here transfers
+    // ownership: the input lists must contain pybind11-owned unique_ptrs
+    // (the wrapped C++ objects move into the CombinedGenerator and the
+    // Python wrapper around the source object becomes inert).
+
+    py::class_<CombinedGenerator, Generator, std::unique_ptr<CombinedGenerator>>(
+        m, "CombinedGenerator")
+        .def(py::init([](py::list py_components, int Lmax) {
+                 std::vector<std::unique_ptr<Generator>> comps;
+                 comps.reserve(py_components.size());
+                 for (auto h : py_components) {
+                     auto& g = h.cast<Generator&>();
+                     comps.push_back(g.copy());
+                 }
+                 return std::make_unique<CombinedGenerator>(
+                     std::move(comps), Lmax);
+             }),
+             py::arg("components"), py::arg("Lmax"),
+             "Construct from a list of Generator objects (each is copied) "
+             "and a max output resolution Lmax. The combined output is the "
+             "XOR of the components' L-bit outputs.")
+        .def(py::init([](py::list py_components,
+                          py::list py_tempering,
+                          int Lmax) {
+                 if (py::len(py_components) != py::len(py_tempering))
+                     throw std::invalid_argument(
+                         "components and tempering chains must have equal "
+                         "length");
+                 std::vector<std::unique_ptr<Generator>> comps;
+                 std::vector<CombinedGenerator::ComponentTempering> chains;
+                 comps.reserve(py_components.size());
+                 chains.reserve(py_tempering.size());
+                 for (size_t j = 0; j < py_components.size(); ++j) {
+                     auto& g = py_components[j].cast<Generator&>();
+                     comps.push_back(g.copy());
+                     CombinedGenerator::ComponentTempering chain;
+                     for (auto th : py_tempering[j].cast<py::list>()) {
+                         auto& t = th.cast<Transformation&>();
+                         chain.push_back(t.copy());
+                     }
+                     chains.push_back(std::move(chain));
+                 }
+                 return std::make_unique<CombinedGenerator>(
+                     std::move(comps), std::move(chains), Lmax);
+             }),
+             py::arg("components"), py::arg("tempering_chains"),
+             py::arg("Lmax"),
+             "Construct from a list of Generator objects, a parallel list of "
+             "per-component tempering chains (each a list of Transformation "
+             "objects), and a max output resolution Lmax.")
+        .def("J", &CombinedGenerator::J)
+        .def("prefix_k", &CombinedGenerator::prefix_k);
 
     // ── GaussMatrix ──────────────────────────────────────────────────────
 
