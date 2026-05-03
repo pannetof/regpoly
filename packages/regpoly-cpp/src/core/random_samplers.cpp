@@ -1,5 +1,7 @@
 #include "random_samplers.h"
 
+#include "tausworthe.h"
+
 #include <algorithm>
 #include <cctype>
 #include <random>
@@ -169,6 +171,24 @@ bool sample_generic_into(const ParamSpec& spec, Params& params) {
         for (size_t i = 0; i < length; ++i)
             out.push_back(random_bits(static_cast<int>(bits)));
         params.set_uint_vec(spec.name, out);
+        return true;
+    }
+
+    return false;
+}
+
+bool sample_param_into(const ParamSpec& spec, Params& params, int L) {
+    if (sample_generic_into(spec, params)) return true;
+
+    const std::string& rt = spec.rand_type;
+    if (rt == "tausworthe_s" || rt == "tausworthe_poly") {
+        auto r = TauswortheGen::generate_random(rt, spec.rand_args, params, L);
+        if (r.is_vec)
+            params.set_int_vec(spec.name, r.vec_val);
+        else
+            params.set_int(spec.name, r.int_val);
+        for (const auto& kv : r.side_ints)
+            params.set_int(kv.first, kv.second);
         return true;
     }
 

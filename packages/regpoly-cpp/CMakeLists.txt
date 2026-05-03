@@ -23,14 +23,14 @@ file(GLOB_RECURSE REGPOLY_ALL_SOURCES
      src/core/*.cpp
      src/generators/*.cpp
      src/transforms/*.cpp
-     src/lattice/*.cpp)
+     src/lattice/*.cpp
+     src/search/*.cpp)
 
-set(REGPOLY_CORE_SOURCES "")
-foreach(src IN LISTS REGPOLY_ALL_SOURCES)
-    if(NOT src MATCHES "src/core/factory\\.cpp$")
-        list(APPEND REGPOLY_CORE_SOURCES "${src}")
-    endif()
-endforeach()
+# factory.cpp moved into regpoly_core in Phase 2.4 (pybind11 wiring
+# now lives in src/bindings/factory_bindings.cpp). Every .cpp under
+# src/{algebra,analyses,core,generators,transforms,lattice,search}/
+# now contributes to regpoly_core.
+set(REGPOLY_CORE_SOURCES ${REGPOLY_ALL_SOURCES})
 
 set(REGPOLY_CPP_INCLUDE_DIRS
     src/include/core
@@ -38,7 +38,8 @@ set(REGPOLY_CPP_INCLUDE_DIRS
     src/include/analyses
     src/include/generators
     src/include/transforms
-    src/include/lattice)
+    src/include/lattice
+    src/include/search)
 
 # Public-API include directory for downstream consumers. The source
 # tree ships `include/regpoly/regpoly.h` directly; the per-class
@@ -63,6 +64,8 @@ set(REGPOLY_PUBLIC_HEADER_BASES
     src/include/lattice/me_notprimitive_simd.h
     src/include/lattice/temper_optimizer.h
     src/include/lattice/dual_lattice.h
+    src/include/search/search_types.h
+    src/include/search/primitive_search.h
 )
 foreach(hdr IN LISTS REGPOLY_PUBLIC_HEADER_BASES)
     get_filename_component(name "${hdr}" NAME)
@@ -93,7 +96,7 @@ add_library(regpoly::regpoly ALIAS regpoly_core)
 
 pybind11_add_module(_regpoly_cpp
     src/bindings/bindings.cpp
-    src/core/factory.cpp)
+    src/bindings/factory_bindings.cpp)
 target_include_directories(_regpoly_cpp PRIVATE ${REGPOLY_CPP_INCLUDE_DIRS})
 target_link_libraries(_regpoly_cpp PRIVATE regpoly_core)
 target_compile_options(_regpoly_cpp PRIVATE -O3 -march=native)
@@ -116,6 +119,8 @@ set(REGPOLY_PUBLIC_HEADERS
     include/regpoly/regpoly.h
     src/include/algebra/bitvect.h
     src/include/algebra/primitivity.h
+    src/include/search/search_types.h
+    src/include/search/primitive_search.h
     src/include/core/generator.h
     src/include/core/transformation.h
     src/include/core/params.h

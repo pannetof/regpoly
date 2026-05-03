@@ -18,6 +18,7 @@ include(GoogleTest)
 add_executable(regpoly_cpp_tests
     test_smoke.cpp
     test_combined_generator.cpp
+    test_primitive_search.cpp
     test_primitivity.cpp
     test_random_samplers.cpp
     test_resolution_sets.cpp
@@ -27,7 +28,8 @@ target_include_directories(regpoly_cpp_tests PRIVATE
     ../src/include/core
     ../src/include/generators
     ../src/include/transforms
-    ../src/include/lattice)
+    ../src/include/lattice
+    ../src/include/search)
 target_link_libraries(regpoly_cpp_tests PRIVATE regpoly_core GTest::gtest_main)
 
 gtest_discover_tests(regpoly_cpp_tests)

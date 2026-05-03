@@ -27,7 +27,6 @@ import yaml
 
 import regpoly._regpoly_cpp as _cpp
 from regpoly.core.generator import Generator, resolve_family
-from regpoly.core.parametric import generate_random
 
 
 class PrimitiveSearch:
@@ -87,6 +86,7 @@ class PrimitiveSearch:
     def run(self) -> list[dict]:
         family = self.family
         L = self.L
+        resolved = resolve_family(family)
 
         # Recover partial results from a previous interrupted run
         partial_file = self.output_file + ".partial"
@@ -100,18 +100,18 @@ class PrimitiveSearch:
                   f"{self.output_file}")
             print()
 
-        # Build the fixed params: structural + fixed_params with explicit values
-        fixed = dict(self.structural_params)
-        for key, val in self.fixed_params.items():
-            if val is not None:
-                fixed[key] = val
+        # Build the fixed (user-pinned) params: structural + non-None
+        # entries from fixed_params. The C++ driver consumes these and
+        # randomizes everything that's missing-with-a-rand_type.
+        fixed_search = {k: v for k, v in self.fixed_params.items()
+                        if v is not None}
 
-        # Identify which params will be randomized
-        resolved = resolve_family(family, fixed)
+        # Identify which params will be randomized (for the header).
         specs = _cpp.get_gen_param_specs(resolved)
+        pinned = set(self.structural_params) | set(fixed_search)
         randomized_names = [
             s["name"] for s in specs
-            if s["name"] not in fixed
+            if s["name"] not in pinned
             and not s["structural"]
             and not s["has_default"]
             and s["rand_type"]
@@ -121,17 +121,15 @@ class PrimitiveSearch:
         # Load existing generators to deduplicate
         existing = self._load_existing_generators()
 
-        # Header — create one throwaway generator to determine k
+        # Header — probe k by building one throwaway generator. Errors
+        # here are tolerated (some random combinations are inadmissible).
         try:
-            probe_params = self._randomize(fixed, specs)
-            probe_gen = Generator.create(family, L, **probe_params)
-            k_str = str(probe_gen.k)
+            probe = self._make_probe_generator(specs)
+            k_str = str(probe.k)
         except Exception:
             k_str = "?"
         print(f"Searching for full-period {family} generators")
         print(f"  L = {L},  k = {k_str}")
-        fixed_search = {k: v for k, v in self.fixed_params.items()
-                        if v is not None}
         if fixed_search:
             print(f"  Fixed search params: {fixed_search}")
         print(f"  Randomized: {randomized_names}")
@@ -148,62 +146,53 @@ class PrimitiveSearch:
         os.makedirs(os.path.dirname(self.output_file), exist_ok=True)
         partial_fd = open(partial_file, "w")
 
-        results = []
-        tries = 0
-        found = 0
+        # Build the C++ driver config.
+        cfg = _cpp.PrimitiveSearchConfig()
+        cfg.family = resolved
+        cfg.L = L
+        cfg.structural_params = dict(self.structural_params)
+        cfg.fixed_params = fixed_search
+        cfg.max_tries = self.max_tries or 0
+        cfg.max_seconds = float(self.max_seconds or 0.0)
+        cfg.progress_interval = 100
+        cfg.random_seed = 0  # OS entropy
+
+        results: list[dict] = []
+        found = [0]
         t_start = time.time()
         use_progress = self.max_tries is not None and sys.stderr.isatty()
 
+        def on_hit(tg) -> None:
+            entry = {k: _yaml_safe(v)
+                     for k, v in tg.params.items()
+                     if k not in self.structural_params}
+            entry_key = _entry_key(entry)
+            if entry_key in existing:
+                return
+            existing.add(entry_key)
+            results.append(entry)
+            found[0] += 1
+            partial_fd.write(json.dumps(entry) + "\n")
+            partial_fd.flush()
+            if use_progress:
+                _clear_progress()
+            elapsed = time.time() - t_start
+            print(f"  [{tg.tries_at_hit:>8d}] Found #{found[0]:>4d}  "
+                  f"k={tg.k}  ({elapsed:.1f}s)")
+            sys.stdout.flush()
+
+        def on_progress(sp) -> None:
+            if use_progress and sp.tries % 100 == 0:
+                _show_progress(sp.tries, self.max_tries, found[0],
+                               sp.elapsed_seconds)
+
+        tries = 0
         try:
-            while True:
-                if self.max_tries and tries >= self.max_tries:
-                    break
-                if self.max_seconds and (time.time() - t_start) >= self.max_seconds:
-                    break
-
-                tries += 1
-                full_params = self._randomize(fixed, specs)
-
-                try:
-                    gen = Generator.create(family, L, **full_params)
-                except Exception as e:
-                    if not use_progress:
-                        print(f"  [try {tries}] Error: {e}", file=sys.stderr)
-                    continue
-
-                if gen.is_full_period():
-                    # Extract only the search params (not structural)
-                    entry = {k: _yaml_safe(v)
-                             for k, v in full_params.items()
-                             if k not in self.structural_params}
-
-                    # Deduplicate
-                    entry_key = _entry_key(entry)
-                    if entry_key in existing:
-                        continue
-
-                    existing.add(entry_key)
-                    results.append(entry)
-                    found += 1
-
-                    partial_fd.write(json.dumps(entry) + "\n")
-                    partial_fd.flush()
-
-                    if use_progress:
-                        _clear_progress()
-                    elapsed = time.time() - t_start
-                    print(f"  [{tries:>8d}] Found #{found:>4d}  "
-                          f"k={gen.k}  ({elapsed:.1f}s)")
-                    sys.stdout.flush()
-
-                if use_progress and tries % 100 == 0:
-                    _show_progress(tries, self.max_tries, found,
-                                   time.time() - t_start)
-
+            tries = _cpp.run_primitive_search(cfg, on_hit, on_progress)
         except KeyboardInterrupt:
             if use_progress:
                 _clear_progress()
-            print(f"\n  Interrupted after {tries} tries.")
+            print("\n  Interrupted.")
 
         partial_fd.close()
         elapsed = time.time() - t_start
@@ -219,10 +208,18 @@ class PrimitiveSearch:
         total = len(existing)
         print()
         print(f"Search complete: {tries} tries, "
-              f"{found} new found, {total} total in file, {elapsed:.1f}s")
+              f"{found[0]} new found, {total} total in file, {elapsed:.1f}s")
         print(f"Results: {self.output_file}")
 
         return results
+
+    def _make_probe_generator(self, specs: list[dict]) -> Generator:
+        """Build one throwaway generator just to read its k for the header."""
+        params = {**self.structural_params}
+        for key, val in self.fixed_params.items():
+            if val is not None:
+                params[key] = val
+        return Generator.create(self.family, self.L, **params)
 
     # -- Output path -------------------------------------------------------
 
@@ -269,23 +266,6 @@ class PrimitiveSearch:
 
         with open(self.output_file, "w") as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
-
-    # -- Helpers -----------------------------------------------------------
-
-    @staticmethod
-    def _randomize(fixed: dict, specs: list[dict]) -> dict:
-        """Fill in missing non-structural params with random values."""
-        full = dict(fixed)
-        for spec in specs:
-            name = spec["name"]
-            if name in full or spec["has_default"] or spec["structural"]:
-                continue
-            rt = spec["rand_type"]
-            if not rt or rt == "none":
-                continue
-            full[name] = generate_random(spec, full)
-        return full
-
 
 
 # ═══════════════════════════════════════════════════════════════════════════

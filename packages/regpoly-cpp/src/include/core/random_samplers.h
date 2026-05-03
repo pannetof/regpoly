@@ -60,4 +60,10 @@ int64_t eval_param_expr(const std::string& expr, const Params& params);
 // front-end.
 bool sample_generic_into(const ParamSpec& spec, Params& params);
 
+// Unified front-end: tries the generic samplers first, then falls
+// back to the family-specific dispatch (TauswortheGen::generate_random
+// today; future families register here too). Returns false only when
+// no sampler exists for the spec's rand_type.
+bool sample_param_into(const ParamSpec& spec, Params& params, int L);
+
 }  // namespace regpoly_random

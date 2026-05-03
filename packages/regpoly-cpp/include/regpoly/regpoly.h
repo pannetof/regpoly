@@ -31,8 +31,10 @@
 #include <regpoly/me_notprimitive.h>
 #include <regpoly/me_notprimitive_simd.h>
 #include <regpoly/params.h>
+#include <regpoly/primitive_search.h>
 #include <regpoly/primitivity.h>
 #include <regpoly/resolution_sets.h>
+#include <regpoly/search_types.h>
 #include <regpoly/temper_optimizer.h>
 #include <regpoly/tuplets_runner.h>
 #include <regpoly/transformation.h>

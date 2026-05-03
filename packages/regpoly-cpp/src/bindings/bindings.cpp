@@ -13,8 +13,10 @@
 #include "me_harase.h"
 #include "me_notprimitive.h"
 #include "me_notprimitive_simd.h"
+#include "primitive_search.h"
 #include "primitivity.h"
 #include "resolution_sets.h"
+#include "search_types.h"
 #include "temper_optimizer.h"
 #include "tausworthe.h"
 #include "tuplets_runner.h"
@@ -796,6 +798,68 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
           py::arg("gen"),
           "True iff the generator's characteristic polynomial is "
           "primitive (period 2^k - 1).");
+
+    // ── Search drivers (Phase 2.4) ─────────────────────────────────────
+    //
+    // Free functions whose loops own the iteration, randomization,
+    // factory call and primitivity check. Python registers callbacks
+    // for the per-hit and per-progress events; the rest of the
+    // orchestration (YAML, .partial recovery, dedup, file merge) stays
+    // in Python for now.
+
+    py::class_<SearchProgress>(m, "SearchProgress")
+        .def_readonly("tries", &SearchProgress::tries)
+        .def_readonly("elapsed_seconds", &SearchProgress::elapsed_seconds);
+
+    py::class_<TestedGenerator>(m, "TestedGenerator")
+        .def_readonly("family", &TestedGenerator::family)
+        .def_readonly("k", &TestedGenerator::k)
+        .def_readonly("L", &TestedGenerator::L)
+        .def_readonly("tries_at_hit", &TestedGenerator::tries_at_hit)
+        .def_property_readonly("params", [](const TestedGenerator& tg) {
+            return params_to_dict(tg.params);
+        });
+
+    py::class_<PrimitiveSearchConfig>(m, "PrimitiveSearchConfig")
+        .def(py::init<>())
+        .def_readwrite("family", &PrimitiveSearchConfig::family)
+        .def_readwrite("L", &PrimitiveSearchConfig::L)
+        .def_property("structural_params",
+            [](const PrimitiveSearchConfig& c) {
+                return params_to_dict(c.structural_params);
+            },
+            [](PrimitiveSearchConfig& c, const py::dict& d) {
+                c.structural_params = dict_to_params(d);
+            })
+        .def_property("fixed_params",
+            [](const PrimitiveSearchConfig& c) {
+                return params_to_dict(c.fixed_params);
+            },
+            [](PrimitiveSearchConfig& c, const py::dict& d) {
+                c.fixed_params = dict_to_params(d);
+            })
+        .def_readwrite("max_tries", &PrimitiveSearchConfig::max_tries)
+        .def_readwrite("max_seconds", &PrimitiveSearchConfig::max_seconds)
+        .def_readwrite("progress_interval",
+                       &PrimitiveSearchConfig::progress_interval)
+        .def_readwrite("random_seed", &PrimitiveSearchConfig::random_seed);
+
+    m.def("run_primitive_search",
+          [](const PrimitiveSearchConfig& cfg,
+             const py::function& on_hit,
+             const py::function& on_progress) -> int64_t {
+        OnHitFn hit = [&on_hit](const TestedGenerator& tg) {
+            on_hit(tg);
+        };
+        OnProgressFn prog = [&on_progress](const SearchProgress& sp) {
+            on_progress(sp);
+        };
+        return run_primitive_search(cfg, hit, prog);
+    }, py::arg("config"), py::arg("on_hit"), py::arg("on_progress"),
+       "Run the full-period search loop in C++. Invokes on_hit(tg) "
+       "for each hit and on_progress(sp) every progress_interval "
+       "tries plus once at completion. Returns the total tries "
+       "executed.");
 
     auto specs_to_list = [](const std::vector<ParamSpec>& specs) -> py::list {
         py::list result;
