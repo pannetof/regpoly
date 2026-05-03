@@ -70,6 +70,17 @@ public:
     // prefix_k_[J] = k() (total).
     const std::vector<int>& prefix_k() const { return prefix_k_; }
 
+    // Internal accessors used by the lattice/equidistribution adapter
+    // overloads. Phase 1 keeps the kernel implementations on their
+    // original `vector<Generator*>` + per-component tempering API; the
+    // new `const Generator&` overloads dispatch through these accessors
+    // to recover the vector form. Phase 2+ migrates the implementations
+    // to consume Generator& natively, at which point these can become
+    // private again.
+    std::vector<Generator*> raw_component_pointers() const;
+    std::vector<std::vector<Transformation*>>
+        raw_tempering_pointers() const;
+
 private:
     std::vector<std::unique_ptr<Generator>> components_;
     std::vector<ComponentTempering> tempering_;

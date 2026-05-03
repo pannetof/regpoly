@@ -422,6 +422,67 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
        py::arg("kg"), py::arg("L"), py::arg("maxL"),
        py::arg("delta"), py::arg("mse"));
 
+    // ── Phase 1 single-Generator& adapter overloads ────────────────────
+    //
+    // New public API: every kernel that today takes (gens, trans) lists
+    // also accepts a single Generator& (typically a CombinedGenerator).
+    // Suffix `_gen` distinguishes the new shape from the legacy
+    // list-based bindings; Phase 2 will rewrite the Python wrapper layer
+    // to call these and the legacy ones can then retire.
+
+    m.def("test_me_lat_gen",
+          [](const Generator& gen,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        auto result = test_me_lat(gen, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gen"), py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
+    m.def("test_me_harase_gen",
+          [](const Generator& gen,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        auto result = test_me_harase(gen, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gen"), py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
+    m.def("test_me_notprimitive_gen",
+          [](const Generator& gen,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        auto result = test_me_notprimitive(gen, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gen"), py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
+    m.def("test_me_notprimitive_simd_gen",
+          [](const Generator& gen,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        auto result = test_me_notprimitive_simd(gen, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gen"), py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
+    m.def("compute_kv_gen",
+          [](const Generator& gen, int kg, int v) -> int {
+        return compute_kv(gen, kg, v);
+    }, py::arg("gen"), py::arg("kg"), py::arg("v"));
+
     // ── TemperOptCache (dual lattice StackBase for optimizer) ─────────
 
     py::class_<TemperOptCache>(m, "TemperOptCache")
@@ -437,6 +498,10 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
             }
             return TemperOptCache(gens, trans, kg, L);
         }), py::arg("gens"), py::arg("trans"), py::arg("kg"), py::arg("L"))
+        // Phase 1 single-Generator& constructor.
+        .def(py::init([](const Generator& gen, int kg, int L) {
+            return TemperOptCache(gen, kg, L);
+        }), py::arg("gen"), py::arg("kg"), py::arg("L"))
         .def("compute_all", &TemperOptCache::compute_all)
         .def("compute_gap", &TemperOptCache::compute_gap, py::arg("v"))
         .def("refresh_inv_g0", &TemperOptCache::refresh_inv_g0)
@@ -459,6 +524,10 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
             }
             return PISCache(gens, trans, kg, L);
         }), py::arg("gens"), py::arg("trans"), py::arg("kg"), py::arg("L"))
+        // Phase 1 single-Generator& constructor.
+        .def(py::init([](const Generator& gen, int kg, int L) {
+            return PISCache(gen, kg, L);
+        }), py::arg("gen"), py::arg("kg"), py::arg("L"))
         .def("compute_all", &PISCache::compute_all)
         .def("restore_and_reduce", &PISCache::restore_and_reduce,
              py::arg("v"))

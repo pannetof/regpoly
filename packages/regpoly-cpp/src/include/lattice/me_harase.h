@@ -26,6 +26,12 @@ MeLatResult test_me_harase(
     int kg, int L, int maxL,
     const std::vector<int>& delta, int mse);
 
+// Phase 1 single-Generator& overload (forwarding adapter — see me_helpers.h).
+MeLatResult test_me_harase(
+    const Generator& gen,
+    int kg, int L, int maxL,
+    const std::vector<int>& delta, int mse);
+
 // Compute k(v) for a SINGLE resolution v using the PIS method.
 // Returns the equidistribution dimension (not the gap).
 // Cost: O(k/v) generator steps — much cheaper than full test_me_harase.
@@ -33,6 +39,9 @@ int compute_kv(
     const std::vector<Generator*>& gens,
     const std::vector<std::vector<Transformation*>>& trans,
     int kg, int v);
+
+// Phase 1 single-Generator& overload of compute_kv.
+int compute_kv(const Generator& gen, int kg, int v);
 
 // ── PIS basis with StackBase caching for tempering optimization ─────────
 // Computes all k(v) from v=L down to 1, caching the basis at each v.
@@ -45,6 +54,9 @@ public:
     PISCache(const std::vector<Generator*>& gens,
              const std::vector<std::vector<Transformation*>>& trans,
              int kg, int L);
+
+    // Phase 1 single-Generator& constructor (forwarding adapter).
+    PISCache(const Generator& gen, int kg, int L);
 
     // Compute all k(v) for v = L..1.  Populates the cache.
     // Returns ecart[v] = kg/v - k(v) for v = 1..L.

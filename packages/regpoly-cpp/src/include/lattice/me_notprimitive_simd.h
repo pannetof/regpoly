@@ -35,3 +35,9 @@ MeLatResult test_me_notprimitive_simd(
     const std::vector<std::vector<Transformation*>>& trans,
     int kg, int L, int maxL,
     const std::vector<int>& delta, int mse);
+
+// Phase 1 single-Generator& overload (forwarding adapter — see me_helpers.h).
+MeLatResult test_me_notprimitive_simd(
+    const Generator& gen,
+    int kg, int L, int maxL,
+    const std::vector<int>& delta, int mse);

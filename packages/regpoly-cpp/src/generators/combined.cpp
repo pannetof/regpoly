@@ -173,6 +173,28 @@ BitVect CombinedGenerator::char_poly() const {
     return out;
 }
 
+std::vector<Generator*> CombinedGenerator::raw_component_pointers() const {
+    std::vector<Generator*> out;
+    out.reserve(components_.size());
+    for (const auto& c : components_)
+        out.push_back(c.get());
+    return out;
+}
+
+std::vector<std::vector<Transformation*>>
+CombinedGenerator::raw_tempering_pointers() const {
+    std::vector<std::vector<Transformation*>> out;
+    out.reserve(tempering_.size());
+    for (const auto& chain : tempering_) {
+        std::vector<Transformation*> raw;
+        raw.reserve(chain.size());
+        for (const auto& t : chain)
+            raw.push_back(t.get());
+        out.push_back(std::move(raw));
+    }
+    return out;
+}
+
 void CombinedGenerator::refresh_concatenated_state() {
     BitVect concat(k());
     for (size_t j = 0; j < components_.size(); ++j) {

@@ -30,6 +30,9 @@ public:
         const std::vector<std::vector<Transformation*>>& trans,
         int kg, int L);
 
+    // Phase 1 single-Generator& constructor (forwarding adapter).
+    TemperOptCache(const Generator& gen, int kg, int L);
+
     // Compute all gaps v = 1..L.  Populates the StackBase cache.
     // Returns ecart[v] for v = 1..L (ecart[0] unused).
     std::vector<int> compute_all();

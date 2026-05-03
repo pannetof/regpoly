@@ -35,3 +35,14 @@ MeLatResult test_me_lat(
     const std::vector<std::vector<Transformation*>>& trans,
     int kg, int L, int maxL,
     const std::vector<int>& delta, int mse);
+
+// Phase 1 single-Generator& overload (forwarding adapter).
+// If `gen` is a CombinedGenerator, its components and per-component
+// tempering chains are unpacked and dispatched to the vector overload.
+// Any other Generator is treated as a 1-component combination with no
+// tempering. The new overload is the public API; future phases migrate
+// the underlying implementation to consume Generator& natively.
+MeLatResult test_me_lat(
+    const Generator& gen,
+    int kg, int L, int maxL,
+    const std::vector<int>& delta, int mse);

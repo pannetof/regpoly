@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "bitvect.h"
+#include <regpoly/bitvect.h>
 
 TEST(BitVectSmoke, ConstructionRecordsRequestedSize) {
     BitVect bv(8);
