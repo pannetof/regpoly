@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}{{ family }}{% endblock %}
+
+{% block content %}
+<h1>{{ family }}</h1>
+
+<div x-data='familyLanding("{{ family }}")' x-init="load()">
+
+    <!-- Tabular launcher ------------------------------------------- -->
+    <table class="launcher-table">
+        <tbody>
+            <template x-for="item in items" :key="item.key">
+                <tr :class="{'active': active === item.key}">
+                    <td class="launcher-label">
+                        <a href="#"
+                           @click.prevent="toggle(item.key)"
+                           x-text="item.label"></a>
+                    </td>
+                    <td class="launcher-desc"  x-text="item.desc"></td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+
+    <!-- Inline content panel --------------------------------------- -->
+    <template x-if="active">
+        <section class="launcher-panel">
+            <div class="panel-header">
+                <a class="panel-open-full"
+                   :href="panelFullUrl()"
+                   x-show="active !== 'docs'">Open full page →</a>
+            </div>
+
+            <template x-if="active === 'docs'">
+                <div>
+                    <template x-if="docsLoading">
+                        <p><em>Loading documentation…</em></p>
+                    </template>
+                    <template x-if="!docsLoading && docsHtml">
+                        <div class="docs-panel" x-html="docsHtml"></div>
+                    </template>
+                    <template x-if="!docsLoading && !docsHtml">
+                        <p><em>Documentation not yet available for
+                        {{ family }}.</em></p>
+                    </template>
+                </div>
+            </template>
+
+            <template x-if="active !== 'docs'">
+                <iframe :src="panelSrc()"
+                        :title="currentLabel()"
+                        scrolling="no"
+                        :style="'height:' + iframeHeight + 'px'"
+                        @load="resizeFrame($event)"></iframe>
+            </template>
+        </section>
+    </template>
+</div>
+
+<script>
+function familyLanding(family) {
+    return {
+        family,
+        active: null,            // null | 'primitive' | 'generators' | 'tempering' | 'tested' | 'docs'
+        docsHtml: '',
+        docsLoading: false,
+        _docsLoaded: false,
+        iframeHeight: 400,
+        _resizePoll: null,
+
+        items: (() => {
+            const qf = encodeURIComponent(family);
+            // `path` is loaded inside the iframe — embed=1 strips the
+            // sidebar/footer from the embedded page so we don't repeat
+            // the navigation chrome inside the panel.
+            // `full` is the full-page URL used by "Open full page →".
+            return [
+                { key: 'primitive',
+                  label: 'Full-period generator search',
+                  desc: 'Find new full-period generators in this family.',
+                  button: 'Open',
+                  path: `/primitive-search?family=${qf}&embed=1`,
+                  full: `/primitive-search?family=${qf}` },
+                { key: 'generators',
+                  label: 'Full-period generators',
+                  desc: 'Browse generators already found in this family.',
+                  button: 'Open',
+                  path: `/generators?family=${qf}&embed=1`,
+                  full: `/generators?family=${qf}` },
+                { key: 'tempering',
+                  label: 'Combined generator search',
+                  desc: 'Search for combined generators using this family. Generators can use tempering or not.',
+                  button: 'Open',
+                  path: `/tempering-search?family=${qf}&embed=1`,
+                  full: `/tempering-search?family=${qf}` },
+                { key: 'tested',
+                  label: 'Combined generators',
+                  desc: 'Browse combined generators from this family.',
+                  button: 'Open',
+                  path: `/tested-generators?family=${qf}&embed=1`,
+                  full: `/tested-generators?family=${qf}` },
+                { key: 'docs',
+                  label: 'Documentation',
+                  desc: 'Recurrence equations and academic references.',
+                  button: 'Open',
+                  path: null,
+                  full: null },
+            ];
+        })(),
+
+        toggle(key) {
+            this.active = (this.active === key) ? null : key;
+            if (this._resizePoll) {
+                clearInterval(this._resizePoll);
+                this._resizePoll = null;
+            }
+            if (this.active === 'docs' && !this._docsLoaded) {
+                this.loadDocs();
+            }
+        },
+
+        resizeFrame(ev) {
+            const f = ev.target;
+            const sync = () => {
+                try {
+                    const doc = f.contentDocument;
+                    if (!doc) return;
+                    // body scrollHeight covers the full rendered content
+                    const h = Math.max(
+                        doc.documentElement.scrollHeight,
+                        doc.body ? doc.body.scrollHeight : 0
+                    );
+                    if (h && Math.abs(h - this.iframeHeight) > 2) {
+                        this.iframeHeight = h;
+                    }
+                } catch (_) { /* cross-origin — ignore */ }
+            };
+            sync();
+            // Forms and tables load data asynchronously after the first
+            // paint; poll for a few seconds so the iframe grows to fit
+            // without ever showing an internal scrollbar.
+            if (this._resizePoll) clearInterval(this._resizePoll);
+            this._resizePoll = setInterval(sync, 400);
+            setTimeout(() => {
+                if (this._resizePoll) {
+                    clearInterval(this._resizePoll);
+                    this._resizePoll = null;
+                }
+            }, 15000);
+        },
+
+        currentLabel() {
+            const it = this.items.find(i => i.key === this.active);
+            return it ? it.label : '';
+        },
+
+        panelSrc() {
+            const it = this.items.find(i => i.key === this.active);
+            return it && it.path ? it.path : 'about:blank';
+        },
+
+        panelFullUrl() {
+            const it = this.items.find(i => i.key === this.active);
+            return it && it.full ? it.full : '#';
+        },
+
+        async load() {
+            /* Lazy — docs are loaded only when the docs panel is opened. */
+        },
+
+        async loadDocs() {
+            this.docsLoading = true;
+            try {
+                const d = await fetch('/api/families/'
+                                      + encodeURIComponent(this.family) + '/docs');
+                const data = await d.json();
+                this.docsHtml = data.html || '';
+            } catch (_) {
+                this.docsHtml = '';
+            }
+            this.docsLoading = false;
+            this._docsLoaded = true;
+            // KaTeX auto-render over the freshly-injected HTML
+            this.$nextTick(() => this._renderMath());
+        },
+
+        _renderMath() {
+            if (typeof renderMathInElement !== 'function') {
+                // Script may still be loading; retry briefly.
+                setTimeout(() => this._renderMath(), 100);
+                return;
+            }
+            const el = document.querySelector('.launcher-panel .docs-panel');
+            if (!el) return;
+            try {
+                renderMathInElement(el, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$',  right: '$',  display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true},
+                    ],
+                    throwOnError: false,
+                });
+            } catch (_) { /* swallow render errors */ }
+        },
+    };
+}
+</script>
+{% endblock %}

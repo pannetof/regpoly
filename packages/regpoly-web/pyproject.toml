@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "regpoly-web"
+version = "2.0.0"
+description = "FastAPI web shell over the regpoly library: search runs, generator catalogue, results browser."
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "regpoly",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "aiosqlite>=0.19",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+    "markdown>=3.5",
+]
+
+[project.scripts]
+regpoly-web = "regpoly_web.app:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+[tool.setuptools.package-data]
+regpoly_web = ["schema.sql", "templates/**/*.html", "static/**/*"]

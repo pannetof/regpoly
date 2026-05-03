@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}regpoly{% endblock %} — regpoly</title>
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js"></script>
+    <!-- app.js defines helpers (rngTableFilterMethods, rngTableApply…)
+         used synchronously by Alpine `x-data` expressions.  Alpine's
+         CDN build calls Alpine.start() via queueMicrotask immediately
+         after its own script runs, so app.js MUST load and execute
+         before Alpine — otherwise x-data factories explode with
+         ReferenceError. -->
+    <script defer src="{{ url_for('static', path='app.js') }}"></script>
+    <script defer
+            src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer
+            src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer
+            src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+</head>
+<body{% if hide_chrome %} class="embed"{% endif %}>
+<div class="app-shell">
+    {% if not hide_chrome %}
+    <aside class="sidebar">
+        <a href="/" class="brand"><strong>regpoly</strong></a>
+
+        <h4>Families</h4>
+        <nav class="sidebar-section">
+        {% for f in families_primary %}
+            <a href="/family/{{ f.name }}"
+               class="{% if active_family == f.name %}active{% endif %}">{{ f.name }}</a>
+        {% endfor %}
+        </nav>
+
+        {% if families_other %}
+        <h4>Other families</h4>
+        <nav class="sidebar-section">
+        {% for f in families_other %}
+            <a href="/family/{{ f.name }}"
+               class="{% if active_family == f.name %}active{% endif %}">{{ f.name }}</a>
+        {% endfor %}
+        </nav>
+        {% endif %}
+
+        <h4>Published configurations</h4>
+        <nav class="sidebar-section">
+            <a href="/library">All papers…</a>
+            {% for p in library_papers %}
+                <a href="/library/{{ p.id }}">{{ p.display }}</a>
+            {% endfor %}
+        </nav>
+
+        <h4>Global</h4>
+        <nav class="sidebar-section">
+            <a href="/">Dashboard</a>
+            <a href="/generators">Generators</a>
+            <a href="/tempering-search">Combined generator search</a>
+            <a href="/tested-generators">Combined generators</a>
+            <a href="/searches">Searches</a>
+        </nav>
+    </aside>
+    {% endif %}
+
+    <div class="app-main">
+        {% if not hide_chrome and active_family %}
+        <header class="top-bar">
+            <span class="active-family-badge">
+                <strong>{{ active_family }}</strong>
+            </span>
+        </header>
+        {% endif %}
+
+        <main class="container">
+            {% block content %}{% endblock %}
+        </main>
+
+        {% if not hide_chrome %}
+        <footer class="container">
+            <small>regpoly web — GF(2)-linear PRNG search and analysis</small>
+        </footer>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

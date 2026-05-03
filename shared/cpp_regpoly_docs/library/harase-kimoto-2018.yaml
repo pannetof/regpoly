@@ -1,0 +1,140 @@
+id: harase-kimoto-2018
+authors:
+  - {family: Harase, given: Shin}
+  - {family: Kimoto, given: Takamitsu}
+year: 2018
+title: "Implementing 64-bit Maximally Equidistributed F₂-Linear Generators with Mersenne Prime Period"
+venue: ACM Transactions on Mathematical Software
+volume: "44"
+issue: "3"
+pages: "Article 30, 11 pages"
+doi: https://doi.org/10.1145/3159444
+pdf: papers/melg-64-app.pdf
+bibkey: HaraseKimoto2018
+starred: true
+tags: [MELG, 64bit, ME]
+
+abstract: |
+  CPUs and operating systems are moving from 32 to 64 bits, and
+  hence it is important to have good pseudorandom number generators
+  designed to fully exploit these word lengths. However, existing
+  64-bit very long period generators based on linear recurrences
+  modulo 2 are not completely optimized in terms of the
+  equidistribution properties. Here we develop 64-bit maximally
+  equidistributed pseudorandom number generators that are optimal in
+  this respect and have speeds equivalent to 64-bit Mersenne
+  Twisters. We provide a table of specific parameters with period
+  lengths from 2^607 − 1 to 2^44497 − 1.
+
+notes: |
+  All seven generators use the MELG family's two-feedback state
+  transition (Eqs. 7 and 8 of the paper) with parameters
+  `(w, N, M, r, σ1, σ2, a)`, together with the linear output
+  transformation of Eq. 12,
+  `y = w[i] ⊕ (w[i] << σ3) ⊕ (w[i+L] & b)`, which is encoded here as
+  a single `laggedTempering` step with parameters
+  `(w, sigma=σ3, L, b)`.
+
+generators:
+  - id: melg607-64
+    display: MELG607-64
+    family: MELG
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: MELG
+        L: 64
+        params: {w: 64, N: 10, M: 5, r: 33, sigma1: 13, sigma2: 35, a: 0x81F1FD68012348BC}
+        tempering:
+          - {type: laggedTempering, w: 64, sigma: 30, L: 3, b: 0x66EDC62A6BF8C826}
+
+  - id: melg1279-64
+    display: MELG1279-64
+    family: MELG
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: MELG
+        L: 64
+        params: {w: 64, N: 20, M: 7, r: 1, sigma1: 22, sigma2: 37, a: 0x1AFEFD1526D3952B}
+        tempering:
+          - {type: laggedTempering, w: 64, sigma: 6, L: 5, b: 0x3A23D78E8FB5E349}
+
+  - id: melg2281-64
+    display: MELG2281-64
+    family: MELG
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: MELG
+        L: 64
+        params: {w: 64, N: 36, M: 17, r: 23, sigma1: 36, sigma2: 21, a: 0x7CBE23EBCA8A6D36}
+        tempering:
+          - {type: laggedTempering, w: 64, sigma: 6, L: 6, b: 0xE4E2242B6E15AEBE}
+
+  - id: melg4253-64
+    display: MELG4253-64
+    family: MELG
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: MELG
+        L: 64
+        params: {w: 64, N: 67, M: 29, r: 35, sigma1: 30, sigma2: 20, a: 0xFAC1E8C56471D722}
+        tempering:
+          - {type: laggedTempering, w: 64, sigma: 5, L: 9, b: 0xCB67B0C18FE14F4D}
+
+  - id: melg11213-64
+    display: MELG11213-64
+    family: MELG
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: MELG
+        L: 64
+        params: {w: 64, N: 176, M: 45, r: 51, sigma1: 33, sigma2: 13, a: 0xDDBCD6E525E1C757}
+        tempering:
+          - {type: laggedTempering, w: 64, sigma: 5, L: 4, b: 0xBD2D1251E589593F}
+
+  - id: melg19937-64
+    display: MELG19937-64
+    family: MELG
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: MELG
+        L: 64
+        params: {w: 64, N: 312, M: 81, r: 31, sigma1: 23, sigma2: 33, a: 0x5C32E06DF730FC42}
+        tempering:
+          - {type: laggedTempering, w: 64, sigma: 16, L: 19, b: 0x6AEDE6FD97B338EC}
+    notes: |
+      The flagship generator of the paper: 64-bit, period
+      $2^{19937}-1$, maximally equidistributed ($\Delta=0$), with
+      N_1 ≈ 9603 nonzero terms in the characteristic polynomial
+      (close to p/2).
+
+  - id: melg44497-64
+    display: MELG44497-64
+    family: MELG
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: MELG
+        L: 64
+        params: {w: 64, N: 696, M: 373, r: 47, sigma1: 37, sigma2: 14, a: 0x4FA9CA36F293C9A9}
+        tempering:
+          - {type: laggedTempering, w: 64, sigma: 6, L: 95, b: 0x6FBBEE29AAEFD91}

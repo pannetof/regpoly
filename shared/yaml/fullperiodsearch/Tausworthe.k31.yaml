@@ -1,0 +1,10 @@
+# Verify that the Tausworthe trinomial z^31 + z^3 + 1 is primitive
+search:
+  family: Tausworthe
+  L: 31
+  limit:
+    max_tries: 1
+
+structural:
+  poly: [31, 3]
+  quicktaus: true

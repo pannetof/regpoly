@@ -1,0 +1,609 @@
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
+
+#include "bitvect.h"
+#include "generator.h"
+#include "transformation.h"
+#include "gauss.h"
+#include "factory.h"
+#include "me_helpers.h"
+#include "me_harase.h"
+#include "me_notprimitive.h"
+#include "me_notprimitive_simd.h"
+#include "temper_optimizer.h"
+#include "tausworthe.h"
+
+#include <NTL/GF2X.h>
+#include <NTL/GF2XFactoring.h>
+#include <NTL/ZZ.h>
+
+namespace py = pybind11;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BitVect <-> Python int conversion helpers
+// ═══════════════════════════════════════════════════════════════════════════
+
+static py::int_ bitvect_to_pyint(const BitVect& bv) {
+    if (bv.nbits() == 0)
+        return py::int_(0);
+
+    int nw = bv.nwords();
+    int nbits = bv.nbits();
+
+    py::int_ result(0);
+    for (int i = 0; i < nw; i++) {
+        uint64_t w = bv.data()[i];
+        if (i == 0)
+            result = py::int_(w);
+        else
+            result = (result << py::int_(64)) | py::int_(w);
+    }
+
+    int tail = nw * 64 - nbits;
+    if (tail > 0)
+        result = result >> py::int_(tail);
+
+    return result;
+}
+
+static BitVect pyint_to_bitvect(int nbits, const py::int_& val) {
+    BitVect bv(nbits);
+    int nw = bv.nwords();
+    int tail = nw * 64 - nbits;
+
+    py::int_ shifted;
+        if (tail > 0) shifted = val << py::int_(tail); else shifted = val;
+
+    py::int_ mask64(0xFFFFFFFFFFFFFFFFULL);
+    for (int i = nw - 1; i >= 0; i--) {
+        bv.data()[i] = (shifted & mask64).cast<uint64_t>();
+        shifted = shifted >> py::int_(64);
+    }
+    return bv;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// py::dict -> Params conversion
+// ═══════════════════════════════════════════════════════════════════════════
+
+static Params dict_to_params(const py::dict& d) {
+    Params p;
+    for (auto item : d) {
+        std::string key = item.first.cast<std::string>();
+        py::handle val = item.second;
+
+        // Handle "coeffs" specially: list of {value, position} dicts
+        // → flatten to "coeff" (uint_vec) and "nocoeff" (int_vec)
+        if (key == "coeffs") {
+            auto coeffs = val.cast<py::list>();
+            std::vector<uint64_t> coeff_vals;
+            std::vector<int> nocoeff_vals;
+            for (auto c : coeffs) {
+                auto cd = c.cast<py::dict>();
+                coeff_vals.push_back(cd["value"].cast<uint64_t>());
+                nocoeff_vals.push_back(cd["position"].cast<int>());
+            }
+            p.set_uint_vec("coeff", coeff_vals);
+            p.set_int_vec("nocoeff", nocoeff_vals);
+            continue;
+        }
+
+        // Try bool first (before int, since Python bool is a subclass of int)
+        if (py::isinstance<py::bool_>(val)) {
+            p.set_bool(key, val.cast<bool>());
+        } else if (py::isinstance<py::int_>(val)) {
+            try {
+                p.set_int(key, val.cast<int64_t>());
+            } catch (...) {
+                // Value exceeds int64_t range (e.g. large uint64 bitmask)
+                // Store it as int64 with the same bit pattern
+                uint64_t uval = val.cast<uint64_t>();
+                p.set_int(key, static_cast<int64_t>(uval));
+            }
+        } else if (py::isinstance<py::str>(val)) {
+            p.set_string(key, val.cast<std::string>());
+        } else if (py::isinstance<py::list>(val)) {
+            // Try as vector<int> first, then vector<uint64_t>
+            try {
+                p.set_int_vec(key, val.cast<std::vector<int>>());
+            } catch (...) {
+                p.set_uint_vec(key, val.cast<std::vector<uint64_t>>());
+            }
+        }
+        // Skip other types silently (e.g. "type" key already handled by caller)
+    }
+    return p;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Params -> py::dict conversion (mirror of dict_to_params)
+// ═══════════════════════════════════════════════════════════════════════════
+
+static py::dict params_to_dict(const Params& p) {
+    py::dict d;
+    for (const auto& kv : p.ints())      d[py::str(kv.first)] = py::int_(kv.second);
+    for (const auto& kv : p.bools())     d[py::str(kv.first)] = py::bool_(kv.second);
+    for (const auto& kv : p.strings())   d[py::str(kv.first)] = py::str(kv.second);
+    for (const auto& kv : p.int_vecs())  d[py::str(kv.first)] = py::cast(kv.second);
+    for (const auto& kv : p.uint_vecs()) d[py::str(kv.first)] = py::cast(kv.second);
+    return d;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Module definition
+// ═══════════════════════════════════════════════════════════════════════════
+
+PYBIND11_MODULE(_regpoly_cpp, m) {
+    m.doc() = "C++ acceleration module for regpoly PRNG analysis library";
+
+    // ── BitVect ──────────────────────────────────────────────────────────
+
+    py::class_<BitVect>(m, "BitVect")
+        .def(py::init<>())
+        .def(py::init<int>(), py::arg("nbits"))
+        .def("nbits", &BitVect::nbits)
+        .def("nwords", &BitVect::nwords)
+        .def("get_bit", &BitVect::get_bit)
+        .def("set_bit", &BitVect::set_bit)
+        .def("get_word", &BitVect::get_word)
+        .def("set_word", &BitVect::set_word)
+        .def("xor_with", &BitVect::xor_with)
+        .def("and_mask", &BitVect::and_mask)
+        .def("and_invmask", &BitVect::and_invmask)
+        .def("lshift", &BitVect::lshift)
+        .def("rshift", &BitVect::rshift)
+        .def("copy", &BitVect::copy)
+        .def("copy_part_from", &BitVect::copy_part_from)
+        .def("top_word", &BitVect::top_word)
+        .def("zero", &BitVect::zero)
+        .def("to_int", [](const BitVect& bv) -> py::int_ {
+            return bitvect_to_pyint(bv);
+        })
+        .def_static("from_int", [](int nbits, const py::int_& val) -> BitVect {
+            return pyint_to_bitvect(nbits, val);
+        }, py::arg("nbits"), py::arg("val"))
+        .def("__repr__", [](const BitVect& bv) {
+            return "<BitVect nbits=" + std::to_string(bv.nbits()) + ">";
+        });
+
+    // ── Generator ──────────────────────────────────────────────────────
+
+    py::class_<Generator, std::unique_ptr<Generator>>(m, "Generator")
+        .def("name", &Generator::name)
+        .def("display_str", &Generator::display_str)
+        .def("k", &Generator::k)
+        .def("L", &Generator::L)
+        .def("init", &Generator::init)
+        .def("next", &Generator::next)
+        .def("char_poly", &Generator::char_poly)
+        .def("is_full_period", &Generator::is_full_period)
+        .def("transition_matrix", &Generator::transition_matrix)
+        .def("get_output", &Generator::get_output)
+        .def("copy", [](const Generator& g) { return g.copy(); })
+        .def("state", [](const Generator& g) -> BitVect { return g.state().copy(); });
+
+    // Backwards-compat: legacy French class name still resolves to the same type.
+    m.attr("Generateur") = m.attr("Generator");
+
+    // ── GaussMatrix ──────────────────────────────────────────────────────
+
+    py::class_<GaussMatrix>(m, "GaussMatrix")
+        .def(py::init<int, int>(), py::arg("nrows"), py::arg("ncols"))
+        .def("copy", &GaussMatrix::copy)
+        .def("nrows", &GaussMatrix::nrows)
+        .def("ncols", &GaussMatrix::ncols)
+        .def("nwords", &GaussMatrix::nwords)
+        .def("bit_test", &GaussMatrix::bit_test)
+        .def("swap_rows", &GaussMatrix::swap_rows)
+        .def("row_xor", &GaussMatrix::row_xor)
+        .def("eliminate_column", &GaussMatrix::eliminate_column)
+        .def("eliminate_column_masked", &GaussMatrix::eliminate_column_masked)
+        .def("find_pivot", &GaussMatrix::find_pivot)
+        .def("dimension_equid", &GaussMatrix::dimension_equid,
+             py::arg("kg"), py::arg("l"), py::arg("L"))
+        .def("resolution_equid", &GaussMatrix::resolution_equid,
+             py::arg("kg"), py::arg("t"), py::arg("L"), py::arg("indices"))
+        .def("rang_cf", &GaussMatrix::rang_cf,
+             py::arg("kg"), py::arg("t"), py::arg("l"), py::arg("L"))
+        .def("set_row_from_words", [](GaussMatrix& mat, int row,
+                                       const std::vector<uint64_t>& words) {
+            mat.set_row_from_words(row, words.data(), (int)words.size());
+        }, py::arg("row"), py::arg("words"))
+        .def("set_row_from_int", [](GaussMatrix& mat, int row,
+                                     const py::int_& val) {
+            int nw = mat.nwords();
+            int ncols = mat.ncols();
+            int tail = nw * 64 - ncols;
+            py::int_ shifted;
+        if (tail > 0) shifted = val << py::int_(tail); else shifted = val;
+            std::vector<uint64_t> words(nw, 0);
+            py::int_ mask64(0xFFFFFFFFFFFFFFFFULL);
+            for (int i = nw - 1; i >= 0; i--) {
+                words[i] = (shifted & mask64).cast<uint64_t>();
+                shifted = shifted >> py::int_(64);
+            }
+            mat.set_row_from_words(row, words.data(), nw);
+        }, py::arg("row"), py::arg("val"));
+
+    // ── Transformation ──────────────────────────────────────────────────
+
+    py::class_<Transformation, std::unique_ptr<Transformation>>(m, "Transformation")
+        .def("name", &Transformation::name)
+        .def("display_str", &Transformation::display_str)
+        .def("apply", &Transformation::apply)
+        .def("w", &Transformation::w)
+        .def("update", [](Transformation& t, const py::dict& d) {
+            t.update(dict_to_params(d));
+        })
+        .def("copy", [](const Transformation& t) { return t.copy(); });
+
+    // ── prepare_mat ──────────────────────────────────────────────────────
+
+    m.def("prepare_mat",
+          [](const py::list& gens_py,
+             const std::vector<int>& gen_k,
+             const py::list& trans_py,
+             int kg, int indice_max, int L) {
+        std::vector<Generator*> gens;
+        for (auto item : gens_py)
+            gens.push_back(item.cast<Generator*>());
+        std::vector<std::vector<Transformation*>> trans;
+        for (auto comp_trans : trans_py) {
+            std::vector<Transformation*> chain;
+            for (auto t : comp_trans)
+                chain.push_back(t.cast<Transformation*>());
+            trans.push_back(chain);
+        }
+        return GaussMatrix::prepare(gens, gen_k, trans, kg, indice_max, L);
+    }, py::arg("gens"), py::arg("gen_k"), py::arg("trans"),
+       py::arg("kg"), py::arg("indice_max"), py::arg("L"));
+
+    // ── test_me_lat (dual lattice method) ──────────────────────────────
+
+    m.def("test_me_lat",
+          [](const py::list& gens_py,
+             const py::list& trans_py,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        std::vector<Generator*> gens;
+        for (auto item : gens_py)
+            gens.push_back(item.cast<Generator*>());
+        std::vector<std::vector<Transformation*>> trans;
+        for (auto comp_trans : trans_py) {
+            std::vector<Transformation*> chain;
+            for (auto t : comp_trans)
+                chain.push_back(t.cast<Transformation*>());
+            trans.push_back(chain);
+        }
+        auto result = test_me_lat(gens, trans, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gens"), py::arg("trans"),
+       py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
+    // ── test_me_harase (primal lattice, Mulders-Storjohann) ────────
+
+    m.def("test_me_harase",
+          [](const py::list& gens_py,
+             const py::list& trans_py,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        std::vector<Generator*> gens;
+        for (auto item : gens_py)
+            gens.push_back(item.cast<Generator*>());
+        std::vector<std::vector<Transformation*>> trans;
+        for (auto comp_trans : trans_py) {
+            std::vector<Transformation*> chain;
+            for (auto t : comp_trans)
+                chain.push_back(t.cast<Transformation*>());
+            trans.push_back(chain);
+        }
+        auto result = test_me_harase(gens, trans, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gens"), py::arg("trans"),
+       py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
+    // ── test_me_notprimitive (matricial DE on the BM-recovered
+    //                         invariant subspace; no full-period
+    //                         assumption) ───────────────────────────────
+
+    m.def("test_me_notprimitive",
+          [](const py::list& gens_py,
+             const py::list& trans_py,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        std::vector<Generator*> gens;
+        for (auto item : gens_py)
+            gens.push_back(item.cast<Generator*>());
+        std::vector<std::vector<Transformation*>> trans;
+        for (auto comp_trans : trans_py) {
+            std::vector<Transformation*> chain;
+            for (auto t : comp_trans)
+                chain.push_back(t.cast<Transformation*>());
+            trans.push_back(chain);
+        }
+        auto result = test_me_notprimitive(gens, trans, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gens"), py::arg("trans"),
+       py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
+    // ── test_me_notprimitive_simd (SIMD-aware variant for SFMTGen etc.) ─
+
+    m.def("test_me_notprimitive_simd",
+          [](const py::list& gens_py,
+             const py::list& trans_py,
+             int kg, int L, int maxL,
+             const std::vector<int>& delta, int mse) -> py::dict {
+        std::vector<Generator*> gens;
+        for (auto item : gens_py)
+            gens.push_back(item.cast<Generator*>());
+        std::vector<std::vector<Transformation*>> trans;
+        for (auto comp_trans : trans_py) {
+            std::vector<Transformation*> chain;
+            for (auto t : comp_trans)
+                chain.push_back(t.cast<Transformation*>());
+            trans.push_back(chain);
+        }
+        auto result = test_me_notprimitive_simd(gens, trans, kg, L, maxL, delta, mse);
+        py::dict d;
+        d["ecart"] = result.ecart;
+        d["se"] = result.se;
+        return d;
+    }, py::arg("gens"), py::arg("trans"),
+       py::arg("kg"), py::arg("L"), py::arg("maxL"),
+       py::arg("delta"), py::arg("mse"));
+
+    // ── TemperOptCache (dual lattice StackBase for optimizer) ─────────
+
+    py::class_<TemperOptCache>(m, "TemperOptCache")
+        .def(py::init([](const py::list& gens_py, const py::list& trans_py,
+                         int kg, int L) {
+            std::vector<Generator*> gens;
+            for (auto item : gens_py) gens.push_back(item.cast<Generator*>());
+            std::vector<std::vector<Transformation*>> trans;
+            for (auto ct : trans_py) {
+                std::vector<Transformation*> chain;
+                for (auto t : ct) chain.push_back(t.cast<Transformation*>());
+                trans.push_back(chain);
+            }
+            return TemperOptCache(gens, trans, kg, L);
+        }), py::arg("gens"), py::arg("trans"), py::arg("kg"), py::arg("L"))
+        .def("compute_all", &TemperOptCache::compute_all)
+        .def("compute_gap", &TemperOptCache::compute_gap, py::arg("v"))
+        .def("refresh_inv_g0", &TemperOptCache::refresh_inv_g0)
+        .def("rebuild", &TemperOptCache::rebuild)
+        .def("reset_step", &TemperOptCache::reset_step)
+        .def("step", &TemperOptCache::step, py::arg("v"));
+
+    // ── PISCache (StackBase strategy for tempering optimizer) ──────────
+
+    py::class_<PISCache>(m, "PISCache")
+        .def(py::init([](const py::list& gens_py, const py::list& trans_py,
+                         int kg, int L) {
+            std::vector<Generator*> gens;
+            for (auto item : gens_py) gens.push_back(item.cast<Generator*>());
+            std::vector<std::vector<Transformation*>> trans;
+            for (auto ct : trans_py) {
+                std::vector<Transformation*> chain;
+                for (auto t : ct) chain.push_back(t.cast<Transformation*>());
+                trans.push_back(chain);
+            }
+            return PISCache(gens, trans, kg, L);
+        }), py::arg("gens"), py::arg("trans"), py::arg("kg"), py::arg("L"))
+        .def("compute_all", &PISCache::compute_all)
+        .def("restore_and_reduce", &PISCache::restore_and_reduce,
+             py::arg("v"))
+        .def("kg", &PISCache::kg)
+        .def("L", &PISCache::L);
+
+    // ── compute_kv (single-resolution PIS) ────────────────────────────
+
+    m.def("compute_kv",
+          [](const py::list& gens_py,
+             const py::list& trans_py,
+             int kg, int v) -> int {
+        std::vector<Generator*> gens;
+        for (auto item : gens_py)
+            gens.push_back(item.cast<Generator*>());
+        std::vector<std::vector<Transformation*>> trans;
+        for (auto comp_trans : trans_py) {
+            std::vector<Transformation*> chain;
+            for (auto t : comp_trans)
+                chain.push_back(t.cast<Transformation*>());
+            trans.push_back(chain);
+        }
+        return compute_kv(gens, trans, kg, v);
+    }, py::arg("gens"), py::arg("trans"),
+       py::arg("kg"), py::arg("v"));
+
+    // ── tausworthe_random_poly: sample an admissible polynomial ──────
+
+    m.def("tausworthe_random_poly",
+          [](int k, int nb_terms, bool quicktaus, int L, int s) {
+        return TauswortheGen::random_poly(k, nb_terms, quicktaus, L, s);
+    }, py::arg("k"), py::arg("nb_terms"), py::arg("quicktaus"),
+       py::arg("L"), py::arg("s") = 0,
+       "Sample a random admissible TauswortheGen polynomial.  Returns the "
+       "sorted exponent list [0, q_1, ..., q_{t-2}, k].  Throws if the "
+       "(k, nb_terms, quicktaus, L, s) combination is inadmissible.");
+
+    // ── random_param: dispatch a non-generic rand_type to its family ──
+    //
+    // parametric.py owns the generic samplers (bitmask, range,
+    // poly_exponents, bitmask_vec) and hands anything else off here.
+    // Currently only TauswortheGen registers samplers; adding a new
+    // family means one more if-branch below plus a static
+    // `generate_random` method on that family.
+    m.def("random_param",
+          [](const std::string& rand_type,
+             const std::string& rand_args,
+             const py::dict& params_dict,
+             int L) -> py::tuple {
+        Params p = dict_to_params(params_dict);
+        RandomParamResult r;
+        if (rand_type == "tausworthe_s"
+            || rand_type == "tausworthe_poly") {
+            r = TauswortheGen::generate_random(
+                rand_type, rand_args, p, L);
+        } else {
+            throw std::invalid_argument(
+                "random_param: unsupported rand_type '"
+                + rand_type + "'");
+        }
+        py::object value = r.is_vec
+            ? py::cast(r.vec_val)
+            : py::object(py::int_(r.int_val));
+        py::dict side;
+        for (const auto& kv : r.side_ints)
+            side[py::str(kv.first)] = py::int_(kv.second);
+        return py::make_tuple(value, side);
+    }, py::arg("rand_type"), py::arg("rand_args"),
+       py::arg("params"), py::arg("L"),
+       "Sample a random value for a family-specific rand_type.  "
+       "Returns (value, side_effects) where side_effects is a dict of "
+       "extra params to splice into the caller's bag (e.g. the `s` "
+       "paired with a freshly-sampled TauswortheGen poly).");
+
+    // ── Exhaustive-search enumerator ──────────────────────────────────
+
+    py::class_<GenEnumerator, std::shared_ptr<GenEnumerator>>(m, "GenEnumerator")
+        .def("size", [](const GenEnumerator& e) {
+            // Lift decimal-string count to a Python int of arbitrary precision.
+            return py::module_::import("builtins").attr("int")(e.size_dec());
+        })
+        .def("at", [](const GenEnumerator& e, const py::object& idx) {
+            return params_to_dict(e.at(py::str(idx).cast<std::string>()));
+        }, py::arg("idx"))
+        .def("axes", [](const GenEnumerator& e) {
+            py::list out;
+            auto to_int = py::module_::import("builtins").attr("int");
+            for (const auto& a : e.axes()) {
+                py::dict d;
+                d["name"]     = a.name;
+                d["size"]     = to_int(a.size_dec);
+                d["describe"] = a.describe;
+                out.append(d);
+            }
+            return out;
+        });
+
+    m.def("make_gen_enumerator",
+          [](const std::string& family, const py::dict& d, int L) -> py::object {
+        auto e = make_gen_enumerator(family, dict_to_params(d), L);
+        if (!e) return py::none();
+        std::shared_ptr<GenEnumerator> shared(std::move(e));
+        return py::cast(shared);
+    }, py::arg("family"), py::arg("resolved"), py::arg("L"),
+       "Build the exhaustive-search enumerator for a family.  Returns "
+       "None when the family has no registered enumerator.  Throws "
+       "std::invalid_argument('needs_<reason>') when the resolved "
+       "inputs are insufficient.");
+
+    m.def("family_is_enumerable",
+          [](const std::string& family) {
+        return family_is_enumerable(family);
+    }, py::arg("family"),
+       "True iff the family has a registered exhaustive enumerator.");
+
+    // ── Generator subclass registrations ────────────────────────────────
+    register_generator_types(m);
+
+    // ── Factory functions ────────────────────────────────────────────────
+
+    m.def("create_generator",
+          [](const std::string& family, const py::dict& d, int L) {
+        return create_generator(family, dict_to_params(d), L);
+    }, py::arg("family"), py::arg("params"), py::arg("L"));
+
+    m.def("create_transformation",
+          [](const std::string& type, const py::dict& d) {
+        return create_transformation(type, dict_to_params(d));
+    }, py::arg("type"), py::arg("params"));
+
+    // ── Primitivity test with precomputed factors ─────────────────────
+
+    m.def("is_primitive_with_factors",
+          [](const BitVect& char_poly_bv, int k,
+             const std::vector<std::string>& factor_strings) -> bool {
+        // Build NTL polynomial
+        NTL::GF2X f;
+        NTL::SetCoeff(f, k);
+        for (int j = 0; j < k; j++)
+            if (char_poly_bv.get_bit(j))
+                NTL::SetCoeff(f, j);
+
+        // Constant term must be 1
+        if (!IsOne(coeff(f, 0)))
+            return false;
+
+        // Irreducibility check
+        if (NTL::IterIrredTest(f) == 0)
+            return false;
+
+        // For each prime factor p of 2^k-1, check x^((2^k-1)/p) != 1
+        NTL::GF2XModulus F;
+        NTL::build(F, f);
+        NTL::ZZ order = NTL::power(NTL::ZZ(2), k) - 1;
+
+        for (const auto& s : factor_strings) {
+            NTL::ZZ p = NTL::conv<NTL::ZZ>(s.c_str());
+            NTL::ZZ exp = order / p;
+            NTL::GF2X r;
+            NTL::PowerXMod(r, exp, F);
+            if (IsOne(r))
+                return false;
+        }
+        return true;
+    }, py::arg("char_poly"), py::arg("k"), py::arg("factors"));
+
+    m.def("is_irreducible",
+          [](const BitVect& char_poly_bv, int k) -> bool {
+        NTL::GF2X f;
+        NTL::SetCoeff(f, k);
+        for (int j = 0; j < k; j++)
+            if (char_poly_bv.get_bit(j))
+                NTL::SetCoeff(f, j);
+        if (!IsOne(coeff(f, 0)))
+            return false;
+        return NTL::IterIrredTest(f) != 0;
+    }, py::arg("char_poly"), py::arg("k"));
+
+    auto specs_to_list = [](const std::vector<ParamSpec>& specs) -> py::list {
+        py::list result;
+        for (auto& s : specs) {
+            py::dict d;
+            d["name"]        = s.name;
+            d["type"]        = s.type;
+            d["structural"]  = s.structural;
+            d["has_default"] = s.has_default;
+            d["default"]     = s.default_val;
+            d["rand_type"]   = s.rand_type;
+            d["rand_args"]   = s.rand_args;
+            d["optimizable"] = s.optimizable;
+            result.append(d);
+        }
+        return result;
+    };
+
+    m.def("get_gen_param_specs",
+          [&specs_to_list](const std::string& family) -> py::list {
+        return specs_to_list(get_gen_param_specs(family));
+    }, py::arg("family"));
+
+    m.def("get_trans_param_specs",
+          [&specs_to_list](const std::string& type) -> py::list {
+        return specs_to_list(get_trans_param_specs(type));
+    }, py::arg("type"));
+}

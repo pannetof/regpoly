@@ -1,0 +1,7 @@
+1059674621  1170794524          # Seed of generator to select temering params.
+32                    # Lmax=32.
+0 transMT19937.dat         # tempering file is trans32.dat.
+1                    # 50 tempering tried per combined generator.
+100000 lattice              # Sum Delta_l for l in Psi_12 <= 3
+0                     # No restriction on particular Delta_l
+0                     # No test on non-sucessive output values.

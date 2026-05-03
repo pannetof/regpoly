@@ -1,0 +1,8 @@
+# Matsumoto-Kurita type I tempering
+transformations:
+  - type: tempMK
+    w: 32
+    eta: 7
+    mu: 15
+    b: 0x2b5b2500
+    c: 0xdb8b0000

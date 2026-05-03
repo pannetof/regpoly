@@ -1,0 +1,10 @@
+family: TGFSRGen
+common:
+  w: 31
+  r: 5
+generators:
+- {a: 0xf45c111a, m: 1}
+- {a: 0xba693616, m: 1}
+- {a: 0x9be9c82a, m: 1}
+- {a: 0x9b6bf432, m: 1}
+- {a: 0xcd68fd62, m: 1}

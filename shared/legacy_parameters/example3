@@ -1,0 +1,8 @@
+1059674621  1170794524          # Seed of generator to select temering params.
+32                    # Lmax=32.
+0 trans32.dat         # tempering file is trans32.dat, component 1
+0                     # no tempering for component 2
+1                    # 50 tempering tried per combined generator.
+1000 matrix              # Sum Delta_l for l in Psi_12 <= 3
+0                     # No restriction on particular Delta_l
+0                     # No test on non-sucessive output values.

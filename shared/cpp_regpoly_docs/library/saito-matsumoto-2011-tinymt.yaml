@@ -1,0 +1,41 @@
+id: saito-matsumoto-2011-tinymt
+authors:
+  - {family: Saito, given: Mutsuo}
+  - {family: Matsumoto, given: Makoto}
+  - {family: Roca, given: Vincent}
+  - {family: Baccelli, given: Emmanuel}
+year: 2020
+title: "TinyMT32 Pseudorandom Number Generator (PRNG)"
+venue: "IETF RFC 8682"
+doi: https://doi.org/10.17487/RFC8682
+bibkey: SaitoMatsumoto2020TinyMT
+starred: true
+tags: [MT, TinyMT, parallel-streams, 127bit]
+
+abstract: |
+  TinyMT is a 127-bit-state F₂-linear pseudorandom number generator
+  designed for embedded contexts and parallel-stream applications.
+  Each TinyMT instance is parametrised by a 96-bit per-stream tuple
+  ``(mat1, mat2, tmat)``; the structural shift counts are fixed
+  constants of the family. Despite the very small state, a careful
+  choice of parameters preserves the prime period 2^{127} - 1.
+
+notes: |
+  Cross-check parameter sets for the canonical TinyMT32 distribution
+  parameters live in ``docs/library/tinymt_params.yaml``.
+
+generators:
+  - id: tinymt32-default
+    display: TinyMT32 (default)
+    family: TinyMT32Gen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: TinyMT32Gen
+        L: 32
+        params:
+          mat1: 0x8f7011ee
+          mat2: 0xfc78ff1f
+          tmat: 0x3793fdff
+        tempering: []

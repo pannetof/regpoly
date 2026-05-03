@@ -1,0 +1,44 @@
+id: marsaglia-2003-xorshift
+authors:
+  - {family: Marsaglia, given: George}
+year: 2003
+title: "Xorshift RNGs"
+venue: "Journal of Statistical Software"
+volume: "8"
+issue: "14"
+pages: "1–6"
+doi: https://doi.org/10.18637/jss.v008.i14
+pdf: papers/marsaglia-2003-xorshift.pdf
+bibkey: Marsaglia2003Xorshift
+starred: true
+tags: [xorshift, 128bit, Marsaglia]
+
+abstract: |
+  Marsaglia's 128-bit Xor-shift generator: four 32-bit words rotated
+  through a triple-shift recurrence (parametrised by a shift triple
+  ``(a, b, c)``) producing 32-bit output. The paper tabulates 81
+  triples that yield maximum-length sequences over the 128-bit state
+  space (period 2^{128} - 1).
+
+notes: |
+  Cross-check fixture (with both the canonical xorshift-2 form and
+  the search-result xorshift-5 form): ``docs/library/xorshift_params.yaml``.
+  ``pattern=0`` selects the xorshift-2 recurrence; ``pattern=1`` the
+  xorshift-5 recurrence.
+
+generators:
+  - id: marsaglia-5-14-1-xorshift2
+    display: Xorshift128 (5,14,1) — xorshift-2 form
+    family: XorShift128Gen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: XorShift128Gen
+        L: 32
+        params:
+          a: 5
+          b: 14
+          c: 1
+          pattern: 0
+        tempering: []

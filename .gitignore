@@ -1,0 +1,17 @@
+# Cython build artifacts
+build/
+*.so
+*.egg-info/
+__pycache__/
+.pytest_cache/
+
+# Search result files
+*_results.yaml
+
+# Virtual environment
+.venv/
+
+# regpoly-web runtime state (SQLite)
+regpoly.db
+regpoly.db-wal
+regpoly.db-shm

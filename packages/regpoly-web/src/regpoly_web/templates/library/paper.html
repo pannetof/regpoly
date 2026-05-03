@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}{{ paper_id }}{% endblock %}
+
+{% block content %}
+<div x-data='paperDetail("{{ paper_id }}")' x-init="load()">
+    <template x-if="!paper">
+        <p><em>Loading…</em></p>
+    </template>
+
+    <template x-if="paper">
+        <div>
+            <hgroup>
+                <h1 x-text="paper.display"></h1>
+                <p>
+                    <em x-text="paper.title"></em>
+                </p>
+            </hgroup>
+
+            <!-- Abstract rendered first so the reader sees the
+                 summary before the bibliographic block. -->
+            <template x-if="paper.abstract_html">
+                <article>
+                    <header><strong>Abstract</strong></header>
+                    <div x-html="paper.abstract_html"
+                         x-effect="renderMath()"></div>
+                </article>
+            </template>
+
+            <!-- ACM Transactions-style reference -->
+            <article>
+                <header><strong>Reference</strong></header>
+                <p x-text="paper.citation"></p>
+                <p>
+                    <a :href="paper.doi" target="_blank"
+                       role="button" class="secondary outline"
+                       x-text="paper.doi"></a>
+                    <template x-if="paper.pdf">
+                        <a :href="'/' + paper.pdf" target="_blank"
+                           role="button" class="secondary outline"
+                           style="margin-left: 0.5rem">📄 PDF</a>
+                    </template>
+                </p>
+                <template x-if="paper.bibkey">
+                    <p><small>BibTeX key:
+                        <code x-text="paper.bibkey"></code></small></p>
+                </template>
+            </article>
+
+            <template x-if="paper.notes_html">
+                <article>
+                    <header><strong>Notes</strong></header>
+                    <div x-html="paper.notes_html"
+                         x-effect="renderMath()"></div>
+                </article>
+            </template>
+
+            <!-- Generators proposed in this paper -->
+            <h3>Generators (<span x-text="paper.generators.length"></span>)</h3>
+            <table class="compact">
+                <thead>
+                    <tr>
+                        <th>Display</th>
+                        <th>Family</th>
+                        <th>Combined</th>
+                        <th>J</th>
+                        <th>Lmax</th>
+                        <th>Tempering</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="g in paper.generators" :key="g.id">
+                        <tr>
+                            <td>
+                                <strong x-text="g.display"></strong>
+                                <template x-if="g.starred">
+                                    <span title="Featured generator">★</span>
+                                </template>
+                            </td>
+                            <td x-text="g.family"></td>
+                            <td x-text="g.combined ? 'yes' : 'no'"></td>
+                            <td x-text="g.J"></td>
+                            <td x-text="g.Lmax"></td>
+                            <td class="mono"
+                                x-text="summarizeTempering(g)"></td>
+                            <td>
+                                <template x-if="g.instantiated
+                                                && g.instantiated.tested_ids
+                                                && g.instantiated.tested_ids.length">
+                                    <span class="status-pill status-completed">
+                                        in DB
+                                    </span>
+                                </template>
+                            </td>
+                            <td>
+                                <a :href="'/library/' + paper.id + '/' + g.id">
+                                    view
+                                </a>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </template>
+</div>
+
+<script>
+function paperDetail(pid) {
+    return {
+        paper: null,
+        async load() {
+            const r = await fetch(
+                '/api/library/papers/' + encodeURIComponent(pid));
+            if (r.ok) this.paper = await r.json();
+        },
+        summarizeTempering(g) {
+            // tempering_summary is a list of per-component chains;
+            // each chain is a list of {type, params} steps.
+            const chains = g.tempering_summary || [];
+            if (!chains.length || chains.every(c => !c.length)) {
+                return '—';
+            }
+            return chains.map((chain, i) => {
+                if (!chain.length) return 'c' + i + ': none';
+                const parts = chain.map(s => {
+                    const kvs = Object.entries(s.params)
+                        .map(([k, v]) => k + '=' + v)
+                        .join(', ');
+                    return s.type + (kvs ? '(' + kvs + ')' : '');
+                }).join(' → ');
+                const prefix = chains.length > 1 ? ('c' + i + ': ') : '';
+                return prefix + parts;
+            }).join(' | ');
+        },
+        renderMath() {
+            if (typeof renderMathInElement !== 'function') return;
+            this.$nextTick(() => {
+                document.querySelectorAll('[x-html]').forEach(el => {
+                    try {
+                        renderMathInElement(el, {
+                            delimiters: [
+                                {left: '$$', right: '$$', display: true},
+                                {left: '$',  right: '$',  display: false},
+                                {left: '\\(', right: '\\)', display: false},
+                                {left: '\\[', right: '\\]', display: true},
+                            ],
+                            throwOnError: false,
+                        });
+                    } catch (_) {}
+                });
+            });
+        },
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,14 @@
+# Search for full-period TGFSR generators with k = 31*5 = 155
+search:
+  family: TGFSRGen
+  L: 31
+  limit:
+    max_tries: 10000
+
+structural:
+  w: 31
+  r: 5
+
+search_params:
+  m:
+  a:

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<hgroup>
+    <h1>regpoly</h1>
+    <p>Search and analysis for pseudo-random number generators based on
+       linear recurrences over GF(2).</p>
+</hgroup>
+
+<section>
+    <h2>What this tool does</h2>
+    <p>
+        <strong>regpoly</strong> helps you design high-quality linear
+        pseudo-random number generators. You pick a generator family
+        (Tausworthe, Mersenne Twister, WELL, MELG, …), search for
+        parameter choices that give the generator its maximum possible
+        period (<em>full-period</em>), combine full-period generators
+        into multi-component XOR generators, apply a
+        <em>tempering</em> transformation to improve statistical
+        quality, and evaluate the result against formal
+        equidistribution and collision-free criteria.
+    </p>
+    <p>
+        Every result is persisted in a database and can be revisited,
+        filtered, and exported later. Long-running searches run in
+        worker processes and can be paused, resumed, cancelled, and
+        restarted from the <a href="/searches">Searches</a> page.
+    </p>
+</section>
+
+<section>
+    <h2>Get started</h2>
+    <p>
+        Pick a generator family from the sidebar on the left. Each
+        family exposes five activities — the tasks below are available
+        either scoped to that family (via the family page) or
+        unscoped (via the Global section of the sidebar).
+    </p>
+
+    <dl class="home-task-list">
+        <dt>Full-period generator search</dt>
+        <dd>
+            Find new full-period generators in this family. You fix
+            the structural parameters (the ones that define the state
+            size <em>k</em>) and regpoly randomises the remaining
+            parameters, checking each candidate's characteristic
+            polynomial for primitivity. Full-period generators attain
+            the theoretical maximum period of <em>2<sup>k</sup> −
+            1</em>.
+        </dd>
+
+        <dt><a href="/generators">Full-period generators</a></dt>
+        <dd>
+            Browse generators already found. Filter by family, by
+            <em>k</em>, or by any structural or non-structural
+            parameter. Each generator page shows its characteristic
+            polynomial, its Hamming weight, its equidistribution
+            profile, and its transition matrix, all computed
+            automatically in the background as soon as it is
+            discovered.
+        </dd>
+
+        <dt><a href="/tempering-search">Combined generator search</a></dt>
+        <dd>
+            Search for combined generators. Pick one or more
+            components, feed each component a pool of full-period
+            generators, choose a tempering transformation (Matsumoto–
+            Kurita, lagged masking, permutation, …), and run a formal
+            quality test (equidistribution, collision-free, tuplets)
+            over every valid combination. When the transformation has
+            optimisable bitmasks, an inner optimiser tunes them
+            automatically.
+        </dd>
+
+        <dt><a href="/tested-generators">Combined generators</a></dt>
+        <dd>
+            Browse tested combined generators. See every generator
+            the search produced, trace each back to the run that
+            found it, inspect the test result (dimension defects,
+            collision ranks, tuplets thresholds) and export the
+            combined configuration as a YAML file.
+        </dd>
+
+        <dt>Documentation <small>(per family)</small></dt>
+        <dd>
+            Recurrence equations and academic references. Every
+            family carries its own write-up — the mathematical
+            recurrence that defines the generator, the meaning of
+            each parameter, and the original publications (Matsumoto,
+            L'Ecuyer, and others). Open a family page from the
+            sidebar and click the Documentation link.
+        </dd>
+    </dl>
+</section>
+
+<section x-data="dashboard()" x-init="init()">
+    <h2>Active searches</h2>
+    <template x-if="active.primitive.length === 0 && active.tempering.length === 0">
+        <p><em>No active searches. Launch one from any family page or
+            from the Global sidebar links.</em></p>
+    </template>
+
+    <template x-if="active.primitive.length">
+        <div>
+            <h3>Full-period generator searches</h3>
+            <table class="compact">
+                <thead><tr><th>#</th><th>Family</th><th>k</th>
+                    <th>Tries</th><th>Found</th><th>Status</th></tr></thead>
+                <tbody>
+                    <template x-for="r in active.primitive" :key="r.id">
+                        <tr>
+                            <td><a :href="'/primitive-search/' + r.id"
+                                   x-text="r.id"></a></td>
+                            <td x-text="r.family"></td>
+                            <td x-text="r.k"></td>
+                            <td x-text="r.tries_done"></td>
+                            <td x-text="r.found_count"></td>
+                            <td><span class="status-pill"
+                                      :class="'status-' + r.status"
+                                      x-text="r.status"></span></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <template x-if="active.tempering.length">
+        <div>
+            <h3>Combined generator searches</h3>
+            <table class="compact">
+                <thead><tr><th>#</th><th>Test</th><th>Done</th>
+                    <th>Best se</th><th>Status</th></tr></thead>
+                <tbody>
+                    <template x-for="r in active.tempering" :key="r.id">
+                        <tr>
+                            <td><a :href="'/tempering-search/' + r.id"
+                                   x-text="r.id"></a></td>
+                            <td x-text="r.test_type"></td>
+                            <td x-text="r.combos_done"></td>
+                            <td x-text="r.best_se ?? '—'"></td>
+                            <td><span class="status-pill"
+                                      :class="'status-' + r.status"
+                                      x-text="r.status"></span></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </template>
+</section>
+
+<script>
+function dashboard() {
+    return {
+        active: { primitive: [], tempering: [] },
+        async init() {
+            await this.reload();
+            setInterval(() => this.reload(), 3000);
+        },
+        async reload() {
+            const [p1, p2, t1, t2] = await Promise.all([
+                fetch('/api/primitive-searches?status=running'),
+                fetch('/api/primitive-searches?status=pending'),
+                fetch('/api/tempering-searches?status=running'),
+                fetch('/api/tempering-searches?status=pending'),
+            ]);
+            const prim = [
+                ...(await p1.json()).items,
+                ...(await p2.json()).items,
+            ];
+            const temp = [
+                ...(await t1.json()).items,
+                ...(await t2.json()).items,
+            ];
+            this.active = { primitive: prim, tempering: temp };
+        },
+    };
+}
+</script>
+{% endblock %}

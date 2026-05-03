@@ -1,0 +1,14 @@
+# Search for full-period TGFSR generators with k=96, m fixed to 1
+search:
+  family: TGFSRGen
+  L: 32
+  limit:
+    max_tries: 5000
+
+structural:
+  w: 32
+  r: 3
+
+search_params:
+  m: 1                      # fixed
+  a:                        # randomized

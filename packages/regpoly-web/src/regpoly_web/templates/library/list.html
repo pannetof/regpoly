@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Published generators{% endblock %}
+
+{% block content %}
+<hgroup>
+    <h1>Published generators ★</h1>
+    <p>Canonical generators from the literature.  Each row links to
+        the generator's detail page; the author/year column links to
+        the paper that proposed it.  Use <a href="/library/papers">All
+        papers</a> to browse the full set of papers with their
+        generators.</p>
+</hgroup>
+
+<div x-data="starredGenerators()" x-init="load()">
+    <p><span x-text="gens.length"></span> starred generator<span
+        x-show="gens.length !== 1">s</span>.</p>
+
+    <table class="compact">
+        <thead>
+            <tr>
+                <th>Generator</th>
+                <th>Family</th>
+                <th>J</th>
+                <th>Lmax</th>
+                <th>Paper</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <template x-for="g in gens" :key="g.id">
+                <tr>
+                    <td>
+                        <strong x-text="g.display"></strong>
+                        <span title="Featured">★</span>
+                    </td>
+                    <td x-text="g.family"></td>
+                    <td x-text="g.J"></td>
+                    <td x-text="g.Lmax"></td>
+                    <td>
+                        <a :href="'/library/' + g.paper.id"
+                           x-text="g.paper.display"></a>
+                    </td>
+                    <td>
+                        <template x-if="g.instantiated
+                                        && g.instantiated.tested_ids
+                                        && g.instantiated.tested_ids.length">
+                            <span class="status-pill status-completed">
+                                in DB
+                            </span>
+                        </template>
+                    </td>
+                    <td>
+                        <a :href="'/library/' + g.paper.id + '/' + g.id">
+                            view
+                        </a>
+                    </td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function starredGenerators() {
+    return {
+        gens: [],
+        async load() {
+            const r = await fetch('/api/library/generators?starred=true');
+            this.gens = await r.json();
+        },
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+# Search for full-period PolyLCG generators with k=32
+search:
+  family: PolyLCG
+  L: 32
+  limit:
+    max_tries: 1000
+
+structural:
+  k: 32
+
+search_params:
+  poly:                     # randomized: random subset of exponents in [0, k-1]

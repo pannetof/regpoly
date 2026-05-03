@@ -1,0 +1,87 @@
+id: nishimura-2000
+authors:
+  - {family: Nishimura, given: Takuji}
+year: 2000
+title: "Tables of 64-bit Mersenne Twisters"
+venue: ACM Transactions on Modeling and Computer Simulation
+volume: "10"
+issue: "4"
+pages: "348–357"
+doi: https://doi.org/10.1145/369534.369540
+pdf: papers/tablesOf64bitMT.pdf
+bibkey: Nishimura2000
+starred: true
+tags: [MT, 64bit, classic]
+
+abstract: |
+  We give new parameters for a Mersenne Twister pseudorandom number
+  generator for 64-bit word machines.
+
+notes: |
+  The paper also gives three generators (IDs 3, 4, 5 in its Table II)
+  that use a modified recurrence with three reference vectors
+  `m0, m1, m2` instead of the single `m` of the standard MT
+  recurrence (1).  The current `MersenneTwister` C++ class supports
+  only the standard recurrence, so the IDs 3, 4, 5 generators from
+  Table II are not included here — they would need a new C++ family.
+
+generators:
+  - id: mt19937-64-id1
+    display: MT19937-64 (ID 1)
+    family: MersenneTwister
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: MersenneTwister
+        L: 64
+        params:
+          w: 64
+          r: 312
+          m: 156
+          p: 31
+          a: 0xB5026F5AA96619E9
+        tempering:
+          - type: tempMK2
+            w: 64
+            eta: 17
+            mu: 37
+            u: 29
+            l: 41
+            b: 0xD66B5EF5B4DA0000
+            c: 0xFDED6BE000000000
+    notes: |
+      Table I, ID 1 of Nishimura 2000.  Parameters in the paper's
+      notation: `w=64, n=312, r=31, m=156, u=29, s=17, t=37, l=41`.
+      The paper's `n` is our C++ class's state-length `r`, and the
+      paper's `r` is our class's upper-mask width `p`.
+
+  - id: mt19937-64-id2
+    display: MT19937-64 (ID 2)
+    family: MersenneTwister
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: MersenneTwister
+        L: 64
+        params:
+          w: 64
+          r: 312
+          m: 156
+          p: 31
+          a: 0xF6A3F020F058B7A7
+        tempering:
+          - type: tempMK2
+            w: 64
+            eta: 17
+            mu: 37
+            u: 29
+            l: 41
+            b: 0x28AAF6CDBDB40000
+            c: 0xFDEDEAE000000000
+    notes: |
+      Table I, ID 2 of Nishimura 2000.  Same structural shape as
+      ID 1, different twist mask `a` and tempering masks `b`, `c`.
