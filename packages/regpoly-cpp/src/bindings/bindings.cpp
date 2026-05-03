@@ -18,6 +18,7 @@
 #include "resolution_sets.h"
 #include "search_types.h"
 #include "temper_optimizer.h"
+#include "tempering_optimizer.h"
 #include "tausworthe.h"
 #include "tuplets_runner.h"
 
@@ -860,6 +861,87 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
        "for each hit and on_progress(sp) every progress_interval "
        "tries plus once at completion. Returns the total tries "
        "executed.");
+
+    // ── TemperingOptimizerDriver (Phase 2.4d) ─────────────────────────
+    //
+    // Replaces the recursive optimize(v) loop in
+    // regpoly.search.tempering_optimizer.TemperingOptimizer.run_once.
+    // The Python wrapper still computes safe_masks (a small structural
+    // computation that depends on `mu`/width); the driver consumes
+    // them and owns the hot perturbation + cache.step inner loop.
+
+    py::class_<TemperingOptimizerConfig>(m, "TemperingOptimizerConfig")
+        .def(py::init<>())
+        .def_readwrite("max_essais",  &TemperingOptimizerConfig::max_essais)
+        .def_readwrite("delta",       &TemperingOptimizerConfig::delta)
+        .def_readwrite("mse",         &TemperingOptimizerConfig::mse)
+        .def_readwrite("n_restarts",  &TemperingOptimizerConfig::n_restarts)
+        .def_readwrite("random_seed", &TemperingOptimizerConfig::random_seed);
+
+    py::class_<TemperingOptResult>(m, "TemperingOptResult")
+        .def_readonly("se",               &TemperingOptResult::se)
+        .def_readonly("gaps",             &TemperingOptResult::gaps)
+        .def_readonly("elapsed_seconds",  &TemperingOptResult::elapsed_seconds)
+        .def_readonly("essais",           &TemperingOptResult::essais);
+
+    // ParamLocators are passed in as a list of (cpp_trans, name, width,
+    // current_value) tuples. The driver mutates current_value in-place
+    // and writes the value back via cpp_trans.update({name: value}); on
+    // return, the locator list reflects the best-found values, and the
+    // Python caller can sync those back into its own _params dicts.
+    auto build_locators = [](const py::list& tuples)
+        -> std::vector<TemperParamLocator> {
+        std::vector<TemperParamLocator> out;
+        out.reserve(tuples.size());
+        for (auto h : tuples) {
+            auto t = h.cast<py::tuple>();
+            TemperParamLocator loc;
+            loc.trans = t[0].cast<Transformation*>();
+            loc.param_name = t[1].cast<std::string>();
+            loc.width = t[2].cast<int>();
+            loc.current_value = t[3].cast<int64_t>();
+            out.push_back(loc);
+        }
+        return out;
+    };
+
+    auto export_locators = [](const std::vector<TemperParamLocator>& locs)
+        -> py::list {
+        py::list out;
+        for (const auto& loc : locs)
+            out.append(py::int_(loc.current_value));
+        return out;
+    };
+
+    m.def("run_tempering_optimizer_once",
+          [build_locators, export_locators](
+              const TemperingOptimizerConfig& cfg,
+              TemperOptCache& cache,
+              const py::list& param_tuples,
+              const std::vector<std::vector<uint64_t>>& safe_masks) -> py::tuple {
+        auto params = build_locators(param_tuples);
+        auto result = run_tempering_optimizer_once(
+            cfg, cache, params, safe_masks);
+        return py::make_tuple(result, export_locators(params));
+    }, py::arg("config"), py::arg("cache"), py::arg("params"),
+       py::arg("safe_masks"),
+       "Single recursive optimization pass. Returns "
+       "(TemperingOptResult, [final_value_per_locator]).");
+
+    m.def("run_tempering_optimizer_minimize",
+          [build_locators, export_locators](
+              const TemperingOptimizerConfig& cfg,
+              TemperOptCache& cache,
+              const py::list& param_tuples,
+              const std::vector<std::vector<uint64_t>>& safe_masks) -> py::tuple {
+        auto params = build_locators(param_tuples);
+        auto result = run_tempering_optimizer_minimize(
+            cfg, cache, params, safe_masks);
+        return py::make_tuple(result, export_locators(params));
+    }, py::arg("config"), py::arg("cache"), py::arg("params"),
+       py::arg("safe_masks"),
+       "Iterative delta-tightening loop (n_restarts > 1). Returns "
+       "(TemperingOptResult, [final_value_per_locator]).");
 
     auto specs_to_list = [](const std::vector<ParamSpec>& specs) -> py::list {
         py::list result;

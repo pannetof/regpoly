@@ -66,6 +66,7 @@ set(REGPOLY_PUBLIC_HEADER_BASES
     src/include/lattice/dual_lattice.h
     src/include/search/search_types.h
     src/include/search/primitive_search.h
+    src/include/search/tempering_optimizer.h
 )
 foreach(hdr IN LISTS REGPOLY_PUBLIC_HEADER_BASES)
     get_filename_component(name "${hdr}" NAME)
@@ -121,6 +122,7 @@ set(REGPOLY_PUBLIC_HEADERS
     src/include/algebra/primitivity.h
     src/include/search/search_types.h
     src/include/search/primitive_search.h
+    src/include/search/tempering_optimizer.h
     src/include/core/generator.h
     src/include/core/transformation.h
     src/include/core/params.h

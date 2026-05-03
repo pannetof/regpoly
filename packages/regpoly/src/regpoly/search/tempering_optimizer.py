@@ -1,18 +1,16 @@
 """
 tempering_optimizer.py — Tempering bitmask optimization.
 
-Mirrors the C code's OptimizeTemper() from temperMK.c:
+Phase 2.4d: the recursive optimize(v) inner loop now lives in C++
+(see packages/regpoly-cpp/src/search/tempering_optimizer.cpp). Python
+still owns:
 
-  - Safe masks: at resolution v, only perturb bits at positions >= v-1.
-  - Random multi-bit perturbation within safe mask.
-  - Incremental StackBase via step(v).
-  - ONE recursive algorithm controlled by delta[v] and mse.
-
-The optimizer is a reusable configuration object.  Create it once
-with your settings, then call run(comb) on any Combination:
-
-    opt = TemperingOptimizer(max_essais=400, delta=[0]*33, mse=0)
-    result = opt.run(comb)
+  * Safe-mask construction (small structural computation that depends
+    on `mu` and bit width — runs once per Combination).
+  * Building the (cpp_trans, param_name, width) locator list that the
+    C++ driver consumes.
+  * Syncing the best-found values back into each Transformation's
+    Python `_params` dict after the C++ driver returns.
 
 Modes (controlled by delta, mse, n_restarts):
 
@@ -28,7 +26,6 @@ Modes (controlled by delta, mse, n_restarts):
 
 from __future__ import annotations
 
-import random
 import sys
 import time
 
@@ -88,17 +85,20 @@ class _RunContext:
         self.comb = comb
         self.L = comb.L
 
-        # (j, ti, param_name) -> bit width
-        self._param_widths: dict[tuple[int, int, str], int] = {}
+        # Stable, ordered list of optimizable params:
+        #   self._locators = [(j, ti, pn, width, trans), ...]
+        # — order matters because the C++ driver indexes safe_masks
+        # by position (not by (j, ti, pn) tuple).
+        self._locators: list[tuple] = []
         for j, comp in enumerate(comb.components):
             for ti, trans in enumerate(comp.trans):
                 for pn, width in trans.optimizable_params():
-                    self._param_widths[(j, ti, pn)] = width
+                    self._locators.append((j, ti, pn, width, trans))
 
-        if not self._param_widths:
+        if not self._locators:
             raise ValueError("No optimizable bitmask parameters found")
 
-        self._safe_masks = self._compute_safe_masks()
+        self._safe_masks_per_locator = self._compute_safe_masks()
         self._gens = [comb[j]._cpp_gen for j in range(comb.J)]
         self._trans_cpp = [[t._cpp_trans for t in comp.trans]
                            for comp in comb.components]
@@ -107,40 +107,53 @@ class _RunContext:
     # Safe mask computation (analytical, mirrors temperMK.c)
     # ------------------------------------------------------------------
 
-    def _compute_safe_masks(self) -> list[dict[tuple, int]]:
-        L = self.L
-        safe_masks: list[dict[tuple, int]] = [{} for _ in range(L + 1)]
+    def _compute_safe_masks(self) -> list[list[int]]:
+        """Compute safe masks shaped [L+1][P] for the C++ driver.
 
-        param_mu: dict[tuple, int] = {}
-        for (j, ti, pn), w in self._param_widths.items():
+        At resolution v, locator i's safe mask is a bitmap of which
+        bits of its parameter may be perturbed without violating
+        equidistribution invariants from prior resolutions. mu-aware
+        masking (where applicable) excludes bit positions that would
+        flip output bits already in the perturbed range.
+        """
+        L = self.L
+        P = len(self._locators)
+        safe_masks: list[list[int]] = [
+            [0] * P for _ in range(L + 1)
+        ]
+
+        # For each locator, look up its mu (only meaningful for the `b`
+        # parameter of tempMK; absent on other transformations).
+        mu_per_locator: list[int] = []
+        for (_j, _ti, pn, _w, trans) in self._locators:
+            mu = 0
             if pn == 'b':
-                trans = self.comb.components[j].trans[ti]
                 try:
-                    param_mu[(j, ti, pn)] = trans.get_param('mu')
+                    mu = trans.get_param('mu')
                 except (KeyError, AttributeError):
-                    pass
+                    mu = 0
+            mu_per_locator.append(mu)
 
         for v in range(1, L + 1):
-            for key, w in self._param_widths.items():
+            for i, (_j, _ti, _pn, w, _trans) in enumerate(self._locators):
                 nbits = w - v + 1
                 if nbits <= 0:
-                    safe_masks[v][key] = 0
+                    safe_masks[v][i] = 0
                     continue
 
                 mask = (1 << nbits) - 1
-
-                mu = param_mu.get(key, 0)
+                mu = mu_per_locator[i]
                 if mu > 0:
                     for p in range(mu, min(v + mu - 1, w)):
                         py_bit = w - 1 - p
                         if 0 <= py_bit < nbits:
                             mask &= ~(1 << py_bit)
 
-                safe_masks[v][key] = mask
+                safe_masks[v][i] = mask
 
         if self.opt.verbose:
             for v in [1, L // 2, L]:
-                total = sum(bin(m).count('1') for m in safe_masks[v].values())
+                total = sum(bin(m).count('1') for m in safe_masks[v])
                 print(f"  Safe mask v={v}: {total} bits")
 
         return safe_masks
@@ -151,81 +164,36 @@ class _RunContext:
 
     def run_once(self, delta: list[int], mse: int,
                  verbose: bool) -> OptResult:
-        comb = self.comb
         L = self.L
-        kg = comb.k_g
-        max_essais = self.opt.max_essais
-        t_start = time.time()
-        safe_masks = self._safe_masks
+        kg = self.comb.k_g
 
         if verbose:
-            print(f"Optimizing {len(self._param_widths)} params, "
+            print(f"Optimizing {len(self._locators)} params, "
                   f"k_g={kg}, L={L}, mse={mse}")
             sys.stdout.flush()
 
-        cache = _cpp.LatticeOptCache(self._gens, self._trans_cpp, kg, L)
-        cache.reset_step()
+        cache = _cpp.TemperOptCache(self._gens, self._trans_cpp, kg, L)
 
-        ecart = [-1] * (L + 1)
-        best_se = [INT_MAX] * (L + 1)
-        best_params = self._save_params()
-        essais = 0
-        max_v = 0
+        cfg = _cpp.TemperingOptimizerConfig()
+        cfg.max_essais = self.opt.max_essais
+        cfg.delta = list(delta)
+        cfg.mse = mse
+        cfg.n_restarts = 1
+        cfg.random_seed = 0
 
-        def optimize(v):
-            nonlocal essais, max_v, best_params
+        result, final_values = _cpp.run_tempering_optimizer_once(
+            cfg, cache, self._locator_tuples(), self._safe_masks_per_locator)
 
-            Lim = 5 if v < L // 2 else 2
+        self._sync_python_params_from_locators(final_values)
 
-            for _ in range(Lim):
-                if essais >= max_essais:
-                    break
-                essais += 1
-
-                for (j, ti, pn), w in self._param_widths.items():
-                    mask = safe_masks[v].get((j, ti, pn), 0)
-                    if mask == 0:
-                        continue
-                    trans = comb.components[j].trans[ti]
-                    perturbation = random.getrandbits(w) & mask
-                    trans.set_param(pn, trans.get_param(pn) ^ perturbation)
-
-                ecart[v] = cache.step(v)
-                se = sum(ecart[1:v + 1])
-
-                if se < best_se[v] and v >= max_v:
-                    essais = 0
-                    best_params = self._save_params()
-                    best_se[v] = se
-                    max_v = v
-
-                    if verbose:
-                        print(f"  v={v:>3d}: se={se} (max_v={max_v})")
-                        sys.stdout.flush()
-
-                if ecart[v] <= delta[v] and se <= mse:
-                    if v >= L:
-                        break
-                    else:
-                        optimize(v + 1)
-
-                if (ecart[L] >= 0
-                        and ecart[L] <= delta[L]
-                        and best_se[L] <= mse):
-                    break
-
-        optimize(1)
-        self._restore_params(best_params)
-
-        gaps, se = self._compute_gaps()
-
-        elapsed = time.time() - t_start
+        gaps_dict = {v: result.gaps[v] for v in range(1, L + 1)}
         if verbose:
-            print(f"\nOptimization complete: se={se}, "
-                  f"max_v={max_v}, {elapsed:.1f}s")
+            print(f"\nOptimization complete: se={result.se}, "
+                  f"{result.elapsed_seconds:.1f}s")
 
-        return OptResult(se=se, gaps=gaps, elapsed=elapsed,
-                         essais=essais)
+        return OptResult(se=result.se, gaps=gaps_dict,
+                         elapsed=result.elapsed_seconds,
+                         essais=result.essais)
 
     # ------------------------------------------------------------------
     # Iterative delta tightening (minimize se)
@@ -241,73 +209,59 @@ class _RunContext:
                   f"n_restarts={n_restarts}")
             sys.stdout.flush()
 
-        best_result = None
-        best_params = None
-        failures = 0
-        n_calls = 0
+        cache = _cpp.TemperOptCache(self._gens, self._trans_cpp,
+                                      self.comb.k_g, L)
 
-        while failures < n_restarts:
-            n_calls += 1
+        cfg = _cpp.TemperingOptimizerConfig()
+        cfg.max_essais = self.opt.max_essais
+        cfg.delta = [INT_MAX] * (L + 1)
+        cfg.mse = INT_MAX
+        cfg.n_restarts = n_restarts
+        cfg.random_seed = 0
 
-            for (j, ti, pn), w in self._param_widths.items():
-                self.comb.components[j].trans[ti].set_param(
-                    pn, random.getrandbits(w))
+        result, final_values = _cpp.run_tempering_optimizer_minimize(
+            cfg, cache, self._locator_tuples(), self._safe_masks_per_locator)
 
-            if best_result is None:
-                delta = [INT_MAX] * (L + 1)
-                mse_val = INT_MAX
-            else:
-                delta = [best_result.gaps.get(v, INT_MAX)
-                         for v in range(L + 1)]
-                mse_val = best_result.se
+        self._sync_python_params_from_locators(final_values)
 
-            result = self.run_once(delta, mse_val, verbose=False)
-
-            if best_result is None or result.se < best_result.se:
-                best_result = result
-                best_params = self._save_params()
-                failures = 0
-                if self.opt.verbose:
-                    print(f"  call {n_calls:>3d}: se={result.se} "
-                          f"({result.elapsed:.1f}s)")
-                    sys.stdout.flush()
-            else:
-                failures += 1
-
-        if best_params is not None:
-            self._restore_params(best_params)
-
+        gaps_dict = {v: result.gaps[v] for v in range(1, L + 1)}
         elapsed = time.time() - t_start
         if self.opt.verbose:
-            print(f"\nMinimize complete: se={best_result.se}, "
-                  f"{n_calls} calls, {elapsed:.1f}s")
+            print(f"\nMinimize complete: se={result.se}, "
+                  f"{result.essais} calls, {elapsed:.1f}s")
 
-        return OptResult(se=best_result.se, gaps=best_result.gaps,
-                         elapsed=elapsed, essais=n_calls)
+        return OptResult(se=result.se, gaps=gaps_dict,
+                         elapsed=elapsed, essais=result.essais)
 
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
 
     def _compute_gaps(self) -> tuple[dict[int, int], int]:
-        cache = _cpp.LatticeOptCache(
+        cache = _cpp.TemperOptCache(
             self._gens, self._trans_cpp, self.comb.k_g, self.L)
         ecart = cache.compute_all()
         gaps = {v: ecart[v] for v in range(1, self.L + 1)}
         se = sum(gaps.values())
         return gaps, se
 
-    def _save_params(self) -> dict:
-        saved = {}
-        for j, comp in enumerate(self.comb.components):
-            for ti, trans in enumerate(comp.trans):
-                for pn, _ in trans.optimizable_params():
-                    saved[(j, ti, pn)] = trans.get_param(pn)
-        return saved
+    def _locator_tuples(self) -> list[tuple]:
+        """Build the (cpp_trans, param_name, width, current_value) list
+        the C++ driver consumes."""
+        return [
+            (trans._cpp_trans, pn, w, trans.get_param(pn))
+            for (_j, _ti, pn, w, trans) in self._locators
+        ]
 
-    def _restore_params(self, saved: dict) -> None:
-        for (j, ti, pn), val in saved.items():
-            self.comb.components[j].trans[ti].set_param(pn, val)
+    def _sync_python_params_from_locators(self,
+                                           final_values: list[int]) -> None:
+        """After the C++ driver returns, write the best-found values
+        back into each Transformation's Python `_params` dict so
+        downstream `get_param`/`set_param` calls see consistent state.
+        The underlying _cpp_trans has already been updated."""
+        for (_j, _ti, pn, _w, trans), val in zip(
+                self._locators, final_values):
+            trans._params[pn] = val
 
 
 class OptResult:

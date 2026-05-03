@@ -22,6 +22,7 @@ add_executable(regpoly_cpp_tests
     test_primitivity.cpp
     test_random_samplers.cpp
     test_resolution_sets.cpp
+    test_tempering_optimizer.cpp
 )
 target_include_directories(regpoly_cpp_tests PRIVATE
     ../src/include/algebra
