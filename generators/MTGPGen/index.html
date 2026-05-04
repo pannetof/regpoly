@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#mtgpgen-mersenne-twister-for-graphic-processors" class="md-skip">
+        <a href="#mtgp-mersenne-twister-for-graphic-processors" class="md-skip">
           Skip to content
         </a>
       
@@ -1075,6 +1075,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#mathematical-recurrence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mathematical recurrence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mathematical recurrence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#characteristic-polynomial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Characteristic polynomial
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1086,10 +1114,71 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#provenance" class="md-nav__link">
+  <a href="#state-size-period-exponent" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Provenance
+        State size (period exponent)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Search examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#verify-a-published-mtgp-parameter-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify a published MTGP parameter set
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tempering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tempering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
       
     </span>
   </a>
@@ -2043,6 +2132,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#mathematical-recurrence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mathematical recurrence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mathematical recurrence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#characteristic-polynomial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Characteristic polynomial
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2054,10 +2171,71 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#provenance" class="md-nav__link">
+  <a href="#state-size-period-exponent" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Provenance
+        State size (period exponent)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Search examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#verify-a-published-mtgp-parameter-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify a published MTGP parameter set
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tempering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tempering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
       
     </span>
   </a>
@@ -2089,60 +2267,186 @@
   
 
 
-<h1 id="mtgpgen-mersenne-twister-for-graphic-processors">MTGPGen — Mersenne Twister for Graphic Processors<a class="headerlink" href="#mtgpgen-mersenne-twister-for-graphic-processors" title="Permanent link">&para;</a></h1>
-<p><code>MTGPGen</code> is the GPU-oriented MT variant of Saito and Matsumoto (2013).
-The state is partitioned across small "blocks" so the recurrence can be
-evaluated cooperatively by GPU threads, while preserving an MT-style
-Mersenne-prime period.</p>
+<h1 id="mtgp-mersenne-twister-for-graphic-processors">MTGP — Mersenne Twister for Graphic Processors<a class="headerlink" href="#mtgp-mersenne-twister-for-graphic-processors" title="Permanent link">&para;</a></h1>
+<p><strong>C++ class:</strong> <code>MTGPGen</code>
+<strong>Name in code:</strong> <code>"MTGPGen"</code> (alias: <code>"MTGP"</code>)</p>
+<p><code>MTGPGen</code> is the GPU-oriented MT variant of Saito and Matsumoto
+(2013). The state is partitioned across small "blocks" so the
+recurrence can be evaluated cooperatively by GPU threads, while
+preserving an MT-style Mersenne-prime period of
+<span class="arithmatex">\(2^{\mathrm{mexp}} - 1\)</span>. The recurrence pairs each step with a
+constant-time table lookup that subsumes the standard MT twist.</p>
+<h2 id="mathematical-recurrence">Mathematical recurrence<a class="headerlink" href="#mathematical-recurrence" title="Permanent link">&para;</a></h2>
+<p>The state is <span class="arithmatex">\(N = \lfloor \mathrm{mexp}/32 \rfloor + 1\)</span> words of 32
+bits, indexed by <code>idx</code>. At each step:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>x1   = state[idx]
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>x2   = state[(idx + 1) % N]
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>y_in = state[(idx + pos) % N]
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>t    = state[(idx + pos - 1) % N]
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>y    = (x1 &amp; mask) ^ x2 ^ (y_in &lt;&lt; sh1)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>mat  = tbl[y &amp; 0x0f]
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>new  = y ^ (y &gt;&gt; sh2) ^ mat
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>state[idx] = new
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a># Tempering:
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>tt   = t ^ (t &gt;&gt; 16)
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>out  = new ^ tmp_tbl[tt &amp; 0x0f]
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>idx  = (idx + 1) % N
+</code></pre></div>
+<p>The two 16-entry tables <code>tbl</code> and <code>tmp_tbl</code> encode both the twist
+matrix and the output tempering as 4-bit-indexed XOR masks; a GPU
+thread computes them by table lookup rather than by branch on the
+low bit.</p>
+<h3 id="characteristic-polynomial">Characteristic polynomial<a class="headerlink" href="#characteristic-polynomial" title="Permanent link">&para;</a></h3>
+<p>Computed at runtime via Berlekamp–Massey on the bit-stream produced
+by <code>next()</code>. The combination of the partial-word mask and the
+table-driven twist makes a closed form impractical; the matricial
+equidistribution analysis uses the non-primitive path
+(<a href="../../theory/equidistribution-spec/"><code>docs/theory/equidistribution-spec.md</code></a>)
+on the recovered minimal polynomial.</p>
 <h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Name</th>
 <th>Type</th>
+<th>Role</th>
+<th>Rand type</th>
+<th>Rand args</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>mexp</code></td>
-<td>int</td>
-<td>Mersenne exponent.</td>
+<td><code>int</code></td>
+<td>structural</td>
+<td>--</td>
+<td>--</td>
+<td>Mersenne exponent (e.g. 11213, 19937, 44497, 86243, 132049, 216091).</td>
 </tr>
 <tr>
-<td><code>pos1</code>, <code>sh1</code>, <code>sh2</code></td>
-<td>int</td>
-<td>Recurrence offset and shift counts.</td>
+<td><code>pos</code></td>
+<td><code>int</code></td>
+<td>structural</td>
+<td>--</td>
+<td>--</td>
+<td>Recurrence offset (in 32-bit words).</td>
+</tr>
+<tr>
+<td><code>sh1</code></td>
+<td><code>int</code></td>
+<td>structural</td>
+<td>--</td>
+<td>--</td>
+<td>Pre-twist left shift on <code>state[(idx+pos) % N]</code>.</td>
+</tr>
+<tr>
+<td><code>sh2</code></td>
+<td><code>int</code></td>
+<td>structural</td>
+<td>--</td>
+<td>--</td>
+<td>Post-twist right shift.</td>
 </tr>
 <tr>
 <td><code>mask</code></td>
-<td>uint</td>
-<td>Element mask (per-block).</td>
+<td><code>int</code></td>
+<td>structural</td>
+<td>--</td>
+<td>--</td>
+<td>32-bit element mask applied to <code>state[idx]</code>.</td>
 </tr>
 <tr>
 <td><code>tbl</code></td>
-<td>uint[16]</td>
-<td>Tempering / output table.</td>
+<td><code>uint_vec</code></td>
+<td>structural</td>
+<td><code>none</code></td>
+<td>--</td>
+<td>16-entry twist-output table (4-bit-indexed XOR masks).</td>
 </tr>
 <tr>
-<td><code>tmp</code></td>
-<td>uint[16]</td>
-<td>Temporary tempering table.</td>
-</tr>
-<tr>
-<td><code>flt</code></td>
-<td>uint[16]</td>
-<td>Floating-point output table.</td>
+<td><code>tmp_tbl</code></td>
+<td><code>uint_vec</code></td>
+<td>structural</td>
+<td><code>none</code></td>
+<td>--</td>
+<td>16-entry tempering table (4-bit-indexed XOR masks).</td>
 </tr>
 </tbody>
 </table>
-<h2 id="provenance">Provenance<a class="headerlink" href="#provenance" title="Permanent link">&para;</a></h2>
+<p>Roles:</p>
 <ul>
-<li><strong>Reference</strong>: Saito, M., Matsumoto, M., "Variants of Mersenne
-  Twister suitable for graphic processors", ACM Transactions on
-  Mathematical Software (TOMS), 2013.</li>
-<li><strong>Cross-check fixtures</strong>: <code>docs/library/mtgp_params.yaml</code> (deferred —
-  upstream MTToolBox does not ship a per-mexp <code>calc_equidist</code> for MTGP).</li>
+<li><strong>structural</strong> — fixed by the user; defines the shape of <span class="arithmatex">\(A\)</span>.</li>
+<li><strong>search</strong> — randomized by the search loop. MTGP exposes no
+  search-randomized parameters in the regpoly catalog; published
+  per-mexp tuples come from the upstream MTGPDC parameter-search
+  tool.</li>
+</ul>
+<h2 id="state-size-period-exponent">State size (period exponent)<a class="headerlink" href="#state-size-period-exponent" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>k = 32 * N                       with N = mexp / 32 + 1
+</code></pre></div>
+<p>Classical examples:</p>
+<ul>
+<li><strong>MTGP-11213:</strong>  mexp = 11213  ⇒ <span class="arithmatex">\(N = 351\)</span>,  <span class="arithmatex">\(k = 32 \cdot 351 = 11232\)</span>.</li>
+<li><strong>MTGP-23209:</strong>  mexp = 23209  ⇒ <span class="arithmatex">\(N = 726\)</span>,  <span class="arithmatex">\(k = 32 \cdot 726 = 23232\)</span>.</li>
+<li><strong>MTGP-44497:</strong>  mexp = 44497  ⇒ <span class="arithmatex">\(N = 1391\)</span>, <span class="arithmatex">\(k = 32 \cdot 1391 = 44512\)</span>.</li>
+</ul>
+<h2 id="search-examples">Search examples<a class="headerlink" href="#search-examples" title="Permanent link">&para;</a></h2>
+<h3 id="verify-a-published-mtgp-parameter-set">Verify a published MTGP parameter set<a class="headerlink" href="#verify-a-published-mtgp-parameter-set" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">search</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MTGPGen</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">L</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">limit</span><span class="p">:</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">max_tries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nt">structural_params</span><span class="p">:</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">mexp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">11213</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">pos</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">84</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="nt">sh1</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">12</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">sh2</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span><span class="nt">mask</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0xfff80000</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">  </span><span class="nt">tbl</span><span class="p">:</span><span class="w">     </span><span class="p p-Indicator">[</span><span class="nv">0x00000000</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x71588353</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0xdfa887c1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0xaef00492</span><span class="p p-Indicator">,</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">            </span><span class="nv">0x4ba66c6e</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x3afeef3d</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x944eebaf</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0xe51668fc</span><span class="p p-Indicator">,</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">            </span><span class="nv">0xa53da0e1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0xd46523b2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x7a952720</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x0bcda473</span><span class="p p-Indicator">,</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">            </span><span class="nv">0xee9bcc8f</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x9fc34fdc</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x31734b4e</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x402bc81d</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">  </span><span class="nt">tmp_tbl</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0x00000000</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x200040bb</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x1082c61e</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x308286a5</span><span class="p p-Indicator">,</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">            </span><span class="nv">0x10940c5a</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x30944ce1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x0016ca44</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x20168aff</span><span class="p p-Indicator">,</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">            </span><span class="nv">0x00000000</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x200040bb</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x1082c61e</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x308286a5</span><span class="p p-Indicator">,</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">            </span><span class="nv">0x10940c5a</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x30944ce1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x0016ca44</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0x20168aff</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<h2 id="tempering">Tempering<a class="headerlink" href="#tempering" title="Permanent link">&para;</a></h2>
+<p>The output tempering is the second 4-bit table lookup
+<code>tmp_tbl[(t ^ (t &gt;&gt; 16)) &amp; 0x0f]</code>, where <code>t</code> is the lagged state
+word <code>state[(idx + pos - 1) % N]</code>. The twist table <code>tbl</code> plays the
+role of the standard MT twist coefficient <code>a</code> but indexed by 4 bits
+instead of 1, so the linear feedback path itself is part of the
+tempering search rather than a single bit-mask. See
+<a href="../../theory/tempering_optimization/"><code>theory/tempering_optimization.md</code></a>
+for the search-side details.</p>
+<h2 id="implementation-notes">Implementation notes<a class="headerlink" href="#implementation-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>No SIMD-aware overrides.</strong> Unlike SFMT/dSFMT, MTGPGen runs the
+  recurrence one word at a time through the same <code>next()</code> path used
+  by all scalar generators; the "GPU block" partitioning is a
+  parameter-search property of the family, not a runtime layout
+  choice in regpoly.</li>
+<li><strong>Cross-check status.</strong> Upstream MTToolBox does not ship a
+  per-mexp <code>calc_equidist</code> for MTGP — only an aggregate
+  parameter-search tool — so the cross-check fixture
+  (<code>docs/library/mtgp_params.yaml</code>) is currently marked deferred.</li>
+</ul>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li>M. Saito and M. Matsumoto. <em>Variants of Mersenne Twister suitable
+  for graphic processors.</em> ACM Trans. Math. Softw. <strong>39</strong> (2013),
+  1–20.
+  <a href="https://doi.org/10.1145/2427023.2427030">DOI</a>.
+  Published as
+  <a href="/library/saito-matsumoto-2013-mtgp"><code>saito-matsumoto-2013-mtgp</code></a>
+  in the library.</li>
 </ul>
 
 

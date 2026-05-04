@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rmt64gen-reducible-mersenne-twister-64-bit" class="md-skip">
+        <a href="#rmt64-reducible-mersenne-twister-64-bit" class="md-skip">
           Skip to content
         </a>
       
@@ -1131,6 +1131,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#mathematical-recurrence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mathematical recurrence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mathematical recurrence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#characteristic-polynomial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Characteristic polynomial
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1142,10 +1170,71 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#provenance" class="md-nav__link">
+  <a href="#state-size-period-exponent" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Provenance
+        State size (period exponent)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Search examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#verify-a-published-rmt64-parameter-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify a published RMT64 parameter set
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tempering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tempering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
       
     </span>
   </a>
@@ -2043,6 +2132,34 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#mathematical-recurrence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mathematical recurrence
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mathematical recurrence">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#characteristic-polynomial" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Characteristic polynomial
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#parameters" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2054,10 +2171,71 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#provenance" class="md-nav__link">
+  <a href="#state-size-period-exponent" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Provenance
+        State size (period exponent)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Search examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#verify-a-published-rmt64-parameter-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify a published RMT64 parameter set
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tempering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tempering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
       
     </span>
   </a>
@@ -2089,54 +2267,167 @@
   
 
 
-<h1 id="rmt64gen-reducible-mersenne-twister-64-bit">RMT64Gen — Reducible Mersenne Twister (64-bit)<a class="headerlink" href="#rmt64gen-reducible-mersenne-twister-64-bit" title="Permanent link">&para;</a></h1>
+<h1 id="rmt64-reducible-mersenne-twister-64-bit">RMT64 — Reducible Mersenne Twister (64-bit)<a class="headerlink" href="#rmt64-reducible-mersenne-twister-64-bit" title="Permanent link">&para;</a></h1>
+<p><strong>C++ class:</strong> <code>RMT64Gen</code>
+<strong>Name in code:</strong> <code>"RMT64Gen"</code> (alias: <code>"RMT64"</code>)</p>
 <p><code>RMT64Gen</code> is a 64-bit Mersenne-Twister variant with a <em>reducible</em>
-characteristic polynomial (composite period rather than prime). It is
-shipped by MTToolBox as <code>samples/RMT/rmt64dc</code> and uses the
-non-primitive equidistribution analysis path (<code>notprimitive_de</code>).</p>
+characteristic polynomial — the period is composite rather than
+Mersenne-prime. It is shipped as an MTToolBox sample
+(<code>samples/RMT/rmt64dc</code>) and exercises the non-primitive
+equidistribution analysis path
+(<a href="../../theory/equidistribution-spec/"><code>docs/theory/equidistribution-spec.md</code></a>)
+end-to-end.</p>
+<h2 id="mathematical-recurrence">Mathematical recurrence<a class="headerlink" href="#mathematical-recurrence" title="Permanent link">&para;</a></h2>
+<p>The state is <span class="arithmatex">\(N = \lfloor \mathrm{mexp}/64 \rfloor + 1\)</span> words of 64
+bits, indexed by <code>index</code>. With fixed inner mask
+<code>maska = 0x5555555555555555</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>index = (index + 1) % N
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>x     = state[index]
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>y     = state[(index + pos) % N]
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>y    ^= y &lt;&lt; 17
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>mat   = (x &amp; 1) ? mata : 0
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>x     = y ^ (x &gt;&gt; 1) ^ mat
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>state[index] = x
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a># Tempering:
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>x ^= (x &gt;&gt; 29) &amp; maska
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>x ^= (x &lt;&lt; 17) &amp; maskb
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>x ^= (x &lt;&lt; 37) &amp; maskc
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>x ^= (x &gt;&gt; 43)
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>out = x
+</code></pre></div>
+<p>The inner shift-XOR <code>y ^= y &lt;&lt; 17</code> and the four-stage tempering chain
+match <code>MTToolBox/samples/RMT/rmt64.hpp</code> line-for-line.</p>
+<h3 id="characteristic-polynomial">Characteristic polynomial<a class="headerlink" href="#characteristic-polynomial" title="Permanent link">&para;</a></h3>
+<p>Reducible by construction (the "R" in RMT). Recovered at runtime via
+Berlekamp–Massey on the bit-stream produced by <code>next()</code>; the
+matricial equidistribution analysis then factors <span class="arithmatex">\(\chi_f\)</span> and works
+on the chosen invariant subspace via the non-primitive path.</p>
 <h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Name</th>
 <th>Type</th>
+<th>Role</th>
+<th>Rand type</th>
+<th>Rand args</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>mexp</code></td>
-<td>int</td>
-<td>Total state degree.</td>
+<td><code>int</code></td>
+<td>structural</td>
+<td>--</td>
+<td>--</td>
+<td>Total state degree (period exponent of the dominant irreducible factor).</td>
 </tr>
 <tr>
 <td><code>pos</code></td>
-<td>int</td>
+<td><code>int</code></td>
+<td>structural</td>
+<td>--</td>
+<td>--</td>
 <td>Recurrence offset in 64-bit words.</td>
 </tr>
 <tr>
 <td><code>mata</code></td>
-<td>uint64</td>
-<td>Matrix-A entry of the recurrence.</td>
+<td><code>int</code></td>
+<td>structural</td>
+<td>--</td>
+<td>--</td>
+<td>64-bit twist coefficient (matrix-A entry).</td>
 </tr>
 <tr>
-<td><code>parity</code></td>
-<td>uint64</td>
-<td>Parity vector (period certification).</td>
+<td><code>maskb</code></td>
+<td><code>int</code></td>
+<td>structural</td>
+<td>--</td>
+<td>--</td>
+<td>64-bit tempering mask (paired with <code>&lt;&lt; 17</code>).</td>
 </tr>
 <tr>
-<td><code>maskb</code>, <code>maskc</code></td>
-<td>uint64</td>
-<td>Tempering masks.</td>
+<td><code>maskc</code></td>
+<td><code>int</code></td>
+<td>structural</td>
+<td>--</td>
+<td>--</td>
+<td>64-bit tempering mask (paired with <code>&lt;&lt; 37</code>).</td>
 </tr>
 </tbody>
 </table>
-<h2 id="provenance">Provenance<a class="headerlink" href="#provenance" title="Permanent link">&para;</a></h2>
+<p>Roles:</p>
 <ul>
-<li><strong>Reference</strong>: distributed with MTToolBox (<code>samples/RMT/</code>). A
-  canonical academic reference is being tracked.</li>
-<li><strong>Cross-check fixtures</strong>: <code>docs/library/rmt_params.yaml</code> (per-mexp
-  parameter sets generated with <code>rmt64dc</code>).</li>
+<li><strong>structural</strong> — fixed by the user; defines the shape of <span class="arithmatex">\(A\)</span>.</li>
+<li><strong>search</strong> — randomized by the search loop. RMT64Gen exposes no
+  search-randomized parameters in the regpoly catalog; per-mexp
+  tuples are produced by upstream <code>samples/RMT/rmt64dc</code> and
+  consumed verbatim.</li>
+</ul>
+<h2 id="state-size-period-exponent">State size (period exponent)<a class="headerlink" href="#state-size-period-exponent" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>k = 64 * N                       with N = mexp / 64 + 1
+</code></pre></div>
+<p>The <code>mexp</code> parameter names the exponent of the dominant irreducible
+factor of <span class="arithmatex">\(\chi_f\)</span> (the "useful" part of the period); the F<span class="arithmatex">\(_2\)</span>-linear
+state space is <span class="arithmatex">\(k = 64 \cdot N\)</span> bits and the full period is the
+product of the irreducible factor periods.</p>
+<p>Classical examples:</p>
+<ul>
+<li><strong>RMT-521:</strong>   mexp = 521   ⇒ <span class="arithmatex">\(N = 9\)</span>,   <span class="arithmatex">\(k = 64 \cdot 9 = 576\)</span>.</li>
+<li><strong>RMT-1279:</strong>  mexp = 1279  ⇒ <span class="arithmatex">\(N = 20\)</span>,  <span class="arithmatex">\(k = 64 \cdot 20 = 1280\)</span>.</li>
+<li><strong>RMT-19937:</strong> mexp = 19937 ⇒ <span class="arithmatex">\(N = 312\)</span>, <span class="arithmatex">\(k = 64 \cdot 312 = 19968\)</span>.</li>
+</ul>
+<h2 id="search-examples">Search examples<a class="headerlink" href="#search-examples" title="Permanent link">&para;</a></h2>
+<h3 id="verify-a-published-rmt64-parameter-set">Verify a published RMT64 parameter set<a class="headerlink" href="#verify-a-published-rmt64-parameter-set" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">search</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RMT64Gen</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">L</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">limit</span><span class="p">:</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">max_tries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nt">structural_params</span><span class="p">:</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">mexp</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">1279</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">pos</span><span class="p">:</span><span class="w">   </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="nt">mata</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">0x121b78491deedbc8</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">maskb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0xe3beff7ffbae0000</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span><span class="nt">maskc</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0xfaf9fae000000000</span>
+</code></pre></div>
+<h2 id="tempering">Tempering<a class="headerlink" href="#tempering" title="Permanent link">&para;</a></h2>
+<p>The four-stage tempering chain <code>(&gt;&gt; 29) &amp; maska</code>, <code>(&lt;&lt; 17) &amp; maskb</code>,
+<code>(&lt;&lt; 37) &amp; maskc</code>, <code>&gt;&gt; 43</code> is part of the recurrence as shipped:
+<code>maskb</code> and <code>maskc</code> are the only freely-chosen masks, the other two
+are fixed (<code>maska = 0x5555…5555</code> and the trailing right-shift by 43
+has no mask). See
+<a href="../../theory/tempering_optimization/"><code>theory/tempering_optimization.md</code></a>
+for the search-side details.</p>
+<h2 id="implementation-notes">Implementation notes<a class="headerlink" href="#implementation-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Non-primitive path is mandatory.</strong> RMT64 is the canonical
+  exerciser of regpoly's non-primitive matricial equidistribution
+  computation; running it with the primitive path will give
+  garbage (or fail the spec's primitivity guard).</li>
+<li><strong>Cross-check delta.</strong> For a subset of mexps, regpoly's
+  notprimitive method selects an invariant subspace that differs
+  by <span class="arithmatex">\(\le 1\)</span> bit per <span class="arithmatex">\(v\)</span> from MTToolBox's annihilate-then-equidist
+  convention; the <code>cross_check_xfail</code> markers in
+  <code>docs/library/rmt_params.yaml</code> document the affected entries.</li>
+<li><strong>Seed degeneracy guard.</strong> <code>init()</code> sets <code>state[0] = 1</code> when the
+  supplied seed is all-zero, mirroring <code>MTToolBox::seed(1)</code>; the
+  matricial test never feeds an all-zero perturbation, so this only
+  triggers from an external <code>init</code> call.</li>
+</ul>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li>S. Harase. <em>On the F2-linear relations of Mersenne Twister
+  pseudorandom number generators.</em> Math. Comput. Simulation <strong>100</strong>
+  (2014), 103–113.
+  <a href="https://doi.org/10.1016/j.matcom.2014.02.002">DOI</a>.
+  Published as <a href="/library/mttoolbox-rmt"><code>mttoolbox-rmt</code></a> in the
+  library (the practical source of truth for RMT64 parameters
+  remains the upstream MTToolBox <code>samples/RMT/</code> distribution).</li>
 </ul>
 
 
