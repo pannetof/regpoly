@@ -162,6 +162,79 @@ CREATE INDEX IF NOT EXISTS idx_tr_test_type ON test_result(test_type);
 CREATE INDEX IF NOT EXISTS idx_tr_se ON test_result(se);
 
 -- ================================================================
+-- TYPED TEST RESULTS (schema v2 — Phase 5.4)
+--
+-- One row per analysis, keyed by tested_generator. Mirrors the C++
+-- result structs in packages/regpoly-cpp/src/include/analyses/ so
+-- the worker can persist the full typed result without flattening
+-- into JSON. The legacy `test_result` table stays for backward-compat
+-- reads through Phase 5; routes/workers are flipped over to these
+-- typed tables in 5.4b/c.
+--
+--   equidistribution_result  ⇄  MatricialEquidResult { ecart, se, verified }
+--   collision_free_result    ⇄  CollisionFreeResult  { ecart_cf, secf, verified }
+--   tuplets_result           ⇄  TupletsRunResult     { tupd, tuph, gap, DELTA,
+--                                                      pourcentage, firstpart_*,
+--                                                      secondpart_* }
+-- ================================================================
+
+CREATE TABLE IF NOT EXISTS equidistribution_result (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    tested_gen_id     INTEGER NOT NULL REFERENCES tested_generator(id) ON DELETE CASCADE,
+    test_config       TEXT    NOT NULL,
+    kg                INTEGER NOT NULL,
+    L                 INTEGER NOT NULL,
+    Lmax              INTEGER NOT NULL,
+    ecart_json        TEXT    NOT NULL,  -- JSON array length Lmax+1; index 0 unused
+    se                INTEGER NOT NULL,
+    verified          INTEGER NOT NULL,  -- 0/1
+    elapsed_seconds   REAL,
+    created_at        TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_er_tested_gen ON equidistribution_result(tested_gen_id);
+CREATE INDEX IF NOT EXISTS idx_er_se ON equidistribution_result(se);
+
+CREATE TABLE IF NOT EXISTS collision_free_result (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    tested_gen_id     INTEGER NOT NULL REFERENCES tested_generator(id) ON DELETE CASCADE,
+    test_config       TEXT    NOT NULL,
+    kg                INTEGER NOT NULL,
+    L                 INTEGER NOT NULL,
+    ecart_cf_json     TEXT    NOT NULL,  -- JSON array length kg+1
+    secf              INTEGER NOT NULL,
+    verified          INTEGER NOT NULL,  -- 0/1
+    elapsed_seconds   REAL,
+    created_at        TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_cfr_tested_gen ON collision_free_result(tested_gen_id);
+CREATE INDEX IF NOT EXISTS idx_cfr_secf ON collision_free_result(secf);
+
+CREATE TABLE IF NOT EXISTS tuplets_result (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    tested_gen_id     INTEGER NOT NULL REFERENCES tested_generator(id) ON DELETE CASCADE,
+    test_config       TEXT    NOT NULL,
+    kg                INTEGER NOT NULL,
+    L                 INTEGER NOT NULL,
+    tupd              INTEGER NOT NULL,
+    testtype          INTEGER NOT NULL,  -- 0=SUM, 1=MAX (TUPLETS_TYPE_*)
+    threshold         REAL    NOT NULL,
+    tuph_json         TEXT    NOT NULL,  -- JSON array length tupd+1; 1-indexed
+    gap_json          TEXT    NOT NULL,  -- JSON array length tuph[1]+1; 1-indexed
+    DELTA_json        TEXT    NOT NULL,  -- JSON array length tupd+1; 1-indexed
+    pourcentage_json  TEXT    NOT NULL,  -- JSON array length tupd+1; 1-indexed
+    firstpart_max     REAL    NOT NULL,
+    firstpart_sum     REAL    NOT NULL,
+    secondpart_max    REAL    NOT NULL,
+    secondpart_sum    REAL    NOT NULL,
+    elapsed_seconds   REAL,
+    created_at        TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_tplr_tested_gen ON tuplets_result(tested_gen_id);
+
+-- ================================================================
 -- SEARCH PROGRESS (live updates)
 -- ================================================================
 

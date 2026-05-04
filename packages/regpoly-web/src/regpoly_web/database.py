@@ -17,7 +17,10 @@ import aiosqlite
 
 from regpoly_web.config import SCHEMA_PATH
 
-SCHEMA_VERSION = 1
+# v2 (Phase 5.4): typed result tables (equidistribution_result,
+# collision_free_result, tuplets_result) mirroring the C++ structs.
+# Old DBs are auto-upgraded by migrate_v2_inplace() at startup.
+SCHEMA_VERSION = 2
 
 
 def _apply_pragmas(conn: sqlite3.Connection | aiosqlite.Connection) -> None:
@@ -106,7 +109,19 @@ def init_sync(db_path: str) -> None:
         row = conn.execute(
             "SELECT MAX(version) FROM schema_version"
         ).fetchone()
-        if row is None or row[0] is None:
+        current_version = row[0] if row is not None else None
+        if current_version is None:
+            # Fresh DB: schema.sql created v2 tables already.
+            conn.execute(
+                "INSERT INTO schema_version(version) VALUES (?)",
+                (SCHEMA_VERSION,),
+            )
+        elif current_version < SCHEMA_VERSION:
+            # Existing DB at an older version: backfill typed tables
+            # from the legacy `test_result` rows, then bump version.
+            from regpoly_web.migrations.v2 import migrate_v2_inplace
+
+            migrate_v2_inplace(conn)
             conn.execute(
                 "INSERT INTO schema_version(version) VALUES (?)",
                 (SCHEMA_VERSION,),
