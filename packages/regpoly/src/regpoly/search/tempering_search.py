@@ -6,6 +6,13 @@ parameters and evaluates a test.  When the test is equidistribution
 and the transformations have optimizable bitmask parameters, the
 TemperingOptimizer is invoked to refine the bitmasks at each try.
 
+Phase 2.4c: the per-combo / per-try loop now lives in C++
+(`run_tempering_search`).  This Python wrapper builds a C++
+Combination from the Python one, registers callbacks for the per-try
+work (which still touches Python Transformation.randomize_params, the
+Python optimizer wrapper, and the Python test object), and assembles
+the final list of TemperingSearchResult instances for callers.
+
 Usage::
 
     from regpoly.search.tempering_optimizer import TemperingOptimizer
@@ -30,11 +37,14 @@ import sys
 import time
 from typing import TYPE_CHECKING
 
+from regpoly_cpp import _regpoly_cpp as _cpp
+
 from regpoly.analyses.abstract_results import AbstractTestResults
 from regpoly.analyses.abstract_test import AbstractTest
 from regpoly.analyses.equidistribution_test import EquidistributionTest
 from regpoly.core.combination import Combination
 from regpoly.io.tested_generator import save_tested_generator
+from regpoly.search.seek import _build_cpp_comb_from_python
 
 if TYPE_CHECKING:
     from regpoly.search.tempering_optimizer import TemperingOptimizer
@@ -109,121 +119,124 @@ class TemperingSearch:
         Returns a list of TemperingSearchResult, one per combination
         that produced a valid result.
         """
-        comb = Combination.CreateFromFiles(
+        py_comb = Combination.CreateFromFiles(
             self.gen_lists, self.Lmax, self.temperings)
 
-        if not comb.reset():
+        if not py_comb.reset():
             if self.verbose:
                 print("No valid generator combination found.")
             return []
 
         use_optimizer = (
             isinstance(self.test, EquidistributionTest)
-            and self._has_optimizable(comb)
+            and self._has_optimizable(py_comb)
         )
 
         if use_optimizer and self.optimizer is None:
             from regpoly.search.tempering_optimizer import TemperingOptimizer
             self.optimizer = TemperingOptimizer(verbose=False)
 
-        results = []
-        t_total = time.time()
-        combo_idx = 0
+        cpp_comb = _build_cpp_comb_from_python(py_comb)
 
-        while True:
-            combo_idx += 1
-            result = self._search_one_combo(comb, use_optimizer, combo_idx)
-            if result is not None:
-                results.append(result)
+        results: list[TemperingSearchResult] = []
+        # Per-combo state shared by callbacks.  best_params is rebuilt
+        # eagerly whenever a new best score is observed in on_try, so
+        # the snapshot is stable when on_combo_done fires.
+        state = {
+            "best_se": None,
+            "best_result": None,
+            "best_params": None,
+            "t_combo_start": 0.0,
+            "is_first_combo": True,
+        }
 
-            try:
-                next(comb)
-            except StopIteration:
-                break
+        def on_combo_start(_cpp_comb, combo_idx):
+            # The C++ Combination has just advanced (or was reset for
+            # combo 1).  Mirror the advance into the Python Combination
+            # so the live Python state matches what callbacks observe.
+            if state["is_first_combo"]:
+                state["is_first_combo"] = False
+            else:
+                try:
+                    next(py_comb)
+                except StopIteration:
+                    pass
+            state["best_se"] = None
+            state["best_result"] = None
+            state["best_params"] = None
+            state["t_combo_start"] = time.time()
+            if self.verbose:
+                gens_str = " + ".join(
+                    f"{py_comb[j].name()}(k={py_comb[j].k})"
+                    for j in range(py_comb.J))
+                print(f"\nCombination {combo_idx}: {gens_str}, "
+                      f"k_g={py_comb.k_g}, L={py_comb.L}")
+                sys.stdout.flush()
 
-        elapsed_total = time.time() - t_total
-        if self.verbose:
-            print(f"\nSearch complete: {combo_idx} combinations, "
-                  f"{len(results)} with results, {elapsed_total:.1f}s")
-
-        return results
-
-    def _search_one_combo(self, comb: Combination,
-                          use_optimizer: bool,
-                          combo_idx: int) -> TemperingSearchResult | None:
-        """Search over nb_tries for one generator combination."""
-        t_start = time.time()
-
-        if self.verbose:
-            gens_str = " + ".join(
-                f"{comb[j].name()}(k={comb[j].k})"
-                for j in range(comb.J))
-            print(f"\nCombination {combo_idx}: {gens_str}, "
-                  f"k_g={comb.k_g}, L={comb.L}")
-            sys.stdout.flush()
-
-        best_se = None
-        best_result = None
-        best_params = None
-
-        for t in range(self.nb_tries):
-            # Re-randomize non-structural transformation params in place
-            for comp in comb.components:
+        def on_try(_cpp_comb, _combo_idx, try_idx, _is_first):
+            for comp in py_comb.components:
                 for trans in comp.trans:
                     trans.randomize_params()
 
-            # Optimize bitmask params if applicable
             if use_optimizer:
-                self._run_optimizer(comb)
+                try:
+                    self.optimizer.run(py_comb)
+                except ValueError:
+                    pass  # no optimizable params for this combo
 
-            # Run the test
-            test_result = self.test.run(comb)
+            test_result = self.test.run(py_comb)
+            score = self._score(test_result)
 
-            # Extract score (se for equidistribution, generic for others)
-            se = self._score(test_result)
+            outcome = _cpp.TemperingTryOutcome()
+            outcome.got_result = True
+            outcome.score = score
 
-            if best_se is None or se < best_se:
-                best_se = se
-                best_result = test_result
-                best_params = self._save_params(comb)
-
+            if state["best_se"] is None or score < state["best_se"]:
+                state["best_se"] = score
+                state["best_result"] = test_result
+                state["best_params"] = self._save_params(py_comb)
                 if self.verbose:
-                    print(f"  try {t + 1:>4d}: se={se}"
-                          f"{'  ME!' if se == 0 else ''}")
+                    print(f"  try {try_idx + 1:>4d}: se={score}"
+                          f"{'  ME!' if score == 0 else ''}")
                     sys.stdout.flush()
+            return outcome
 
-                if se == 0:
-                    break
+        def on_combo_done(_cpp_comb, _combo_idx, _best_score, _best_try):
+            if state["best_params"] is None:
+                return
+            self._restore_params(py_comb, state["best_params"])
+            elapsed = time.time() - state["t_combo_start"]
+            if self.verbose:
+                print(f"  Best: se={state['best_se']} ({elapsed:.1f}s)")
+            if self.output_dir and state["best_result"] is not None:
+                test_results = self._build_results_dict(state["best_result"])
+                path = save_tested_generator(
+                    self.output_dir, "equidist", py_comb, test_results)
+                if self.verbose:
+                    print(f"  Saved: {path}")
+            results.append(TemperingSearchResult(
+                se=state["best_se"],
+                test_result=state["best_result"],
+                params=state["best_params"],
+                elapsed=elapsed))
 
-        if best_params is None:
-            return None
+        cfg = _cpp.TemperingSearchConfig()
+        cfg.nb_tries = self.nb_tries
+        cfg.progress_interval = 0
 
-        # Restore best params
-        self._restore_params(comb, best_params)
-
-        elapsed = time.time() - t_start
+        cpp_result = _cpp.run_tempering_search(
+            cpp_comb, cfg,
+            on_combo_start=on_combo_start,
+            on_try=on_try,
+            on_combo_done=on_combo_done,
+            on_progress=None)
 
         if self.verbose:
-            print(f"  Best: se={best_se} ({elapsed:.1f}s)")
+            print(f"\nSearch complete: {cpp_result.nbgen} combinations, "
+                  f"{cpp_result.nb_with_result} with results, "
+                  f"{cpp_result.elapsed_seconds:.1f}s")
 
-        # Save if output_dir specified
-        if self.output_dir and best_result is not None:
-            test_results = self._build_results_dict(best_result)
-            path = save_tested_generator(
-                self.output_dir, "equidist", comb, test_results)
-            if self.verbose:
-                print(f"  Saved: {path}")
-
-        return TemperingSearchResult(
-            se=best_se, test_result=best_result,
-            params=best_params, elapsed=elapsed)
-
-    def _run_optimizer(self, comb: Combination) -> None:
-        """Run the optimizer on this comb."""
-        try:
-            self.optimizer.run(comb)
-        except ValueError:
-            pass  # no optimizable params for this combo
+        return results
 
     # -- Helpers -----------------------------------------------------------
 

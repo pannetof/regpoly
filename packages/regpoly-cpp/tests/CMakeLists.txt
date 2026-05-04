@@ -25,6 +25,7 @@ add_executable(regpoly_cpp_tests
     test_resolution_sets.cpp
     test_seek_search.cpp
     test_tempering_optimizer.cpp
+    test_tempering_search.cpp
 )
 target_include_directories(regpoly_cpp_tests PRIVATE
     ../src/include/algebra

@@ -19,6 +19,7 @@
 #include "resolution_sets.h"
 #include "search_types.h"
 #include "seek_search.h"
+#include "tempering_search.h"
 #include "temper_optimizer.h"
 #include "tempering_optimizer.h"
 #include "tausworthe.h"
@@ -1093,6 +1094,83 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
        "Run the seek search loop in C++. Iterates the combination, "
        "runs the configured tests in order, and emits callbacks for "
        "selections + periodic progress. Returns a SeekResult.");
+
+    // ── TemperingSearchDriver (Phase 2.4c) ─────────────────────────────
+    //
+    // Drives the per-combo / per-try search loop in C++. Per-try work
+    // (re-randomize tempering params, optimize, run test) lives in the
+    // Python on_try callback because randomize_params lives on Python
+    // Transformations.
+
+    py::class_<TemperingSearchConfig>(m, "TemperingSearchConfig")
+        .def(py::init<>())
+        .def_readwrite("nb_tries",          &TemperingSearchConfig::nb_tries)
+        .def_readwrite("progress_interval", &TemperingSearchConfig::progress_interval);
+
+    py::class_<TemperingTryOutcome>(m, "TemperingTryOutcome")
+        .def(py::init<>())
+        .def_readwrite("got_result", &TemperingTryOutcome::got_result)
+        .def_readwrite("score",      &TemperingTryOutcome::score);
+
+    py::class_<TemperingSearchResult>(m, "TemperingSearchResult")
+        .def_readonly("nbgen",           &TemperingSearchResult::nbgen)
+        .def_readonly("nb_with_result",  &TemperingSearchResult::nb_with_result)
+        .def_readonly("elapsed_seconds", &TemperingSearchResult::elapsed_seconds);
+
+    m.def("run_tempering_search",
+          [](Combination& comb,
+             const TemperingSearchConfig& cfg,
+             const py::object& on_combo_start,
+             const py::object& on_try,
+             const py::object& on_combo_done,
+             const py::object& on_progress) -> TemperingSearchResult {
+        if (on_try.is_none()) {
+            throw std::invalid_argument(
+                "run_tempering_search: on_try callback is required");
+        }
+        TempSearchOnComboStartFn start_fn = nullptr;
+        if (!on_combo_start.is_none()) {
+            start_fn = [&on_combo_start](Combination& c, int idx) {
+                on_combo_start(
+                    py::cast(&c, py::return_value_policy::reference), idx);
+            };
+        }
+        TempSearchOnTryFn try_fn =
+            [&on_try](Combination& c, int combo_idx, int try_idx,
+                      bool is_first) -> TemperingTryOutcome {
+                py::object r = on_try(
+                    py::cast(&c, py::return_value_policy::reference),
+                    combo_idx, try_idx, is_first);
+                return r.cast<TemperingTryOutcome>();
+            };
+        TempSearchOnComboDoneFn done_fn = nullptr;
+        if (!on_combo_done.is_none()) {
+            done_fn = [&on_combo_done](Combination& c, int idx,
+                                       int best_score, int best_try) {
+                on_combo_done(
+                    py::cast(&c, py::return_value_policy::reference),
+                    idx, best_score, best_try);
+            };
+        }
+        TempSearchOnProgressFn prog_fn = nullptr;
+        if (!on_progress.is_none()) {
+            prog_fn = [&on_progress](const SearchProgress& p) {
+                on_progress(p);
+            };
+        }
+        return run_tempering_search(
+            comb, cfg, start_fn, try_fn, done_fn, prog_fn);
+    }, py::arg("combination"), py::arg("config"),
+       py::arg("on_combo_start") = py::none(),
+       py::arg("on_try"),
+       py::arg("on_combo_done")  = py::none(),
+       py::arg("on_progress")    = py::none(),
+       "Run the tempering search loop in C++. Per combo, fires on_try "
+       "nb_tries times (Python re-randomizes + optimizes + tests + "
+       "returns a TemperingTryOutcome). Tracks the best score per combo, "
+       "fires on_combo_done with the best result, advances the "
+       "Combination, and emits on_progress every progress_interval tries. "
+       "Returns a TemperingSearchResult.");
 
     m.def("run_tempering_optimizer_minimize",
           [build_locators, export_locators](
