@@ -30,7 +30,6 @@ import json
 import sqlite3
 from typing import Any
 
-
 _EQUID_TYPES = frozenset({"equidistribution", "matricial", "matricial_equidistribution"})
 _CF_TYPES = frozenset({"collision_free", "collisions", "cf"})
 _TUPLETS_TYPES = frozenset({"tuplets", "tuplet"})

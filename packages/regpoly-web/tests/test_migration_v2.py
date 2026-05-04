@@ -20,7 +20,6 @@ from pathlib import Path
 
 import pytest
 
-
 # ── v1 schema (subset reproducing the structure we need to migrate) ──
 
 V1_SCHEMA = """
