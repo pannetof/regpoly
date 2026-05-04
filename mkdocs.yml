@@ -59,6 +59,13 @@ plugins:
   - gen-files:
       scripts:
         - docs/gen_paper_pages.py
+  - mkdocs-jupyter:
+      execute: false
+      include_source: false
+      ignore:
+        - "docs/notebooks/families/_stamp.py"
+        - "docs/notebooks/families/_runner.py"
+        - "docs/gen_paper_pages.py"
 
 nav:
   - Home: index.md
@@ -116,6 +123,26 @@ nav:
       - C++: usage/cpp.md
       - Web: usage/web.md
       - Notebooks: usage/notebooks.md
+  - Notebooks:
+      - "Per-family":
+          - "AC1D":           notebooks/families/AC1DGen.ipynb
+          - "DSFMT":          notebooks/families/DSFMTGen.ipynb
+          - "F2w-LFSR":       notebooks/families/F2wLFSRGen.ipynb
+          - "F2w-PolyLCG":    notebooks/families/F2wPolyLCGGen.ipynb
+          - "MELG":           notebooks/families/MELGGen.ipynb
+          - "MT":             notebooks/families/MTGen.ipynb
+          - "MTGP":           notebooks/families/MTGPGen.ipynb
+          - "Marsaglia XOR":  notebooks/families/MarsaXorshiftGen.ipynb
+          - "Matsumoto":      notebooks/families/MatsumotoGen.ipynb
+          - "PolyLCG":        notebooks/families/PolyLCGGen.ipynb
+          - "RMT64":          notebooks/families/RMT64Gen.ipynb
+          - "SFMT":           notebooks/families/SFMTGen.ipynb
+          - "TGFSR":          notebooks/families/TGFSRGen.ipynb
+          - "Tausworthe":     notebooks/families/TauswortheGen.ipynb
+          - "TinyMT32":       notebooks/families/TinyMT32Gen.ipynb
+          - "WELL":           notebooks/families/WELLGen.ipynb
+          - "XorShift128":    notebooks/families/XorShift128Gen.ipynb
+          - "Combination":    notebooks/families/CombinedGenerator.ipynb
   - Dev:
       - Architecture: dev/architecture.md
       - Building: dev/building.md
