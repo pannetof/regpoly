@@ -45,3 +45,67 @@ target_link_libraries(regpoly_cpp_tests PRIVATE
     GTest::gtest_main)
 
 gtest_discover_tests(regpoly_cpp_tests)
+
+# ── regpoly-cli subprocess tests ──────────────────────────────────────
+# Exercise the Phase 4.1 CLI subcommands by spawning the binary. These
+# don't go through GoogleTest — they just check exit code + stdout
+# pattern via `add_test` + `set_tests_properties(... PASS_REGULAR_EXPRESSION ...)`.
+# The binary lives under the build dir; the docs/library and
+# shared/legacy_parameters fixtures live in the source tree.
+
+if(TARGET regpoly_cli)
+    set(REGPOLY_CLI $<TARGET_FILE:regpoly_cli>)
+    set(REPO_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
+
+    add_test(NAME RegpolyCli.Help
+             COMMAND ${REGPOLY_CLI} --help)
+    set_tests_properties(RegpolyCli.Help PROPERTIES
+        PASS_REGULAR_EXPRESSION "Usage: regpoly-cli")
+
+    add_test(NAME RegpolyCli.Version
+             COMMAND ${REGPOLY_CLI} --version)
+    set_tests_properties(RegpolyCli.Version PROPERTIES
+        PASS_REGULAR_EXPRESSION "regpoly-cli 2\\.0\\.0")
+
+    add_test(NAME RegpolyCli.CatalogList
+             COMMAND ${REGPOLY_CLI} catalog list
+                     --library ${REPO_ROOT}/docs/library)
+    set_tests_properties(RegpolyCli.CatalogList PROPERTIES
+        PASS_REGULAR_EXPRESSION "matsumoto-nishimura-1998")
+
+    add_test(NAME RegpolyCli.CatalogShowMT
+             COMMAND ${REGPOLY_CLI} catalog show matsumoto-nishimura-1998
+                     --library ${REPO_ROOT}/docs/library)
+    set_tests_properties(RegpolyCli.CatalogShowMT PROPERTIES
+        PASS_REGULAR_EXPRESSION "Mersenne Twister")
+
+    add_test(NAME RegpolyCli.CatalogGenMT
+             COMMAND ${REGPOLY_CLI} catalog gen mt19937
+                     --library ${REPO_ROOT}/docs/library)
+    set_tests_properties(RegpolyCli.CatalogGenMT PROPERTIES
+        PASS_REGULAR_EXPRESSION "MersenneTwister")
+
+    add_test(NAME RegpolyCli.LegacyInfoMT
+             COMMAND ${REGPOLY_CLI} legacy-info
+                     ${REPO_ROOT}/shared/legacy_parameters/MT19937.dat)
+    set_tests_properties(RegpolyCli.LegacyInfoMT PROPERTIES
+        PASS_REGULAR_EXPRESSION "MersenneTwister")
+
+    add_test(NAME RegpolyCli.LegacyTrans
+             COMMAND ${REGPOLY_CLI} legacy-trans
+                     ${REPO_ROOT}/shared/legacy_parameters/trans32.dat)
+    set_tests_properties(RegpolyCli.LegacyTrans PROPERTIES
+        PASS_REGULAR_EXPRESSION "tempMK")
+
+    # Negative cases — exit non-zero on bad input.
+    add_test(NAME RegpolyCli.UnknownCommand
+             COMMAND ${REGPOLY_CLI} bogus-command)
+    set_tests_properties(RegpolyCli.UnknownCommand PROPERTIES
+        WILL_FAIL TRUE)
+
+    add_test(NAME RegpolyCli.MissingPaper
+             COMMAND ${REGPOLY_CLI} catalog show no-such-paper
+                     --library ${REPO_ROOT}/docs/library)
+    set_tests_properties(RegpolyCli.MissingPaper PROPERTIES
+        WILL_FAIL TRUE)
+endif()
