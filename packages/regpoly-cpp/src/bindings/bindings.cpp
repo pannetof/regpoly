@@ -21,6 +21,7 @@
 #include "seek_search.h"
 #include "tempering_search.h"
 #include "catalog.h"
+#include "legacy_reader.h"
 #include "temper_optimizer.h"
 #include "tempering_optimizer.h"
 #include "tausworthe.h"
@@ -1394,4 +1395,41 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
           },
           py::arg("family"), py::arg("params"), py::arg("tempering"),
           "Stable short hash of one component config.");
+
+    // ── Legacy reader (Phase 3.3) ──────────────────────────────────────
+    //
+    // The C++ regpoly_legacy::read_*_specs returns Params records. We
+    // surface them to Python as (family, params_dict) tuples so the
+    // Python wrapper can call Generator.create / Transformation.create
+    // and preserve its _params dict for downstream randomisation.
+
+    m.def("legacy_read_generator_specs",
+          [](const std::string& filename, int L) -> py::list {
+              auto specs = regpoly_legacy::read_generator_specs(filename, L);
+              py::list out;
+              for (const auto& s : specs) {
+                  out.append(py::make_tuple(
+                      py::str(s.family), params_to_dict(s.params)));
+              }
+              return out;
+          }, py::arg("filename"), py::arg("L"),
+          "Parse a legacy .dat generator file and return a list of "
+          "(family, params_dict) tuples. Used by the Python "
+          "regpoly.io.legacy_reader shim to round-trip via "
+          "Generator.create() so the Python wrapper's _params dict "
+          "stays populated for randomisation paths.");
+
+    m.def("legacy_read_transformation_specs",
+          [](const std::string& filename) -> py::tuple {
+              auto r = regpoly_legacy::read_transformation_specs(filename);
+              py::list specs;
+              for (const auto& s : r.specs) {
+                  specs.append(py::make_tuple(
+                      py::str(s.trans_type), params_to_dict(s.params)));
+              }
+              return py::make_tuple(specs, r.mk_opt);
+          }, py::arg("filename"),
+          "Parse a legacy .dat transformations file. Returns a "
+          "(specs_list, mk_opt) tuple; specs_list is a list of "
+          "(type, params_dict) tuples.");
 }
