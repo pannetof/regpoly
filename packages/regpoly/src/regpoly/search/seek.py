@@ -14,14 +14,20 @@ import socket
 import sys
 import time
 
+import regpoly._regpoly_cpp as _cpp
+from regpoly.analyses.collision_free_results import CollisionFreeResults
 from regpoly.analyses.collision_free_test import CollisionFreeTest
+from regpoly.analyses.equidistribution_results import EquidistributionResults
 from regpoly.analyses.equidistribution_test import (
     METHOD_DUALLATTICE,
+    METHOD_HARASE,
     METHOD_MATRICIAL,
     METHOD_NOTHING,
+    METHOD_NOTPRIMITIVE,
+    METHOD_SIMD_NOTPRIMITIVE,
     EquidistributionTest,
 )
-from regpoly.analyses.tuplets_results import _MAX_TYPE
+from regpoly.analyses.tuplets_results import _MAX_TYPE, TupletsResults
 from regpoly.analyses.tuplets_test import TupletsTest
 from regpoly.core.combination import Combination
 from regpoly.core.generator import Generator
@@ -148,87 +154,220 @@ class Seek:
     # -- Run ---------------------------------------------------------------
 
     def run(self) -> None:
-        """Execute the search, printing results to stdout."""
-        comb = self._comb
+        """Execute the search, printing results to stdout. Phase 2.4b:
+        the per-combo iteration loop now lives in C++; Python keeps
+        ownership of YAML parsing, result-object synthesis for display,
+        and persistence."""
+        py_comb = self._comb
         nbtries = self._nbtries
         tests = self._tests
 
-        if not comb.reset():
+        if not py_comb.reset():
             print("First combined generator not found or invalid Combination")
             return
 
-        nbgen = nbsel = nbME = nbCF = 0
-        no_try = 1
-        t_start = time.time()
+        # Mirror each test object so the on_iter callback can rebuild
+        # EquidistributionResults / TupletsResults instances that the
+        # existing display path consumes.
+        eq_test = next(
+            (t for t in tests if isinstance(t, EquidistributionTest)), None)
+        tup_test = next(
+            (t for t in tests if isinstance(t, TupletsTest)), None)
+        cf_test = next(
+            (t for t in tests if isinstance(t, CollisionFreeTest)), None)
 
-        while True:
-            nbgen += 1
+        # Build the C++ Combination + the typed test specs for the driver.
+        cpp_comb = _build_cpp_comb_from_python(py_comb)
+        test_specs = _build_test_specs(tests)
 
-            # Run tests in order
-            passed = True
-            me_results = None
-            tup_results = None
+        state = {"first_done": False, "nbsel": 0, "nbME": 0, "nbCF": 0}
 
-            for test in tests:
-                if isinstance(test, EquidistributionTest):
-                    me_results = test.run(comb)
-                    if not me_results.is_presque_me():
-                        passed = False
-                        break
+        def on_prep(_cpp_c, is_retry):
+            # Lockstep: the C++ comb starts at the same position as
+            # py_comb (built by _build_cpp_comb_from_python). On
+            # subsequent fresh-combo iterations (not retries), advance
+            # py_comb to match the C++ side so the display path sees
+            # the right state.
+            if not state["first_done"]:
+                state["first_done"] = True
+                return
+            if not is_retry:
+                try:
+                    next(py_comb)
+                except StopIteration:
+                    pass
 
-                elif isinstance(test, TupletsTest):
-                    tup_results = test.run(comb)
-                    if not tup_results.is_ok():
-                        passed = False
-                        break
+        def on_iter(_cpp_c, iter_result):
+            me_results = _synth_me_results(iter_result, eq_test, py_comb)
+            tup_results = _synth_tup_results(iter_result, tup_test)
+            cf_results = _synth_cf_results(iter_result, cf_test)
 
-                elif isinstance(test, CollisionFreeTest):
-                    test.run(comb, me_results=me_results)
+            print(_format_current_comb(py_comb))
 
-            if passed and me_results is not None:
-                print(_format_current_comb(comb))
+            if me_results is not None:
                 if me_results.is_me():
                     msg = me_results.display()
                     if msg:
                         print(msg)
-                    nbME += 1
+                    state["nbME"] += 1
                 else:
                     print("\n  Dimension gaps for every resolution", end="")
-                    table_str, _ = me_results.display_table(comb, 'l')
+                    table_str, _ = me_results.display_table(py_comb, "l")
                     print(table_str)
-                if tup_results is not None:
-                    msg = tup_results.display()
-                    if msg:
-                        print(msg)
-                nbsel += 1
+            if tup_results is not None:
+                msg = tup_results.display()
+                if msg:
+                    print(msg)
+            if cf_results is not None and cf_results.verified:
+                msg = cf_results.display()
+                if msg:
+                    print(msg)
 
-                # Save tested generator
-                if self._output_dir:
-                    test_results = _build_results_dict(me_results, tup_results)
-                    path = save_tested_generator(
-                        self._output_dir, "equidist", comb, test_results)
-                    print(f"  Saved: {path}")
+            state["nbsel"] += 1
 
-                print(_SEP)
+            if self._output_dir:
+                test_results = _build_results_dict(me_results, tup_results)
+                path = save_tested_generator(
+                    self._output_dir, "equidist", py_comb, test_results)
+                print(f"  Saved: {path}")
 
+            print(_SEP)
             sys.stdout.flush()
 
-            if no_try < nbtries:
-                no_try += 1
-            else:
-                try:
-                    next(comb)
-                except StopIteration:
-                    break
-                no_try = 1
+        cpp_result = _cpp.run_seek_search(
+            cpp_comb, test_specs, nbtries,
+            1,  # progress_interval (unused since on_progress is None)
+            on_prep=on_prep, on_iter=on_iter, on_progress=None)
 
-        elapsed = time.time() - t_start
-        print(_format_summary(nbgen, nbME, nbCF, nbsel, elapsed))
+        print(_format_summary(
+            cpp_result.nbgen, state["nbME"], state["nbCF"],
+            state["nbsel"], cpp_result.elapsed_seconds))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Private helpers
 # ═══════════════════════════════════════════════════════════════════════════
+
+_INT_MAX_C = 2**31 - 1
+
+
+def _build_cpp_comb_from_python(py_comb: Combination):
+    """Construct a C++ Combination mirroring the Python one's pool +
+    transformation structure. Detects shared pools by Python list
+    object identity and replays them via share_pool_with on the C++
+    side (preserving C(n,k) selection semantics)."""
+    cpp_comb = _cpp.Combination(py_comb.J, py_comb.Lmax)
+    pool_owner: dict[int, int] = {}
+    for j, py_comp in enumerate(py_comb.components):
+        cpp_comp = cpp_comb.component(j)
+        pool_key = id(py_comp.gens)
+        if pool_key in pool_owner:
+            cpp_comp.share_pool_with(cpp_comb.component(pool_owner[pool_key]))
+        else:
+            pool_owner[pool_key] = j
+            for py_gen in py_comp.gens:
+                cpp_comp.add_gen(py_gen._cpp_gen)
+        for py_trans in py_comp.trans:
+            cpp_comp.add_trans(py_trans._cpp_trans)
+    if not cpp_comb.reset():
+        raise RuntimeError(
+            "_build_cpp_comb_from_python: C++ combination has no valid combo "
+            "(empty pool?)")
+    return cpp_comb
+
+
+_EQ_METHOD_TO_KIND = {
+    METHOD_MATRICIAL:        "EquidistributionMatricial",
+    METHOD_DUALLATTICE:      "EquidistributionLattice",
+    METHOD_HARASE:           "EquidistributionHarase",
+    METHOD_NOTPRIMITIVE:     "EquidistributionNotPrimitive",
+    METHOD_SIMD_NOTPRIMITIVE:"EquidistributionSimdNotPrimitive",
+    METHOD_NOTHING:          "EquidistributionNothing",
+}
+
+
+def _build_test_specs(tests: list) -> list:
+    """Convert each Python test instance to a SeekTestSpec for the C++
+    driver. Order is preserved — the driver runs them in order and
+    short-circuits on equidistribution / tuplets failure."""
+    out = []
+    for t in tests:
+        spec = _cpp.SeekTestSpec()
+        if isinstance(t, EquidistributionTest):
+            kind_name = _EQ_METHOD_TO_KIND.get(
+                t.method, "EquidistributionMatricial")
+            spec.kind = getattr(_cpp.SeekTestKind, kind_name)
+            spec.eq_L_max_test = t.L
+            spec.eq_delta = [min(d, _INT_MAX_C) for d in t.delta]
+            spec.eq_mse = min(t.mse, _INT_MAX_C)
+        elif isinstance(t, CollisionFreeTest):
+            spec.kind = _cpp.SeekTestKind.CollisionFree
+        elif isinstance(t, TupletsTest):
+            spec.kind = _cpp.SeekTestKind.Tuplets
+            spec.tup_d = t.d
+            spec.tup_h = list(t.s) if t.s else [0]
+            spec.tup_threshold = float(t.mDD)
+            spec.tup_testtype = int(t.testtype)
+        else:
+            raise TypeError(f"Unknown test type: {type(t).__name__}")
+        out.append(spec)
+    return out
+
+
+def _synth_me_results(iter_result, eq_test, py_comb):
+    """Build an EquidistributionResults object the existing display
+    code expects, from the SeekIterResult fields."""
+    if not iter_result.me_ran or eq_test is None:
+        return None
+    psi12 = list(_cpp.compute_psi12(py_comb.k_g, eq_test.L))
+    return EquidistributionResults(
+        L=eq_test.L,
+        ecart=list(iter_result.me_ecart),
+        psi12=psi12,
+        se=iter_result.me_se,
+        verified=iter_result.me_verified,
+        mse=eq_test.mse,
+        meverif=eq_test.meverif,
+        delta=eq_test.delta,
+    )
+
+
+def _synth_tup_results(iter_result, tup_test):
+    """Best-effort TupletsResults reconstruction. The C++ runner
+    returns the firstpart_/secondpart_ aggregates; the per-tuple
+    arrays (gap, DELTA, pourcentage, tuph) are not currently surfaced
+    on the SeekIterResult — so for display purposes we keep them
+    empty. The display() method handles empty arrays gracefully (it
+    only prints the firstpart/secondpart summary)."""
+    if not iter_result.tup_ran or tup_test is None:
+        return None
+    return TupletsResults(
+        tupletsverif=True,
+        tupd=tup_test.d,
+        tuph=list(tup_test.s) if tup_test.s else [],
+        gap=[],
+        DELTA=[],
+        pourcentage=[],
+        firstpart_max=iter_result.tup_firstpart_max,
+        firstpart_sum=iter_result.tup_firstpart_sum,
+        secondpart_max=iter_result.tup_secondpart_max,
+        secondpart_sum=iter_result.tup_secondpart_sum,
+        treshold=tup_test.mDD,
+        testtype=tup_test.testtype,
+        verified=True,
+    )
+
+
+def _synth_cf_results(iter_result, cf_test):
+    if not iter_result.cf_ran or cf_test is None:
+        return None
+    return CollisionFreeResults(
+        ecart_cf=list(iter_result.cf_ecart_cf),
+        secf=iter_result.cf_secf,
+        verified=iter_result.cf_verified,
+        msecf=cf_test.msecf,
+    )
+
 
 def _compute_seeds(seed1, seed2):
     if seed1 == -1:

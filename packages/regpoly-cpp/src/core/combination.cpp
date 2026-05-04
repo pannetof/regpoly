@@ -189,3 +189,28 @@ bool Combination::next() {
     update_stats();
     return true;
 }
+
+// ── build_combined_from_combination ────────────────────────────────────────
+
+std::unique_ptr<CombinedGenerator>
+build_combined_from_combination(const Combination& comb)
+{
+    std::vector<std::unique_ptr<Generator>> comps;
+    std::vector<CombinedGenerator::ComponentTempering> chains;
+    comps.reserve(comb.J());
+    chains.reserve(comb.J());
+
+    for (int j = 0; j < comb.J(); ++j) {
+        const Component& c = comb.component(j);
+        comps.push_back(c.active_gen().copy());
+
+        CombinedGenerator::ComponentTempering chain;
+        chain.reserve(c.nb_trans());
+        for (int ti = 0; ti < c.nb_trans(); ++ti)
+            chain.push_back(c.trans_at(ti).copy());
+        chains.push_back(std::move(chain));
+    }
+
+    return std::make_unique<CombinedGenerator>(
+        std::move(comps), std::move(chains), comb.Lmax());
+}

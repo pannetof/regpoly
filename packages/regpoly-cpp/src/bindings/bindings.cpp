@@ -18,6 +18,7 @@
 #include "primitivity.h"
 #include "resolution_sets.h"
 #include "search_types.h"
+#include "seek_search.h"
 #include "temper_optimizer.h"
 #include "tempering_optimizer.h"
 #include "tausworthe.h"
@@ -986,6 +987,112 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
        py::arg("safe_masks"),
        "Single recursive optimization pass. Returns "
        "(TemperingOptResult, [final_value_per_locator]).");
+
+    // ── SeekDriver (Phase 2.4b) ────────────────────────────────────────
+    //
+    // Drives the equidistribution / collision-free / tuplets search
+    // loop in C++. The Python Seek.run() shrinks to: build a C++
+    // Combination from the Python Combination, build a list of
+    // SeekTestSpec, register on_prep / on_iter / on_progress
+    // callbacks for re-randomization / persistence / progress, call
+    // run_seek_search.
+
+    py::enum_<SeekTestKind>(m, "SeekTestKind")
+        .value("EquidistributionMatricial",
+               SeekTestKind::EquidistributionMatricial)
+        .value("EquidistributionLattice",
+               SeekTestKind::EquidistributionLattice)
+        .value("EquidistributionHarase",
+               SeekTestKind::EquidistributionHarase)
+        .value("EquidistributionNotPrimitive",
+               SeekTestKind::EquidistributionNotPrimitive)
+        .value("EquidistributionSimdNotPrimitive",
+               SeekTestKind::EquidistributionSimdNotPrimitive)
+        .value("EquidistributionNothing",
+               SeekTestKind::EquidistributionNothing)
+        .value("CollisionFree",     SeekTestKind::CollisionFree)
+        .value("Tuplets",           SeekTestKind::Tuplets);
+
+    py::class_<SeekTestSpec>(m, "SeekTestSpec")
+        .def(py::init<>())
+        .def_readwrite("kind",            &SeekTestSpec::kind)
+        .def_readwrite("eq_L_max_test",   &SeekTestSpec::eq_L_max_test)
+        .def_readwrite("eq_delta",        &SeekTestSpec::eq_delta)
+        .def_readwrite("eq_mse",          &SeekTestSpec::eq_mse)
+        .def_readwrite("tup_d",           &SeekTestSpec::tup_d)
+        .def_readwrite("tup_h",           &SeekTestSpec::tup_h)
+        .def_readwrite("tup_threshold",   &SeekTestSpec::tup_threshold)
+        .def_readwrite("tup_testtype",    &SeekTestSpec::tup_testtype);
+
+    py::class_<SeekIterResult>(m, "SeekIterResult")
+        .def_readonly("selected",          &SeekIterResult::selected)
+        .def_readonly("me_ran",            &SeekIterResult::me_ran)
+        .def_readonly("me_verified",       &SeekIterResult::me_verified)
+        .def_readonly("me_is_me",          &SeekIterResult::me_is_me)
+        .def_readonly("me_se",             &SeekIterResult::me_se)
+        .def_readonly("me_test_L",         &SeekIterResult::me_test_L)
+        .def_readonly("me_ecart",          &SeekIterResult::me_ecart)
+        .def_readonly("tup_ran",           &SeekIterResult::tup_ran)
+        .def_readonly("tup_verified",      &SeekIterResult::tup_verified)
+        .def_readonly("tup_is_ok",         &SeekIterResult::tup_is_ok)
+        .def_readonly("tup_firstpart_max", &SeekIterResult::tup_firstpart_max)
+        .def_readonly("tup_firstpart_sum", &SeekIterResult::tup_firstpart_sum)
+        .def_readonly("tup_secondpart_max",&SeekIterResult::tup_secondpart_max)
+        .def_readonly("tup_secondpart_sum",&SeekIterResult::tup_secondpart_sum)
+        .def_readonly("cf_ran",            &SeekIterResult::cf_ran)
+        .def_readonly("cf_verified",       &SeekIterResult::cf_verified)
+        .def_readonly("cf_secf",           &SeekIterResult::cf_secf)
+        .def_readonly("cf_ecart_cf",       &SeekIterResult::cf_ecart_cf);
+
+    py::class_<SeekProgress>(m, "SeekProgress")
+        .def_readonly("nbgen",          &SeekProgress::nbgen)
+        .def_readonly("nb_select",      &SeekProgress::nb_select)
+        .def_readonly("nb_me",          &SeekProgress::nb_me)
+        .def_readonly("elapsed_seconds",&SeekProgress::elapsed_seconds);
+
+    py::class_<SeekResult>(m, "SeekResult")
+        .def_readonly("nbgen",          &SeekResult::nbgen)
+        .def_readonly("nb_select",      &SeekResult::nb_select)
+        .def_readonly("nb_me",          &SeekResult::nb_me)
+        .def_readonly("elapsed_seconds",&SeekResult::elapsed_seconds);
+
+    m.def("run_seek_search",
+          [](Combination& comb,
+             const std::vector<SeekTestSpec>& tests,
+             int nbtries,
+             int progress_interval,
+             const py::object& on_prep,
+             const py::object& on_iter,
+             const py::object& on_progress) -> SeekResult {
+        SeekOnPrepFn prep_fn = nullptr;
+        if (!on_prep.is_none()) {
+            prep_fn = [&on_prep](Combination& c, bool is_retry) {
+                on_prep(py::cast(&c, py::return_value_policy::reference),
+                        is_retry);
+            };
+        }
+        SeekOnIterFn iter_fn = nullptr;
+        if (!on_iter.is_none()) {
+            iter_fn = [&on_iter](Combination& c, const SeekIterResult& r) {
+                on_iter(py::cast(&c, py::return_value_policy::reference), r);
+            };
+        }
+        SeekOnProgressFn prog_fn = nullptr;
+        if (!on_progress.is_none()) {
+            prog_fn = [&on_progress](const SeekProgress& p) {
+                on_progress(p);
+            };
+        }
+        return run_seek_search(comb, tests, nbtries, progress_interval,
+                               prep_fn, iter_fn, prog_fn);
+    }, py::arg("combination"), py::arg("tests"), py::arg("nbtries"),
+       py::arg("progress_interval"),
+       py::arg("on_prep")     = py::none(),
+       py::arg("on_iter")     = py::none(),
+       py::arg("on_progress") = py::none(),
+       "Run the seek search loop in C++. Iterates the combination, "
+       "runs the configured tests in order, and emits callbacks for "
+       "selections + periodic progress. Returns a SeekResult.");
 
     m.def("run_tempering_optimizer_minimize",
           [build_locators, export_locators](

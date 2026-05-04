@@ -1,5 +1,6 @@
 #pragma once
 
+#include "combined.h"
 #include "generator.h"
 #include "transformation.h"
 
@@ -141,3 +142,13 @@ private:
     // already-placed slot < j.
     bool already_used(const Generator* g, int j) const;
 };
+
+
+// Build a CombinedGenerator that snapshots the current active state
+// of `comb`. Each active component generator is deep-copied via
+// Generator::copy(), and each component's tempering chain is cloned
+// via Transformation::copy(). The returned CombinedGenerator is
+// independent of `comb` — subsequent next()/reset() on `comb` does
+// not affect the returned object.
+std::unique_ptr<CombinedGenerator>
+build_combined_from_combination(const Combination& comb);

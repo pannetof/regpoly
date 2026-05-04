@@ -36,6 +36,7 @@
 #include <regpoly/primitivity.h>
 #include <regpoly/resolution_sets.h>
 #include <regpoly/search_types.h>
+#include <regpoly/seek_search.h>
 #include <regpoly/temper_optimizer.h>
 #include <regpoly/tempering_optimizer.h>
 #include <regpoly/tuplets_runner.h>
