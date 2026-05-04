@@ -1719,6 +1719,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1735,6 +1753,80 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#start-the-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start the server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#headless-smoke-and-end-to-end-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Headless smoke and end-to-end tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1947,6 +2039,69 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#start-the-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start the server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#headless-smoke-and-end-to-end-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Headless smoke and end-to-end tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1971,12 +2126,74 @@
 
 
 <h1 id="using-the-regpoly-web-ui">Using the REGPOLY web UI<a class="headerlink" href="#using-the-regpoly-web-ui" title="Permanent link">&para;</a></h1>
-<blockquote>
-<p><strong>Status</strong>: Phase 0 placeholder. Final content authored in Phase 5–6 against the rewired web app.</p>
-</blockquote>
+<p><code>regpoly-web</code> is a FastAPI server backed by a SQLite result store. It exposes a browser UI for kicking off full-period and tempering searches, watching their progress over Server-Sent Events, browsing tested generators, and inspecting equidistribution results.</p>
+<h2 id="start-the-server">Start the server<a class="headerlink" href="#start-the-server" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>regpoly-web<span class="w"> </span>--db<span class="w"> </span>packages/regpoly-web/var/regpoly.db
 </code></pre></div>
-<p>The web UI is a FastAPI shell over a SQLite-backed result store. Use it to launch full-period or tempering searches, browse tested generators, and publish to the catalog.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--host HOST</code></td>
+<td><code>127.0.0.1</code></td>
+<td>Bind address.</td>
+</tr>
+<tr>
+<td><code>--port PORT</code></td>
+<td><code>8000</code></td>
+<td>TCP port.</td>
+</tr>
+<tr>
+<td><code>--db DB</code></td>
+<td><code>var/regpoly.db</code></td>
+<td>SQLite file. Auto-created on first start; v1 databases are migrated to v2 in place at startup (see <a href="#database-schema">Database schema</a>).</td>
+</tr>
+<tr>
+<td><code>--reload</code></td>
+<td>off</td>
+<td>Hot-reload Python sources (development only).</td>
+</tr>
+</tbody>
+</table>
+<p>Then point a browser at <a href="http://localhost:8000/">http://localhost:8000/</a>.</p>
+<h2 id="pages">Pages<a class="headerlink" href="#pages" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>/</code> — family directory + published-configurations catalog.</li>
+<li><code>/searches</code> — list of every full-period and combined-generator search, current and past. Pause / resume / cancel / restart from here.</li>
+<li><code>/primitive-search</code> — start a new full-period search.</li>
+<li><code>/tempering-search</code> — start a new combined-generator (tempering) search.</li>
+<li><code>/tested-generators</code> — every tested generator on file, filterable by family, k_g, test type, and equidistribution class.</li>
+<li><code>/tested-generators/{id}</code> — one tested generator with its components, tempering chain, and per-test results.</li>
+<li><code>/library/{paper_id}</code> — papers in the catalog and the published parameter sets they contain.</li>
+</ul>
+<h2 id="database-schema">Database schema<a class="headerlink" href="#database-schema" title="Permanent link">&para;</a></h2>
+<p>The web app keeps state in a SQLite file. Schema v2 (Phase 5.4) introduces three typed result tables that mirror the C++ analysis structs 1:1 — <code>equidistribution_result</code>, <code>collision_free_result</code>, <code>tuplets_result</code> — so the UI receives the full typed result without going through opaque JSON.</p>
+<p>Old v1 databases are auto-upgraded the first time the server opens them: <code>init_sync</code> runs <code>regpoly_web.migrations.v2.migrate_v2_inplace</code>, which backfills the typed tables from the legacy <code>test_result.detail</code> blobs. Migration is idempotent.</p>
+<p>To run the migration offline (e.g. before deploying a new server build):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>packages/regpoly-web/scripts/migrate_v2.py<span class="w"> </span>path/to/regpoly.db
+</code></pre></div>
+<p>The legacy <code>test_result</code> table is preserved for backward-compat reads through Phase 5; Phase 8 drops it.</p>
+<h2 id="headless-smoke-and-end-to-end-tests">Headless smoke and end-to-end tests<a class="headerlink" href="#headless-smoke-and-end-to-end-tests" title="Permanent link">&para;</a></h2>
+<p>The default test lane already exercises the FastAPI app via <code>TestClient</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>packages/regpoly-web/tests/
+</code></pre></div>
+<p>The 8 Playwright golden-path tests are opt-in (gated by <code>@pytest.mark.e2e</code>) so they don't run on every CI build. To run them locally:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--group<span class="w"> </span>e2e
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>uv<span class="w"> </span>run<span class="w"> </span>playwright<span class="w"> </span>install<span class="w"> </span>chromium
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span>e2e<span class="w"> </span>packages/regpoly-web/tests/e2e/
+</code></pre></div>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../python/">Python usage</a> — same algorithms without the web layer.</li>
+<li><a href="../cpp/">C++ usage</a> — the standalone <code>regpoly-cli</code>.</li>
+<li><a href="../../dev/architecture/">Architecture</a> — how the web app talks to the C++ core through <code>regpoly</code>.</li>
+</ul>
 
 
 

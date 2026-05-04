@@ -1691,6 +1691,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C++
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1707,6 +1725,80 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-subcommands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI subcommands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linking-from-another-cmake-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linking from another CMake project
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cpython-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C++/Python parity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1947,6 +2039,69 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-subcommands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI subcommands
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#linking-from-another-cmake-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linking from another CMake project
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cpython-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C++/Python parity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1971,14 +2126,42 @@
 
 
 <h1 id="using-regpoly-from-c">Using REGPOLY from C++<a class="headerlink" href="#using-regpoly-from-c" title="Permanent link">&para;</a></h1>
-<blockquote>
-<p><strong>Status</strong>: Phase 0 placeholder. Final content authored in Phase 4–6 once <code>regpoly-cli</code> and the public C++ headers are in place.</p>
-</blockquote>
-<p>Pure-C++ usage requires Phase 1+ to land. After that, downstream C++ projects will use <code>find_package(regpoly)</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">find_package</span><span class="p">(</span><span class="s">regpoly</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_project</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">regpoly::regpoly</span><span class="p">)</span>
+<p>REGPOLY ships a standalone C++ binary, <code>regpoly-cli</code>, plus a CMake-installable library so downstream C++ projects can link against the search drivers, the catalog, and the legacy <code>.dat</code> reader without bringing in Python.</p>
+<h2 id="build">Build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cmake<span class="w"> </span>-S<span class="w"> </span>packages/regpoly-cpp<span class="w"> </span>-B<span class="w"> </span>build<span class="w"> </span>-DREGPOLY_BUILD_TESTS<span class="o">=</span>ON
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build<span class="w"> </span>-j
 </code></pre></div>
-<p>A standalone CLI (<code>regpoly-cli</code>) will accept the same YAML configs as the Python <code>regpoly</code> CLI.</p>
+<p>The <code>regpoly-cli</code> binary is produced in <code>build/regpoly-cli</code>. Run the GoogleTest suite via <code>ctest</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ctest<span class="w"> </span>--test-dir<span class="w"> </span>build<span class="w"> </span>--output-on-failure
+</code></pre></div>
+<h2 id="cli-subcommands">CLI subcommands<a class="headerlink" href="#cli-subcommands" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>regpoly-cli &lt;command&gt; [options]
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  catalog list [--library DIR]
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  catalog show PAPER_ID [--library DIR]
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  catalog gen GEN_ID [--library DIR]
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  legacy-info FILE.dat [-L N]
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  legacy-trans FILE.dat
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  search FILE.yaml
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  show FILE.yaml
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  publish FILE.yaml --paper PAPER_ID --gen-id GEN_ID
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>          [--display TEXT] [--target STR] [--starred] [--library DIR]
+</code></pre></div>
+<p><code>search FILE.yaml</code> runs an equidistribution search against the same seek-style YAML format the Python CLI accepts (see <a href="../../theory/search_format/">Search format</a>). <code>show FILE.yaml</code> prints a tested-generator YAML — components, tempering chain, and analysis results. <code>publish</code> appends a tested-generator entry to an existing paper YAML under the catalog and is the canonical way to grow <code>docs/library/</code> from C++.</p>
+<h2 id="linking-from-another-cmake-project">Linking from another CMake project<a class="headerlink" href="#linking-from-another-cmake-project" title="Permanent link">&para;</a></h2>
+<p>A future install step will publish a <code>regpoly-config.cmake</code> package so downstream consumers can write:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">find_package</span><span class="p">(</span><span class="s">regpoly</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_project</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">regpoly::regpoly</span><span class="p">)</span>
+</code></pre></div>
+<p>Until then, link against the <code>regpoly_core</code> static library and add the public headers from <code>packages/regpoly-cpp/src/include/</code> to your include path.</p>
+<h2 id="cpython-parity">C++/Python parity<a class="headerlink" href="#cpython-parity" title="Permanent link">&para;</a></h2>
+<p>A C++-only user has feature parity with a Python user: the same YAML configs, the same catalog, the same legacy <code>.dat</code> reader. The Python wrappers add result decoration (DataFrames, plots) but do not gate any algorithm.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../python/">Python usage</a> — wrapper layer over <code>regpoly_cpp</code>.</li>
+<li><a href="../../theory/search_format/">Search format</a> — YAML schema accepted by <code>search</code> and <code>regpoly</code>.</li>
+<li><a href="../../dev/architecture/">Architecture</a> — package layout + dependency arrows.</li>
+</ul>
 
 
 

@@ -1663,6 +1663,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1679,6 +1697,80 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-a-search-from-a-yaml-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run a search from a YAML config
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-the-library-programmatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use the library programmatically
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layer-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1947,6 +2039,69 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-a-search-from-a-yaml-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run a search from a YAML config
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-the-library-programmatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use the library programmatically
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layer-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer boundaries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1971,14 +2126,56 @@
 
 
 <h1 id="using-regpoly-from-python">Using REGPOLY from Python<a class="headerlink" href="#using-regpoly-from-python" title="Permanent link">&para;</a></h1>
-<blockquote>
-<p><strong>Status</strong>: Phase 0 placeholder. Final content authored in Phase 6 against the v2.0 Python surface.</p>
-</blockquote>
-<p>Quick orientation while migration is underway:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>sync
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>regpoly<span class="w"> </span>shared/yaml/equidist/well19937a.yml
+<p>The <code>regpoly</code> package is a thin Python wrapper around the C++ core (<code>regpoly_cpp</code>). Use it when you want full search-loop ergonomics — DataFrames, plots, notebook integration — on top of the same algorithms the standalone CLI runs.</p>
+<h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/pannetof/regpoly
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>regpoly
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>uv<span class="w"> </span>sync
 </code></pre></div>
-<p>The Python <code>regpoly</code> package is a thin wrapper around the C++ core. After Phase 2 most calls will be one-line delegations into <code>regpoly_cpp</code>; today there is some Python orchestration logic that is still in the process of being moved.</p>
+<p><code>uv sync</code> installs the workspace in editable mode and builds the C++ extension via <code>scikit-build-core</code>. After it completes, the <code>regpoly</code> and <code>regpoly-web</code> console scripts are on the venv's <code>PATH</code>.</p>
+<h2 id="run-a-search-from-a-yaml-config">Run a search from a YAML config<a class="headerlink" href="#run-a-search-from-a-yaml-config" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>regpoly<span class="w"> </span>shared/yaml/equidist/well19937a.yml
+</code></pre></div>
+<p>Test config templates live under <a href="https://github.com/pannetof/regpoly/tree/master/shared/yaml"><code>shared/yaml/</code></a>. The search loop iterates a <code>Combination</code> of generator pools, runs the configured analysis (<code>equidistribution</code>, <code>collision_free</code>, <code>tuplets</code>), and writes a tested-generator YAML for any candidate that passes the acceptance predicate.</p>
+<h2 id="use-the-library-programmatically">Use the library programmatically<a class="headerlink" href="#use-the-library-programmatically" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">regpoly.core.combination</span><span class="w"> </span><span class="kn">import</span> <span class="n">Combination</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">regpoly.core.combination_build</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_combinaison_inputs</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">regpoly.library</span><span class="w"> </span><span class="kn">import</span> <span class="n">Catalog</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;docs/library&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">cat</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">_</span><span class="p">,</span> <span class="n">gen</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">generator</span><span class="p">(</span><span class="s2">&quot;mt19937&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">gen_lists</span><span class="p">,</span> <span class="n">temperings</span> <span class="o">=</span> <span class="n">build_combinaison_inputs</span><span class="p">(</span><span class="n">gen</span><span class="o">.</span><span class="n">components</span><span class="p">,</span> <span class="n">gen</span><span class="o">.</span><span class="n">Lmax</span><span class="p">)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">comb</span> <span class="o">=</span> <span class="n">Combination</span><span class="o">.</span><span class="n">CreateFromFiles</span><span class="p">(</span><span class="n">gen_lists</span><span class="p">,</span> <span class="n">gen</span><span class="o">.</span><span class="n">Lmax</span><span class="p">,</span> <span class="n">temperings</span><span class="p">)</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">comb</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+</code></pre></div>
+<p><code>comb</code> is now a fully instantiated combined generator. From here:</p>
+<ul>
+<li>
+<p>Run an equidistribution analysis on the first component:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">regpoly.analyses.pis</span><span class="w"> </span><span class="kn">import</span> <span class="n">analyze_single_generator</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">res</span> <span class="o">=</span> <span class="n">analyze_single_generator</span><span class="p">(</span><span class="n">comb</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;se&quot;</span><span class="p">],</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;gaps&quot;</span><span class="p">])</span>
+</code></pre></div>
+</li>
+<li>
+<p>Iterate a Seek search:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">regpoly.search.seek</span><span class="w"> </span><span class="kn">import</span> <span class="n">Seek</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">seek</span> <span class="o">=</span> <span class="n">Seek</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;shared/yaml/equidist/well19937a.yml&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">seek</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+</li>
+</ul>
+<h2 id="layer-boundaries">Layer boundaries<a class="headerlink" href="#layer-boundaries" title="Permanent link">&para;</a></h2>
+<p>The <code>regpoly</code> package may import <code>regpoly_cpp</code>, but the web app must go through <code>regpoly</code> only — never <code>_cpp</code> directly. <code>regpoly.introspection</code> re-exports the small set of catalog/parameter helpers the web layer needs. This is enforced by <code>import-linter</code> contracts declared in the workspace <code>pyproject.toml</code>.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../cpp/">C++ usage</a> — for users who do not want a Python runtime.</li>
+<li><a href="../web/">Web UI</a> — for browser-based search and result browsing.</li>
+<li><a href="../notebooks/">Notebooks</a> — for per-family demos and equidistribution exploration.</li>
+<li><a href="../../dev/architecture/">Architecture</a> — for a deeper look at the package layout.</li>
+</ul>
 
 
 
