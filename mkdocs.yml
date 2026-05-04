@@ -72,6 +72,7 @@ nav:
       - Search format: theory/search_format.md
   - Generators:
       - generators/index.md
+      - "Template (for new pages)": generators/_template.md
       - MT: generators/MTGen.md
       - SFMT: generators/SFMTGen.md
       - dSFMT: generators/DSFMTGen.md
