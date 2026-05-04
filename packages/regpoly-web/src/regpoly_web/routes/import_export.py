@@ -10,7 +10,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from regpoly.core.generator import Generator, resolve_family
-from regpoly.web.database import json_dumps, json_loads
+
+from regpoly_web.database import json_dumps, json_loads
 
 router = APIRouter()
 
@@ -197,7 +198,7 @@ async def export_generators_yaml(
 )
 async def export_tested_generator(request: Request, tg_id: int) -> str:
     """Export a tested generator as a regpoly tested-generator YAML file."""
-    from regpoly.web.routes.tested_generators import _fetch_tested
+    from regpoly_web.routes.tested_generators import _fetch_tested
     db = request.app.state.db
     tg = await _fetch_tested(db, tg_id)
     if tg is None:

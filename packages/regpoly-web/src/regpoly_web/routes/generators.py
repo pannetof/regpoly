@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from regpoly.web.database import json_loads
-from regpoly.web.param_format import format_gen_params
+
+from regpoly_web.database import json_loads
+from regpoly_web.param_format import format_gen_params
 
 router = APIRouter()
 
@@ -294,7 +295,8 @@ async def generator_transition_matrix_coords(
     k = int(row["k"])
 
     from regpoly.core.generator import Generator
-    from regpoly.web.database import json_loads as _jl
+
+    from regpoly_web.database import json_loads as _jl
     params = _jl(row["all_params"]) or {}
     gen = Generator.create(row["family"], row["L"], **params)
     mat = gen.transition_matrix()

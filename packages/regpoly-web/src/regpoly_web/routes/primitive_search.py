@@ -10,9 +10,10 @@ from fastapi.responses import StreamingResponse
 from regpoly import introspection as _introspection
 from regpoly.core.generator import Generator, resolve_family
 from regpoly.core.parametric import NotEnumerable, build_gen_enumerator
-from regpoly.web.database import json_dumps, json_loads
-from regpoly.web.models import PrimitiveSearchCreate
-from regpoly.web.tasks.primitive import run_primitive_search
+
+from regpoly_web.database import json_dumps, json_loads
+from regpoly_web.models import PrimitiveSearchCreate
+from regpoly_web.tasks.primitive import run_primitive_search
 
 HUGE_SPACE_THRESHOLD = 10 ** 12
 
@@ -398,7 +399,7 @@ async def primitive_search_generators(
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=500),
 ) -> dict:
-    from regpoly.web.routes.generators import _row_to_generator
+    from regpoly_web.routes.generators import _row_to_generator
     db = request.app.state.db
 
     async with db.execute(

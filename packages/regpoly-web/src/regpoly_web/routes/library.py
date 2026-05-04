@@ -8,13 +8,14 @@ from concurrent.futures import Future
 
 from fastapi import APIRouter, HTTPException, Request
 from regpoly.library import Catalog, Generator, Paper
-from regpoly.web.database import json_dumps, sync_connect
-from regpoly.web.param_format import (
+
+from regpoly_web.database import json_dumps, sync_connect
+from regpoly_web.param_format import (
     format_gen_params,
     format_tempering_list,
 )
-from regpoly.web.routes.families import _markdown_to_html
-from regpoly.web.tasks.library_test import run_library_test
+from regpoly_web.routes.families import _markdown_to_html
+from regpoly_web.tasks.library_test import run_library_test
 
 router = APIRouter()
 
@@ -381,7 +382,7 @@ def _instantiate_sync(db_path: str, g: Generator) -> tuple[int, bool]:
         )
         tested_id = cur.lastrowid
 
-        from regpoly.web.tasks.tempering import _find_primitive_id
+        from regpoly_web.tasks.tempering import _find_primitive_id
 
         for j in range(comb.J):
             gen = comb[j]

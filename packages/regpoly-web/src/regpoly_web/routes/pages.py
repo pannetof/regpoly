@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from regpoly.web.routes.families import KNOWN_FAMILIES
+
+from regpoly_web.routes.families import KNOWN_FAMILIES
 
 router = APIRouter()
 

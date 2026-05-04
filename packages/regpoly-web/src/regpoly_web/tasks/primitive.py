@@ -10,10 +10,11 @@ from __future__ import annotations
 import json
 import time
 
-import regpoly._regpoly_cpp as _cpp
+from regpoly import introspection as _introspection
 from regpoly.core.generator import Generator, resolve_family
 from regpoly.core.parametric import build_gen_enumerator
-from regpoly.web.database import json_dumps, json_loads, sync_connect
+
+from regpoly_web.database import json_dumps, json_loads, sync_connect
 
 _CANCEL_POLL_EVERY = 200   # check status for cancellation every N tries
 _PROGRESS_EVERY = 100      # write a progress row at least every N tries
@@ -54,7 +55,7 @@ def _run_random(conn, run_id: int, job: dict) -> None:
     max_seconds = job["max_seconds"]
 
     try:
-        specs = _cpp.get_gen_param_specs(family)
+        specs = _introspection.get_gen_param_specs(family)
     except Exception as exc:
         _mark_failed(conn, run_id, f"Unknown family: {family} ({exc})")
         return

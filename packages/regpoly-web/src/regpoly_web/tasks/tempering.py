@@ -16,7 +16,8 @@ from typing import Any
 from regpoly.core.combination import Combination
 from regpoly.core.generator import Generator
 from regpoly.core.transformation import Transformation
-from regpoly.web.database import json_dumps, json_loads, sync_connect
+
+from regpoly_web.database import json_dumps, json_loads, sync_connect
 
 _CANCEL_POLL_EVERY = 1   # check cancellation once per combo
 
@@ -417,7 +418,7 @@ def _build_gen_and_trans(components: list[dict], Lmax: int):
 
 def _build_test(test_config: dict, Lmax: int):
     # Re-exported from tasks._test_build so the library runner can share it.
-    from regpoly.web.tasks._test_build import build_test
+    from regpoly_web.tasks._test_build import build_test
     return build_test(test_config, Lmax)
 
 

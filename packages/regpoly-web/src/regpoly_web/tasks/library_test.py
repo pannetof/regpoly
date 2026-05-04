@@ -13,7 +13,7 @@ the same instantiate-then-test logic that previously lived inline in
 
 from __future__ import annotations
 
-from regpoly.web.database import json_dumps, sync_connect
+from regpoly_web.database import json_dumps, sync_connect
 
 
 def run_library_test(
@@ -29,7 +29,8 @@ def run_library_test(
     original exception via ``Future.exception()``.
     """
     from regpoly.library import Catalog
-    from regpoly.web.config import find_library_dir
+
+    from regpoly_web.config import find_library_dir
 
     library_dir = find_library_dir()
     if library_dir is None:
@@ -68,8 +69,9 @@ def run_library_test(
 
     from regpoly.core.combination import Combination
     from regpoly.core.combination_build import build_combinaison_inputs
-    from regpoly.web.tasks._test_build import build_test
-    from regpoly.web.tasks.tempering import _build_result_detail, _is_me
+
+    from regpoly_web.tasks._test_build import build_test
+    from regpoly_web.tasks.tempering import _build_result_detail, _is_me
 
     gen_lists, temperings = build_combinaison_inputs(g.components, g.Lmax)
     comb = Combination.CreateFromFiles(gen_lists, g.Lmax, temperings)
@@ -110,7 +112,8 @@ def _instantiate_sync(db_path, g) -> tuple[int, bool]:
     APIRouter/Request and is unnecessary in a child process)."""
     from regpoly.core.combination import Combination
     from regpoly.core.combination_build import build_combinaison_inputs
-    from regpoly.web.tasks.tempering import _find_primitive_id
+
+    from regpoly_web.tasks.tempering import _find_primitive_id
 
     with sync_connect(db_path) as conn:
         row = conn.execute(

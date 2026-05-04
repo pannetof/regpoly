@@ -11,7 +11,8 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from regpoly import introspection as _introspection
 from regpoly.core.generator import _FAMILY_ALIASES
-from regpoly.web.config import find_docs_dir
+
+from regpoly_web.config import find_docs_dir
 
 router = APIRouter()
 

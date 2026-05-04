@@ -16,13 +16,12 @@ row in a tight loop.
 
 from __future__ import annotations
 
-import time
 import traceback
 
-import regpoly._regpoly_cpp as _cpp
-from regpoly.core.combination import Combination
+from regpoly.analyses.pis import analyze_single_generator
 from regpoly.core.generator import Generator
-from regpoly.web.database import json_dumps, json_loads, sync_connect
+
+from regpoly_web.database import json_dumps, json_loads, sync_connect
 
 
 def analyze_generator(db_path: str, gen_id: int) -> None:
@@ -43,27 +42,8 @@ def analyze_generator(db_path: str, gen_id: int) -> None:
 
         try:
             gen = Generator.create(family, L, **all_params)
-
-            cpoly_bv = gen.char_poly()
-            cpoly_int = int(cpoly_bv._val)
-            cpoly_hex = hex(cpoly_int)
-            # The characteristic polynomial is monic of degree k, so the
-            # leading x^k coefficient (not stored in _val) always counts.
-            hw = bin(cpoly_int).count("1") + 1
-
-            comb = Combination(J=1, Lmax=L)
-            comb.components[0].add_gen(gen)
-            comb.reset()
-
-            t0 = time.time()
-            cache = _cpp.PISCache(
-                [comb[0]._cpp_gen], [[]], comb.k_g, comb.L
-            )
-            ecart = cache.compute_all()
-            # ecart is 1-indexed up to L
-            gaps = [int(ecart[v]) for v in range(1, comb.L + 1)]
-            se = sum(gaps)
-            elapsed = time.time() - t0
+            res = analyze_single_generator(gen)
+            cpoly_hex = hex(res["char_poly_int"])
 
             conn.execute(
                 """
@@ -75,9 +55,9 @@ def analyze_generator(db_path: str, gen_id: int) -> None:
                 WHERE id = ?
                 """,
                 (
-                    cpoly_hex, hw,
-                    json_dumps(gaps), se,
-                    elapsed, gen_id,
+                    cpoly_hex, res["hamming_weight"],
+                    json_dumps(res["gaps"]), res["se"],
+                    res["elapsed"], gen_id,
                 ),
             )
             conn.commit()

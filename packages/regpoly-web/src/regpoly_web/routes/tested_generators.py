@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from regpoly.web.database import json_loads
-from regpoly.web.param_format import (
+
+from regpoly_web.database import json_loads
+from regpoly_web.param_format import (
     format_gen_params,
     format_tempering_list,
 )

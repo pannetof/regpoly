@@ -14,7 +14,8 @@ from pathlib import Path
 from typing import Any, Iterator
 
 import aiosqlite
-from regpoly.web.config import SCHEMA_PATH
+
+from regpoly_web.config import SCHEMA_PATH
 
 SCHEMA_VERSION = 1
 

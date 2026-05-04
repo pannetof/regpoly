@@ -12,15 +12,16 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from regpoly.library import Catalog
-from regpoly.web.config import (
+
+from regpoly_web.config import (
     STATIC_DIR,
     TEMPLATES_DIR,
     Settings,
     find_library_dir,
     find_papers_dir,
 )
-from regpoly.web.database import init_sync, open_async
-from regpoly.web.routes import (
+from regpoly_web.database import init_sync, open_async
+from regpoly_web.routes import (
     families,
     generators,
     import_export,
@@ -30,15 +31,15 @@ from regpoly.web.routes import (
     tempering_search,
     tested_generators,
 )
-from regpoly.web.tasks.analysis import analyze_generator
-from regpoly.web.tasks.pool import TaskPool
+from regpoly_web.tasks.analysis import analyze_generator
+from regpoly_web.tasks.pool import TaskPool
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # Shared Jinja globals used by every template (sidebar, highlighting, etc.)
 # Imported lazily to avoid a circular import with routes/families.py, which
 # in turn imports from regpoly._regpoly_cpp.
-from regpoly.web.routes.families import KNOWN_FAMILIES as _KNOWN_FAMILIES
+from regpoly_web.routes.families import KNOWN_FAMILIES as _KNOWN_FAMILIES
 
 # Sidebar split: the five flagship families come first in a fixed
 # order; anything else the C++ registry exposes lands under an

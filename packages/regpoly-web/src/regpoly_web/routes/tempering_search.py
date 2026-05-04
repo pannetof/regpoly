@@ -7,13 +7,14 @@ import json
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-from regpoly.web.database import json_dumps, json_loads
-from regpoly.web.models import TemperingSearchCreate
-from regpoly.web.param_format import (
+
+from regpoly_web.database import json_dumps, json_loads
+from regpoly_web.models import TemperingSearchCreate
+from regpoly_web.param_format import (
     format_gen_params,
     format_tempering_list,
 )
-from regpoly.web.tasks.tempering import run_tempering_search
+from regpoly_web.tasks.tempering import run_tempering_search
 
 router = APIRouter()
 
@@ -372,7 +373,7 @@ async def delete_tempering_search_results(
 
 @router.get("/tempering-searches/{run_id}/results")
 async def tempering_search_results(request: Request, run_id: int) -> dict:
-    from regpoly.web.routes.tested_generators import _fetch_tested
+    from regpoly_web.routes.tested_generators import _fetch_tested
     db = request.app.state.db
 
     async with db.execute(
