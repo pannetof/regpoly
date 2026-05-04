@@ -13,6 +13,23 @@ option(REGPOLY_BUILD_CLI
 
 find_package(pybind11 CONFIG REQUIRED)
 
+# ── yaml-cpp (Phase 3): vendored via FetchContent ─────────────────────
+# Used by the C++ Catalog and YAML config parsers. Tests are off; we
+# don't need yaml-cpp's own test suite. Built static so it can be
+# linked into regpoly_core without an extra runtime dependency.
+include(FetchContent)
+set(YAML_CPP_BUILD_TESTS  OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TOOLS  OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
+set(YAML_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_INSTALL OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    yaml-cpp
+    GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+    GIT_TAG        0.8.0
+)
+FetchContent_MakeAvailable(yaml-cpp)
+
 # All C++ source files except factory.cpp (which carries pybind11
 # bindings registration). regpoly_core is the pure-C++ static library
 # that downstream C++ users link against.
@@ -91,6 +108,14 @@ target_include_directories(regpoly_core
     PRIVATE
         ${REGPOLY_CPP_INCLUDE_DIRS})
 target_link_libraries(regpoly_core PUBLIC ntl pthread)
+# yaml-cpp is an implementation detail of the catalog / config readers;
+# wrapped in $<BUILD_INTERFACE:> so it is linked into the regpoly_core
+# static archive at build time but is NOT re-exported as an
+# INTERFACE_LINK_LIBRARIES entry that downstream find_package(regpoly)
+# consumers would need to satisfy. (Static archives bake the .o files
+# from yaml-cpp in directly, so consumers see no missing symbols.)
+target_link_libraries(regpoly_core PRIVATE
+    $<BUILD_INTERFACE:yaml-cpp::yaml-cpp>)
 target_compile_options(regpoly_core PRIVATE -O3 -march=native)
 add_library(regpoly::regpoly ALIAS regpoly_core)
 
