@@ -20,6 +20,7 @@
 #include "search_types.h"
 #include "seek_search.h"
 #include "tempering_search.h"
+#include "catalog.h"
 #include "temper_optimizer.h"
 #include "tempering_optimizer.h"
 #include "tausworthe.h"
@@ -1213,4 +1214,184 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
           [&specs_to_list](const std::string& type) -> py::list {
         return specs_to_list(get_trans_param_specs(type));
     }, py::arg("type"));
+
+    // ── Catalog (Phase 3.2) ────────────────────────────────────────────
+    //
+    // The C++ Catalog reads docs/library/*.yaml and exposes Paper /
+    // CatalogGenerator / Author records. The Python regpoly.library
+    // package is a thin shim that re-exports these types and adds
+    // Path-typed source_path / dict-typed params.
+
+    using namespace regpoly_catalog;
+
+    // ParamValue → native Python value (int / str / bool / list[int]).
+    auto pv_to_py = [](const ParamValue& v) -> py::object {
+        switch (v.kind) {
+            case ParamKind::Int:    return py::int_(v.int_val);
+            case ParamKind::String: return py::str(v.string_val);
+            case ParamKind::Bool:   return py::bool_(v.bool_val);
+            case ParamKind::IntList: return py::cast(v.int_list_val);
+        }
+        return py::none();
+    };
+    // ParamMap → dict.
+    auto pmap_to_py = [pv_to_py](const ParamMap& m) -> py::dict {
+        py::dict d;
+        for (const auto& kv : m) d[py::str(kv.first)] = pv_to_py(kv.second);
+        return d;
+    };
+    // TemperingStep → dict {"type": ..., other params...}.
+    auto step_to_py = [pmap_to_py](const TemperingStep& t) -> py::dict {
+        py::dict d = pmap_to_py(t.params);
+        d["type"] = py::str(t.type);
+        return d;
+    };
+    // Component → dict matching Python's _normalize_components shape.
+    auto comp_to_py = [pmap_to_py, step_to_py](
+        const regpoly_catalog::Component& c) -> py::dict {
+        py::dict d;
+        d["family"] = py::str(c.family);
+        d["L"] = py::int_(c.L);
+        d["params"] = pmap_to_py(c.params);
+        py::list temper;
+        for (const auto& s : c.tempering) temper.append(step_to_py(s));
+        d["tempering"] = temper;
+        return d;
+    };
+
+    py::class_<Author>(m, "Author")
+        .def(py::init<>())
+        .def_readwrite("family", &Author::family)
+        .def_readwrite("given",  &Author::given)
+        .def("display", &Author::display)
+        .def("short",   &Author::short_name);
+
+    py::class_<CatalogGenerator>(m, "CatalogGenerator")
+        .def_readonly("id",        &CatalogGenerator::id)
+        .def_readonly("display",   &CatalogGenerator::display)
+        .def_readonly("family",    &CatalogGenerator::family)
+        .def_readonly("target",    &CatalogGenerator::target)
+        .def_readonly("combined",  &CatalogGenerator::combined)
+        .def_readonly("Lmax",      &CatalogGenerator::Lmax)
+        .def_readonly("notes_md",  &CatalogGenerator::notes_md)
+        .def_readonly("starred",   &CatalogGenerator::starred)
+        .def_readonly("errors",    &CatalogGenerator::errors)
+        .def_property_readonly("valid", &CatalogGenerator::valid)
+        .def_property_readonly("components",
+            [comp_to_py](const CatalogGenerator& g) -> py::list {
+                py::list out;
+                for (const auto& c : g.components) out.append(comp_to_py(c));
+                return out;
+            });
+
+    py::class_<Paper>(m, "Paper")
+        .def_readonly("id",          &Paper::id)
+        .def_readonly("authors",     &Paper::authors)
+        .def_readonly("year",        &Paper::year)
+        .def_readonly("title",       &Paper::title)
+        .def_readonly("venue",       &Paper::venue)
+        .def_readonly("volume",      &Paper::volume)
+        .def_readonly("issue",       &Paper::issue)
+        .def_readonly("pages",       &Paper::pages)
+        .def_readonly("doi",         &Paper::doi)
+        .def_readonly("pdf",         &Paper::pdf)
+        .def_readonly("bibkey",      &Paper::bibkey)
+        .def_readonly("abstract_md", &Paper::abstract_md)
+        .def_readonly("notes_md",    &Paper::notes_md)
+        .def_readonly("tags",        &Paper::tags)
+        .def_readonly("starred",     &Paper::starred)
+        .def_readonly("deferred",    &Paper::deferred)
+        .def_readonly("generators",  &Paper::generators)
+        .def_readonly("source_path", &Paper::source_path)
+        .def_readonly("source_mtime",&Paper::source_mtime)
+        .def_readonly("errors",      &Paper::errors)
+        .def_property_readonly("valid",            &Paper::valid)
+        .def("author_list_short",  &Paper::author_list_short)
+        .def("display",            &Paper::display)
+        .def("acmtrans_citation",  &Paper::acmtrans_citation);
+
+    py::class_<Catalog>(m, "Catalog")
+        .def(py::init<std::string>(), py::arg("library_dir"))
+        .def("load", &Catalog::load)
+        .def("reload_if_stale", &Catalog::reload_if_stale)
+        .def("library_dir", &Catalog::library_dir)
+        .def("papers",
+             [](const Catalog& c, py::object starred, py::object tag,
+                bool include_invalid) {
+                 Catalog::PapersFilter f;
+                 if (!starred.is_none()) f.starred = starred.cast<bool>();
+                 if (!tag.is_none()) f.tag = tag.cast<std::string>();
+                 f.include_invalid = include_invalid;
+                 return c.papers(f);
+             },
+             py::arg("starred") = py::none(),
+             py::arg("tag") = py::none(),
+             py::arg("include_invalid") = false)
+        .def("paper",
+             [](const Catalog& c, const std::string& id) -> py::object {
+                 auto p = c.paper(id);
+                 if (!p.has_value()) return py::none();
+                 return py::cast(*p);
+             }, py::arg("paper_id"))
+        .def("generator",
+             [](const Catalog& c, const std::string& gid) -> py::object {
+                 auto loc = c.generator(gid);
+                 if (!loc.has_value()) return py::none();
+                 return py::make_tuple(loc->first, loc->second);
+             }, py::arg("gen_id"))
+        .def("all_generators",
+             [](const Catalog& c, py::object family) {
+                 std::optional<std::string> f;
+                 if (!family.is_none()) f = family.cast<std::string>();
+                 auto results = c.all_generators(f);
+                 py::list out;
+                 for (auto& pg : results) {
+                     out.append(py::make_tuple(pg.first, pg.second));
+                 }
+                 return out;
+             }, py::arg("family") = py::none());
+
+    m.def("config_hash",
+          [](const std::string& family, const py::dict& params,
+             const py::list& tempering) -> std::string {
+              auto py_to_pv = [](const py::handle& v) -> ParamValue {
+                  if (py::isinstance<py::bool_>(v))
+                      return ParamValue::make_bool(v.cast<bool>());
+                  if (py::isinstance<py::int_>(v))
+                      return ParamValue::make_int(v.cast<int64_t>());
+                  if (py::isinstance<py::str>(v))
+                      return ParamValue::make_string(v.cast<std::string>());
+                  if (py::isinstance<py::list>(v)) {
+                      try {
+                          return ParamValue::make_int_list(
+                              v.cast<std::vector<int64_t>>());
+                      } catch (...) {
+                          return ParamValue::make_string(py::str(v).cast<std::string>());
+                      }
+                  }
+                  return ParamValue::make_string(py::str(v).cast<std::string>());
+              };
+              ParamMap pm;
+              for (auto item : params) {
+                  pm.emplace(item.first.cast<std::string>(),
+                             py_to_pv(item.second));
+              }
+              std::vector<TemperingStep> steps;
+              for (const auto& tn : tempering) {
+                  py::dict td = tn.cast<py::dict>();
+                  TemperingStep st;
+                  if (td.contains("type")) {
+                      st.type = td["type"].cast<std::string>();
+                  }
+                  for (auto kv : td) {
+                      auto k = kv.first.cast<std::string>();
+                      if (k == "type") continue;
+                      st.params.emplace(k, py_to_pv(kv.second));
+                  }
+                  steps.push_back(std::move(st));
+              }
+              return regpoly_catalog::config_hash(family, pm, steps);
+          },
+          py::arg("family"), py::arg("params"), py::arg("tempering"),
+          "Stable short hash of one component config.");
 }

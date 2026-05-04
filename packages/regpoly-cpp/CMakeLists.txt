@@ -41,6 +41,7 @@ file(GLOB_RECURSE REGPOLY_ALL_SOURCES
      src/generators/*.cpp
      src/transforms/*.cpp
      src/lattice/*.cpp
+     src/library/*.cpp
      src/search/*.cpp)
 
 # factory.cpp moved into regpoly_core in Phase 2.4 (pybind11 wiring
@@ -56,6 +57,7 @@ set(REGPOLY_CPP_INCLUDE_DIRS
     src/include/generators
     src/include/transforms
     src/include/lattice
+    src/include/library
     src/include/search)
 
 # Public-API include directory for downstream consumers. The source
@@ -87,6 +89,7 @@ set(REGPOLY_PUBLIC_HEADER_BASES
     src/include/search/seek_search.h
     src/include/search/tempering_optimizer.h
     src/include/search/tempering_search.h
+    src/include/library/catalog.h
 )
 foreach(hdr IN LISTS REGPOLY_PUBLIC_HEADER_BASES)
     get_filename_component(name "${hdr}" NAME)
@@ -154,6 +157,7 @@ set(REGPOLY_PUBLIC_HEADERS
     src/include/search/seek_search.h
     src/include/search/tempering_optimizer.h
     src/include/search/tempering_search.h
+    src/include/library/catalog.h
     src/include/core/generator.h
     src/include/core/transformation.h
     src/include/core/params.h

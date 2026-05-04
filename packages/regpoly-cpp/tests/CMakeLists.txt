@@ -24,6 +24,7 @@ add_executable(regpoly_cpp_tests
     test_random_samplers.cpp
     test_resolution_sets.cpp
     test_seek_search.cpp
+    test_catalog.cpp
     test_tempering_optimizer.cpp
     test_tempering_search.cpp
     test_yaml_cpp_smoke.cpp
@@ -34,6 +35,7 @@ target_include_directories(regpoly_cpp_tests PRIVATE
     ../src/include/generators
     ../src/include/transforms
     ../src/include/lattice
+    ../src/include/library
     ../src/include/search)
 target_link_libraries(regpoly_cpp_tests PRIVATE
     regpoly_core
