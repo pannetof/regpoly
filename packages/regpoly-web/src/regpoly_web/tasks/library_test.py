@@ -13,7 +13,10 @@ the same instantiate-then-test logic that previously lived inline in
 
 from __future__ import annotations
 
+import time
+
 from regpoly_web.database import json_dumps, sync_connect
+from regpoly_web.results import save_typed_result
 
 
 def run_library_test(
@@ -77,23 +80,29 @@ def run_library_test(
     comb = Combination.CreateFromFiles(gen_lists, g.Lmax, temperings)
     comb.reset()
     test = build_test(test_config, g.Lmax)
+    t0 = time.time()
     result = test.run(comb)
+    elapsed = time.time() - t0
 
     se = getattr(result, "se", None)
     is_me = bool(_is_me(result)) if se is not None else False
     detail = _build_result_detail(result)
 
     with sync_connect(db_path) as conn:
+        save_typed_result(
+            conn, tested_id, test_config, result,
+            kg=comb.k_g, L=comb.Lmax, elapsed_seconds=elapsed,
+        )
         cur = conn.execute(
             "INSERT INTO test_result"
             "(tested_gen_id, test_type, test_config, "
-            " se, is_me, secf, is_cf, score, detail) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " se, is_me, secf, is_cf, score, detail, elapsed_seconds) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (tested_id, test_type, config_json,
              se, 1 if is_me else 0,
              None, None,
              float(se) if se is not None else None,
-             json_dumps(detail)),
+             json_dumps(detail), elapsed),
         )
         conn.commit()
         return {

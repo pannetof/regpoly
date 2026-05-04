@@ -18,6 +18,7 @@ from regpoly.core.generator import Generator
 from regpoly.core.transformation import Transformation
 
 from regpoly_web.database import json_dumps, json_loads, sync_connect
+from regpoly_web.results import save_typed_result
 
 _CANCEL_POLL_EVERY = 1   # check cancellation once per combo
 
@@ -260,6 +261,11 @@ def _save_tested_result(conn, run_id: int, comb: Combination,
 
     detail = _build_result_detail(best_result)
     is_me = 1 if _is_me(best_result) else 0
+    save_typed_result(
+        conn, tested_id, test_config, best_result,
+        kg=comb.k_g, L=comb.Lmax,
+        elapsed_seconds=outcome.get("elapsed"),
+    )
     conn.execute(
         """
         INSERT INTO test_result
