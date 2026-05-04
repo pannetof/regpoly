@@ -16,7 +16,7 @@ from __future__ import annotations
 import time
 
 from regpoly_web.database import json_dumps, sync_connect
-from regpoly_web.results import save_typed_result
+from regpoly_web.results import find_existing_typed_result, save_typed_result
 
 
 def run_library_test(
@@ -54,19 +54,14 @@ def run_library_test(
     config_json = json_dumps(test_config)
 
     with sync_connect(db_path) as conn:
-        row = conn.execute(
-            "SELECT id, se, is_me FROM test_result "
-            "WHERE tested_gen_id = ? AND test_type = ? AND test_config = ? "
-            "ORDER BY id DESC LIMIT 1",
-            (tested_id, test_type, config_json),
-        ).fetchone()
-        if row is not None:
+        prior = find_existing_typed_result(conn, tested_id, test_type, config_json)
+        if prior is not None:
             return {
                 "library_id": g.id,
                 "tested_generator_id": int(tested_id),
-                "test_result_id": int(row["id"]),
-                "se": int(row["se"]) if row["se"] is not None else None,
-                "is_me": bool(row["is_me"]),
+                "test_result_id": int(prior["id"]),
+                "se": int(prior["se"]) if prior["se"] is not None else None,
+                "is_me": bool(prior["is_me"]),
                 "instantiated": created,
             }
 
@@ -74,7 +69,7 @@ def run_library_test(
     from regpoly.core.combination_build import build_combinaison_inputs
 
     from regpoly_web.tasks._test_build import build_test
-    from regpoly_web.tasks.tempering import _build_result_detail, _is_me
+    from regpoly_web.tasks.tempering import _is_me
 
     gen_lists, temperings = build_combinaison_inputs(g.components, g.Lmax)
     comb = Combination.CreateFromFiles(gen_lists, g.Lmax, temperings)
@@ -86,29 +81,17 @@ def run_library_test(
 
     se = getattr(result, "se", None)
     is_me = bool(_is_me(result)) if se is not None else False
-    detail = _build_result_detail(result)
 
     with sync_connect(db_path) as conn:
-        save_typed_result(
+        rid = save_typed_result(
             conn, tested_id, test_config, result,
             kg=comb.k_g, L=comb.Lmax, elapsed_seconds=elapsed,
-        )
-        cur = conn.execute(
-            "INSERT INTO test_result"
-            "(tested_gen_id, test_type, test_config, "
-            " se, is_me, secf, is_cf, score, detail, elapsed_seconds) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (tested_id, test_type, config_json,
-             se, 1 if is_me else 0,
-             None, None,
-             float(se) if se is not None else None,
-             json_dumps(detail), elapsed),
         )
         conn.commit()
         return {
             "library_id": g.id,
             "tested_generator_id": int(tested_id),
-            "test_result_id": int(cur.lastrowid),
+            "test_result_id": int(rid) if rid is not None else None,
             "se": int(se) if se is not None else None,
             "is_me": is_me,
             "instantiated": created,

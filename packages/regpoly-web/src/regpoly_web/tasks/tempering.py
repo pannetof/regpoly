@@ -259,31 +259,10 @@ def _save_tested_result(conn, run_id: int, comb: Combination,
             ),
         )
 
-    detail = _build_result_detail(best_result)
-    is_me = 1 if _is_me(best_result) else 0
     save_typed_result(
         conn, tested_id, test_config, best_result,
         kg=comb.k_g, L=comb.Lmax,
         elapsed_seconds=outcome.get("elapsed"),
-    )
-    conn.execute(
-        """
-        INSERT INTO test_result
-            (tested_gen_id, test_type, test_config,
-             se, is_me, secf, is_cf, score, detail)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            tested_id,
-            test_config.get("type", "unknown"),
-            json_dumps(test_config),
-            outcome["se"],
-            is_me,
-            None,
-            None,
-            float(outcome["se"]),
-            json_dumps(detail),
-        ),
     )
     conn.commit()
 

@@ -9,6 +9,7 @@ from regpoly_web.param_format import (
     format_gen_params,
     format_tempering_list,
 )
+from regpoly_web.results import read_typed_results_async
 
 router = APIRouter()
 
@@ -28,11 +29,7 @@ async def _fetch_tested(db, tg_id: int) -> dict | None:
     ) as cur:
         comp_rows = await cur.fetchall()
 
-    async with db.execute(
-        "SELECT * FROM test_result WHERE tested_gen_id = ? ORDER BY id",
-        (tg_id,),
-    ) as cur:
-        res_rows = await cur.fetchall()
+    results = await read_typed_results_async(db, tg_id)
 
     keys = row.keys() if hasattr(row, "keys") else []
     return {
@@ -57,21 +54,7 @@ async def _fetch_tested(db, tg_id: int) -> dict | None:
             }
             for c in comp_rows
         ],
-        "results": [
-            {
-                "test_type": r["test_type"],
-                "test_config": json_loads(r["test_config"]),
-                "se": r["se"],
-                "is_me": bool(r["is_me"]) if r["is_me"] is not None else None,
-                "secf": r["secf"],
-                "is_cf": bool(r["is_cf"]) if r["is_cf"] is not None else None,
-                "score": r["score"],
-                "detail": json_loads(r["detail"]),
-                "elapsed_seconds": r["elapsed_seconds"],
-                "created_at": r["created_at"],
-            }
-            for r in res_rows
-        ],
+        "results": results,
     }
 
 
@@ -99,17 +82,38 @@ async def list_tested_generators(
                      "ON tgc.tested_gen_id = tg.id")
         where.append("tgc.family = ?")
         params.append(family)
-    if test_type or max_se is not None or is_me is not None:
-        joins.append("JOIN test_result tr ON tr.tested_gen_id = tg.id")
-        if test_type:
-            where.append("tr.test_type = ?")
-            params.append(test_type)
+    # Typed-table joins (Phase 5.4c). The legacy join on test_result was
+    # generic; the typed schema requires picking the right table per
+    # test_type. test_type is dropped from the legacy "any of three" mode
+    # because the UI always passes a concrete value here in practice.
+    join_table = None
+    if test_type:
+        if test_type == "equidistribution":
+            join_table = "equidistribution_result"
+        elif test_type == "collision_free":
+            join_table = "collision_free_result"
+        elif test_type == "tuplets":
+            join_table = "tuplets_result"
+    if join_table is None and (max_se is not None or is_me is not None):
+        # No explicit test_type but user is filtering on equid-shaped
+        # fields; default to equidistribution_result (most common case).
+        join_table = "equidistribution_result"
+    if join_table is not None:
+        joins.append(f"JOIN {join_table} tr ON tr.tested_gen_id = tg.id")
         if max_se is not None:
-            where.append("tr.se <= ?")
-            params.append(max_se)
-        if is_me is not None:
-            where.append("tr.is_me = ?")
-            params.append(1 if is_me else 0)
+            # Equid: se. CF: secf. Tuplets: no se filter (skip).
+            if join_table == "equidistribution_result":
+                where.append("tr.se <= ?")
+                params.append(max_se)
+            elif join_table == "collision_free_result":
+                where.append("tr.secf <= ?")
+                params.append(max_se)
+        if is_me is not None and join_table == "equidistribution_result":
+            # is_me ⇔ verified=1 AND se=0 (mirrors EquidistributionResults.is_me()).
+            if is_me:
+                where.append("tr.verified = 1 AND tr.se = 0")
+            else:
+                where.append("(tr.verified = 0 OR tr.se != 0)")
     if min_k_g is not None:
         where.append("tg.k_g >= ?")
         params.append(min_k_g)
