@@ -17,6 +17,7 @@ include(GoogleTest)
 # the public API surface.
 add_executable(regpoly_cpp_tests
     test_smoke.cpp
+    test_combination.cpp
     test_combined_generator.cpp
     test_primitive_search.cpp
     test_primitivity.cpp

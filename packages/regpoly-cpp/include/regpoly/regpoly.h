@@ -22,6 +22,7 @@
 #pragma once
 
 #include <regpoly/bitvect.h>
+#include <regpoly/combination.h>
 #include <regpoly/combined.h>
 #include <regpoly/equidistribution_runner.h>
 #include <regpoly/gauss.h>

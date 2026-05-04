@@ -3,6 +3,7 @@
 #include <pybind11/numpy.h>
 
 #include "bitvect.h"
+#include "combination.h"
 #include "combined.h"
 #include "equidistribution_runner.h"
 #include "generator.h"
@@ -249,6 +250,64 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
              "objects), and a max output resolution Lmax.")
         .def("J", &CombinedGenerator::J)
         .def("prefix_k", &CombinedGenerator::prefix_k);
+
+    // ── Component + Combination (Phase 2.4b-pre) ───────────────────────
+    //
+    // Iterator over the cartesian product of J component generator
+    // pools, with identity-uniqueness and shared-pool C(n,k) selection.
+    // Replaces (in C++) the iteration engine of
+    // regpoly.core.{component,combination}.
+
+    py::class_<Component, std::shared_ptr<Component>>(m, "Component")
+        .def(py::init<>())
+        .def("nb_gen",   &Component::nb_gen)
+        .def("nb_trans", &Component::nb_trans)
+        .def("current_gen", &Component::current_gen)
+        .def("set_current_gen", &Component::set_current_gen)
+        .def("add_gen",
+             [](Component& c, const Generator& g) { c.add_gen(g); },
+             py::arg("gen"),
+             "Append a deep copy of `gen` to this component's pool.")
+        .def("add_trans",
+             [](Component& c, const Transformation& t) { c.add_trans(t); },
+             py::arg("trans"),
+             "Append a deep copy of `trans` to the tempering chain.")
+        .def("share_pool_with", &Component::share_pool_with,
+             py::arg("other"),
+             "Reference `other`'s pool by shared_ptr (enables C(n,k) "
+             "selection across slots).")
+        .def("active_gen",
+             [](Component& c) -> Generator* { return &c.active_gen(); },
+             py::return_value_policy::reference_internal)
+        .def("gen_at",
+             [](Component& c, int i) -> Generator* { return &c.gen_at(i); },
+             py::arg("i"),
+             py::return_value_policy::reference_internal)
+        .def("trans_at",
+             [](Component& c, int i) -> Transformation* {
+                 return &c.trans_at(i);
+             },
+             py::arg("i"),
+             py::return_value_policy::reference_internal)
+        .def("display", &Component::display);
+
+    py::class_<Combination, std::shared_ptr<Combination>>(m, "Combination")
+        .def(py::init<int, int>(), py::arg("J"), py::arg("Lmax"))
+        .def_property_readonly("J",    &Combination::J)
+        .def_property_readonly("Lmax", &Combination::Lmax)
+        .def_property_readonly("k_g",  &Combination::k_g)
+        .def_property_readonly("L",    &Combination::L)
+        .def("component",
+             [](Combination& c, int j) -> Component* { return &c.component(j); },
+             py::arg("j"),
+             py::return_value_policy::reference_internal)
+        .def("__getitem__",
+             [](Combination& c, int j) -> Generator* { return &c.at(j); },
+             py::arg("j"),
+             py::return_value_policy::reference_internal)
+        .def("reset",     &Combination::reset)
+        .def("next",      &Combination::next)
+        .def("exhausted", &Combination::exhausted);
 
     // ── GaussMatrix ──────────────────────────────────────────────────────
 
