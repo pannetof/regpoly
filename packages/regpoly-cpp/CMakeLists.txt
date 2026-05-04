@@ -147,7 +147,10 @@ if(REGPOLY_BUILD_CLI)
     add_executable(regpoly_cli src/cli/main.cpp)
     set_target_properties(regpoly_cli PROPERTIES OUTPUT_NAME regpoly-cli)
     target_include_directories(regpoly_cli PRIVATE ${REGPOLY_CPP_INCLUDE_DIRS})
-    target_link_libraries(regpoly_cli PRIVATE regpoly_core)
+    # Phase 4.3: cmd_show parses tested-generator YAMLs directly via
+    # yaml-cpp (the structure is too free-form to push into a typed
+    # loader). Link yaml-cpp into the CLI.
+    target_link_libraries(regpoly_cli PRIVATE regpoly_core yaml-cpp::yaml-cpp)
     install(TARGETS regpoly_cli RUNTIME DESTINATION bin)
 endif()
 

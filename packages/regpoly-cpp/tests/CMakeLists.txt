@@ -106,6 +106,18 @@ if(TARGET regpoly_cli)
     set_tests_properties(RegpolyCli.SearchCarry32 PROPERTIES
         PASS_REGULAR_EXPRESSION "combos")
 
+    # Phase 4.3: tested-generator file display.
+    add_test(NAME RegpolyCli.ShowMelgFixture
+             COMMAND ${REGPOLY_CLI} show
+                     ${REPO_ROOT}/shared/yaml/testedgenerators/MELG/N10_r33_w64.equidist.0025.yaml)
+    set_tests_properties(RegpolyCli.ShowMelgFixture PROPERTIES
+        PASS_REGULAR_EXPRESSION "laggedTempering")
+
+    add_test(NAME RegpolyCli.ShowMissingFile
+             COMMAND ${REGPOLY_CLI} show /no/such/file.yaml)
+    set_tests_properties(RegpolyCli.ShowMissingFile PROPERTIES
+        WILL_FAIL TRUE)
+
     # Negative cases — exit non-zero on bad input.
     add_test(NAME RegpolyCli.UnknownCommand
              COMMAND ${REGPOLY_CLI} bogus-command)

@@ -20,7 +20,11 @@
 //
 // Phase 4.2 adds `search FILE.yaml` — load a seek-style YAML config
 // and run the equidistribution search loop via the existing C++
-// drivers. Phase 4.3+ will add `show <result.yaml>` and `publish`.
+// drivers. Phase 4.3 adds `show <result.yaml>` — display a
+// tested-generator file (single- or multi-component shape) including
+// its tempering chain and equidistribution / collision-free /
+// tuplets results. The `publish` subcommand (catalog write) lands
+// later.
 
 #include "catalog.h"
 #include "combination.h"
@@ -28,6 +32,8 @@
 #include "params.h"
 #include "seek_config.h"
 #include "seek_search.h"
+
+#include <yaml-cpp/yaml.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -42,7 +48,7 @@ namespace fs = std::filesystem;
 
 namespace {
 
-constexpr const char* kVersion = "regpoly-cli 2.0.0 (Phase 4.2)";
+constexpr const char* kVersion = "regpoly-cli 2.0.0 (Phase 4.3)";
 constexpr const char* kUsage =
     "Usage: regpoly-cli <command> [options]\n"
     "\n"
@@ -62,6 +68,9 @@ constexpr const char* kUsage =
     "      equidistribution search loop. Output format does not\n"
     "      mirror `uv run regpoly`; use that command for the\n"
     "      Python-side display.\n"
+    "  show FILE.yaml\n"
+    "      Display a tested-generator YAML (single- or multi-\n"
+    "      component): components + tempering chain + results.\n"
     "\n"
     "Options:\n"
     "  -h, --help        show this message and exit\n"
@@ -363,6 +372,115 @@ int cmd_search(std::vector<std::string> args) {
     return 0;
 }
 
+// Render one YAML scalar value compactly. Used by cmd_show; the
+// tested-generator schema's leaf values are scalars (ints, hex
+// strings, bools, floats) or short int sequences.
+std::string scalar_to_str(const YAML::Node& n) {
+    if (!n.IsScalar()) return "<non-scalar>";
+    return n.as<std::string>();
+}
+
+void print_kv_block(const YAML::Node& m, const std::string& prefix) {
+    if (!m || !m.IsMap()) return;
+    for (auto kv : m) {
+        auto k = kv.first.as<std::string>();
+        const auto& v = kv.second;
+        if (v.IsScalar()) {
+            std::cout << prefix << k << ": " << scalar_to_str(v) << "\n";
+        } else if (v.IsSequence()) {
+            std::cout << prefix << k << ": [";
+            for (size_t i = 0; i < v.size(); ++i) {
+                if (i) std::cout << ", ";
+                if (v[i].IsScalar()) std::cout << scalar_to_str(v[i]);
+                else std::cout << "?";
+            }
+            std::cout << "]\n";
+        } else if (v.IsMap()) {
+            std::cout << prefix << k << ":\n";
+            print_kv_block(v, prefix + "  ");
+        }
+    }
+}
+
+void print_component(const YAML::Node& gen, const YAML::Node& tempering,
+                     int idx) {
+    std::cout << "  component " << idx << ":\n";
+    if (gen && gen.IsMap()) {
+        std::cout << "    generator:\n";
+        print_kv_block(gen, "      ");
+    }
+    if (tempering && tempering.IsSequence() && tempering.size() > 0) {
+        std::cout << "    tempering:\n";
+        for (size_t i = 0; i < tempering.size(); ++i) {
+            std::cout << "      - ";
+            const auto& step = tempering[i];
+            if (step["type"]) {
+                std::cout << "type: " << step["type"].as<std::string>() << "\n";
+            } else {
+                std::cout << "(no type)\n";
+            }
+            for (auto kv : step) {
+                auto k = kv.first.as<std::string>();
+                if (k == "type") continue;
+                std::cout << "        " << k << ": "
+                          << scalar_to_str(kv.second) << "\n";
+            }
+        }
+    }
+}
+
+void print_results(const YAML::Node& results) {
+    if (!results || !results.IsMap()) return;
+    std::cout << "  results:\n";
+    for (auto rkv : results) {
+        std::cout << "    " << rkv.first.as<std::string>() << ":\n";
+        print_kv_block(rkv.second, "      ");
+    }
+}
+
+int cmd_show(std::vector<std::string> args) {
+    if (args.empty()) {
+        std::cerr << "regpoly-cli: show requires FILE.yaml\n";
+        return 2;
+    }
+    std::string path = args[0];
+    YAML::Node doc;
+    try {
+        doc = YAML::LoadFile(path);
+    } catch (const std::exception& exc) {
+        std::cerr << "regpoly-cli: failed to load " << path
+                  << ": " << exc.what() << "\n";
+        return 1;
+    }
+    if (!doc || !doc.IsMap()) {
+        std::cerr << "regpoly-cli: " << path
+                  << ": top-level YAML must be a mapping\n";
+        return 1;
+    }
+
+    std::cout << "tested generator: " << path << "\n";
+
+    // Two top-level shapes: single-component (`generator` + `tempering`)
+    // or multi-component (`components: [{generator, tempering}, ...]`).
+    if (doc["components"] && doc["components"].IsSequence()) {
+        std::cout << "  J: " << doc["components"].size() << "\n";
+        int idx = 0;
+        for (auto comp : doc["components"]) {
+            print_component(comp["generator"], comp["tempering"], idx++);
+        }
+    } else if (doc["generator"]) {
+        std::cout << "  J: 1\n";
+        print_component(doc["generator"], doc["tempering"], 0);
+    } else {
+        std::cerr << "regpoly-cli: " << path
+                  << ": missing `generator` or `components` key\n";
+        return 1;
+    }
+
+    if (doc["results"]) print_results(doc["results"]);
+    return 0;
+}
+
 int cmd_legacy_trans(std::vector<std::string> args) {
     if (args.empty()) {
         std::cerr << "regpoly-cli: legacy-trans requires FILE.dat\n";
@@ -404,6 +522,7 @@ int main(int argc, char** argv) {
     if (cmd == "legacy-info")  return cmd_legacy_info(std::move(rest));
     if (cmd == "legacy-trans") return cmd_legacy_trans(std::move(rest));
     if (cmd == "search")       return cmd_search(std::move(rest));
+    if (cmd == "show")         return cmd_show(std::move(rest));
 
     std::cerr << "regpoly-cli: unknown command '" << cmd << "'.\n"
               << "Run `regpoly-cli --help`.\n";
