@@ -24,6 +24,7 @@ add_executable(regpoly_cpp_tests
     test_random_samplers.cpp
     test_resolution_sets.cpp
     test_seek_search.cpp
+    test_seek_config.cpp
     test_catalog.cpp
     test_legacy_reader.cpp
     test_tempering_optimizer.cpp
@@ -38,7 +39,8 @@ target_include_directories(regpoly_cpp_tests PRIVATE
     ../src/include/lattice
     ../src/include/library
     ../src/include/io
-    ../src/include/search)
+    ../src/include/search
+    ../src/include/yaml_config)
 target_link_libraries(regpoly_cpp_tests PRIVATE
     regpoly_core
     yaml-cpp::yaml-cpp
@@ -96,6 +98,13 @@ if(TARGET regpoly_cli)
                      ${REPO_ROOT}/shared/legacy_parameters/trans32.dat)
     set_tests_properties(RegpolyCli.LegacyTrans PROPERTIES
         PASS_REGULAR_EXPRESSION "tempMK")
+
+    # Phase 4.2: end-to-end search via the YAML config loader.
+    add_test(NAME RegpolyCli.SearchCarry32
+             COMMAND ${REGPOLY_CLI} search
+                     ${REPO_ROOT}/shared/yaml/equidist/carry32.yaml)
+    set_tests_properties(RegpolyCli.SearchCarry32 PROPERTIES
+        PASS_REGULAR_EXPRESSION "combos")
 
     # Negative cases — exit non-zero on bad input.
     add_test(NAME RegpolyCli.UnknownCommand

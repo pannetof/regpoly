@@ -18,15 +18,21 @@
 //   regpoly-cli legacy-trans FILE.dat
 //                            same for a legacy transformations file.
 //
-// Phase 4.2+ will add `search`, `show <result.yaml>`, and `publish`.
+// Phase 4.2 adds `search FILE.yaml` — load a seek-style YAML config
+// and run the equidistribution search loop via the existing C++
+// drivers. Phase 4.3+ will add `show <result.yaml>` and `publish`.
 
 #include "catalog.h"
+#include "combination.h"
 #include "legacy_reader.h"
 #include "params.h"
+#include "seek_config.h"
+#include "seek_search.h"
 
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -36,7 +42,7 @@ namespace fs = std::filesystem;
 
 namespace {
 
-constexpr const char* kVersion = "regpoly-cli 2.0.0 (Phase 4.1)";
+constexpr const char* kVersion = "regpoly-cli 2.0.0 (Phase 4.2)";
 constexpr const char* kUsage =
     "Usage: regpoly-cli <command> [options]\n"
     "\n"
@@ -51,6 +57,11 @@ constexpr const char* kUsage =
     "      Parse a legacy .dat generator file (default L=32).\n"
     "  legacy-trans FILE.dat\n"
     "      Parse a legacy .dat transformations file.\n"
+    "  search FILE.yaml\n"
+    "      Load a seek-style YAML search config and run the\n"
+    "      equidistribution search loop. Output format does not\n"
+    "      mirror `uv run regpoly`; use that command for the\n"
+    "      Python-side display.\n"
     "\n"
     "Options:\n"
     "  -h, --help        show this message and exit\n"
@@ -246,6 +257,112 @@ int cmd_legacy_info(std::vector<std::string> args) {
     return 0;
 }
 
+const char* test_kind_name(SeekTestKind k) {
+    switch (k) {
+        case SeekTestKind::EquidistributionMatricial:        return "equidist[matricial]";
+        case SeekTestKind::EquidistributionLattice:          return "equidist[lattice]";
+        case SeekTestKind::EquidistributionHarase:           return "equidist[harase]";
+        case SeekTestKind::EquidistributionNotPrimitive:     return "equidist[notprimitive]";
+        case SeekTestKind::EquidistributionSimdNotPrimitive: return "equidist[simd_notprimitive]";
+        case SeekTestKind::EquidistributionNothing:          return "equidist[nothing]";
+        case SeekTestKind::CollisionFree:                    return "collision_free";
+        case SeekTestKind::Tuplets:                          return "tuplets";
+    }
+    return "?";
+}
+
+int cmd_search(std::vector<std::string> args) {
+    if (args.empty()) {
+        std::cerr << "regpoly-cli: search requires FILE.yaml\n";
+        return 2;
+    }
+    const std::string yaml_path = args[0];
+
+    regpoly_yaml_config::SeekConfig cfg;
+    try {
+        cfg = regpoly_yaml_config::load_seek_config(yaml_path);
+    } catch (const std::exception& exc) {
+        std::cerr << "regpoly-cli: " << exc.what() << "\n";
+        return 1;
+    }
+
+    regpoly_yaml_config::BuiltSearch built;
+    try {
+        built = regpoly_yaml_config::build_search(cfg);
+    } catch (const std::exception& exc) {
+        std::cerr << "regpoly-cli: " << exc.what() << "\n";
+        return 1;
+    }
+
+    // Header — brief, machine-readable-ish.
+    std::cout << "regpoly-cli search\n";
+    std::cout << "  config:    " << yaml_path << "\n";
+    std::cout << "  seed:      [" << cfg.seed1 << ", " << cfg.seed2 << "]\n";
+    std::cout << "  Lmax:      " << cfg.Lmax << "\n";
+    std::cout << "  J:         " << cfg.components.size() << "\n";
+    std::cout << "  nbtries:   " << cfg.nbtries << "\n";
+    std::cout << "  tests:     ";
+    for (size_t i = 0; i < cfg.tests.size(); ++i) {
+        if (i) std::cout << ", ";
+        std::cout << test_kind_name(cfg.tests[i].kind);
+    }
+    std::cout << "\n";
+    std::cout << std::string(60, '=') << "\n";
+    std::cout.flush();
+
+    int64_t selection_count = 0;
+    auto on_iter = [&](Combination& comb, const SeekIterResult& r) {
+        ++selection_count;
+        std::cout << "  [" << std::setw(6) << selection_count << "] ";
+        std::cout << "k_g=" << comb.k_g() << " L=" << comb.L();
+        if (r.me_ran) {
+            std::cout << "  me_se=" << r.me_se;
+            std::cout << " (verified=" << (r.me_verified ? "yes" : "no")
+                      << (r.me_is_me ? ", ME" : "") << ")";
+        }
+        if (r.cf_ran) {
+            std::cout << "  cf_secf=" << r.cf_secf
+                      << " (verified=" << (r.cf_verified ? "yes" : "no") << ")";
+        }
+        if (r.tup_ran) {
+            std::cout << "  tup_first_max=" << r.tup_firstpart_max
+                      << " tup_first_sum=" << r.tup_firstpart_sum;
+        }
+        std::cout << "\n";
+        std::cout.flush();
+    };
+
+    auto on_progress = [&](const SeekProgress& p) {
+        std::cout << "  ... progress: combos=" << p.nbgen
+                  << " selected=" << p.nb_select
+                  << " ME=" << p.nb_me
+                  << " elapsed=" << std::fixed << std::setprecision(2)
+                  << p.elapsed_seconds << "s\n";
+        std::cout.flush();
+    };
+
+    SeekResult result;
+    try {
+        result = run_seek_search(*built.combination, cfg.tests,
+                                 cfg.nbtries, /*progress_interval=*/1000,
+                                 /*on_prep=*/nullptr,
+                                 on_iter, on_progress);
+    } catch (const std::exception& exc) {
+        std::cerr << "regpoly-cli: search failed: " << exc.what() << "\n";
+        return 1;
+    }
+
+    std::cout << std::string(60, '=') << "\n";
+    std::cout << "Summary:\n";
+    std::cout << "  combos:    " << result.nbgen << "\n";
+    std::cout << "  selected:  " << result.nb_select << "\n";
+    std::cout << "  ME (full): " << result.nb_me << "\n";
+    std::cout << "  elapsed:   " << std::fixed << std::setprecision(3)
+              << result.elapsed_seconds << "s\n";
+    std::cout.flush();
+    return 0;
+}
+
 int cmd_legacy_trans(std::vector<std::string> args) {
     if (args.empty()) {
         std::cerr << "regpoly-cli: legacy-trans requires FILE.dat\n";
@@ -286,6 +403,7 @@ int main(int argc, char** argv) {
     if (cmd == "catalog")      return cmd_catalog(std::move(rest));
     if (cmd == "legacy-info")  return cmd_legacy_info(std::move(rest));
     if (cmd == "legacy-trans") return cmd_legacy_trans(std::move(rest));
+    if (cmd == "search")       return cmd_search(std::move(rest));
 
     std::cerr << "regpoly-cli: unknown command '" << cmd << "'.\n"
               << "Run `regpoly-cli --help`.\n";
