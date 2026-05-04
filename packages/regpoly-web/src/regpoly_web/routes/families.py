@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import regpoly._regpoly_cpp as _cpp
 from fastapi import APIRouter, HTTPException
+from regpoly import introspection as _introspection
 from regpoly.core.generator import _FAMILY_ALIASES
 from regpoly.web.config import find_docs_dir
 
@@ -65,7 +65,7 @@ async def list_families() -> list[dict]:
     result = []
     for fam in KNOWN_FAMILIES:
         try:
-            specs = _cpp.get_gen_param_specs(fam)
+            specs = _introspection.get_gen_param_specs(fam)
         except Exception as e:
             # Skip families whose C++ bindings are missing for this build.
             continue
@@ -80,11 +80,11 @@ async def list_families() -> list[dict]:
 @router.get("/families/{family}")
 async def family_detail(family: str) -> dict:
     try:
-        specs = _cpp.get_gen_param_specs(family)
+        specs = _introspection.get_gen_param_specs(family)
     except Exception:
         raise HTTPException(404, f"Unknown family: {family}")
     try:
-        enumerable = bool(_cpp.family_is_enumerable(family))
+        enumerable = bool(_introspection.family_is_enumerable(family))
     except Exception:
         enumerable = False
     return {
@@ -113,7 +113,7 @@ async def list_transformations() -> list[dict]:
     result = []
     for t in _KNOWN_TRANSFORMATIONS:
         try:
-            specs = _cpp.get_trans_param_specs(t)
+            specs = _introspection.get_trans_param_specs(t)
         except Exception:
             continue
         result.append({"name": t, "params": list(specs)})
@@ -123,7 +123,7 @@ async def list_transformations() -> list[dict]:
 @router.get("/transformations/{name}")
 async def transformation_detail(name: str) -> dict:
     try:
-        specs = _cpp.get_trans_param_specs(name)
+        specs = _introspection.get_trans_param_specs(name)
     except Exception:
         raise HTTPException(404, f"Unknown transformation: {name}")
     return {"name": name, "params": list(specs)}

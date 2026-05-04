@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-import regpoly._regpoly_cpp as _cpp
+from regpoly import introspection as _introspection
 
 HEX_MASK_64 = (1 << 64) - 1
 
@@ -37,7 +37,7 @@ def _hex(value: int) -> str:
 def _gen_bitmask_keys(family: str) -> tuple[frozenset[str], frozenset[str]]:
     """Return ``(scalar_hex_keys, vector_hex_keys)`` for ``family``."""
     try:
-        specs = _cpp.get_gen_param_specs(family)
+        specs = _introspection.get_gen_param_specs(family)
     except Exception:
         return frozenset(), frozenset()
     scalar, vec = set(), set()
@@ -54,7 +54,7 @@ def _gen_bitmask_keys(family: str) -> tuple[frozenset[str], frozenset[str]]:
 @lru_cache(maxsize=32)
 def _trans_bitmask_keys(type_name: str) -> tuple[frozenset[str], frozenset[str]]:
     try:
-        specs = _cpp.get_trans_param_specs(type_name)
+        specs = _introspection.get_trans_param_specs(type_name)
     except Exception:
         return frozenset(), frozenset()
     scalar, vec = set(), set()

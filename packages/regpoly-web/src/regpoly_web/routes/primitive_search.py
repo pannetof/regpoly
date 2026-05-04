@@ -5,9 +5,9 @@ from __future__ import annotations
 import asyncio
 import json
 
-import regpoly._regpoly_cpp as _cpp
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
+from regpoly import introspection as _introspection
 from regpoly.core.generator import Generator, resolve_family
 from regpoly.core.parametric import NotEnumerable, build_gen_enumerator
 from regpoly.web.database import json_dumps, json_loads
@@ -131,7 +131,7 @@ async def create_primitive_search(
 
     # Probe once to compute k; also validates the user input.
     try:
-        specs = _cpp.get_gen_param_specs(family)
+        specs = _introspection.get_gen_param_specs(family)
     except Exception as exc:
         raise HTTPException(400, f"Unknown family '{family}': {exc}")
 
