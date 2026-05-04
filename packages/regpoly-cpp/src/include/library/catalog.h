@@ -209,6 +209,36 @@ std::string config_hash(
 // and exposed for unit tests).
 Paper parse_paper(const std::string& path);
 
+// Phase 4.3: textual append of one tested-generator entry into an
+// existing paper's `generators:` list.
+//
+// Read the source file (must match the schema documented in
+// regpoly/io/tested_generator.py: top-level `generator` + `tempering`
+// for single-component, or `components: [{generator, tempering}, ...]`
+// for multi). Produces a YAML mapping appended to the paper file's
+// `generators:` list — the new entry has the keys {id, display,
+// family, target, combined, Lmax, components} that the Catalog loader
+// expects.
+//
+// Constraints (deliberate to keep the writer safe):
+//   * The paper file must exist under library_dir.
+//   * `generators:` must be the LAST top-level key in the paper file
+//     (so a textual append at end-of-file lands inside the list).
+//     If not, throws with a clear remediation message.
+//   * gen_id must be unique within the paper (and the catalog).
+//
+// Returns the path of the modified paper file. Throws
+// std::runtime_error on any precondition failure or I/O error; the
+// paper file is left untouched in that case.
+std::string publish_tested_generator(
+    const std::string& library_dir,
+    const std::string& paper_id,
+    const std::string& gen_id,
+    const std::string& display,
+    const std::string& tested_generator_file,
+    const std::string& target = "tested_generator",
+    bool starred = false);
+
 // Skip rule for the *_params.yaml MTToolBox cross-check fixtures
 // living alongside paper-organised entries in docs/library/.
 bool is_cross_check_yaml(const std::string& filename);

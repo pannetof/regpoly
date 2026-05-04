@@ -71,6 +71,11 @@ constexpr const char* kUsage =
     "  show FILE.yaml\n"
     "      Display a tested-generator YAML (single- or multi-\n"
     "      component): components + tempering chain + results.\n"
+    "  publish FILE.yaml --paper PAPER_ID --gen-id GEN_ID\n"
+    "          [--display TEXT] [--target STR] [--starred] [--library DIR]\n"
+    "      Append a tested-generator entry to an existing paper YAML\n"
+    "      under the catalog. The paper file's `generators:` block\n"
+    "      must currently be the last top-level key.\n"
     "\n"
     "Options:\n"
     "  -h, --help        show this message and exit\n"
@@ -481,6 +486,78 @@ int cmd_show(std::vector<std::string> args) {
     return 0;
 }
 
+// Consume a flag of the form `--name VAL` (or `-n VAL`). Returns
+// "" if not present and removes the matched args.
+std::string consume_str_flag(std::vector<std::string>& args,
+                              const std::string& long_name,
+                              const std::string& short_name = "") {
+    for (size_t i = 0; i < args.size(); ++i) {
+        if ((args[i] == long_name
+             || (!short_name.empty() && args[i] == short_name))
+            && i + 1 < args.size()) {
+            std::string v = args[i + 1];
+            args.erase(args.begin() + i, args.begin() + i + 2);
+            return v;
+        }
+    }
+    return "";
+}
+
+bool consume_bool_flag(std::vector<std::string>& args,
+                        const std::string& long_name) {
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (args[i] == long_name) {
+            args.erase(args.begin() + i);
+            return true;
+        }
+    }
+    return false;
+}
+
+int cmd_publish(std::vector<std::string> args) {
+    if (args.empty()) {
+        std::cerr << "regpoly-cli: publish requires FILE.yaml --paper PAPER_ID "
+                  << "--gen-id GEN_ID\n";
+        return 2;
+    }
+    std::string library_dir = consume_library_flag(args);
+    std::string paper_id    = consume_str_flag(args, "--paper");
+    std::string gen_id      = consume_str_flag(args, "--gen-id");
+    std::string display     = consume_str_flag(args, "--display");
+    std::string target      = consume_str_flag(args, "--target");
+    bool starred            = consume_bool_flag(args, "--starred");
+
+    if (target.empty()) target = "tested_generator";
+    if (display.empty()) display = gen_id;
+
+    if (args.empty()) {
+        std::cerr << "regpoly-cli: publish requires FILE.yaml positional arg\n";
+        return 2;
+    }
+    std::string source = args[0];
+
+    if (paper_id.empty() || gen_id.empty()) {
+        std::cerr << "regpoly-cli: publish requires --paper PAPER_ID and "
+                  << "--gen-id GEN_ID\n";
+        return 2;
+    }
+    if (library_dir.empty()) {
+        std::cerr << "regpoly-cli: could not locate docs/library/. "
+                  << "Pass --library DIR.\n";
+        return 2;
+    }
+
+    try {
+        std::string out_path = regpoly_catalog::publish_tested_generator(
+            library_dir, paper_id, gen_id, display, source, target, starred);
+        std::cout << "published " << gen_id << " into " << out_path << "\n";
+    } catch (const std::exception& exc) {
+        std::cerr << "regpoly-cli: " << exc.what() << "\n";
+        return 1;
+    }
+    return 0;
+}
+
 int cmd_legacy_trans(std::vector<std::string> args) {
     if (args.empty()) {
         std::cerr << "regpoly-cli: legacy-trans requires FILE.dat\n";
@@ -523,6 +600,7 @@ int main(int argc, char** argv) {
     if (cmd == "legacy-trans") return cmd_legacy_trans(std::move(rest));
     if (cmd == "search")       return cmd_search(std::move(rest));
     if (cmd == "show")         return cmd_show(std::move(rest));
+    if (cmd == "publish")      return cmd_publish(std::move(rest));
 
     std::cerr << "regpoly-cli: unknown command '" << cmd << "'.\n"
               << "Run `regpoly-cli --help`.\n";

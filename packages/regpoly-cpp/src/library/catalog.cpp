@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <regex>
@@ -851,6 +852,279 @@ Paper parse_paper(const std::string& path) {
     }
 
     return paper;
+}
+
+// ── Phase 4.3: textual publish ────────────────────────────────────────
+
+namespace {
+
+// Render one YAML scalar to its inline representation (quoted if it
+// contains characters that would confuse the YAML parser as bare).
+std::string render_scalar_inline(const YAML::Node& n) {
+    if (!n.IsScalar()) return "~";
+    std::string s = n.as<std::string>();
+    // Heuristic: bare-safe if it parses unambiguously back to the
+    // same value when re-loaded as inline scalar.
+    bool need_quote = false;
+    if (s.empty()) need_quote = true;
+    else {
+        for (char c : s) {
+            if (c == ':' || c == '#' || c == ',' || c == '[' || c == ']'
+                || c == '{' || c == '}' || c == '&' || c == '*' || c == '?'
+                || c == '|' || c == '>' || c == '\'' || c == '"' || c == '%'
+                || c == '@' || c == '`') {
+                need_quote = true; break;
+            }
+        }
+    }
+    if (need_quote) {
+        std::string esc;
+        esc.reserve(s.size() + 2);
+        esc += '\'';
+        for (char c : s) {
+            if (c == '\'') esc += "''";
+            else esc += c;
+        }
+        esc += '\'';
+        return esc;
+    }
+    return s;
+}
+
+// Render a YAML map as `{k1: v1, k2: v2, ...}` flow style. Used for
+// the `params` and tempering-step blocks within an appended generator
+// entry.
+std::string render_map_flow(const YAML::Node& m) {
+    std::ostringstream os;
+    os << '{';
+    bool first = true;
+    for (auto kv : m) {
+        if (!first) os << ", ";
+        first = false;
+        os << kv.first.as<std::string>() << ": ";
+        if (kv.second.IsScalar()) {
+            os << render_scalar_inline(kv.second);
+        } else if (kv.second.IsSequence()) {
+            os << '[';
+            bool sf = true;
+            for (auto el : kv.second) {
+                if (!sf) os << ", ";
+                sf = false;
+                if (el.IsScalar()) os << render_scalar_inline(el);
+                else os << "?";
+            }
+            os << ']';
+        } else if (kv.second.IsMap()) {
+            os << render_map_flow(kv.second);
+        } else {
+            os << '~';
+        }
+    }
+    os << '}';
+    return os.str();
+}
+
+// Read whole file into a string.
+std::string read_file_str(const std::string& path) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        throw std::runtime_error(
+            "publish: cannot open " + path + " for reading");
+    }
+    std::ostringstream ss; ss << in.rdbuf();
+    return ss.str();
+}
+
+// Validate that `generators:` is the last top-level key in the paper
+// YAML file at `path`. Returns true if so. Uses yaml-cpp's mark info
+// (line numbers) to compare key positions.
+bool generators_is_last_top_key(const std::string& path) {
+    YAML::Node doc = YAML::LoadFile(path);
+    if (!doc || !doc.IsMap()) return false;
+    int gen_line = -1;
+    int max_line = -1;
+    for (auto kv : doc) {
+        std::string k = kv.first.as<std::string>();
+        int line = kv.first.Mark().line;
+        if (k == "generators") gen_line = line;
+        if (line > max_line) max_line = line;
+    }
+    return gen_line >= 0 && gen_line == max_line;
+}
+
+// Build a YAML snippet (string) to append to the paper's generators:
+// list, for one tested-generator file.
+std::string build_publish_snippet(
+    const std::string& gen_id,
+    const std::string& display,
+    const std::string& target,
+    bool starred,
+    const YAML::Node& tested_gen_doc)
+{
+    // The paper YAML's `generators:` list uses 2-space block indent
+    // with `  - id: ...` per entry; nested keys at +2 spaces. Match
+    // that layout.
+    std::ostringstream os;
+    os << "  - id: " << gen_id << "\n";
+    os << "    display: " << render_scalar_inline(YAML::Node(display)) << "\n";
+
+    // Single- vs multi-component shape detection. We need to fill:
+    //   family   = first component's family
+    //   Lmax     = max(component.L)
+    //   target   = caller-supplied
+    //   combined = (J >= 2)
+    //   components: [ ... ]
+    std::vector<YAML::Node> comps;
+    if (tested_gen_doc["components"]
+        && tested_gen_doc["components"].IsSequence()) {
+        for (auto c : tested_gen_doc["components"]) comps.push_back(c);
+    } else if (tested_gen_doc["generator"]) {
+        YAML::Node synth(YAML::NodeType::Map);
+        synth["generator"] = tested_gen_doc["generator"];
+        if (tested_gen_doc["tempering"]) {
+            synth["tempering"] = tested_gen_doc["tempering"];
+        }
+        comps.push_back(synth);
+    } else {
+        throw std::runtime_error(
+            "publish: tested-generator file has neither "
+            "'generator' nor 'components'");
+    }
+
+    int Lmax = 0;
+    std::string family;
+    for (const auto& c : comps) {
+        const auto& g = c["generator"];
+        if (!g) {
+            throw std::runtime_error(
+                "publish: component missing 'generator' key");
+        }
+        if (g["family"]) {
+            std::string f = g["family"].as<std::string>();
+            if (family.empty()) family = f;
+        }
+        int L = 0;
+        if (g["L"]) L = g["L"].as<int>(0);
+        if (L > Lmax) Lmax = L;
+    }
+    if (family.empty()) {
+        throw std::runtime_error("publish: no family found in components");
+    }
+    if (Lmax <= 0) Lmax = 32;
+
+    os << "    family: " << family << "\n";
+    os << "    target: " << target << "\n";
+    os << "    combined: " << (comps.size() > 1 ? "true" : "false") << "\n";
+    os << "    Lmax: " << Lmax << "\n";
+    if (starred) os << "    starred: true\n";
+    os << "    components:\n";
+    for (const auto& c : comps) {
+        const auto& g = c["generator"];
+        os << "      - family: " << g["family"].as<std::string>() << "\n";
+        if (g["L"]) os << "        L: " << g["L"].as<int>() << "\n";
+        // `params` is everything in `generator` except `family` and `L`.
+        YAML::Node params(YAML::NodeType::Map);
+        for (auto kv : g) {
+            std::string k = kv.first.as<std::string>();
+            if (k == "family" || k == "L") continue;
+            params[k] = kv.second;
+        }
+        if (params.size() > 0) {
+            os << "        params: " << render_map_flow(params) << "\n";
+        } else {
+            os << "        params: {}\n";
+        }
+        if (c["tempering"] && c["tempering"].IsSequence()
+            && c["tempering"].size() > 0) {
+            os << "        tempering:\n";
+            for (auto step : c["tempering"]) {
+                os << "          - " << render_map_flow(step) << "\n";
+            }
+        } else {
+            os << "        tempering: []\n";
+        }
+    }
+    return os.str();
+}
+
+}  // namespace
+
+std::string publish_tested_generator(
+    const std::string& library_dir,
+    const std::string& paper_id,
+    const std::string& gen_id,
+    const std::string& display,
+    const std::string& tested_generator_file,
+    const std::string& target,
+    bool starred)
+{
+    // 1. Validate args.
+    if (!std::regex_match(paper_id, kIdRe)) {
+        throw std::runtime_error(
+            "publish: paper_id must match [a-z0-9][a-z0-9-]*: '" + paper_id + "'");
+    }
+    if (!std::regex_match(gen_id, kIdRe)) {
+        throw std::runtime_error(
+            "publish: gen_id must match [a-z0-9][a-z0-9-]*: '" + gen_id + "'");
+    }
+
+    // 2. Locate the paper file + check uniqueness via the catalog
+    //    (also catches duplicate gen_id across other papers).
+    Catalog cat(library_dir);
+    cat.load();
+    auto p = cat.paper(paper_id);
+    if (!p.has_value()) {
+        throw std::runtime_error(
+            "publish: paper '" + paper_id + "' not found in catalog");
+    }
+    if (cat.generator(gen_id).has_value()) {
+        throw std::runtime_error(
+            "publish: generator id '" + gen_id + "' already exists");
+    }
+
+    // 3. Layout precondition: generators: must be the last top-level key.
+    if (!generators_is_last_top_key(p->source_path)) {
+        throw std::runtime_error(
+            "publish: paper file " + p->source_path + " has keys after "
+            "`generators:`. Move `generators:` to the end of the file "
+            "and retry, or edit the paper YAML manually.");
+    }
+
+    // 4. Load the tested-generator source file.
+    YAML::Node tested_gen_doc;
+    try {
+        tested_gen_doc = YAML::LoadFile(tested_generator_file);
+    } catch (const std::exception& exc) {
+        throw std::runtime_error(
+            std::string("publish: failed to load ")
+            + tested_generator_file + ": " + exc.what());
+    }
+    if (!tested_gen_doc || !tested_gen_doc.IsMap()) {
+        throw std::runtime_error(
+            "publish: " + tested_generator_file
+            + ": top-level YAML must be a mapping");
+    }
+
+    // 5. Build the snippet.
+    std::string snippet = build_publish_snippet(
+        gen_id, display, target, starred, tested_gen_doc);
+
+    // 6. Append textually. Make sure the existing file ends with a
+    //    newline first.
+    std::string body = read_file_str(p->source_path);
+    if (body.empty() || body.back() != '\n') body += '\n';
+    body += snippet;
+
+    {
+        std::ofstream out(p->source_path, std::ios::binary | std::ios::trunc);
+        if (!out) {
+            throw std::runtime_error(
+                "publish: cannot open " + p->source_path + " for writing");
+        }
+        out.write(body.data(), static_cast<std::streamsize>(body.size()));
+    }
+
+    return p->source_path;
 }
 
 }  // namespace regpoly_catalog

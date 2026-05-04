@@ -118,6 +118,38 @@ if(TARGET regpoly_cli)
     set_tests_properties(RegpolyCli.ShowMissingFile PROPERTIES
         WILL_FAIL TRUE)
 
+    # Phase 4.3 part 2: publish — copy a paper to a tmpdir then
+    # append a tested-generator entry, then verify the catalog
+    # reloads with the new generator visible.
+    add_test(NAME RegpolyCli.PublishHappyPath
+             COMMAND ${CMAKE_COMMAND} -E env
+                     bash -c "set -e
+                              tmp=$(mktemp -d /tmp/regpoly_pub_XXXXXX)
+                              cp ${REPO_ROOT}/docs/library/lecuyer-1996.yaml $tmp/
+                              ${REGPOLY_CLI} publish \
+                                  ${REPO_ROOT}/shared/yaml/testedgenerators/MELG/N10_r33_w64.equidist.0025.yaml \
+                                  --paper lecuyer-1996 \
+                                  --gen-id melg-n10-test-pub \
+                                  --display 'MELG N10 publish test' \
+                                  --library $tmp
+                              ${REGPOLY_CLI} catalog gen melg-n10-test-pub --library $tmp | grep -q 'family:    MELG'
+                              rm -rf $tmp")
+
+    add_test(NAME RegpolyCli.PublishMissingPaper
+             COMMAND ${REGPOLY_CLI} publish
+                     ${REPO_ROOT}/shared/yaml/testedgenerators/MELG/N10_r33_w64.equidist.0025.yaml
+                     --paper no-such-paper
+                     --gen-id foo
+                     --library ${REPO_ROOT}/docs/library)
+    set_tests_properties(RegpolyCli.PublishMissingPaper PROPERTIES
+        WILL_FAIL TRUE)
+
+    add_test(NAME RegpolyCli.PublishMissingFlags
+             COMMAND ${REGPOLY_CLI} publish
+                     ${REPO_ROOT}/shared/yaml/testedgenerators/MELG/N10_r33_w64.equidist.0025.yaml)
+    set_tests_properties(RegpolyCli.PublishMissingFlags PROPERTIES
+        WILL_FAIL TRUE)
+
     # Negative cases — exit non-zero on bad input.
     add_test(NAME RegpolyCli.UnknownCommand
              COMMAND ${REGPOLY_CLI} bogus-command)
