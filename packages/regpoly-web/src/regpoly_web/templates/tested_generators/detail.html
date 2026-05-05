@@ -3,172 +3,395 @@
 {% block title %}Combined generator #{{ tg_id }}{% endblock %}
 
 {% block content %}
-<div x-data="testedDetail({{ tg_id }})" x-init="load()">
-    <template x-if="tg">
-        <div>
-            <hgroup>
-                <h1>Combined generator #<span x-text="tg.id"></span></h1>
-                <p>J=<span x-text="tg.J"></span>
-                   · k_g=<span x-text="tg.k_g"></span>
-                   · Lmax=<span x-text="tg.Lmax"></span></p>
-            </hgroup>
+<div x-data="testedDetail({{ tg_id }})" x-init="load()" data-tested-detail>
 
-            <p x-show="tg.search_run_id">
-                Produced by combined generator search
-                <a :href="'/tempering-search/' + tg.search_run_id"
-                   x-text="'#' + tg.search_run_id"></a>
-            </p>
+  <template x-if="tg">
+    <div>
+      <div class="d-flex align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="mb-0">
+          <span class="text-secondary">Combined generator</span>
+          #<span x-text="tg.id"></span>
+        </h2>
+        <template x-if="tg.library_id">
+          <span class="badge bg-success-lt ms-2"
+                data-published-marker
+                title="Published to library">
+            ★ published
+          </span>
+        </template>
+        <span class="ms-2 text-secondary">
+          J=<span x-text="tg.J"></span> ·
+          k_g=<span x-text="tg.k_g"></span> ·
+          L<sub>max</sub>=<span x-text="tg.Lmax"></span>
+        </span>
 
-            <p x-show="tg.library_id">
-                <mark class="filter-pill">
-                    Published configuration:
-                    <a :href="libraryHref()" target="_top"
-                       x-text="libraryLabel()"></a>
-                </mark>
-            </p>
-
-            <h3>Components</h3>
-            <template x-for="c in tg.components" :key="c.component_index">
-                <article>
-                    <header>
-                        <strong>Component <span x-text="c.component_index + 1"></span>:
-                            <span x-text="c.family"></span></strong>
-                        — k=<span x-text="c.k"></span>,
-                        L=<span x-text="c.L"></span>
-                        <template x-if="c.generator_id">
-                            · <a :href="'/generators/' + c.generator_id"
-                                 x-text="'generator #' + c.generator_id"></a>
-                        </template>
-                    </header>
-
-                    <details>
-                        <summary>Generator parameters</summary>
-                        <table class="compact">
-                            <template x-for="[k, v] in Object.entries(c.all_params)" :key="k">
-                                <tr><td class="mono" x-text="k"></td>
-                                    <td class="mono" x-text="formatParamValue(v)"></td></tr>
-                            </template>
-                        </table>
-                    </details>
-
-                    <template x-if="c.tempering_params.length">
-                        <details open>
-                            <summary>Tempering chain
-                                (<span x-text="c.tempering_params.length"></span>)</summary>
-                            <template x-for="(t, ti) in c.tempering_params" :key="ti">
-                                <article>
-                                    <header><strong x-text="t.type"></strong></header>
-                                    <table class="compact">
-                                        <template x-for="[k, v] in Object.entries(t).filter(([k]) => k !== 'type')" :key="k">
-                                            <tr><td class="mono" x-text="k"></td>
-                                                <td class="mono" x-text="formatParamValue(v)"></td></tr>
-                                        </template>
-                                    </table>
-                                </article>
-                            </template>
-                        </details>
-                    </template>
-                </article>
-            </template>
-
-            <h3>Test results</h3>
-            <template x-for="r in tg.results" :key="r.test_type + r.created_at">
-                <article>
-                    <header>
-                        <strong x-text="r.test_type"></strong>
-                        <template x-if="testMethod(r)">
-                            <span>
-                                · method:
-                                <code x-text="testMethod(r)"></code>
-                            </span>
-                        </template>
-                        <template x-if="r.is_me">
-                            <span class="status-pill status-completed">ME</span>
-                        </template>
-                    </header>
-                    <ul>
-                        <template x-if="r.se !== null">
-                            <li>se = <strong x-text="r.se"></strong></li>
-                        </template>
-                        <template x-if="r.secf !== null">
-                            <li>secf = <span x-text="r.secf"></span></li>
-                        </template>
-                        <template x-if="r.detail && r.detail.ecart">
-                            <li>Non-zero dimension gaps:
-                                <table class="compact" style="display:inline-block">
-                                    <template x-for="[l, gap] in Object.entries(r.detail.ecart)" :key="l">
-                                        <tr>
-                                            <td class="mono">l=<span x-text="l"></span></td>
-                                            <td class="mono"
-                                                :class="gap > 3 ? 'equidist-cell-bad'
-                                                        : gap > 1 ? 'equidist-cell-warn'
-                                                                  : 'equidist-cell-ok'"
-                                                x-text="gap"></td>
-                                        </tr>
-                                    </template>
-                                </table>
-                            </li>
-                        </template>
-                    </ul>
-                </article>
-            </template>
+        <div class="ms-auto btn-list">
+          <template x-if="!tg.library_id">
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    data-publish
+                    @click="openPublish()">Publish…</button>
+          </template>
+          <template x-if="tg.library_id">
+            <button type="button"
+                    class="btn btn-sm btn-outline-warning"
+                    data-unpublish
+                    @click="unpublish()">Unpublish</button>
+          </template>
+          <button type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  @click="confirmDelete = true"
+                  data-delete>Delete</button>
         </div>
-    </template>
-    <template x-if="!tg"><p>Loading...</p></template>
+      </div>
+
+      <div class="row row-cards mb-3">
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="font-weight-medium">k_g</div>
+              <div class="text-secondary" x-text="tg.k_g"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="font-weight-medium">J</div>
+              <div class="text-secondary" x-text="tg.J"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="font-weight-medium">L<sub>max</sub></div>
+              <div class="text-secondary" x-text="tg.Lmax"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="font-weight-medium">Results</div>
+              <div class="text-secondary"
+                   x-text="(tg.results || []).length"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template x-if="tg.search_run_id">
+        <p class="text-secondary">
+          Produced by combined-generator search
+          <a :href="'/tempering-search/' + tg.search_run_id"
+             x-text="'#' + tg.search_run_id"></a>
+        </p>
+      </template>
+
+      <template x-if="tg.library_id">
+        <p>
+          <a :href="libraryHref()"
+             class="link-primary"
+             data-paper-backlink
+             x-text="'Paper: ' + libraryLabel()"></a>
+        </p>
+      </template>
+
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-title">Components</h3>
+        </div>
+        <div class="card-body">
+          <template x-for="c in tg.components"
+                    :key="c.component_index">
+            <div class="mb-3">
+              <h4 class="mb-1">
+                Component <span x-text="c.component_index + 1"></span>:
+                <span x-text="c.family"></span>
+                <small class="text-secondary">
+                  k=<span x-text="c.k"></span>,
+                  L=<span x-text="c.L"></span>
+                </small>
+                <template x-if="c.generator_id">
+                  <a class="ms-2 small"
+                     :href="'/generators/' + c.generator_id"
+                     x-text="'gen #' + c.generator_id"></a>
+                </template>
+              </h4>
+              <details>
+                <summary>Generator parameters</summary>
+                <table class="table table-sm mt-1 mb-2">
+                  <template x-for="[k, v] in Object.entries(c.all_params || {})"
+                            :key="k">
+                    <tr>
+                      <td class="mono" x-text="k"></td>
+                      <td class="mono" x-text="formatParamValue(v)"></td>
+                    </tr>
+                  </template>
+                </table>
+              </details>
+              <template x-if="(c.tempering_params || []).length">
+                <details open>
+                  <summary>
+                    Tempering chain
+                    (<span x-text="c.tempering_params.length"></span>)
+                  </summary>
+                  <template x-for="(t, ti) in c.tempering_params"
+                            :key="ti">
+                    <div class="ms-3 mt-1">
+                      <strong x-text="t.type"></strong>:
+                      <span class="mono small"
+                            x-text="formatTransParams(t)"></span>
+                    </div>
+                  </template>
+                </details>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-title">Test results</h3>
+        </div>
+        <div class="card-body">
+          <template x-if="(tg.results || []).length === 0">
+            <p class="text-secondary">No tests have run on this generator yet.</p>
+          </template>
+          <template x-for="(r, idx) in (tg.results || [])"
+                    :key="idx + r.test_type">
+            <div class="mb-4 pb-3 border-bottom">
+              <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                <strong x-text="r.test_type"></strong>
+                <template x-if="testMethod(r)">
+                  <span class="text-secondary small">
+                    · <code x-text="testMethod(r)"></code>
+                  </span>
+                </template>
+                <template x-if="r.is_me">
+                  <span class="badge bg-success-lt">ME</span>
+                </template>
+                <template x-if="r.verified">
+                  <span class="badge bg-success-lt"
+                        data-verified-pill>verified ✓</span>
+                </template>
+                <template x-if="r.elapsed_seconds != null">
+                  <span class="badge bg-secondary-lt"
+                        data-elapsed-pill
+                        x-text="formatElapsed(r.elapsed_seconds)"></span>
+                </template>
+              </div>
+              <ul class="list-unstyled mb-2">
+                <template x-if="r.se !== null">
+                  <li>se = <strong x-text="r.se"></strong></li>
+                </template>
+                <template x-if="r.secf !== null">
+                  <li>secf = <span x-text="r.secf"></span></li>
+                </template>
+              </ul>
+              <template x-if="r.detail && r.detail.ecart">
+                <details>
+                  <summary>Non-zero dimension gaps
+                    (<span x-text="Object.keys(r.detail.ecart).length"></span>)</summary>
+                  <table class="table table-sm mt-1">
+                    <template x-for="[l, gap] in Object.entries(r.detail.ecart)"
+                              :key="l">
+                      <tr>
+                        <td class="mono">ℓ=<span x-text="l"></span></td>
+                        <td class="mono"
+                            :class="gap > 3 ? 'equidist-cell-bad'
+                                    : gap > 1 ? 'equidist-cell-warn'
+                                              : 'equidist-cell-ok'"
+                            x-text="gap"></td>
+                      </tr>
+                    </template>
+                  </table>
+                </details>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </template>
+  <template x-if="!tg"><p class="text-secondary">Loading…</p></template>
+
+  {# Publish modal #}
+  <div class="modal modal-blur fade"
+       :class="publishOpen ? 'show' : ''"
+       :style="publishOpen ? 'display: block; background-color: rgba(0,0,0,0.5);' : 'display: none;'"
+       tabindex="-1"
+       :aria-hidden="!publishOpen"
+       data-publish-modal>
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Publish to library</h5>
+          <button type="button" class="btn-close"
+                  @click="publishOpen = false"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">Library ID</label>
+          <input type="text"
+                 class="form-control"
+                 x-model="publishDraft"
+                 @keydown.enter.prevent="publish()"
+                 placeholder="e.g. matsumoto2008"/>
+          <p class="text-danger small mt-2"
+             x-show="publishError"
+             x-text="publishError"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link link-secondary"
+                  @click="publishOpen = false">Cancel</button>
+          <button type="button" class="btn btn-primary ms-auto"
+                  @click="publish()"
+                  :disabled="!publishDraft.trim()">Publish</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Delete-confirm modal #}
+  <div class="modal modal-blur fade"
+       :class="confirmDelete ? 'show' : ''"
+       :style="confirmDelete ? 'display: block; background-color: rgba(0,0,0,0.5);' : 'display: none;'"
+       tabindex="-1"
+       :aria-hidden="!confirmDelete">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Delete combined generator</h5>
+          <button type="button" class="btn-close"
+                  @click="confirmDelete = false"></button>
+        </div>
+        <div class="modal-body text-center">
+          <p>Delete this combined generator and its test results?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link link-secondary"
+                  @click="confirmDelete = false">Cancel</button>
+          <button type="button" class="btn btn-danger ms-auto"
+                  @click="doDelete()">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 function testedDetail(id) {
-    return {
-        tg: null,
-        libPaperId: null,
-        libDisplay: null,
-        async load() {
-            const r = await fetch('/api/tested-generators/' + id);
-            if (r.ok) this.tg = await r.json();
-            if (this.tg && this.tg.library_id) {
-                try {
-                    const lr = await fetch(
-                        '/api/library/generators/'
-                        + encodeURIComponent(this.tg.library_id));
-                    if (lr.ok) {
-                        const d = await lr.json();
-                        this.libPaperId = d.paper.id;
-                        this.libDisplay = d.display
-                            + ' — ' + d.paper.display;
-                    }
-                } catch (_) {}
-            }
-        },
-        libraryHref() {
-            if (!this.tg || !this.tg.library_id) return '#';
-            if (this.libPaperId) {
-                return '/library/' + this.libPaperId
-                    + '/' + this.tg.library_id;
-            }
-            return '/library';
-        },
-        libraryLabel() {
-            if (this.libDisplay) return this.libDisplay;
-            return (this.tg && this.tg.library_id) || '';
-        },
-        formatParamValue(v) {
-            // Bitmask fields are pre-formatted by the server as
-            // hex strings ("0x…") via web/param_format.py, so we
-            // only need to render arrays and passthrough everything
-            // else (including those strings) without JSON-quoting.
-            if (Array.isArray(v)) return '[' + v.join(', ') + ']';
-            if (v === null || v === undefined) return '';
-            return String(v);
-        },
-        testMethod(r) {
-            // The algorithm used to compute equidistribution lives in
-            // test_config.method; for non-equidist tests it may be
-            // absent or named differently — fall back gracefully.
-            const cfg = r.test_config || {};
-            return cfg.method || cfg.algorithm || null;
-        },
-    };
+  return {
+    tg: null,
+    libPaperId: null,
+    libDisplay: null,
+    publishOpen: false,
+    publishDraft: "",
+    publishError: "",
+    confirmDelete: false,
+
+    async load() {
+      const r = await fetch("/api/tested-generators/" + id);
+      if (r.ok) this.tg = await r.json();
+      if (this.tg && this.tg.library_id) {
+        try {
+          const lr = await fetch(
+            "/api/library/generators/"
+            + encodeURIComponent(this.tg.library_id));
+          if (lr.ok) {
+            const d = await lr.json();
+            this.libPaperId = d.paper.id;
+            this.libDisplay = d.display + " — " + d.paper.display;
+          }
+        } catch (e) { /* ignore */ }
+      }
+    },
+
+    libraryHref() {
+      if (!this.tg || !this.tg.library_id) return "#";
+      if (this.libPaperId) {
+        return "/library/" + this.libPaperId
+          + "/" + this.tg.library_id;
+      }
+      return "/library";
+    },
+    libraryLabel() {
+      if (this.libDisplay) return this.libDisplay;
+      return (this.tg && this.tg.library_id) || "";
+    },
+
+    formatParamValue(v) {
+      if (Array.isArray(v)) return "[" + v.join(", ") + "]";
+      if (v === null || v === undefined) return "";
+      return String(v);
+    },
+    formatTransParams(t) {
+      const parts = [];
+      for (const [k, v] of Object.entries(t || {})) {
+        if (k === "type") continue;
+        const rendered = Array.isArray(v) ? "[" + v.join(", ") + "]"
+                                          : String(v);
+        parts.push(k + "=" + rendered);
+      }
+      return parts.length ? parts.join(", ") : "(no parameters)";
+    },
+    testMethod(r) {
+      const cfg = r.test_config || {};
+      return cfg.method || cfg.algorithm || null;
+    },
+    formatElapsed(s) {
+      if (s == null) return "";
+      if (s < 60) return s.toFixed(2) + "s";
+      if (s < 3600) return Math.round(s / 60) + "m";
+      return (s / 3600).toFixed(1) + "h";
+    },
+
+    openPublish() {
+      this.publishError = "";
+      this.publishDraft = (this.tg && this.tg.library_id) || "";
+      this.publishOpen = true;
+    },
+
+    async publish() {
+      const v = this.publishDraft.trim();
+      if (!v) return;
+      const r = await fetch(
+        "/api/v2/tested-generators/" + id + "/publish",
+        { method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ library_id: v }) });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        this.publishError = body.detail || r.statusText;
+        return;
+      }
+      this.publishOpen = false;
+      await this.load();
+    },
+
+    async unpublish() {
+      const r = await fetch(
+        "/api/v2/tested-generators/" + id + "/publish",
+        { method: "DELETE" });
+      if (r.ok) {
+        await this.load();
+      }
+    },
+
+    async doDelete() {
+      const r = await fetch("/api/tested-generators/" + id,
+                            { method: "DELETE" });
+      if (r.ok) {
+        location.href = "/tested-generators";
+      } else {
+        const body = await r.json().catch(() => ({}));
+        alert("Failed: " + (body.detail || r.statusText));
+        this.confirmDelete = false;
+      }
+    },
+  };
 }
 </script>
 {% endblock %}

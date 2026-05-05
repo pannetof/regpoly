@@ -3,30 +3,81 @@
 {% block title %}Generator {{ gen_id }}{% endblock %}
 
 {% block content %}
-<div x-data="generatorDetail({{ gen_id }})" x-init="load()">
+<div x-data="generatorDetail({{ gen_id }})" x-init="load()" data-generator-detail>
     <template x-if="gen">
         <div>
-            <hgroup>
-                <h1>
-                    <span x-text="gen.family"></span> #<span x-text="gen.id"></span>
-                </h1>
-                <p>k = <span x-text="gen.k"></span>,
-                   L = <span x-text="gen.L"></span>
-                   <template x-if="gen.hamming_weight !== null">
-                       , Hamming weight = <strong x-text="gen.hamming_weight"></strong>
-                   </template>
-                </p>
-            </hgroup>
+            <div class="d-flex align-items-center mb-3 flex-wrap gap-2">
+              <h2 class="mb-0">
+                <span class="text-secondary"
+                      x-text="gen.family"></span>
+                #<span x-text="gen.id"></span>
+              </h2>
+              <span class="ms-2"
+                    x-html="gen.char_poly
+                      ? '<span class=\'badge bg-success-lt\'>primitive</span>'
+                      : '<span class=\'badge bg-secondary-lt\'>not primitive</span>'"></span>
+              <template x-if="gen.library_id">
+                <span class="badge bg-success-lt"
+                      data-published-marker
+                      title="Published">★ published</span>
+              </template>
 
-            <p><a href="/generators">← back to list</a></p>
+              <div class="ms-auto btn-list">
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        data-transition-matrix
+                        @click="loadMatrix()"
+                        :disabled="matrixLoaded || matrixLoading">
+                  Transition matrix
+                </button>
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        data-delete
+                        @click="confirmDelete = true">Delete</button>
+              </div>
+            </div>
 
-            <p x-show="gen.library_id">
-                <mark class="filter-pill">
-                    Published configuration:
-                    <a :href="libraryHref()" target="_top"
-                       x-text="libraryLabel()"></a>
-                </mark>
-            </p>
+            {# ── Metric cards ── #}
+            <div class="row row-cards mb-3">
+              <div class="col-sm-6 col-lg-3">
+                <div class="card card-sm"><div class="card-body">
+                  <div class="font-weight-medium">k</div>
+                  <div class="text-secondary" x-text="gen.k"></div>
+                </div></div>
+              </div>
+              <div class="col-sm-6 col-lg-3">
+                <div class="card card-sm"><div class="card-body">
+                  <div class="font-weight-medium">w (Hamming wt.)</div>
+                  <div class="text-secondary"
+                       x-text="gen.hamming_weight ?? '—'"></div>
+                </div></div>
+              </div>
+              <div class="col-sm-6 col-lg-3">
+                <div class="card card-sm"><div class="card-body">
+                  <div class="font-weight-medium">D<sub>max</sub></div>
+                  <div class="text-secondary"
+                       x-text="dmaxValue() ?? '—'"></div>
+                </div></div>
+              </div>
+              <div class="col-sm-6 col-lg-3">
+                <div class="card card-sm"><div class="card-body">
+                  <div class="font-weight-medium">Search runs</div>
+                  <div class="text-secondary"
+                       x-text="(related.tempering_runs || []).length
+                               + (related.primitive_search_id ? 1 : 0)"></div>
+                </div></div>
+              </div>
+            </div>
+
+            <template x-if="gen.library_id">
+              <p>
+                <a :href="libraryHref()"
+                   target="_top"
+                   class="link-primary"
+                   data-paper-backlink
+                   x-text="'Paper: ' + libraryLabel()"></a>
+              </p>
+            </template>
 
             <section>
                 <h3>Parameters</h3>
@@ -191,9 +242,67 @@
                     </div>
                 </template>
             </section>
+            <div class="card mb-3" data-related-card>
+              <div class="card-header">
+                <h3 class="card-title">Related</h3>
+              </div>
+              <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                  <template x-if="related.primitive_search_id">
+                    <li>Found by full-period search
+                      <a :href="'/primitive-search/' + related.primitive_search_id"
+                         x-text="'#' + related.primitive_search_id"></a>
+                    </li>
+                  </template>
+                  <template x-if="(related.tempering_runs || []).length">
+                    <li>Used in combined-generator searches:
+                      <template x-for="rid in related.tempering_runs"
+                                :key="rid">
+                        <a class="me-2"
+                           :href="'/tempering-search/' + rid"
+                           x-text="'#' + rid"></a>
+                      </template>
+                    </li>
+                  </template>
+                  <template x-if="!related.primitive_search_id
+                                  && !(related.tempering_runs || []).length
+                                  && !related.library_id">
+                    <li class="text-secondary">No related runs.</li>
+                  </template>
+                </ul>
+              </div>
+            </div>
         </div>
     </template>
-    <template x-if="!gen"><p>Loading...</p></template>
+    <template x-if="!gen"><p class="text-secondary">Loading…</p></template>
+
+    {# Delete-confirm modal #}
+    <div class="modal modal-blur fade"
+         :class="confirmDelete ? 'show' : ''"
+         :style="confirmDelete ? 'display: block; background-color: rgba(0,0,0,0.5);' : 'display: none;'"
+         tabindex="-1"
+         :aria-hidden="!confirmDelete">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Delete generator</h5>
+            <button type="button" class="btn-close"
+                    @click="confirmDelete = false"></button>
+          </div>
+          <div class="modal-body text-center">
+            <p>Delete generator
+              <strong x-text="gen ? '#' + gen.id : ''"></strong>?</p>
+            <p class="text-secondary small">This cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-link link-secondary"
+                    @click="confirmDelete = false">Cancel</button>
+            <button type="button" class="btn btn-danger ms-auto"
+                    @click="doDelete()">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
 </div>
 
 <script>
@@ -201,6 +310,12 @@ function generatorDetail(id) {
     return {
         gen: null,
         polyFormat: 'x',
+        related: {
+            primitive_search_id: null,
+            tempering_runs: [],
+            library_id: null,
+        },
+        confirmDelete: false,
         matrixLoading: false,
         matrixError: '',
         matrixLoaded: false,
@@ -221,6 +336,10 @@ function generatorDetail(id) {
             if (this.gen && this.gen.pis_computed_at === null) {
                 setTimeout(() => this.load(), 2000);
             }
+            try {
+                const rr = await fetch('/api/v2/generators/' + id + '/related');
+                if (rr.ok) this.related = await rr.json();
+            } catch (_) { /* ignore */ }
             if (this.gen && this.gen.library_id && !this.libPaperId) {
                 try {
                     const lr = await fetch(
@@ -508,6 +627,29 @@ function generatorDetail(id) {
             this._panStart = null;
             const cv = this.$refs.matrixCanvas;
             if (cv) cv.style.cursor = 'grab';
+        },
+
+        // D_max — the largest non-zero gap on the equidistribution
+        // profile. The pis_gaps array (when present) carries one
+        // entry per dimension v from 1 upward; D_max is the maximum.
+        dmaxValue() {
+            const arr = this.gen && this.gen.pis_gaps;
+            if (!arr || !arr.length) return null;
+            let m = 0;
+            for (const v of arr) if (v > m) m = v;
+            return m;
+        },
+
+        async doDelete() {
+            const r = await fetch('/api/generators/' + id,
+                                  { method: 'DELETE' });
+            if (r.ok) {
+                location.href = '/generators';
+            } else {
+                const body = await r.json().catch(() => ({}));
+                alert('Failed: ' + (body.detail || r.statusText));
+                this.confirmDelete = false;
+            }
         },
     };
 }
