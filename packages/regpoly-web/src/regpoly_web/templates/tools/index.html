@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Tools{% endblock %}
+
+{% block content %}
+<div x-data="toolsPage()" x-init="init()" data-tools-page>
+
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link"
+         :class="tab === 'import' ? 'active' : ''"
+         href="#" @click.prevent="setTab('import')"
+         data-tools-tab="import">Import</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link"
+         :class="tab === 'export' ? 'active' : ''"
+         href="#" @click.prevent="setTab('export')"
+         data-tools-tab="export">Export</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link"
+         :class="tab === 'imports' ? 'active' : ''"
+         href="#" @click.prevent="setTab('imports')"
+         data-tools-tab="imports">Imports</a>
+    </li>
+  </ul>
+
+  {# ─── Import tab ─── #}
+  <div x-show="tab === 'import'" data-tools-pane="import">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Import generators (YAML)</h3>
+      </div>
+      <div class="card-body">
+        <p class="text-secondary">
+          Upload a generators YAML file (or import a directory by
+          server-side path). The dry-run preview shows what would
+          change before you commit.
+        </p>
+        <div class="mb-3">
+          <label class="form-label">YAML file</label>
+          <input type="file" class="form-control"
+                 accept=".yml,.yaml"
+                 @change="onFileChange($event)"
+                 data-import-file/>
+        </div>
+        <div class="btn-list">
+          <button type="button"
+                  class="btn btn-outline-secondary"
+                  @click="dryRun()"
+                  :disabled="!fileSelected || running"
+                  data-dry-run>
+            Preview (dry-run)
+          </button>
+          <button type="button"
+                  class="btn btn-primary"
+                  @click="commitImport()"
+                  :disabled="!fileSelected || running">
+            Import
+          </button>
+        </div>
+
+        <template x-if="preview">
+          <div class="mt-3" data-preview-output>
+            <h4>Preview</h4>
+            <ul class="list-unstyled">
+              <li>Would add:
+                <strong x-text="preview.would_add"></strong></li>
+              <li>Would skip:
+                <strong x-text="preview.would_skip"></strong></li>
+              <li>Conflicts:
+                <strong x-text="preview.conflicts.length"></strong></li>
+            </ul>
+            <template x-if="preview.conflicts.length">
+              <ul>
+                <template x-for="c in preview.conflicts"
+                          :key="c.file_path">
+                  <li>
+                    <code x-text="c.file_path"></code>
+                    last imported
+                    <span x-text="c.last_imported_at"></span>
+                  </li>
+                </template>
+              </ul>
+            </template>
+          </div>
+        </template>
+
+        <p class="text-danger small mt-2"
+           x-show="error" x-text="error"></p>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-header">
+        <h3 class="card-title">Import directory (server-side path)</h3>
+      </div>
+      <div class="card-body">
+        <div class="row g-2 align-items-end">
+          <div class="col">
+            <label class="form-label">Directory path on server</label>
+            <input type="text" class="form-control"
+                   x-model="dirPath"
+                   placeholder="/path/to/generators/yaml"/>
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-primary"
+                    @click="commitDir()"
+                    :disabled="!dirPath || running">Import directory</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ─── Export tab ─── #}
+  <div x-show="tab === 'export'" data-tools-pane="export">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Export</h3>
+      </div>
+      <div class="card-body">
+        <p class="text-secondary">
+          Whole-database export emits one YAML file per family.
+          Selection-scoped CSV/JSON is available from the
+          <a href="/generators">Generators</a> list page (use the
+          row checkboxes + "Copy selection" toolbar item).
+        </p>
+        <a href="/api/export/generators" class="btn btn-primary">
+          Download all generators (YAML)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {# ─── Imports tab (audit trail) ─── #}
+  <div x-show="tab === 'imports'" data-tools-pane="imports">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Recent imports</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Type</th>
+              <th>Rows</th>
+              <th>File</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="row in audit" :key="row.id">
+              <tr>
+                <td><small x-text="row.created_at"></small></td>
+                <td x-text="row.import_type"></td>
+                <td x-text="row.row_count"></td>
+                <td><code x-text="row.file_path"></code></td>
+              </tr>
+            </template>
+            <template x-if="audit.length === 0">
+              <tr><td colspan="4" class="text-center text-secondary py-3">
+                No imports recorded yet.
+              </td></tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toolsPage() {
+  return {
+    tab: "import",
+    file: null,
+    fileSelected: false,
+    preview: null,
+    error: "",
+    running: false,
+    dirPath: "",
+    audit: [],
+
+    init() {
+      this.applyURL();
+      window.addEventListener("popstate", () => {
+        this.applyURL(); this.load();
+      });
+      this.load();
+    },
+
+    applyURL() {
+      const qs = new URLSearchParams(location.search);
+      const t = qs.get("tab");
+      this.tab = (t === "export" || t === "imports") ? t : "import";
+    },
+
+    setTab(t) {
+      this.tab = t;
+      const qs = new URLSearchParams(location.search);
+      if (t === "import") qs.delete("tab"); else qs.set("tab", t);
+      const url = location.pathname +
+        (qs.toString() ? "?" + qs.toString() : "");
+      history.pushState({}, "", url);
+      if (t === "imports") this.load();
+    },
+
+    onFileChange(ev) {
+      this.file = ev.target.files[0] || null;
+      this.fileSelected = !!this.file;
+      this.preview = null;
+      this.error = "";
+    },
+
+    async dryRun() {
+      if (!this.file) return;
+      this.running = true;
+      this.error = "";
+      try {
+        const fd = new FormData();
+        fd.append("file", this.file);
+        const r = await fetch("/api/v2/import/generators/preview",
+          { method: "POST", body: fd });
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          this.error = body.detail || r.statusText;
+          return;
+        }
+        this.preview = await r.json();
+      } finally {
+        this.running = false;
+      }
+    },
+
+    async commitImport() {
+      if (!this.file) return;
+      // The v1 endpoint takes a path on disk; uploads from the browser
+      // would need an alternative. Surface a friendly error rather than
+      // hide the limitation.
+      this.error = "Direct upload-then-commit isn't implemented yet — "
+        + "use the directory importer or place the file on the "
+        + "server and use POST /api/import/generators.";
+    },
+
+    async commitDir() {
+      if (!this.dirPath) return;
+      this.running = true;
+      this.error = "";
+      try {
+        const r = await fetch("/api/import/generators-dir", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ directory: this.dirPath }),
+        });
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          this.error = body.detail || r.statusText;
+          return;
+        }
+        await this.load();
+        this.setTab("imports");
+      } finally {
+        this.running = false;
+      }
+    },
+
+    async load() {
+      if (this.tab !== "imports") return;
+      try {
+        const r = await fetch("/api/import/audit");
+        if (r.ok) {
+          const data = await r.json();
+          this.audit = data.items || [];
+        }
+      } catch (e) { /* ignore — audit is best-effort */ }
+    },
+  };
+}
+</script>
+{% endblock %}

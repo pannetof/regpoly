@@ -13,6 +13,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from regpoly_web.routes.v2 import (
+    compare_export,
     dashboard,
     generators,
     library,
@@ -21,6 +22,7 @@ from regpoly_web.routes.v2 import (
     searches,
     searches_history,
     tested_generators,
+    tools,
     transition_matrix,
 )
 
@@ -36,6 +38,8 @@ router.include_router(searches_history.router)
 router.include_router(publish.router)
 router.include_router(related.router)
 router.include_router(transition_matrix.router)
+router.include_router(tools.router)
+router.include_router(compare_export.router)
 
 
 @router.get("/healthz")

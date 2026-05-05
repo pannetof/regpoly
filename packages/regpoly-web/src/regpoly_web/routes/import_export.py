@@ -153,6 +153,31 @@ async def _import_one_generators_file(
     }
 
 
+# ── Audit ──────────────────────────────────────────────────────────────
+
+@router.get("/import/audit")
+async def import_audit(request: Request) -> dict:
+    """Recent yaml_import rows for the Tools page imports tab."""
+    db = request.app.state.db
+    async with db.execute(
+        "SELECT id, file_path, import_type, row_count, created_at "
+        "FROM yaml_import ORDER BY id DESC LIMIT 100"
+    ) as cur:
+        rows = await cur.fetchall()
+    return {
+        "items": [
+            {
+                "id": r["id"],
+                "file_path": r["file_path"],
+                "import_type": r["import_type"],
+                "row_count": r["row_count"],
+                "created_at": r["created_at"],
+            }
+            for r in rows
+        ],
+    }
+
+
 # ── Export ──────────────────────────────────────────────────────────────
 
 @router.get("/export/generators", response_class=PlainTextResponse)

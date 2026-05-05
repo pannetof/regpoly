@@ -117,6 +117,31 @@ async def generators_page(request: Request):
     )
 
 
+@router.get("/generators/compare", response_class=HTMLResponse)
+async def generators_compare_page(request: Request):
+    return _render(
+        request, "compare/index.html",
+        title="Compare generators",
+        crumbs=[
+            {"label": "Dashboard", "href": "/"},
+            {"label": "Generators", "href": "/generators"},
+            {"label": "Compare", "href": None},
+        ],
+    )
+
+
+@router.get("/tools", response_class=HTMLResponse)
+async def tools_page(request: Request):
+    return _render(
+        request, "tools/index.html",
+        title="Tools",
+        crumbs=[
+            {"label": "Dashboard", "href": "/"},
+            {"label": "Tools", "href": None},
+        ],
+    )
+
+
 @router.get("/generators/{gen_id}", response_class=HTMLResponse)
 async def generator_detail_page(request: Request, gen_id: int):
     return _render(

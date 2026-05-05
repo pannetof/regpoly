@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Compare generators{% endblock %}
+
+{% block content %}
+<div x-data="comparePage()" x-init="init()" data-compare-page>
+
+  <h2 class="mb-3">Compare generators</h2>
+
+  <template x-if="loading">
+    <p class="text-secondary">Loading…</p>
+  </template>
+
+  <template x-if="!loading && rows.length === 0">
+    <p class="text-secondary">
+      Pass <code>?ids=1,2,3</code> in the URL to compare specific
+      generators.
+    </p>
+  </template>
+
+  <div class="row row-cards" x-show="rows.length">
+    <template x-for="(row, idx) in rows" :key="idx">
+      <div class="col-md-6 col-lg-4">
+        <div class="card" data-compare-col>
+          <div class="card-header">
+            <h3 class="card-title">
+              <template x-if="row">
+                <span>
+                  <span class="text-secondary"
+                        x-text="row.family"></span>
+                  #<span x-text="row.id"></span>
+                </span>
+              </template>
+              <template x-if="!row">
+                <span class="text-secondary">Missing</span>
+              </template>
+            </h3>
+          </div>
+          <div class="card-body">
+            <template x-if="row">
+              <dl class="row mb-0">
+                <dt class="col-4">k</dt>
+                <dd class="col-8" x-text="row.k"></dd>
+                <dt class="col-4">L</dt>
+                <dd class="col-8" x-text="row.L"></dd>
+                <dt class="col-4">w</dt>
+                <dd class="col-8" x-text="row.hamming_weight ?? '—'"></dd>
+                <dt class="col-4">char_poly</dt>
+                <dd class="col-8 mono small text-truncate"
+                    :title="row.char_poly || ''"
+                    x-text="row.char_poly || '—'"></dd>
+                <dt class="col-4">params</dt>
+                <dd class="col-8 mono small"
+                    x-text="JSON.stringify(row.all_params)"></dd>
+                <dt class="col-4">link</dt>
+                <dd class="col-8">
+                  <a :href="'/generators/' + row.id">view detail</a>
+                </dd>
+              </dl>
+            </template>
+            <template x-if="!row">
+              <p class="text-secondary mb-0">
+                Generator #<span x-text="ids[idx]"></span> not found
+                in this database.
+              </p>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+<script>
+function comparePage() {
+  return {
+    rows: [],
+    ids: [],
+    loading: false,
+
+    async init() {
+      const qs = new URLSearchParams(location.search);
+      const raw = qs.get("ids") || "";
+      this.ids = raw.split(",").map(s => s.trim())
+                     .filter(Boolean).map(Number);
+      if (!this.ids.length) return;
+      this.loading = true;
+      try {
+        const r = await fetch(
+          "/api/v2/generators/compare?ids="
+          + encodeURIComponent(this.ids.join(",")));
+        if (r.ok) {
+          const data = await r.json();
+          this.rows = data.rows || [];
+        }
+      } catch (e) { /* ignore */ }
+      this.loading = false;
+    },
+  };
+}
+</script>
+{% endblock %}
