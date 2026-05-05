@@ -64,3 +64,93 @@ def test_v2_summary_includes_recent_searches_last_10(seeded_client) -> None:
     """Recent slot caps at 10 closed/cancelled/failed runs."""
     body = seeded_client.get("/api/v2/dashboard/summary").json()
     assert len(body["recent"]) <= 10
+
+
+# ── P6 red — dashboard live values are populated, not None ─────────────
+
+
+def test_summary_active_row_rate_and_eta_are_not_always_none(client) -> None:
+    """The dashboard's Rate and ETA columns must reflect *live* values,
+    not be hard-coded to None. We seed an active primitive run with a
+    progress row carrying a known tries_done, then assert that the
+    summary endpoint surfaces a non-None `rate` (computed from the
+    run's elapsed_seconds + tries_done, or the per-run RollingRate
+    snapshot)."""
+    import sqlite3
+    import json
+    db_path = client.app.state.settings.db_path
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute(
+            "INSERT INTO primitive_search_run "
+            "(family, L, k, structural_params, fixed_params, status, "
+            "tries_done, found_count, elapsed_seconds, started_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?, datetime('now'))",
+            ("MTGen", 64, 32, json.dumps({"w": 32}), json.dumps({}),
+             "running", 1000, 5, 10.0),
+        )
+        run_id = conn.execute(
+            "SELECT id FROM primitive_search_run ORDER BY id DESC LIMIT 1"
+        ).fetchone()[0]
+        conn.execute(
+            "INSERT INTO search_progress "
+            "(search_type, search_run_id, tries_done, found_count, "
+            " current_info) VALUES ('primitive', ?, 1000, 5, ?)",
+            (run_id, json.dumps({"rate": 100.0})),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    body = client.get("/api/v2/dashboard/summary").json()
+    active = [r for r in body["active"] if r["id"] == run_id]
+    assert len(active) == 1
+    row = active[0]
+    # Either rate or eta_seconds (or both) must now be non-None for an
+    # actively-running seeded run with progress rows.
+    assert row["rate"] is not None or row["eta_seconds"] is not None, (
+        "dashboard active row stuck at rate=None, eta_seconds=None — "
+        "rate plumbing not wired"
+    )
+
+
+def test_summary_sparkline_uses_tries_done_not_found_count(client) -> None:
+    """For primitive runs the sparkline metric must be `tries_done` —
+    `found_count` is near-zero and useless as a progress indicator."""
+    import sqlite3
+    import json
+    db_path = client.app.state.settings.db_path
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute(
+            "INSERT INTO primitive_search_run "
+            "(family, L, k, structural_params, fixed_params, status, "
+            "tries_done, found_count, elapsed_seconds) "
+            "VALUES (?,?,?,?,?,'running',?,?,?)",
+            ("MTGen", 64, 32, json.dumps({}), json.dumps({}), 0, 0, 0.0),
+        )
+        run_id = conn.execute(
+            "SELECT id FROM primitive_search_run ORDER BY id DESC LIMIT 1"
+        ).fetchone()[0]
+        # Insert progress rows where tries_done grows but found_count is 0.
+        for i in range(10):
+            conn.execute(
+                "INSERT INTO search_progress "
+                "(search_type, search_run_id, tries_done, found_count) "
+                "VALUES ('primitive', ?, ?, 0)",
+                (run_id, (i + 1) * 1000),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+    body = client.get("/api/v2/dashboard/summary").json()
+    active = [r for r in body["active"] if r["id"] == run_id]
+    assert len(active) == 1
+    sparkline = active[0]["sparkline"]
+    # If we plotted found_count we'd get [0,0,…,0]. tries_done gives a
+    # strictly-increasing sequence.
+    assert any(p > 0 for p in sparkline), (
+        "sparkline appears to plot found_count (all zero); should be "
+        f"tries_done; got {sparkline}"
+    )

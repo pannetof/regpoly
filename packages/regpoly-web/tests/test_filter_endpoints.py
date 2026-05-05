@@ -99,3 +99,29 @@ def test_v2_searches_histories_batch(seeded_client) -> None:
     body = r.json()
     assert "histories" in body
     assert isinstance(body["histories"], dict)
+
+
+# ── P6 red — p_<name> filter must work for column-level keys too ─────
+
+
+def test_p_hamming_weight_filters_against_column_not_json(seeded_client) -> None:
+    """Today the v2 endpoint only honours `p_<name>` against
+    json_extract(all_params, …). The seeded generator has
+    hamming_weight=135 stored as a primitive_generator column, NOT in
+    all_params. A user clicking the column popover on Hamming weight
+    silently zero-results.
+
+    Fix: widen the popover-filter to also try a top-level column
+    match against an allowlist of safe column names (hamming_weight,
+    char_poly, library_id, found_at_try) — OR have the backend honour
+    these as top-level filters with their own param name.
+    """
+    r = seeded_client.get(
+        "/api/v2/generators?p_hamming_weight=135&limit=10"
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] >= 1, (
+        "p_hamming_weight=135 silently zero-results because the column "
+        "isn't inside all_params JSON"
+    )

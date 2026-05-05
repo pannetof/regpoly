@@ -64,3 +64,44 @@ def test_api_v1_does_not_advertise_v2_routes(seeded_client) -> None:
             assert "v2" not in tags, (
                 f"v1 endpoint {verb.upper()} {path} carries v2 tag"
             )
+
+
+# ── P6 red: SSE byte-for-byte preservation under ?v=2 gate ─────────────
+
+
+def _stream_text(client, url: str, timeout: float = 0.6) -> str:
+    """Pull a snapshot of the SSE body off the endpoint, then close."""
+    chunks: list[bytes] = []
+    with client.stream("GET", url, timeout=timeout) as resp:
+        assert resp.status_code == 200
+        try:
+            for chunk in resp.iter_bytes():
+                chunks.append(chunk)
+                if sum(len(c) for c in chunks) > 16 * 1024:
+                    break
+        except Exception:
+            pass
+    return b"".join(chunks).decode("utf-8", errors="replace")
+
+
+def test_v1_sse_default_emits_no_named_progress_event(seeded_client) -> None:
+    """Without ?v=2, the SSE body must NOT contain `event: progress`.
+    A pre-redesign v1 EventSource client that registered .onmessage
+    must see exactly the same byte stream as before."""
+    body = _stream_text(seeded_client, "/api/primitive-searches/1/progress")
+    assert "event: progress" not in body, (
+        "v1 SSE must not emit the named v2 `progress` channel without ?v=2 "
+        "opt-in (regression: doubles the events for v1 EventSource clients)"
+    )
+
+
+def test_v2_sse_with_query_emits_named_progress(seeded_client) -> None:
+    """With ?v=2, the named `progress` channel is enabled. The seeded
+    primitive run has `status='completed'` so emit terminates quickly."""
+    body = _stream_text(
+        seeded_client, "/api/primitive-searches/1/progress?v=2",
+    )
+    # Either the run had progress rows (event: progress present) or it
+    # had none (only event: end). The contract is that v=2 is honoured;
+    # the test passes when the URL is reachable and either condition holds.
+    assert "event: end" in body or "event: progress" in body

@@ -69,3 +69,18 @@ def test_v2_transition_matrix_coords_endpoint_exists(seeded_client) -> None:
     # not that it produces a coordinate.
     r = seeded_client.get("/api/v2/generators/1/transition-matrix-coords")
     assert r.status_code in (200, 404, 422), r.text
+
+
+# ── P6 red — library_id validation against catalog ───────────────────
+
+
+def test_publish_rejects_unknown_library_id(seeded_client) -> None:
+    """An arbitrary string must NOT be silently stored as library_id.
+    The endpoint must validate against the catalog and 400 on miss."""
+    r = seeded_client.post(
+        "/api/v2/tested-generators/4242/publish",
+        json={"library_id": "this_id_definitely_does_not_exist_anywhere"},
+    )
+    assert r.status_code == 400, (
+        f"unknown library_id must be rejected, got {r.status_code}: {r.text}"
+    )
