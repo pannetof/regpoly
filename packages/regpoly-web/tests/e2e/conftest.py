@@ -17,13 +17,10 @@ To run:
 
 from __future__ import annotations
 
-import json
 import socket
-import sqlite3
 import threading
 import time
 from collections.abc import Iterator
-from pathlib import Path
 
 import httpx
 import pytest
@@ -38,84 +35,10 @@ def _find_free_port() -> int:
     return port
 
 
-@pytest.fixture(scope="session")
-def e2e_db_path(tmp_path_factory: pytest.TempPathFactory) -> str:
-    """One isolated SQLite file shared across the e2e session."""
-    p = tmp_path_factory.mktemp("e2e_db") / "regpoly_e2e.db"
-    return str(p)
-
-
-@pytest.fixture(scope="session")
-def seeded_db(e2e_db_path: str) -> str:
-    """Initialize the schema and seed the rows the 8 paths need."""
-    from regpoly_web.database import init_sync
-
-    init_sync(e2e_db_path)
-
-    conn = sqlite3.connect(e2e_db_path)
-    conn.row_factory = sqlite3.Row
-    try:
-        conn.execute(
-            "INSERT INTO primitive_search_run"
-            "(family, L, k, structural_params, fixed_params, "
-            " status, tries_done, found_count, elapsed_seconds) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("MTGen", 19937, 32, json.dumps({}), json.dumps({}),
-             "completed", 100, 1, 0.5),
-        )
-        psr_id = conn.execute(
-            "SELECT id FROM primitive_search_run ORDER BY id DESC LIMIT 1"
-        ).fetchone()[0]
-
-        conn.execute(
-            "INSERT INTO primitive_generator"
-            "(search_run_id, family, L, k, structural_params, "
-            " search_params, all_params, found_at_try, char_poly, "
-            " hamming_weight, pis_se, pis_computed_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))",
-            (psr_id, "MTGen", 19937, 32,
-             json.dumps({"L": 19937}),
-             json.dumps({"a": "0x9908b0df"}),
-             json.dumps({"L": 19937, "a": "0x9908b0df"}),
-             1, "0xdeadbeef", 135, 0),
-        )
-
-        conn.execute(
-            "INSERT INTO tested_generator"
-            "(id, search_run_id, Lmax, k_g, J) VALUES (?, ?, ?, ?, ?)",
-            (4242, None, 32, 19937, 1),
-        )
-        conn.execute(
-            "INSERT INTO tested_generator_component"
-            "(tested_gen_id, component_index, family, L, k, "
-            " all_params, tempering_params) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (4242, 0, "MTGen", 19937, 32,
-             json.dumps({"L": 19937}), json.dumps([])),
-        )
-        # One typed equidistribution result so the tested-generator detail
-        # page has something to render.
-        ecart = [0] * 33
-        ecart[5] = 1
-        ecart[12] = 2
-        conn.execute(
-            "INSERT INTO equidistribution_result"
-            "(tested_gen_id, test_config, kg, L, Lmax, ecart_json, se, "
-            " verified, elapsed_seconds) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (4242, json.dumps({"type": "equidistribution", "L": 32}),
-             19937, 32, 32, json.dumps(ecart), 3, 1, 0.1),
-        )
-
-        # NOTE: tempering_search_run rows are NOT seeded here because
-        # `create_app -> init_sync` runs an orphan-reap that flips any
-        # 'running'/'pending' rows to 'cancelled' at startup. Tests
-        # that need a 'running' row insert it themselves AFTER the
-        # server is up.
-        conn.commit()
-    finally:
-        conn.close()
-    return e2e_db_path
+# NOTE: P2 prep — the `seeded_db` fixture moved to the root
+# tests/conftest.py so non-e2e contract tests can consume it. We
+# re-export it here so existing e2e tests that pin the live server
+# to it keep working without code change.
 
 
 @pytest.fixture(scope="session")
