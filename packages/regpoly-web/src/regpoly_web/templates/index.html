@@ -1,181 +1,308 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import metric_card, status_badge, sparkline_svg, empty_state %}
 
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<hgroup>
-    <h1>regpoly</h1>
-    <p>Search and analysis for pseudo-random number generators based on
-       linear recurrences over GF(2).</p>
-</hgroup>
+<div x-data="dashboard()" x-init="init()" data-active-runs>
 
-<section>
-    <h2>What this tool does</h2>
-    <p>
-        <strong>regpoly</strong> helps you design high-quality linear
-        pseudo-random number generators. You pick a generator family
-        (Tausworthe, Mersenne Twister, WELL, MELG, …), search for
-        parameter choices that give the generator its maximum possible
-        period (<em>full-period</em>), combine full-period generators
-        into multi-component XOR generators, apply a
-        <em>tempering</em> transformation to improve statistical
-        quality, and evaluate the result against formal
-        equidistribution and collision-free criteria.
-    </p>
-    <p>
-        Every result is persisted in a database and can be revisited,
-        filtered, and exported later. Long-running searches run in
-        worker processes and can be paused, resumed, cancelled, and
-        restarted from the <a href="/searches">Searches</a> page.
-    </p>
-</section>
+    {# ───────── Row 1: 4 metric cards ───────── #}
+    <div class="row row-deck row-cards mb-3">
+        <div class="col-sm-6 col-lg-3">
+            {{ metric_card("Active runs", "—", icon=None) | replace('—', '<span x-text="counts.active_runs">—</span>') | safe }}
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            {{ metric_card("Generators tested", "—") | replace('—', '<span x-text="counts.generators_tested">—</span>') | safe }}
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            {{ metric_card("Searches all-time", "—") | replace('—', '<span x-text="counts.searches_total">—</span>') | safe }}
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            {{ metric_card("Last 24h finds", "—") | replace('—', '<span x-text="counts.finds_last_24h">—</span>') | safe }}
+        </div>
+    </div>
 
-<section>
-    <h2>Get started</h2>
-    <p>
-        Pick a generator family from the sidebar on the left. Each
-        family exposes five activities — the tasks below are available
-        either scoped to that family (via the family page) or
-        unscoped (via the Global section of the sidebar).
-    </p>
-
-    <dl class="home-task-list">
-        <dt>Full-period generator search</dt>
-        <dd>
-            Find new full-period generators in this family. You fix
-            the structural parameters (the ones that define the state
-            size <em>k</em>) and regpoly randomises the remaining
-            parameters, checking each candidate's characteristic
-            polynomial for primitivity. Full-period generators attain
-            the theoretical maximum period of <em>2<sup>k</sup> −
-            1</em>.
-        </dd>
-
-        <dt><a href="/generators">Full-period generators</a></dt>
-        <dd>
-            Browse generators already found. Filter by family, by
-            <em>k</em>, or by any structural or non-structural
-            parameter. Each generator page shows its characteristic
-            polynomial, its Hamming weight, its equidistribution
-            profile, and its transition matrix, all computed
-            automatically in the background as soon as it is
-            discovered.
-        </dd>
-
-        <dt><a href="/tempering-search">Combined generator search</a></dt>
-        <dd>
-            Search for combined generators. Pick one or more
-            components, feed each component a pool of full-period
-            generators, choose a tempering transformation (Matsumoto–
-            Kurita, lagged masking, permutation, …), and run a formal
-            quality test (equidistribution, collision-free, tuplets)
-            over every valid combination. When the transformation has
-            optimisable bitmasks, an inner optimiser tunes them
-            automatically.
-        </dd>
-
-        <dt><a href="/tested-generators">Combined generators</a></dt>
-        <dd>
-            Browse tested combined generators. See every generator
-            the search produced, trace each back to the run that
-            found it, inspect the test result (dimension defects,
-            collision ranks, tuplets thresholds) and export the
-            combined configuration as a YAML file.
-        </dd>
-
-        <dt>Documentation <small>(per family)</small></dt>
-        <dd>
-            Recurrence equations and academic references. Every
-            family carries its own write-up — the mathematical
-            recurrence that defines the generator, the meaning of
-            each parameter, and the original publications (Matsumoto,
-            L'Ecuyer, and others). Open a family page from the
-            sidebar and click the Documentation link.
-        </dd>
-    </dl>
-</section>
-
-<section x-data="dashboard()" x-init="init()">
-    <h2>Active searches</h2>
-    <template x-if="active.primitive.length === 0 && active.tempering.length === 0">
-        <p><em>No active searches. Launch one from any family page or
-            from the Global sidebar links.</em></p>
-    </template>
-
-    <template x-if="active.primitive.length">
-        <div>
-            <h3>Full-period generator searches</h3>
-            <table class="compact">
-                <thead><tr><th>#</th><th>Family</th><th>k</th>
-                    <th>Tries</th><th>Found</th><th>Status</th></tr></thead>
+    {# ───────── Row 2: Currently running (cap 5) + overflow link ───────── #}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title">Currently running</h3>
+            <div class="card-actions">
+                <a href="/searches" class="btn btn-sm btn-outline-primary"
+                   data-active-runs-overflow
+                   x-show="overflow_count > 0">
+                    <span x-text="overflow_count"></span> more →
+                </a>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter table-hover card-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>#</th>
+                        <th>Type</th>
+                        <th>Family</th>
+                        <th>k</th>
+                        <th>Status</th>
+                        <th>Activity</th>
+                        <th>Rate</th>
+                        <th>ETA</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    <template x-for="r in active.primitive" :key="r.id">
-                        <tr>
-                            <td><a :href="'/primitive-search/' + r.id"
-                                   x-text="r.id"></a></td>
-                            <td x-text="r.family"></td>
-                            <td x-text="r.k"></td>
-                            <td x-text="r.tries_done"></td>
-                            <td x-text="r.found_count"></td>
-                            <td><span class="status-pill"
-                                      :class="'status-' + r.status"
-                                      x-text="r.status"></span></td>
+                    <template x-for="row in active_visible" :key="row.type + ':' + row.id">
+                        <tr data-active-row>
+                            <td>
+                                <button type="button"
+                                        class="btn btn-icon btn-link"
+                                        data-pin-active
+                                        @click="togglePin(row)"
+                                        :aria-label="isPinned(row) ? 'unpin' : 'pin'">
+                                    <span x-text="isPinned(row) ? '★' : '☆'"></span>
+                                </button>
+                            </td>
+                            <td>
+                                <a :href="rowHref(row)" x-text="row.id"></a>
+                            </td>
+                            <td x-text="row.type"></td>
+                            <td x-text="row.family || '—'"></td>
+                            <td x-text="row.k || '—'"></td>
+                            <td>
+                                <span class="badge bg-primary-lt" x-text="row.status"></span>
+                            </td>
+                            <td>
+                                <svg class="sparkline" width="120" height="28" role="img"
+                                     :aria-label="'sparkline of ' + (row.sparkline?.length || 0) + ' points'">
+                                    <polyline fill="none" stroke="var(--tblr-primary)"
+                                              stroke-width="1.5"
+                                              :points="sparkPoints(row.sparkline)"/>
+                                </svg>
+                            </td>
+                            <td x-text="row.rate !== null ? row.rate.toFixed(1) + '/s' : '—'"></td>
+                            <td x-text="row.eta_seconds !== null ? formatSec(row.eta_seconds) : '—'"></td>
                         </tr>
+                    </template>
+                    <template x-if="active_visible.length === 0">
+                        <tr><td colspan="9" class="text-center text-secondary py-3">
+                            No active searches. Launch one below.
+                        </td></tr>
                     </template>
                 </tbody>
             </table>
         </div>
-    </template>
+    </div>
 
-    <template x-if="active.tempering.length">
-        <div>
-            <h3>Combined generator searches</h3>
-            <table class="compact">
-                <thead><tr><th>#</th><th>Test</th><th>Done</th>
-                    <th>Best se</th><th>Status</th></tr></thead>
+    {# ───────── Row 3: Recent searches (last 10) ───────── #}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title">Recent searches</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter table-hover card-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Type</th>
+                        <th>Family</th>
+                        <th>Status</th>
+                        <th>Activity</th>
+                        <th>Finished</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    <template x-for="r in active.tempering" :key="r.id">
+                    <template x-for="row in recent" :key="row.type + ':' + row.id">
                         <tr>
-                            <td><a :href="'/tempering-search/' + r.id"
-                                   x-text="r.id"></a></td>
-                            <td x-text="r.test_type"></td>
-                            <td x-text="r.combos_done"></td>
-                            <td x-text="r.best_se ?? '—'"></td>
-                            <td><span class="status-pill"
-                                      :class="'status-' + r.status"
-                                      x-text="r.status"></span></td>
+                            <td><a :href="rowHref(row)" x-text="row.id"></a></td>
+                            <td x-text="row.type"></td>
+                            <td x-text="row.family || '—'"></td>
+                            <td x-html="badgeHtml(row.status)"></td>
+                            <td>
+                                <svg class="sparkline" width="120" height="28" role="img"
+                                     aria-label="recent run sparkline">
+                                    <polyline fill="none" stroke="var(--tblr-secondary)"
+                                              stroke-width="1.5"
+                                              :points="sparkPoints(row.sparkline)"/>
+                                </svg>
+                            </td>
+                            <td x-text="row.finished_at || row.started_at || '—'"></td>
                         </tr>
+                    </template>
+                    <template x-if="recent.length === 0">
+                        <tr><td colspan="6" class="text-center text-secondary py-3">
+                            No closed searches yet.
+                        </td></tr>
                     </template>
                 </tbody>
             </table>
         </div>
-    </template>
-</section>
+    </div>
+
+    {# ───────── Row 4: Quick actions + family directory + recent papers ───────── #}
+    <div class="row row-cards">
+        <div class="col-md-4">
+            <div class="card" data-quick-actions>
+                <div class="card-header"><h3 class="card-title">Quick actions</h3></div>
+                <div class="card-body">
+                    <div class="d-flex flex-column gap-2">
+                        <a href="/tempering-search" class="btn btn-primary">New tempering search</a>
+                        <a href="/family/MTGen?embed=0#new-primitive" class="btn btn-outline-primary">New primitive search</a>
+                        <a href="/generators" class="btn btn-outline-secondary">Browse generators</a>
+                        <a href="/tested-generators" class="btn btn-outline-secondary">Browse tested generators</a>
+                        <a href="/library" class="btn btn-outline-secondary">Browse library</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">Generator families</h3></div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2" data-family-directory>
+                        <template x-for="entry in families" :key="entry.name">
+                            <a :href="'/family/' + entry.name"
+                               class="tag tag-rounded">
+                                <span x-text="entry.name"></span>
+                                <span class="tag-count text-secondary"
+                                      x-text="' (' + entry.count + ')'"></span>
+                            </a>
+                        </template>
+                        <template x-if="families.length === 0">
+                            <span class="text-secondary">Loading…</span>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">Recent papers</h3></div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <template x-for="p in recent_papers" :key="p.id">
+                            <li>
+                                <a :href="'/library/' + p.id" x-text="p.display"></a>
+                            </li>
+                        </template>
+                        <template x-if="recent_papers.length === 0">
+                            <li class="text-secondary">Loading…</li>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 function dashboard() {
+    const PIN_KEY = "regpoly.dashboard.pinned";
+    const SESSION_KEY = "regpoly.dashboard.session_launched";
+    const VISIBLE_CAP = 5;
+
+    function loadPinSet(key, useLocal) {
+        try {
+            const raw = (useLocal ? localStorage : sessionStorage).getItem(key);
+            return new Set(raw ? JSON.parse(raw) : []);
+        } catch (e) { return new Set(); }
+    }
+    function savePinSet(key, set, useLocal) {
+        try {
+            const arr = [...set];
+            (useLocal ? localStorage : sessionStorage).setItem(key, JSON.stringify(arr));
+        } catch (e) { /* ignore */ }
+    }
+    function rowKey(row) { return row.type + ':' + row.id; }
+
     return {
-        active: { primitive: [], tempering: [] },
+        counts: { active_runs: 0, generators_tested: 0,
+                  searches_total: 0, finds_last_24h: 0 },
+        active_all: [],          // every active run from the API
+        active_visible: [],      // capped + pinned subset
+        overflow_count: 0,
+        recent: [],
+        families: [],
+        recent_papers: [],
+        explicitPins: loadPinSet(PIN_KEY, true),
+        sessionPins: loadPinSet(SESSION_KEY, false),
+
         async init() {
             await this.reload();
             setInterval(() => this.reload(), 3000);
         },
         async reload() {
-            const [p1, p2, t1, t2] = await Promise.all([
-                fetch('/api/primitive-searches?status=running'),
-                fetch('/api/primitive-searches?status=pending'),
-                fetch('/api/tempering-searches?status=running'),
-                fetch('/api/tempering-searches?status=pending'),
-            ]);
-            const prim = [
-                ...(await p1.json()).items,
-                ...(await p2.json()).items,
-            ];
-            const temp = [
-                ...(await t1.json()).items,
-                ...(await t2.json()).items,
-            ];
-            this.active = { primitive: prim, tempering: temp };
+            try {
+                const [summary, fam] = await Promise.all([
+                    fetch('/api/v2/dashboard/summary').then(r => r.json()),
+                    fetch('/api/v2/generators/families/counts').then(r => r.json()),
+                ]);
+                this.counts = {
+                    active_runs: (summary.active || []).length,
+                    generators_tested: summary.counts.generators_tested,
+                    searches_total: summary.counts.primitive_searches_total
+                                  + summary.counts.tempering_searches_total,
+                    finds_last_24h: summary.counts.finds_last_24h,
+                };
+                this.active_all = summary.active || [];
+                this.recent = summary.recent || [];
+                this.recent_papers = summary.recent_papers || [];
+                this.families = Object.entries(fam || {})
+                    .map(([name, count]) => ({ name, count }))
+                    .sort((a, b) => b.count - a.count);
+                this.recomputeVisible();
+            } catch (e) { console.warn("dashboard reload failed", e); }
+        },
+        recomputeVisible() {
+            const isPin = (r) => this.isPinned(r);
+            const pinned = this.active_all.filter(isPin);
+            const others = this.active_all.filter(r => !isPin(r));
+            const visible = [...pinned, ...others].slice(0, VISIBLE_CAP);
+            this.active_visible = visible;
+            this.overflow_count = Math.max(0,
+                this.active_all.length - this.active_visible.length);
+        },
+        isPinned(row) {
+            const k = rowKey(row);
+            return this.explicitPins.has(k) || this.sessionPins.has(k);
+        },
+        togglePin(row) {
+            const k = rowKey(row);
+            if (this.explicitPins.has(k)) this.explicitPins.delete(k);
+            else this.explicitPins.add(k);
+            savePinSet(PIN_KEY, this.explicitPins, true);
+            this.recomputeVisible();
+        },
+        rowHref(row) {
+            return (row.type === 'primitive'
+                ? '/primitive-search/' : '/tempering-search/') + row.id;
+        },
+        sparkPoints(arr) {
+            if (!arr || arr.length < 2) return "";
+            const w = 120, h = 28;
+            const ymin = Math.min(...arr), ymax = Math.max(...arr);
+            const yd = (ymax - ymin) || 1;
+            const xs = w / (arr.length - 1);
+            return arr.map((v, i) =>
+                `${(i * xs).toFixed(2)},${(h - (v - ymin) / yd * h).toFixed(2)}`
+            ).join(' ');
+        },
+        formatSec(s) {
+            if (s === null || s === undefined) return '—';
+            if (s < 60) return Math.round(s) + 's';
+            if (s < 3600) return Math.round(s / 60) + 'm';
+            return (s / 3600).toFixed(1) + 'h';
+        },
+        badgeHtml(status) {
+            const m = {
+                completed: 'bg-success-lt',
+                cancelled: 'bg-orange-lt',
+                failed: 'bg-danger-lt',
+                paused: 'bg-warning-lt',
+                running: 'bg-primary-lt',
+                pending: 'bg-secondary-lt',
+            };
+            return `<span class="badge ${m[status] || 'bg-secondary-lt'}">${status}</span>`;
         },
     };
 }

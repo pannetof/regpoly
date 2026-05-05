@@ -1,0 +1,38 @@
+{# Chip toolbar partial — renders facet chips from the URL query
+   string. Handled client-side by `chipToolbar()` in regpoly.js;
+   chip removal updates the URL via history.pushState. Each chip
+   carries data-chip-{key}=value so e2e tests can assert state. #}
+
+<div class="chip-toolbar mb-3"
+     x-data="chipToolbar({ supports: ['family','k_min','k_max','primitive','has_search_results','has_results','test_type','max_sum_delta','is_me','paper_id','starred','search_run_id','k_g_min','k_g_max'] })"
+     x-init="init()">
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <template x-for="chip in chips" :key="chip.key + '=' + chip.value">
+      <span class="tag tag-rounded chip"
+            :data-chip-key="chip.key"
+            x-init="$el.setAttribute('data-chip-' + chip.key, chip.value)">
+        <strong x-text="chip.key"></strong>
+        =
+        <span x-text="chip.value"></span>
+        <button type="button"
+                class="btn-close btn-close-sm ms-1"
+                aria-label="remove"
+                data-chip-remove
+                @click="removeChip(chip)"></button>
+      </span>
+    </template>
+
+    <button type="button"
+            class="btn btn-sm btn-outline-secondary"
+            data-density-toggle
+            @click="toggleDensity()">
+      <span x-text="density === 'compact' ? 'Compact ✓' : 'Compact'"></span>
+    </button>
+
+    <input type="search"
+           class="form-control form-control-sm w-auto ms-auto"
+           placeholder="Filter rows…"
+           data-filter-focus
+           x-model="quickFilter"/>
+  </div>
+</div>

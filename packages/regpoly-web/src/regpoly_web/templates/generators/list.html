@@ -3,10 +3,7 @@
 {% block title %}Generators{% endblock %}
 
 {% block content %}
-<hgroup>
-    <h1>Full-period generators</h1>
-    <p>All full-period generators stored in the database.</p>
-</hgroup>
+{% include "partials/chip_toolbar.html" %}
 
 <div x-data="generatorPool()" x-init="init()">
 

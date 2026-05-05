@@ -253,6 +253,59 @@
         });
     }
 
+    /* ---------------- Alpine factories (P2) ---------------- */
+    /* chipToolbar() — reads URL query string, exposes chip array, lets
+     * x-for render chips with data-chip-* attributes the e2e tests
+     * assert against. Removing a chip pushes a new URL via
+     * history.pushState. Density toggle (?density=compact) is bundled.
+     */
+    window.chipToolbar = function chipToolbar(opts) {
+        opts = opts || {};
+        const supports = opts.supports || [];
+        return {
+            chips: [],
+            density: "comfortable",
+            quickFilter: "",
+            init() {
+                const params = new URLSearchParams(location.search);
+                this.chips = supports
+                    .filter(k => params.get(k))
+                    .map(k => ({ key: k, value: params.get(k) }));
+                this.density = params.get("density") === "compact"
+                    ? "compact" : "comfortable";
+                window.addEventListener("popstate", () => this.init());
+            },
+            removeChip(chip) {
+                const params = new URLSearchParams(location.search);
+                params.delete(chip.key);
+                const url = location.pathname +
+                    (params.toString() ? "?" + params.toString() : "");
+                history.pushState({}, "", url);
+                this.init();
+            },
+            toggleDensity() {
+                const params = new URLSearchParams(location.search);
+                if (this.density === "compact") {
+                    params.delete("density");
+                    this.density = "comfortable";
+                    try { localStorage.setItem("regpoly.density", "comfortable"); } catch (e) {}
+                } else {
+                    params.set("density", "compact");
+                    this.density = "compact";
+                    try { localStorage.setItem("regpoly.density", "compact"); } catch (e) {}
+                }
+                const url = location.pathname +
+                    (params.toString() ? "?" + params.toString() : "");
+                history.pushState({}, "", url);
+                // Immediate visual switch without reload.
+                document.querySelectorAll("table.table").forEach(t => {
+                    if (this.density === "compact") t.classList.add("table-sm");
+                    else t.classList.remove("table-sm");
+                });
+            },
+        };
+    };
+
     /* ---------------- DOMContentLoaded ---------------- */
     document.addEventListener("DOMContentLoaded", () => {
         bindThemeToggle();
