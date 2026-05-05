@@ -1,0 +1,34 @@
+{# Keyboard-shortcut cheat-sheet modal. Shown on `?` (Shift+/).
+   Driven by regpoly.js — adds `.show` to make it visible. #}
+
+<div class="modal" id="kbd-help-modal" tabindex="-1"
+     data-kbd-help-modal aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Keyboard shortcuts</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-sm">
+          <tbody>
+            <tr><td><kbd>?</kbd></td><td>Show this help</td></tr>
+            <tr><td><kbd>g</kbd> <kbd>d</kbd></td><td>Go to Dashboard</td></tr>
+            <tr><td><kbd>g</kbd> <kbd>g</kbd></td><td>Go to Generators</td></tr>
+            <tr><td><kbd>g</kbd> <kbd>t</kbd></td><td>Go to Tested generators</td></tr>
+            <tr><td><kbd>g</kbd> <kbd>s</kbd></td><td>Go to Searches</td></tr>
+            <tr><td><kbd>g</kbd> <kbd>l</kbd></td><td>Go to Library</td></tr>
+            <tr><td><kbd>g</kbd> <kbd>o</kbd></td><td>Go to Tools</td></tr>
+            <tr><td><kbd>n</kbd> <kbd>p</kbd></td><td>New primitive search</td></tr>
+            <tr><td><kbd>n</kbd> <kbd>t</kbd></td><td>New tempering search</td></tr>
+            <tr><td><kbd>/</kbd></td><td>Focus filter</td></tr>
+            <tr><td><kbd>j</kbd> / <kbd>k</kbd></td><td>Next / previous row</td></tr>
+            <tr><td><kbd>Enter</kbd></td><td>Open highlighted row</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Close drawer / modal</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

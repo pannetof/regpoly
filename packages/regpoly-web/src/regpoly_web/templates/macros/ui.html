@@ -1,0 +1,194 @@
+{# regpoly-web v2 design-vocabulary macros.
+
+   Imported by every page via {% from "macros/ui.html" import ... %}.
+   The companion CSS lives in static/css/regpoly.css; click delegates
+   in static/js/regpoly.js.
+#}
+
+{# -- metric_card --------------------------------------------------- #}
+{% macro metric_card(title, value, subtitle=None, icon=None, color="primary") %}
+<div class="card card-sm">
+  <div class="card-body">
+    <div class="row align-items-center">
+      {% if icon %}
+      <div class="col-auto">
+        <span class="bg-{{ color }} text-white avatar">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
+               viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+               stroke-linecap="round" stroke-linejoin="round"><use href="#tabler-{{ icon }}"/></svg>
+        </span>
+      </div>
+      {% endif %}
+      <div class="col">
+        <div class="font-weight-medium">{{ title }}</div>
+        <div class="text-secondary">{{ value }}</div>
+        {% if subtitle %}<div class="text-secondary small">{{ subtitle }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+
+{# -- status_badge --------------------------------------------------- #}
+{# One source of truth for run + primitivity status. error_message
+   surfaces on the cancelled badge as a tooltip so reaped-on-startup
+   runs (S5.3) are distinguishable from user-cancelled ones. #}
+{% set _STATUS_CLASSES = {
+  "pending":        ("bg-secondary-lt", "dots"),
+  "running":        ("bg-primary-lt",   "loader"),
+  "paused":         ("bg-warning-lt",   "player-pause"),
+  "completed":      ("bg-success-lt",   "check"),
+  "cancelled":      ("bg-orange-lt",    "cancel"),
+  "failed":         ("bg-danger-lt",    "alert-triangle"),
+  "primitive_yes":  ("bg-success",      "check"),
+  "primitive_no":   ("bg-danger",       "x"),
+} %}
+{% macro status_badge(status, error_message=None) -%}
+{%- set bg, icon = _STATUS_CLASSES.get(status, ("bg-secondary-lt", "dots")) -%}
+<span class="badge {{ bg }}"
+      {%- if error_message %} title="{{ error_message }}" data-error-message="{{ error_message }}"{%- endif %}>
+  <span class="badge-icon">{{ status }}</span>
+</span>
+{%- endmacro %}
+
+
+{# -- hex_value -----------------------------------------------------
+   Two contexts:
+     * "table"  → truncate to first-8 + middle-12 + last-8 if >32 chars,
+                  full value via title= and data-hex= for compare workflows.
+     * "detail" → render full value, no truncation.
+   Both expose the click target (data-copy) handled by regpoly.js. #}
+{% macro hex_value(value, context="table") -%}
+{%- set s = value | string -%}
+{%- if context == "table" and s | length > 32 -%}
+  {# 0x prefix + 64 hex chars: keep 0x + 8 + … + 12 + … + 8 = 30 visible
+     hex chars + 0x + two ellipses ≈ 32 visible code points. #}
+  {%- set head = s[:10] -%}            {# 0x + first 8 hex #}
+  {%- set mid_start = (s|length // 2) - 6 -%}
+  {%- set mid = s[mid_start:mid_start + 12] -%}
+  {%- set tail = s[-8:] -%}
+  <span class="hex-value mono" data-hex="{{ s }}" data-copy title="{{ s }}">{{ head }}…{{ mid }}…{{ tail }}</span>
+{%- else -%}
+  <span class="hex-value mono" data-hex="{{ s }}" data-copy title="{{ s }}">{{ s }}</span>
+{%- endif -%}
+{%- endmacro %}
+
+
+{# -- chip ----------------------------------------------------------- #}
+{% macro chip(label, href=None, removable=true) %}
+<span class="tag tag-rounded chip">
+  {% if href %}<a href="{{ href }}">{{ label }}</a>{% else %}{{ label }}{% endif %}
+  {% if removable %}<button class="btn-close" aria-label="remove" data-chip-remove></button>{% endif %}
+</span>
+{% endmacro %}
+
+
+{# -- sparkline_svg (static thumbnail used on /searches and dashboard
+      initial paint; the live, mutating sparkline is an Alpine
+      component in regpoly.js named `sparkline()` introduced in P3). #}
+{% macro sparkline_svg(points, color="primary", width=120, height=28) -%}
+{%- set pts = points or [] -%}
+{%- if pts | length < 2 -%}
+  <svg class="sparkline" width="{{ width }}" height="{{ height }}" role="img" aria-label="no data"></svg>
+{%- else -%}
+  {%- set ymin = pts | min -%}
+  {%- set ymax = pts | max -%}
+  {%- set ydelta = (ymax - ymin) or 1 -%}
+  {%- set xstep = width / ((pts | length) - 1) -%}
+  {%- set polypoints = [] -%}
+  {%- for v in pts -%}
+    {%- set _ = polypoints.append(((loop.index0 * xstep) | round(2)) ~ "," ~ ((height - ((v - ymin) / ydelta) * height) | round(2))) -%}
+  {%- endfor -%}
+  <svg class="sparkline" width="{{ width }}" height="{{ height }}" role="img"
+       aria-label="sparkline of {{ pts | length }} points">
+    <polyline fill="none" stroke="var(--tblr-{{ color }})" stroke-width="1.5"
+              points="{{ polypoints | join(' ') }}"/>
+  </svg>
+{%- endif -%}
+{% endmacro %}
+
+
+{# -- empty_state --------------------------------------------------- #}
+{% macro empty_state(title, subtitle=None, action_label=None, action_href=None, icon=None) %}
+<div class="empty">
+  {% if icon %}<div class="empty-icon"><svg width="48" height="48"><use href="#tabler-{{ icon }}"/></svg></div>{% endif %}
+  <p class="empty-title">{{ title }}</p>
+  {% if subtitle %}<p class="empty-subtitle text-secondary">{{ subtitle }}</p>{% endif %}
+  {% if action_label and action_href %}
+  <div class="empty-action">
+    <a href="{{ action_href }}" class="btn btn-primary">{{ action_label }}</a>
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+
+{# -- error_state --------------------------------------------------- #}
+{% macro error_state(title, body=None, retry_action=None) %}
+<div class="alert alert-danger" role="alert" aria-live="polite">
+  <h4 class="alert-title">{{ title }}</h4>
+  {% if body %}<div class="text-secondary">{{ body }}</div>{% endif %}
+  {% if retry_action %}
+  <div class="mt-2">
+    <button class="btn btn-sm btn-outline-danger" data-retry="{{ retry_action }}">Retry</button>
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+
+{# -- drawer (Bootstrap offcanvas, push-not-overlay) ---------------- #}
+{% macro drawer(id, title, body_classes="") %}
+<div class="offcanvas offcanvas-end offcanvas-md" tabindex="-1"
+     id="{{ id }}" aria-labelledby="{{ id }}-label" data-bs-backdrop="false">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="{{ id }}-label">{{ title }}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body {{ body_classes }}">
+    {{ caller() }}
+  </div>
+</div>
+{% endmacro %}
+
+
+{# -- action_buttons ------------------------------------------------ #}
+{% macro action_buttons(items) %}
+<div class="btn-list" role="group">
+  {% for it in items %}
+    <button type="button"
+            class="btn btn-{{ it.kind | default('outline-primary') }} btn-sm"
+            data-action="{{ it.action }}"
+            {% if it.disabled %}disabled{% endif %}>
+      {{ it.label }}
+    </button>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+
+{# -- kbd helper ---------------------------------------------------- #}
+{% macro kbd(text) %}<kbd>{{ text }}</kbd>{% endmacro %}
+
+
+{# -- pagination (Tabler .pagination) ------------------------------ #}
+{% macro pagination(total, limit, offset, base_url) %}
+{% set page = (offset // limit) + 1 if limit else 1 %}
+{% set last = ((total - 1) // limit) + 1 if (limit and total > 0) else 1 %}
+{% if last > 1 %}
+<ul class="pagination">
+  <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+    <a class="page-link" href="{{ base_url }}?limit={{ limit }}&offset={{ ((page - 2) * limit) | max(0) }}" aria-label="Previous">&laquo;</a>
+  </li>
+  {% for p in range(1, last + 1) %}
+    <li class="page-item {% if p == page %}active{% endif %}">
+      <a class="page-link" href="{{ base_url }}?limit={{ limit }}&offset={{ (p - 1) * limit }}">{{ p }}</a>
+    </li>
+  {% endfor %}
+  <li class="page-item {% if page >= last %}disabled{% endif %}">
+    <a class="page-link" href="{{ base_url }}?limit={{ limit }}&offset={{ page * limit }}" aria-label="Next">&raquo;</a>
+  </li>
+</ul>
+{% endif %}
+{% endmacro %}

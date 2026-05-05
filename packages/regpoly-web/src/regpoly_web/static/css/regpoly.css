@@ -1,0 +1,148 @@
+/* regpoly-web v2 custom CSS — layered on top of Tabler tokens.
+
+ * CSS-audit dispositions (full table populated during P1 prep):
+ *   delete in P1: .app-shell, .sidebar, .sidebar-section, .app-main,
+ *                 .top-bar, .hamburger, .active-family-badge
+ *   keep+move (this file): :root --rp-mono, .ns-cell, .param-grid,
+ *                          .bool-cell, input[type=text].input-int,
+ *                          input[type=text].input-bitmask, .param-name,
+ *                          .param-flag, .mono, .equidist-cell-{ok,warn,bad},
+ *                          .matrix-canvas, body.embed, .hex-value
+ *   keep until phase: see plan §"CSS migration audit"
+ *   delete at P5 cleanup: anything in style.css not migrated by then
+ */
+
+:root {
+    --rp-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+               Consolas, "Liberation Mono", monospace;
+}
+
+/* --- Embed mode (kept from legacy style.css) ----------------------- */
+body.embed .page-wrapper { padding-inline: 0.25rem; }
+body.embed .page-header,
+body.embed .navbar-vertical,
+body.embed footer { display: none !important; }
+
+/* --- Hex display (used by hex_value macro) ------------------------- */
+.hex-value {
+    font-family: var(--rp-mono);
+    cursor: copy;
+    border-radius: 0.2rem;
+    padding: 0 0.15em;
+    transition: background-color 1s ease-out;
+}
+.hex-value:hover {
+    background: var(--tblr-bg-surface-secondary, rgba(0,0,0,0.05));
+}
+.hex-value.copied {
+    background: var(--tblr-success-lt, #d3f9d8);
+    transition: background-color 0s;
+}
+.mono { font-family: var(--rp-mono); }
+
+/* --- Char-poly card tabs ------------------------------------------- */
+.char-poly-card .tab-pane {
+    padding-top: 0.5rem;
+}
+.char-poly-card .poly-katex {
+    font-size: 1.05em;
+    line-height: 1.6;
+    padding: 0.4rem 0.6rem;
+    background: var(--tblr-bg-surface-secondary, #f6f8fa);
+    border-radius: 0.3rem;
+    overflow-x: auto;
+}
+
+/* --- Equidistribution palette (kept from legacy style.css) --------- */
+.equidist-cell-ok   { background: #d3f9d8; }
+.equidist-cell-warn { background: #fff3bf; }
+.equidist-cell-bad  { background: #ffc9c9; }
+
+/* --- Theme toggle button ------------------------------------------- */
+[data-theme-toggle] {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.05em;
+    line-height: 1;
+}
+[data-theme-icon-light],
+[data-theme-icon-dark] {
+    display: inline-block;
+}
+html[data-bs-theme="dark"] [data-theme-icon-light] { display: none; }
+html[data-bs-theme="light"] [data-theme-icon-dark] { display: none; }
+
+/* --- Keyboard nav highlight on table rows --------------------------- */
+table tbody tr.kbd-active {
+    outline: 2px solid var(--tblr-primary, #0054a6);
+    outline-offset: -2px;
+}
+
+/* --- Sparkline ------------------------------------------------------ */
+svg.sparkline {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* --- Form helpers (kept from legacy style.css; scoped to form pages
+   that haven't been migrated to Tabler form components yet) ---------- */
+.ns-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: nowrap;
+    min-width: 0;
+}
+.ns-cell label.rand-toggle { margin: 0; white-space: nowrap; }
+.ns-cell input[type="text"] { margin: 0; flex: 0 0 auto; }
+.ns-cell input[type="text"]:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.bool-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+}
+.bool-cell input[type="checkbox"] { margin: 0; }
+.bool-cell input[type="checkbox"]:disabled + span { opacity: 0.45; }
+input[type="text"].input-int {
+    width: 12ch;
+    font-family: var(--rp-mono);
+}
+input[type="text"].input-bitmask {
+    flex: 0 1 77ch;
+    width: 77ch;
+    min-width: 8ch;
+    max-width: 100%;
+    font-family: var(--rp-mono);
+}
+.param-grid {
+    display: grid;
+    grid-template-columns: 20rem 7rem 1fr;
+    gap: 0.35rem 1rem;
+    align-items: baseline;
+    justify-items: start;
+}
+.param-grid input[type="text"] { margin: 0; flex: 0 0 auto; }
+.param-grid .param-flag { white-space: normal; overflow-wrap: anywhere; }
+.param-grid .param-name { justify-self: start; }
+.param-name { font-family: var(--rp-mono); font-weight: 600; }
+.param-flag { font-size: 0.8em; color: var(--tblr-secondary); }
+
+/* --- Transition-matrix canvas (kept; surfaced in P4) ---------------- */
+.matrix-canvas {
+    display: block;
+    width: 800px;
+    height: 800px;
+    max-width: 100%;
+    aspect-ratio: 1 / 1;
+    border: 1px solid #ccc;
+    background: #fafafa;
+    cursor: grab;
+    image-rendering: pixelated;
+    touch-action: none;
+    user-select: none;
+}

@@ -39,14 +39,19 @@ pytestmark = pytest.mark.e2e
 # ── 1. families introspection page ───────────────────────────────────
 
 
-def test_families_page_lists_known_families(page, live_server_url: str) -> None:
-    page.goto(f"{live_server_url}/")
-    page.wait_for_load_state("networkidle")
-    body = page.content()
-    # The home page lists families by name. Sanity-check a representative
-    # subset; the full set is the union of the C++ catalog.
+def test_families_reachable_via_family_landing_pages(
+    page, live_server_url: str,
+) -> None:
+    """The v2 redesign drops the family-hierarchy sidebar; families are
+    now reached via /family/{name} (kept) and via the chip filter on
+    /generators (P2). This test verifies each family's landing page
+    still works — the dashboard family directory lands in P2 and gets
+    its own assertion there."""
     for name in ("MTGen", "TauswortheGen", "TGFSRGen", "MELGGen"):
-        assert name in body, f"family {name} not on home page"
+        page.goto(f"{live_server_url}/family/{name}")
+        page.wait_for_load_state("networkidle")
+        body = page.content()
+        assert name in body, f"family {name} not on /family/{name}"
 
 
 # ── 2. tested-generator detail page ──────────────────────────────────

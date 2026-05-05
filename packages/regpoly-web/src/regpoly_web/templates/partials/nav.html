@@ -1,0 +1,41 @@
+{# Flat sidebar — Dashboard / Generators / Tested generators / Searches /
+   Library / Tools. Reads from the `nav_items` global registered in app.py.
+   Highlights the current entry by matching against request.url.path. #}
+
+<aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#sidebar-menu" aria-controls="sidebar-menu"
+            aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <h1 class="navbar-brand navbar-brand-autodark">
+      <a href="/" class="text-decoration-none">
+        <strong>regpoly</strong>
+      </a>
+    </h1>
+
+    {# Theme toggle — exposed in the brand row so it's reachable from
+       every page; click delegate in regpoly.js. #}
+    <div class="navbar-nav flex-row order-md-last">
+      <button class="btn btn-icon btn-link nav-link"
+              data-theme-toggle aria-label="toggle dark mode" type="button">
+        <span class="theme-toggle-icon" data-theme-icon-light>☀</span>
+        <span class="theme-toggle-icon" data-theme-icon-dark hidden>☾</span>
+      </button>
+    </div>
+
+    <div class="collapse navbar-collapse" id="sidebar-menu">
+      <ul class="navbar-nav pt-lg-3">
+        {% for item in nav_items %}
+        <li class="nav-item {% if request.url.path == item.href or (item.href != '/' and request.url.path.startswith(item.href)) %}active{% endif %}">
+          <a class="nav-link" href="{{ item.href }}">
+            <span class="nav-link-title">{{ item.label }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</aside>

@@ -1,0 +1,16 @@
+{# Breadcrumb partial — accepts `crumbs = [{"label": str, "href": str|None}]`
+   from the page context. Rendered inside the page header. #}
+
+{% if crumbs %}
+<ol class="breadcrumb breadcrumb-arrows" aria-label="breadcrumbs">
+  {% for c in crumbs %}
+    <li class="breadcrumb-item {% if loop.last %}active{% endif %}">
+      {% if c.href and not loop.last %}
+        <a href="{{ c.href }}">{{ c.label }}</a>
+      {% else %}
+        {{ c.label }}
+      {% endif %}
+    </li>
+  {% endfor %}
+</ol>
+{% endif %}

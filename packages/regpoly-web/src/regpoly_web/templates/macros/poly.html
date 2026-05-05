@@ -1,0 +1,70 @@
+{# Characteristic-polynomial card: three KaTeX-rendered tabs.
+
+   Tabs: Exponents (default) — \(x^{i_1} + x^{i_2} + \cdots + 1\)
+         x-notation        — \(x^{i_1}\,x^{i_2}\,\ldots\,x^{i_n}\)
+         Hex               — plain text + copy
+
+   For P1 the macro emits the static structure; the actual extraction
+   of set bit positions from the hex string is done client-side by
+   regpoly.js (data-poly-hex / data-poly-k attributes drive the JS
+   that calls katex.render() into the placeholder spans). #}
+
+{% macro char_poly_card(poly_hex, k, hw, name="poly") %}
+<div class="card char-poly-card">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" role="tablist">
+      <li class="nav-item">
+        <a href="#{{ name }}-exponents" class="nav-link active" data-bs-toggle="tab" role="tab">
+          Exponents
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#{{ name }}-xnot" class="nav-link" data-bs-toggle="tab" role="tab">
+          x-notation
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#{{ name }}-hex" class="nav-link" data-bs-toggle="tab" role="tab">
+          Hex
+        </a>
+      </li>
+    </ul>
+  </div>
+  <div class="card-body">
+    <div class="tab-content">
+
+      <div class="tab-pane active" id="{{ name }}-exponents" role="tabpanel">
+        <div class="poly-katex"
+             data-poly-hex="{{ poly_hex }}"
+             data-poly-k="{{ k }}"
+             data-poly-mode="exponents">
+          \( x^{ {{ k }} } + \cdots + 1 \)
+        </div>
+        <button class="btn btn-sm btn-outline-secondary mt-2"
+                data-copy-text="exponents:{{ poly_hex }}">Copy</button>
+      </div>
+
+      <div class="tab-pane" id="{{ name }}-xnot" role="tabpanel">
+        <div class="poly-katex"
+             data-poly-hex="{{ poly_hex }}"
+             data-poly-k="{{ k }}"
+             data-poly-mode="xnotation">
+          \( x^{ {{ k }} } \cdot x^{ \cdots } \cdot 1 \)
+        </div>
+        <button class="btn btn-sm btn-outline-secondary mt-2"
+                data-copy-text="xnotation:{{ poly_hex }}">Copy</button>
+      </div>
+
+      <div class="tab-pane" id="{{ name }}-hex" role="tabpanel">
+        <div class="hex-value mono" data-hex="{{ poly_hex }}" data-copy>{{ poly_hex }}</div>
+        <button class="btn btn-sm btn-outline-secondary mt-2"
+                data-copy-text="{{ poly_hex }}">Copy</button>
+      </div>
+
+    </div>
+    <div class="text-secondary small mt-2">
+      Hamming weight: {{ hw }}
+    </div>
+  </div>
+</div>
+{% endmacro %}

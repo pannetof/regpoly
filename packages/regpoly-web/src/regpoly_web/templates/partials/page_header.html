@@ -1,0 +1,26 @@
+{# Page header — Tabler page-header with breadcrumb + title slot.
+
+   Per-page context:
+     page_title : str          (required — used in <title> too)
+     page_pretitle : str       (optional — small label above the h2)
+     crumbs : list of dicts    (optional — shown via partials/breadcrumb.html)
+
+   Pages can append their own action buttons by placing them inside
+   {% block page_header_actions %}{% endblock %} in their own template. #}
+
+<div class="page-header d-print-none">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        {% if page_pretitle %}
+        <div class="page-pretitle">{{ page_pretitle }}</div>
+        {% endif %}
+        {% include "partials/breadcrumb.html" %}
+        <h2 class="page-title">{{ page_title or "regpoly" }}</h2>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        {% block page_header_actions %}{% endblock %}
+      </div>
+    </div>
+  </div>
+</div>

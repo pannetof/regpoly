@@ -21,6 +21,8 @@ from regpoly_web.config import (
     find_papers_dir,
 )
 from regpoly_web.database import init_sync, open_async
+from fastapi import APIRouter
+
 from regpoly_web.routes import (
     families,
     generators,
@@ -36,41 +38,32 @@ from regpoly_web.tasks.pool import TaskPool
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
-# Shared Jinja globals used by every template (sidebar, highlighting, etc.)
-# Imported lazily to avoid a circular import with routes/families.py, which
-# in turn imports from regpoly._regpoly_cpp.
-from regpoly_web.routes.families import KNOWN_FAMILIES as _KNOWN_FAMILIES
+# Shared Jinja globals used by every template (sidebar, highlighting,
+# breadcrumbs, etc.). The v2 redesign replaces the family-hierarchy
+# sidebar with a flat 6-entry nav; family browsing is driven by chips
+# on /generators (P2) and the family directory on / (P2).
+# Imported lazily to avoid a circular import with routes/families.py.
+from regpoly_web.routes.families import KNOWN_FAMILIES as _KNOWN_FAMILIES  # noqa: F401
 
-# Sidebar split: the five flagship families come first in a fixed
-# order; anything else the C++ registry exposes lands under an
-# "Other families" heading, preserving KNOWN_FAMILIES order.
-_PRIMARY_FAMILIES = [
-    "TauswortheGen", "TGFSRGen", "MTGen", "WELLGen", "MELGGen",
+templates.env.globals["nav_items"] = [
+    {"label": "Dashboard",          "href": "/",                   "icon": "home"},
+    {"label": "Generators",         "href": "/generators",         "icon": "cpu"},
+    {"label": "Tested generators",  "href": "/tested-generators",  "icon": "test-pipe"},
+    {"label": "Searches",           "href": "/searches",           "icon": "search"},
+    {"label": "Library",            "href": "/library",            "icon": "book"},
+    # Tools surface (Import / Export / Imports audit trail) lands in P5.
+    # The entry exists from P1 so the sidebar IA is stable from day one.
+    {"label": "Tools",              "href": "/tools",              "icon": "tools"},
 ]
-_primary_set = set(_PRIMARY_FAMILIES)
-templates.env.globals["families_primary"] = [
-    {"name": f} for f in _PRIMARY_FAMILIES if f in _KNOWN_FAMILIES
-]
-templates.env.globals["families_other"] = [
-    {"name": f} for f in _KNOWN_FAMILIES if f not in _primary_set
-]
-# Kept for templates that still iterate the flat list.
-templates.env.globals["families"] = (
-    templates.env.globals["families_primary"]
-    + templates.env.globals["families_other"]
-)
 templates.env.globals.setdefault("active_family", None)
+# Empty list kept (legacy templates may still iterate it without crashing).
+templates.env.globals.setdefault("crumbs", [])
 
-# Published-generators catalog — loaded once at import so the sidebar
-# can surface papers without a per-request fetch.  The dev reload path
-# lives in routes/library.py::_catalog.
+# Published-generators catalog — loaded once at import. The redesigned
+# sidebar no longer surfaces papers; the Library page (P2) consumes the
+# catalog directly from app.state.library.
 _library_catalog = Catalog(find_library_dir())
 _library_catalog.load()
-templates.env.globals["library_papers"] = [
-    {"id": p.id, "display": p.display(),
-     "starred": p.starred, "year": p.year}
-    for p in _library_catalog.papers()
-]
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -151,6 +144,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(tested_generators.router, prefix="/api")
     app.include_router(import_export.router, prefix="/api")
 
+    # v2 namespace reservation — every contract change in the redesign
+    # mounts under /api/v2/. P1 ships only a healthz stub; P2+ adds the
+    # real endpoints. v1 (existing /api/) remains unchanged.
+    v2_router = APIRouter()
+
+    @v2_router.get("/healthz")
+    def _v2_healthz():
+        return {"status": "ok", "version": 2}
+
+    app.include_router(v2_router, prefix="/api/v2", tags=["v2"])
+    app.state.v2_router_registered = True
+
     return app
 
 
@@ -214,7 +219,7 @@ def main() -> None:
     import uvicorn
 
     uvicorn.run(
-        "regpoly.web.app:app",
+        "regpoly_web.app:app",
         host=settings.host,
         port=settings.port,
         reload=settings.reload,
