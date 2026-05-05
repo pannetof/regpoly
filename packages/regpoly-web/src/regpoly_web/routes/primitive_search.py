@@ -433,7 +433,13 @@ async def primitive_search_progress_sse(
     poll = settings.progress_poll_seconds
 
     async def event_stream():
+        import time as _time
         import aiosqlite
+        from regpoly_web.tasks._progress_rate import RollingRate
+        # Per-stream rolling-rate accumulator (the SSE handler is the
+        # only place we have a wall-clock + tries pair we can sample
+        # for the v2 rate_rolling_5s field).
+        rr = RollingRate(window_sec=5.0)
         async with aiosqlite.connect(db_path) as conn:
             conn.row_factory = aiosqlite.Row
             last_id = 0
@@ -450,14 +456,34 @@ async def primitive_search_progress_sse(
                     rows = await cur.fetchall()
 
                 for row in rows:
+                    info = json_loads(row["current_info"]) or {}
+                    now = _time.time()
+                    rr.observe(t=now, tries=int(row["tries_done"] or 0))
+                    rr_value = rr.rate(now=now)
+                    # v1 payload — instantaneous `rate` preserved.
                     payload = {
                         "tries_done": row["tries_done"],
                         "found_count": row["found_count"],
-                        "current_info": json_loads(row["current_info"]),
+                        "current_info": info,
                         "message": row["message"],
                         "updated_at": row["updated_at"],
                     }
                     yield f"data: {json.dumps(payload)}\n\n"
+
+                    # v2 named `progress` channel — adds rolling rate +
+                    # cum_finds + t (wall-clock seconds since stream
+                    # opened). UI consumes this exclusively.
+                    v2_payload = dict(payload)
+                    v2_payload["current_info"] = {
+                        **info,
+                        "rate_rolling_5s": rr_value,
+                        "cum_finds": int(row["found_count"] or 0),
+                        "t": now,
+                    }
+                    yield (
+                        "event: progress\n"
+                        f"data: {json.dumps(v2_payload)}\n\n"
+                    )
                     last_id = row["id"]
 
                 # Emit terminal event if the run has finished

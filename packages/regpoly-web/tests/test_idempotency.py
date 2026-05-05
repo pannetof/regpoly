@@ -13,7 +13,7 @@ def _create_psr(client) -> int:
         json={
             "family": "MTGen",
             "L": 64,
-            "structural_params": {},
+            "structural_params": {"w": 32, "n": 2, "m": 1, "r": 31, "u": 11},
             "fixed_params": {},
             "max_tries": 1,
             "max_seconds": None,

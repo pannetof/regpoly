@@ -398,10 +398,12 @@ async def tempering_search_progress_sse(
     poll = settings.progress_poll_seconds
 
     async def event_stream():
+        import time as _time
         import aiosqlite
         async with aiosqlite.connect(db_path) as conn:
             conn.row_factory = aiosqlite.Row
             last_id = 0
+            best_id_emitted: int | None = None
             while True:
                 if await request.is_disconnected():
                     break
@@ -415,12 +417,36 @@ async def tempering_search_progress_sse(
                     rows = await cur.fetchall()
 
                 for row in rows:
+                    info = json_loads(row["current_info"]) or {}
+                    # v1 unnamed `data:` event — unchanged shape.
                     payload = {
-                        "current_info": json_loads(row["current_info"]),
+                        "current_info": info,
                         "message": row["message"],
                         "updated_at": row["updated_at"],
                     }
                     yield f"data: {json.dumps(payload)}\n\n"
+
+                    # v2 named `progress` channel — adds best_score,
+                    # best_params (already in info), best_id (None
+                    # mid-run), and a wall-clock t.
+                    v2_info = {
+                        **info,
+                        "best_score": (info.get("best_overall_se")
+                                       or info.get("se")),
+                        "best_params": info.get("best_params"),
+                        "best_id": best_id_emitted,
+                        "t": _time.time(),
+                    }
+                    yield (
+                        "event: progress\n"
+                        "data: "
+                        + json.dumps({
+                            "current_info": v2_info,
+                            "message": row["message"],
+                            "updated_at": row["updated_at"],
+                        })
+                        + "\n\n"
+                    )
                     last_id = row["id"]
 
                 async with conn.execute(
@@ -438,7 +464,24 @@ async def tempering_search_progress_sse(
                         "elapsed_seconds": r["elapsed_seconds"],
                     }) + "\n\n")
                     if r["status"] in ("completed", "cancelled", "failed"):
-                        yield f"event: end\ndata: {json.dumps({'status': r['status']})}\n\n"
+                        # Resolve best_id once the run finishes.
+                        async with conn.execute(
+                            "SELECT id FROM tested_generator "
+                            "WHERE search_run_id=? "
+                            "ORDER BY id DESC LIMIT 1",
+                            (run_id,),
+                        ) as cur2:
+                            tg = await cur2.fetchone()
+                        if tg is not None:
+                            best_id_emitted = int(tg["id"])
+                        yield (
+                            "event: end\ndata: "
+                            + json.dumps({
+                                "status": r["status"],
+                                "best_id": best_id_emitted,
+                            })
+                            + "\n\n"
+                        )
                         break
 
                 await asyncio.sleep(poll)

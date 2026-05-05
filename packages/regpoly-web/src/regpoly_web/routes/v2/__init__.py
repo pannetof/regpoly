@@ -17,6 +17,7 @@ from regpoly_web.routes.v2 import (
     generators,
     library,
     searches,
+    searches_history,
     tested_generators,
 )
 
@@ -28,6 +29,7 @@ router.include_router(generators.router)
 router.include_router(tested_generators.router)
 router.include_router(library.router)
 router.include_router(searches.router)
+router.include_router(searches_history.router)
 
 
 @router.get("/healthz")
