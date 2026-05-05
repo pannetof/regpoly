@@ -45,7 +45,40 @@
                 <button class="secondary" @click="restart()">
                     Restart (edit parameters)
                 </button>
+                <button class="secondary" @click="duplicate()"
+                        data-duplicate>
+                    Duplicate
+                </button>
             </footer>
+        </article>
+    </template>
+
+    {# Best-so-far card — appears once SSE has posted a `progress`
+       payload that includes best_score/best_params/best_id. #}
+    <template x-if="bestState && bestState.best_score != null">
+        <article class="best-so-far">
+            <header><strong>Best so far</strong></header>
+            <ul>
+                <li>Best score:
+                    <strong x-text="bestState.best_score"></strong></li>
+                <template x-if="bestState.best_params">
+                    <li>Best params:
+                        <code class="mono"
+                              data-copy
+                              :data-copy-text="JSON.stringify(bestState.best_params)"
+                              x-text="JSON.stringify(bestState.best_params)"></code>
+                    </li>
+                </template>
+                <template x-if="bestState.best_id">
+                    <li>
+                        <a :href="'/tested-generators/' + bestState.best_id"
+                           class="btn btn-sm btn-outline-primary"
+                           data-best-link>
+                            Open in catalog →
+                        </a>
+                    </li>
+                </template>
+            </ul>
         </article>
     </template>
 
@@ -206,6 +239,9 @@ function temperingSearchDetail(id) {
         ...rngTableFilterMethods(),
 
         run: null, progress: null, results: [], sse: null,
+        // Best-so-far state populated from the v2 named `progress`
+        // channel (best_score, best_params, best_id).
+        bestState: { best_score: null, best_params: null, best_id: null },
 
         // Table-level sort + filter state (rngTable* helpers in app.js).
         sort: { key: null, dir: null },
@@ -477,10 +513,38 @@ function temperingSearchDetail(id) {
                     this.loadResults();
                 } catch (_) {}
             };
-            this.sse.addEventListener('end', () => {
+            // v2 named channel — populates the Best-so-far card.
+            this.sse.addEventListener('progress', (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    const ci = data.current_info || {};
+                    if (ci.best_score != null
+                        && (this.bestState.best_score == null
+                            || ci.best_score < this.bestState.best_score)) {
+                        this.bestState = {
+                            best_score: ci.best_score,
+                            best_params: ci.best_params || null,
+                            best_id: ci.best_id || null,
+                        };
+                    }
+                } catch (_) {}
+            });
+            this.sse.addEventListener('end', (e) => {
                 this.sse.close();
                 this.loadRun();
                 this.loadResults();
+                // The terminal `end` payload carries best_id once the
+                // run has produced a tested_generator row — light up
+                // the "Open in catalog" affordance.
+                try {
+                    const data = JSON.parse(e.data || '{}');
+                    if (data.best_id) {
+                        this.bestState = {
+                            ...this.bestState,
+                            best_id: data.best_id,
+                        };
+                    }
+                } catch (_) {}
             });
         },
 
@@ -497,6 +561,25 @@ function temperingSearchDetail(id) {
             const topWin = (window.top && window.top !== window.self)
                 ? window.top : window;
             topWin.location.href = '/tempering-search?restart_from=' + id;
+        },
+
+        async duplicate() {
+            try {
+                const r = await fetch(
+                    '/api/v2/tempering-searches/' + id + '/duplicate');
+                if (!r.ok) return;
+                const params = await r.json();
+                // Stash prefill in sessionStorage; the form picks it up.
+                try {
+                    sessionStorage.setItem(
+                        'regpoly.tempering.duplicate',
+                        JSON.stringify(params));
+                } catch (e) { /* ignore */ }
+                const topWin = (window.top && window.top !== window.self)
+                    ? window.top : window;
+                topWin.location.href =
+                    '/tempering-search?duplicate_from=' + id;
+            } catch (e) { /* ignore */ }
         },
     };
 }

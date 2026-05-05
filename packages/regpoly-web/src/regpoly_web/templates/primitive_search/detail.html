@@ -1,174 +1,362 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import metric_card, status_badge %}
 
 {% block title %}Full-period generator search #{{ run_id }}{% endblock %}
 
 {% block content %}
-<div x-data="primitiveSearchDetail({{ run_id }})" x-init="init()">
-    <hgroup>
-        <h1>Full-period generator search #{{ run_id }}</h1>
-        <p>
-            <template x-if="run">
-                <span>
-                    <span x-text="run.family"></span> · L=<span x-text="run.L"></span>
-                    · k=<span x-text="run.k"></span>
-                </span>
-            </template>
-        </p>
-    </hgroup>
+<div x-data="primitiveSearchDetail({{ run_id }})" x-init="init()"
+     data-primitive-detail>
 
+  <div class="d-flex align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="mb-0">
+      <span class="text-secondary">Search</span>
+      <span x-text="'#{{ run_id }}'"></span>
+    </h2>
     <template x-if="run">
-        <div class="grid">
-            <article>
-                <header>Status
-                    <span class="status-pill" :class="'status-' + run.status"
-                          x-text="run.status"></span>
-                </header>
-                <ul>
-                    <li>Mode:
-                        <strong x-text="run.search_mode || 'random'"></strong></li>
-                    <template x-if="run.search_mode === 'exhaustive' && run.enum_total">
-                        <li>Enumerated:
-                            <span x-text="run.enum_index || 0"></span>
-                            / <span x-text="run.enum_total"></span></li>
-                    </template>
-                    <template x-if="run.search_mode !== 'exhaustive'">
-                        <li>Tries: <span x-text="run.tries_done"></span>
-                            <template x-if="run.max_tries">/ <span x-text="run.max_tries"></span></template>
-                        </li>
-                    </template>
-                    <li>Found: <span x-text="run.found_count"></span></li>
-                    <li>Elapsed: <span x-text="(run.elapsed_seconds || 0).toFixed(1)"></span>s</li>
-                    <template x-if="progress && progress.current_info && progress.current_info.rate">
-                        <li>Rate: <span x-text="progress.current_info.rate.toFixed(0)"></span>/s</li>
-                    </template>
-                </ul>
-
-                <template x-if="enumProgressPct() !== null">
-                    <div class="progress-bar">
-                        <div class="progress-bar-fill"
-                             :style="'width:' + enumProgressPct().toFixed(1) + '%'"></div>
-                    </div>
-                </template>
-                <template x-if="enumProgressPct() === null && run.max_tries">
-                    <div class="progress-bar">
-                        <div class="progress-bar-fill"
-                             :style="'width:' + (100 * run.tries_done / run.max_tries).toFixed(1) + '%'"></div>
-                    </div>
-                </template>
-
-                <footer>
-                    <button @click="cancel()"
-                            :disabled="run.status !== 'running' && run.status !== 'pending'">
-                        Cancel
-                    </button>
-                </footer>
-            </article>
-
-            <article>
-                <header>Configuration</header>
-                <table class="compact">
-                    <tr><td>Mode</td>
-                        <td x-text="run.search_mode || 'random'"></td></tr>
-                    <template x-if="run.enum_axes && run.enum_axes.length">
-                        <tr><td>Axes</td>
-                            <td class="mono"
-                                x-text="run.enum_axes.map(a => a.name + '(' + a.size + ')').join(' × ')"></td></tr>
-                    </template>
-                    <tr><td>Structural</td>
-                        <td class="mono" x-text="JSON.stringify(run.structural_params)"></td></tr>
-                    <tr><td>Fixed</td>
-                        <td class="mono" x-text="JSON.stringify(run.fixed_params)"></td></tr>
-                    <tr><td>Max tries</td><td x-text="run.max_tries ?? '∞'"></td></tr>
-                    <tr><td>Max seconds</td><td x-text="run.max_seconds ?? '∞'"></td></tr>
-                </table>
-            </article>
-        </div>
+      <span class="ms-2" x-html="badgeFor(run.status)"></span>
     </template>
+    <template x-if="run">
+      <span class="ms-2 text-secondary">
+        <span x-text="run.family"></span> ·
+        L=<span x-text="run.L"></span> ·
+        k=<span x-text="run.k"></span>
+      </span>
+    </template>
+    <div class="ms-auto btn-list">
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              @click="act('pause')"
+              :disabled="!canPause">Pause</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              @click="act('resume')"
+              :disabled="!canResume">Resume</button>
+      <button type="button" class="btn btn-sm btn-outline-warning"
+              @click="act('cancel')"
+              :disabled="!canCancel">Cancel</button>
+      <button type="button" class="btn btn-sm btn-outline-primary"
+              @click="act('restart')"
+              :disabled="!canRestart">Restart</button>
+      <button type="button" class="btn btn-sm btn-outline-primary"
+              data-duplicate
+              @click="duplicate()">Duplicate</button>
+    </div>
+  </div>
 
-    <h3>Generators found (<span x-text="generators.length"></span>)</h3>
-    <table class="compact">
+  <div class="row row-cards mb-3">
+    <div class="col-sm-6 col-lg-3">
+      <div class="card card-sm">
+        <div class="card-body">
+          <div class="font-weight-medium">Tries</div>
+          <div class="text-secondary">
+            <span x-text="(run && run.tries_done) || 0"></span>
+            <template x-if="run && run.max_tries">
+              <span> / <span x-text="run.max_tries"></span></span>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="card card-sm">
+        <div class="card-body">
+          <div class="font-weight-medium">Found</div>
+          <div class="text-secondary"
+               x-text="(run && run.found_count) || 0"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="card card-sm">
+        <div class="card-body">
+          <div class="font-weight-medium">Rate (5s)</div>
+          <div class="text-secondary">
+            <span x-text="rateRollingFmt"></span> /s
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="card card-sm">
+        <div class="card-body">
+          <div class="font-weight-medium">ETA</div>
+          <div class="text-secondary" x-text="etaFmt"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="card-title">Activity</h3>
+    </div>
+    <div class="card-body">
+      <svg width="100%" height="80" viewBox="0 0 600 80"
+           preserveAspectRatio="none" data-sparkline>
+        <polyline fill="none" stroke="var(--tblr-primary)"
+                  stroke-width="1.5"
+                  :points="sparkPoints"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="row row-cards mb-3">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Configuration</h3>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Mode</dt>
+            <dd class="col-sm-8" x-text="(run && run.search_mode) || 'random'"></dd>
+            <dt class="col-sm-4">Structural</dt>
+            <dd class="col-sm-8 mono"
+                x-text="run && JSON.stringify(run.structural_params) || ''"></dd>
+            <dt class="col-sm-4">Fixed</dt>
+            <dd class="col-sm-8 mono"
+                x-text="run && JSON.stringify(run.fixed_params) || ''"></dd>
+            <dt class="col-sm-4">Max tries</dt>
+            <dd class="col-sm-8" x-text="(run && run.max_tries) || '∞'"></dd>
+            <dt class="col-sm-4">Max seconds</dt>
+            <dd class="col-sm-8" x-text="(run && run.max_seconds) || '∞'"></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Recent events</h3>
+          <div class="card-actions">
+            <button type="button"
+                    class="btn btn-icon btn-link btn-sm"
+                    @click="logCollapsed = !logCollapsed"
+                    :aria-expanded="!logCollapsed">
+              <span x-text="logCollapsed ? '▸' : '▾'"></span>
+            </button>
+          </div>
+        </div>
+        <div class="card-body" x-show="!logCollapsed">
+          <ul class="list-unstyled mb-0 mono small"
+              data-recent-events
+              style="max-height: 14rem; overflow: auto;">
+            <template x-for="(ev, i) in recentEvents" :key="i + ':' + ev.t">
+              <li>
+                <span class="text-secondary"
+                      x-text="ev.message || JSON.stringify(ev.current_info)"></span>
+              </li>
+            </template>
+            <template x-if="recentEvents.length === 0">
+              <li class="text-secondary">No events yet.</li>
+            </template>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">
+        Generators found
+        (<span x-text="generators.length"></span>)
+      </h3>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-vcenter table-hover card-table">
         <thead>
-            <tr><th>ID</th><th>k</th><th>Found at try</th><th>Search params</th></tr>
+          <tr>
+            <th>ID</th><th>k</th><th>Try</th><th>Search params</th>
+          </tr>
         </thead>
         <tbody>
-            <template x-for="g in generators" :key="g.id">
-                <tr>
-                    <td><a :href="'/generators/' + g.id" x-text="g.id"></a></td>
-                    <td x-text="g.k"></td>
-                    <td x-text="g.found_at_try"></td>
-                    <td class="mono" x-text="JSON.stringify(g.search_params)"></td>
-                </tr>
-            </template>
+          <template x-for="g in generators" :key="g.id">
+            <tr>
+              <td><a :href="'/generators/' + g.id" x-text="g.id"></a></td>
+              <td x-text="g.k"></td>
+              <td x-text="g.found_at_try"></td>
+              <td class="mono"
+                  x-text="JSON.stringify(g.search_params)"></td>
+            </tr>
+          </template>
+          <template x-if="generators.length === 0">
+            <tr><td colspan="4" class="text-center text-secondary py-4">
+              No generators found yet.
+            </td></tr>
+          </template>
         </tbody>
-    </table>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
 function primitiveSearchDetail(id) {
-    return {
-        run: null, progress: null, generators: [], sse: null,
+  // Status → badge HTML (mirrors macros/ui.html status_badge so the
+  // server-rendered initial state and SSE-driven updates agree).
+  const STATUS_CLASS = {
+    pending: "bg-secondary-lt", running: "bg-primary-lt",
+    paused: "bg-warning-lt", completed: "bg-success-lt",
+    cancelled: "bg-orange-lt", failed: "bg-danger-lt",
+  };
 
-        async init() {
-            await this.loadRun();
-            await this.loadGenerators();
-            this.openSSE();
-        },
+  return {
+    run: null,
+    progress: null,
+    generators: [],
+    recentEvents: [],
+    history: [],          // sparkline samples (tries_done over time)
+    sse: null,
+    logCollapsed: false,
 
-        enumProgressPct() {
-            // Return null when not in exhaustive mode or no total yet.
-            if (!this.run || !this.run.enum_total) return null;
-            const total = Number(this.run.enum_total);
-            if (!isFinite(total) || total <= 0) return null;
-            const idx = Number(this.run.enum_index || 0);
-            return Math.min(100, 100 * idx / total);
-        },
+    async init() {
+      await this.loadRun();
+      await this.loadGenerators();
+      this.logCollapsed = this.run && this.run.status !== "running";
+      // Seed history from /api/v2 history endpoint so a reopened tab
+      // repaints with prior state.
+      try {
+        const r = await fetch(
+          "/api/v2/primitive-searches/" + id + "/history?points=120");
+        if (r.ok) {
+          const data = await r.json();
+          this.history = data.points || [];
+        }
+      } catch (e) { /* ignore */ }
+      this.openSSE();
+    },
 
-        async loadRun() {
-            const r = await fetch('/api/primitive-searches/' + id);
-            if (r.ok) this.run = await r.json();
-        },
+    badgeFor(status) {
+      const cls = STATUS_CLASS[status] || "bg-secondary-lt";
+      return `<span class="badge ${cls}">${status}</span>`;
+    },
 
-        async loadGenerators() {
-            const r = await fetch('/api/primitive-searches/' + id
-                + '/generators?per_page=200');
-            if (r.ok) {
-                const data = await r.json();
-                this.generators = data.items;
-            }
-        },
+    get canPause() {
+      return this.run && ["pending", "running"].includes(this.run.status);
+    },
+    get canResume() {
+      return this.run && ["paused", "cancelled", "failed"]
+        .includes(this.run.status);
+    },
+    get canCancel() {
+      return this.run && ["pending", "running", "paused"]
+        .includes(this.run.status);
+    },
+    get canRestart() {
+      return this.run && ["completed", "cancelled", "failed"]
+        .includes(this.run.status);
+    },
 
-        openSSE() {
-            this.sse = new EventSource('/api/primitive-searches/' + id + '/progress');
-            this.sse.onmessage = (e) => {
-                try {
-                    this.progress = JSON.parse(e.data);
-                    if (this.run) {
-                        this.run.tries_done = this.progress.tries_done;
-                        this.run.found_count = this.progress.found_count;
-                        const ci = this.progress.current_info || {};
-                        if (ci.enum_index != null) {
-                            this.run.enum_index = ci.enum_index;
-                        }
-                    }
-                    // When the found count advances, reload the generators list
-                    if (this.progress.found_count > this.generators.length) {
-                        this.loadGenerators();
-                    }
-                } catch (_) {}
-            };
-            this.sse.addEventListener('end', () => {
-                this.sse.close();
-                this.loadRun();
-                this.loadGenerators();
-            });
-        },
+    get rateRollingFmt() {
+      const v = this.progress?.current_info?.rate_rolling_5s
+             ?? this.progress?.current_info?.rate;
+      return v ? v.toFixed(0) : "—";
+    },
+    get etaFmt() {
+      const ci = this.progress?.current_info;
+      if (!ci) return "—";
+      const eta = ci.eta_seconds;
+      if (eta == null) {
+        // Compute fallback ETA from rate_rolling_5s + remaining tries.
+        const r = ci.rate_rolling_5s ?? ci.rate;
+        const max = this.run?.max_tries;
+        const done = this.run?.tries_done ?? 0;
+        if (!r || !max || max <= done) return "—";
+        const remaining = (max - done) / r;
+        return _formatSec(remaining);
+      }
+      return _formatSec(eta);
+    },
 
-        async cancel() {
-            await fetch('/api/primitive-searches/' + id + '/cancel',
-                {method: 'POST'});
-            this.loadRun();
-        },
-    };
+    get sparkPoints() {
+      const arr = this.history;
+      if (!arr || arr.length < 2) return "";
+      const w = 600, h = 80;
+      const ymin = Math.min(...arr), ymax = Math.max(...arr);
+      const yd = (ymax - ymin) || 1;
+      const xs = w / (arr.length - 1);
+      return arr.map((v, i) =>
+        `${(i * xs).toFixed(2)},${(h - (v - ymin) / yd * h).toFixed(2)}`
+      ).join(" ");
+    },
+
+    async loadRun() {
+      const r = await fetch("/api/primitive-searches/" + id);
+      if (r.ok) this.run = await r.json();
+    },
+    async loadGenerators() {
+      const r = await fetch(
+        "/api/primitive-searches/" + id + "/generators?per_page=200");
+      if (r.ok) {
+        const data = await r.json();
+        this.generators = data.items;
+      }
+    },
+
+    openSSE() {
+      this.sse = new EventSource(
+        "/api/primitive-searches/" + id + "/progress");
+      // Listen on the v2 named channel; the v1 unnamed channel is
+      // intentionally ignored here so we don't double-count.
+      this.sse.addEventListener("progress", (e) => {
+        try {
+          this.progress = JSON.parse(e.data);
+          if (this.run) {
+            this.run.tries_done = this.progress.tries_done;
+            this.run.found_count = this.progress.found_count;
+          }
+          this.history.push(Number(this.progress.tries_done) || 0);
+          if (this.history.length > 200) this.history.shift();
+          this.recentEvents.unshift({
+            t: this.progress.updated_at,
+            message: this.progress.message,
+            current_info: this.progress.current_info,
+          });
+          if (this.recentEvents.length > 30) this.recentEvents.length = 30;
+          if (this.progress.found_count > this.generators.length) {
+            this.loadGenerators();
+          }
+        } catch (_) {}
+      });
+      this.sse.addEventListener("end", () => {
+        this.sse.close();
+        this.loadRun();
+        this.loadGenerators();
+        this.logCollapsed = true;
+      });
+    },
+
+    async act(action) {
+      const r = await fetch(
+        "/api/primitive-searches/" + id + "/" + action,
+        { method: "POST" });
+      if (r.ok) await this.loadRun();
+    },
+
+    async duplicate() {
+      try {
+        const r = await fetch(
+          "/api/v2/primitive-searches/" + id + "/duplicate");
+        if (!r.ok) return;
+        const params = await r.json();
+        const qs = new URLSearchParams();
+        qs.set("family", params.family);
+        qs.set("L", params.L);
+        if (params.max_tries) qs.set("max_tries", params.max_tries);
+        if (params.max_seconds) qs.set("max_seconds", params.max_seconds);
+        for (const [k, v] of Object.entries(params.structural_params || {})) {
+          qs.set("s_" + k, String(v));
+        }
+        location.href = "/primitive-search?" + qs.toString();
+      } catch (e) { /* ignore */ }
+    },
+  };
+}
+
+function _formatSec(s) {
+  if (s == null) return "—";
+  if (s < 60) return Math.round(s) + "s";
+  if (s < 3600) return Math.round(s / 60) + "m";
+  return (s / 3600).toFixed(1) + "h";
 }
 </script>
 {% endblock %}
