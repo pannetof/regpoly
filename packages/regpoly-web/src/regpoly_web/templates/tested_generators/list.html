@@ -3,196 +3,244 @@
 {% block title %}Combined generators{% endblock %}
 
 {% block content %}
-<hgroup>
-    <h1>Combined generators</h1>
-    <p>Generators that passed a combined generator search.  Trace them
-        back to the search run that found them.</p>
-</hgroup>
+{% include "partials/chip_toolbar.html" %}
 
-<div x-data="testedBrowser()" x-init="init()">
-    <template x-if="familyLocked">
-        <p>
-            <mark class="filter-pill">
-                Family: <strong x-text="filter.family"></strong>
-                <a href="/tested-generators" title="Clear family filter">×</a>
-            </mark>
-        </p>
-    </template>
+<div x-data="testedBrowser()" x-init="init()" data-tested-list>
 
-    <form @submit.prevent="reload()" class="grid">
-        <label x-show="!familyLocked">Family
-            <select x-model="filter.family" @change="reload()">
-                <option value="">(any)</option>
-                <template x-for="f in families" :key="f.name">
-                    <option :value="f.name" x-text="f.name"></option>
-                </template>
-            </select>
-        </label>
-        <label>Test type
-            <select x-model="filter.test_type" @change="reload()">
-                <option value="">(any)</option>
-                <option value="equidistribution">equidistribution</option>
-            </select>
-        </label>
-        <label>Max se
-            <input type="number" x-model.number="filter.max_se" @change="reload()">
-        </label>
-        <label><input type="checkbox" x-model="filter.is_me" @change="reload()">
-            ME only
-        </label>
-    </form>
+  <div class="d-flex align-items-baseline mb-2">
+    <h2 class="mb-0">Combined generators</h2>
+    <span class="ms-3 text-secondary">
+      <span x-text="total"></span> result(s),
+      page <span x-text="currentPage"></span> of <span x-text="totalPages"></span>
+    </span>
+  </div>
+  <p class="text-secondary">
+    Generators that passed a combined-generator search. Each row links
+    to the search run that found it.
+  </p>
 
-    <p><span x-text="total"></span> result(s).</p>
-
-    <table class="compact">
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter table-hover card-table"
+             :class="density === 'compact' ? 'table-sm' : ''"
+             data-tested-table>
         <thead>
-            <tr>
-                <template x-for="col in columns" :key="col">
-                    <th class="sortable"
-                        :class="sort.key === col ? 'active' : ''"
-                        @click="clickSort(col)">
-                        <span x-text="colLabel(col)"></span>
-                        <span class="sort-arrow" x-text="sortArrow(col)"></span>
-                        <button type="button" class="filter-btn"
-                                :class="filterActive(col) ? 'active' : ''"
-                                @click.stop="toggleFilter(col, $event)"
-                                title="Filter">▾</button>
-                    </th>
-                </template>
-                <th></th>
-            </tr>
+          <tr>
+            <th style="width: 2.2rem;" aria-label="Pin"></th>
+            <th>ID</th>
+            <th>J</th>
+            <th>k_g</th>
+            <th>L<sub>max</sub></th>
+            <th>Family</th>
+            <th>Library</th>
+            <th>Search</th>
+            <th class="w-1"></th>
+          </tr>
         </thead>
         <tbody>
-            <template x-for="tg in displayRows()" :key="tg.id">
-                <tr>
-                    <td x-text="tg.id"></td>
-                    <td x-text="tg.J"></td>
-                    <td x-text="tg.k_g"></td>
-                    <td x-text="tg.components.map(c => c.family).join(' + ')"></td>
-                    <td x-text="se(tg) ?? '—'"></td>
-                    <td x-text="isMe(tg) ? '✓' : ''"></td>
-                    <td>
-                        <template x-if="tg.search_run_id">
-                            <a :href="'/tempering-search/' + tg.search_run_id"
-                               x-text="'#' + tg.search_run_id"></a>
-                        </template>
-                    </td>
-                    <td><a :href="'/tested-generators/' + tg.id"
-                           target="_top">view</a></td>
-                </tr>
-            </template>
-        </tbody>
-    </table>
-
-    <nav>
-        <button @click="prev()" :disabled="page <= 1">Prev</button>
-        <button @click="next()" :disabled="page * 50 >= total">Next</button>
-    </nav>
-
-    <!-- Shared popover for whichever column's filter button is open.
-         Kept outside the thead x-for to avoid nested templates. -->
-    <div class="filter-popover"
-         x-show="openFilter"
-         :style="filterPopoverStyle()"
-         @click.stop
-         @click.away="openFilter = null">
-        <template x-if="openFilter">
-            <div>
-                <label class="filter-all">
-                    <input type="checkbox"
-                           :checked="allChecked(openFilter)"
-                           @change="toggleAll(openFilter)">
-                    (Select all)
-                </label>
-                <template x-for="d in filterDistinctDisplay(openFilter)"
-                          :key="d.value">
-                    <label>
-                        <input type="checkbox"
-                               :checked="isChecked(openFilter, d.value)"
-                               @change="toggleOne(openFilter, d.value)">
-                        <span class="filter-val"
-                              x-text="displayLabel(openFilter, d)"></span>
-                    </label>
+          <template x-for="row in displayRows" :key="row.id">
+            <tr :class="isPinned(row.id) ? 'table-warning' : ''"
+                :data-row-id="row.id">
+              <td class="text-center">
+                <button type="button"
+                        class="btn btn-icon btn-link btn-sm p-0"
+                        data-pin-toggle
+                        @click="togglePin(row.id)"
+                        :aria-label="isPinned(row.id) ? 'unpin' : 'pin'">
+                  <span x-text="isPinned(row.id) ? '★' : '☆'"></span>
+                </button>
+              </td>
+              <td x-text="row.id"></td>
+              <td x-text="row.J ?? ''"></td>
+              <td x-text="row.k_g ?? ''"></td>
+              <td x-text="row.Lmax ?? ''"></td>
+              <td x-text="row.family || ''"></td>
+              <td>
+                <template x-if="row.library_id">
+                  <a :href="'/library/' + row.library_id"
+                     x-text="row.library_id"></a>
                 </template>
-            </div>
-        </template>
+              </td>
+              <td>
+                <template x-if="row.search_run_id">
+                  <a :href="'/tempering-search/' + row.search_run_id"
+                     x-text="'#' + row.search_run_id"></a>
+                </template>
+              </td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-link"
+                   :href="'/tested-generators/' + row.id">view</a>
+              </td>
+            </tr>
+          </template>
+          <template x-if="!loading && rows.length === 0">
+            <tr>
+              <td colspan="9"
+                  class="text-center text-secondary py-4">
+                No combined generators match the current filters.
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
     </div>
+  </div>
+
+  <nav class="mt-3" aria-label="Tested generators pagination" x-show="totalPages > 1">
+    <ul class="pagination">
+      <li class="page-item" :class="currentPage <= 1 ? 'disabled' : ''">
+        <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">
+          &laquo;
+        </a>
+      </li>
+      <template x-for="p in pageWindow" :key="p">
+        <li class="page-item" :class="p === currentPage ? 'active' : ''">
+          <a class="page-link" href="#" @click.prevent="goToPage(p)" x-text="p"></a>
+        </li>
+      </template>
+      <li class="page-item" :class="currentPage >= totalPages ? 'disabled' : ''">
+        <a class="page-link" href="#" @click.prevent="goToPage(currentPage + 1)">
+          &raquo;
+        </a>
+      </li>
+    </ul>
+  </nav>
 </div>
 
 <script>
 function testedBrowser() {
-    return {
-        ...rngTableFilterMethods(),
+  const PIN_KEY = "regpoly.tested.pinned";
 
-        families: [], items: [], total: 0, page: 1,
-        familyLocked: false,
-        filter: { family: '', test_type: '', max_se: null, is_me: false },
-        sort: { key: null, dir: null },
-        colFilters: {},
+  function loadPins() {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(PIN_KEY) || "[]"));
+    } catch (e) { return new Set(); }
+  }
+  function savePins(set) {
+    try { localStorage.setItem(PIN_KEY, JSON.stringify([...set])); }
+    catch (e) { /* ignore */ }
+  }
 
-        columns: ['id','J','k_g','families','se','is_me','search'],
+  // The v2 endpoint returns a flattened row (id, J, k_g, Lmax, library_id,
+  // search_run_id) without per-component data. To stay friendly to the
+  // family chip-filter, fall back to the v1 endpoint when the family
+  // column needs to be populated. The v2 row exposes the field as null
+  // until P3 enriches it.
+  return {
+    rows: [],
+    total: 0,
+    limit: 50,
+    offset: 0,
+    loading: false,
+    density: "comfortable",
 
-        colLabel(col) {
-            return { id:'ID', J:'J', k_g:'k_g', families:'Families',
-                     se:'se', is_me:'ME?', search:'Search' }[col] || col;
-        },
-        _rowValue(tg, col) {
-            if (col === 'families') return tg.components.map(c => c.family).join(' + ');
-            if (col === 'se')       return this.se(tg);
-            if (col === 'is_me')    return this.isMe(tg) ? 1 : 0;
-            if (col === 'search')   return tg.search_run_id;
-            return tg[col];
-        },
-        displayLabel(col, d) {
-            if (col === 'is_me') return d.value === '1' ? '✓' : '(no)';
-            if (d.value === '') return '(empty)';
-            return d.value;
-        },
+    pinned: loadPins(),
 
-        // Required by rngTableFilterMethods().
-        rowsForFilter() { return this.items; },
-        rowValue(r, key) { return this._rowValue(r, key); },
+    init() {
+      this.applyURL();
+      window.addEventListener("popstate", () => {
+        this.applyURL();
+        this.reload();
+      });
+      this.reload();
+    },
 
-        displayRows() {
-            return rngTableApply(this.items, this.sort, this.colFilters,
-                                 (r, k) => this._rowValue(r, k));
-        },
-        clickSort(key) { this.sort = rngTableToggleSort(this.sort, key); },
-        sortArrow(key)  { return rngTableSortArrow(this.sort, key); },
-        async init() {
-            const r = await fetch('/api/families');
-            this.families = await r.json();
-            const qs = new URLSearchParams(window.location.search);
-            if (qs.has('family')) {
-                this.filter.family = qs.get('family');
-                this.familyLocked = true;
-            }
-            this.reload();
-        },
-        se(tg) {
-            const r = tg.results.find(x => x.test_type === 'equidistribution');
-            return r ? r.se : null;
-        },
-        isMe(tg) {
-            const r = tg.results.find(x => x.test_type === 'equidistribution');
-            return r && r.is_me;
-        },
-        async reload() {
-            const qs = new URLSearchParams();
-            qs.set('page', this.page);
-            qs.set('per_page', 50);
-            if (this.filter.family)    qs.set('family', this.filter.family);
-            if (this.filter.test_type) qs.set('test_type', this.filter.test_type);
-            if (this.filter.max_se)    qs.set('max_se', this.filter.max_se);
-            if (this.filter.is_me)     qs.set('is_me', 'true');
-            const r = await fetch('/api/tested-generators?' + qs.toString());
-            const data = await r.json();
-            this.items = data.items;
-            this.total = data.total;
-        },
-        prev() { if (this.page > 1) { this.page--; this.reload(); } },
-        next() { this.page++; this.reload(); },
-    };
+    applyURL() {
+      const qs = new URLSearchParams(location.search);
+      this.limit = parseInt(qs.get("limit") || "50", 10);
+      this.offset = parseInt(qs.get("offset") || "0", 10);
+      this.density = qs.get("density") === "compact"
+        ? "compact" : "comfortable";
+    },
+
+    get currentPage() { return Math.floor(this.offset / this.limit) + 1; },
+    get totalPages() { return Math.max(1, Math.ceil(this.total / this.limit)); },
+    get pageWindow() {
+      const p = this.currentPage, n = this.totalPages;
+      const start = Math.max(1, p - 3);
+      const end = Math.min(n, start + 6);
+      const out = [];
+      for (let i = start; i <= end; i++) out.push(i);
+      return out;
+    },
+
+    async reload() {
+      this.loading = true;
+      const qs = new URLSearchParams(location.search);
+      qs.delete("density");
+      qs.delete("cols");
+      qs.delete("sort");
+      qs.delete("dir");
+      qs.set("limit", String(this.limit));
+      qs.set("offset", String(this.offset));
+      try {
+        const r = await fetch("/api/v2/tested-generators?" + qs.toString());
+        const data = await r.json();
+        let rows = data.rows || [];
+        // Enrich each row with its components family from v1 if not present.
+        // (Cheap: v1 /api/tested-generators returns components; we batch
+        // by fetching ids in one pass.)
+        if (rows.length && rows.every(r => r.family === undefined)) {
+          rows = await this._enrichFamilies(rows);
+        }
+        this.rows = rows;
+        this.total = data.total || 0;
+      } catch (e) {
+        console.warn("v2 tested-generators reload failed", e);
+        this.rows = []; this.total = 0;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async _enrichFamilies(rows) {
+      // The v2 endpoint's response model doesn't (yet) include a family
+      // string. Fetch the same page from v1 once, and zipper the families
+      // back in by id. This is a temporary bridge until P3 reshapes the
+      // tested-generator v2 row.
+      try {
+        const qs = new URLSearchParams(location.search);
+        qs.delete("density"); qs.delete("cols");
+        qs.delete("sort"); qs.delete("dir");
+        qs.delete("offset"); qs.delete("limit");
+        qs.set("page", String(this.currentPage));
+        qs.set("per_page", String(this.limit));
+        const r = await fetch("/api/tested-generators?" + qs.toString());
+        const data = await r.json();
+        const map = {};
+        for (const it of (data.items || [])) {
+          map[it.id] = (it.components || [])
+            .map(c => c.family).join(" + ");
+        }
+        return rows.map(r => ({ ...r, family: map[r.id] || "" }));
+      } catch (e) { return rows; }
+    },
+
+    get displayRows() {
+      const pinned = this.rows.filter(r => this.pinned.has(r.id));
+      const others = this.rows.filter(r => !this.pinned.has(r.id));
+      return [...pinned, ...others];
+    },
+
+    isPinned(id) { return this.pinned.has(id); },
+    togglePin(id) {
+      if (this.pinned.has(id)) this.pinned.delete(id);
+      else this.pinned.add(id);
+      this.pinned = new Set([...this.pinned]);
+      savePins(this.pinned);
+    },
+
+    goToPage(p) {
+      const np = Math.max(1, Math.min(this.totalPages, p));
+      const qs = new URLSearchParams(location.search);
+      qs.set("limit", String(this.limit));
+      qs.set("offset", String((np - 1) * this.limit));
+      const url = location.pathname + "?" + qs.toString();
+      history.pushState({}, "", url);
+      this.applyURL();
+      this.reload();
+    },
+  };
 }
 </script>
 {% endblock %}

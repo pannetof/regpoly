@@ -21,14 +21,18 @@ def test_column_show_hide_persists(page, base_url) -> None:
 
 def test_column_reorder_persists_in_url(page, base_url) -> None:
     page.goto(f"{base_url}/generators?cols=k,family", wait_until="networkidle")
-    headers = page.locator("table thead th")
-    if headers.count() < 2:
+    # Read only the data columns (those carry data-col-key); the leading
+    # pin column and trailing action column are always-present chrome.
+    data_keys = page.evaluate(
+        "() => Array.from(document.querySelectorAll('table thead th[data-col-key]'))"
+        "        .map(th => th.dataset.colKey)"
+    )
+    if len(data_keys) < 2:
         pytest.skip("list table not rendered yet (P2 green pending)")
-    first = headers.nth(0).inner_text().strip().lower()
-    second = headers.nth(1).inner_text().strip().lower()
-    # Order in the URL drives header order.
-    assert "k" in first or first.startswith("id")  # leading id column tolerated
-    # Either headers[0]=k or headers[1]=k, but family follows k.
+    # Order in the URL drives data-column order.
+    assert data_keys[:2] == ["k", "family"], (
+        f"?cols=k,family must order columns as k then family; got {data_keys}"
+    )
 
 
 def test_sticky_pin_keeps_row_at_top(page, base_url) -> None:

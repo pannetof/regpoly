@@ -1,373 +1,401 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import hex_value, empty_state %}
 
 {% block title %}Generators{% endblock %}
 
 {% block content %}
 {% include "partials/chip_toolbar.html" %}
 
-<div x-data="generatorPool()" x-init="init()">
+<div x-data="generatorList()" x-init="init()" data-generator-list>
 
-    <template x-if="familyLocked">
-        <p>
-            <mark class="filter-pill">
-                Family: <strong x-text="filter.family"></strong>
-                <a href="/generators" title="Clear family filter">×</a>
-            </mark>
-        </p>
-    </template>
+  <div class="d-flex align-items-baseline mb-2">
+    <h2 class="mb-0">Generators</h2>
+    <span class="ms-3 text-secondary">
+      <span x-text="total"></span> result(s),
+      page <span x-text="currentPage"></span> of <span x-text="totalPages"></span>
+    </span>
 
-    <div class="grid">
-        <label x-show="!familyLocked">Family
-            <select x-model="filter.family" @change="onFamilyChange()">
-                <option value="">(any)</option>
-                <template x-for="f in families" :key="f.name">
-                    <option :value="f.name" x-text="f.name"></option>
-                </template>
-            </select>
-        </label>
-        <label>k
-            <select x-model="filter.k" @change="onFilterChange()">
-                <option value="">(any)</option>
-                <template x-for="v in kValues" :key="v">
-                    <option :value="v" x-text="v"></option>
-                </template>
-            </select>
-        </label>
-        <label>Search
-            <select x-model="filter.search_run_id" @change="onFilterChange()">
-                <option value="">(any)</option>
-                <template x-for="v in searchRunIds" :key="v">
-                    <option :value="v" x-text="'#' + v"></option>
-                </template>
-            </select>
-        </label>
-    </div>
-
-    <template x-if="filter.family && paramSpecs.length">
-        <div class="grid">
-            <template x-for="p in paramSpecs" :key="p.name">
-                <label>
-                    <span x-text="p.name"></span>
-                    <select x-model="filter.p[p.name]" @change="onFilterChange()">
-                        <option value="">(any)</option>
-                        <template x-for="v in (paramValues[p.name] || [])" :key="v">
-                            <option :value="v" x-text="formatVal(p, v)"></option>
-                        </template>
-                    </select>
-                </label>
-            </template>
-        </div>
-    </template>
-
-    <p>
-        <span x-text="total"></span> generator(s) —
-        page <span x-text="page"></span>.
-    </p>
-
-    <table class="compact">
-        <thead>
-            <tr>
-                <template x-for="col in columns()" :key="col.key">
-                    <th class="sortable"
-                        :class="sort.key === col.key ? 'active' : ''"
-                        @click="clickSort(col.key)">
-                        <span x-text="col.label"></span>
-                        <span class="sort-arrow"
-                              x-text="sortArrow(col.key)"></span>
-                        <button type="button" class="filter-btn"
-                                :class="filterActive(col.key) ? 'active' : ''"
-                                @click.stop="toggleFilter(col.key, $event)"
-                                title="Filter">▾</button>
-                    </th>
-                </template>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody x-html="tbodyHtml()"></tbody>
-    </table>
-
-    <nav>
-        <button @click="prev()" :disabled="page <= 1">Prev</button>
-        <button @click="next()" :disabled="page * 50 >= total">Next</button>
-    </nav>
-
-    <div class="filter-popover"
-         x-show="openFilter"
-         :style="filterPopoverStyle()"
-         @click.stop
-         @click.away="openFilter = null">
-        <template x-if="openFilter">
-            <div>
-                <label class="filter-all">
-                    <input type="checkbox"
-                           :checked="allChecked(openFilter)"
-                           @change="toggleAll(openFilter)">
-                    (Select all)
-                </label>
-                <template x-for="d in filterDistinctDisplay(openFilter)"
-                          :key="d.value">
-                    <label>
-                        <input type="checkbox"
-                               :checked="isChecked(openFilter, d.value)"
-                               @change="toggleOne(openFilter, d.value)">
-                        <span class="filter-val"
-                              x-text="displayLabel(columnByKey(openFilter), d)"></span>
-                    </label>
-                </template>
-            </div>
+    <div class="ms-auto d-flex gap-2">
+      <button type="button"
+              class="btn btn-sm btn-outline-secondary dropdown-toggle"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              data-columns-menu>
+        Columns
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 12rem;">
+        <template x-for="col in allColumns" :key="col.key">
+          <li class="dropdown-item-text px-1 py-1">
+            <label class="form-check m-0">
+              <input class="form-check-input"
+                     type="checkbox"
+                     :checked="visibleColumnSet.has(col.key)"
+                     @change="toggleColumn(col.key)">
+              <span class="form-check-label" x-text="col.label"></span>
+            </label>
+          </li>
         </template>
+      </ul>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter table-hover card-table"
+             :class="density === 'compact' ? 'table-sm' : ''"
+             data-generator-table>
+        <thead>
+          <tr>
+            <th style="width: 2.2rem;" aria-label="Pin"></th>
+            <template x-for="col in visibleColumns" :key="col.key">
+              <th :class="col.mono ? 'mono' : ''"
+                  :data-col-key="col.key">
+                <span x-text="col.label"></span>
+                <button type="button"
+                        class="btn btn-icon btn-link btn-sm ms-1 p-0 align-baseline"
+                        data-col-popover
+                        @click.stop="toggleColPopover(col.key, $event)"
+                        :aria-expanded="popoverOpen === col.key"
+                        :title="'Filter ' + col.label">▾</button>
+              </th>
+            </template>
+            <th class="w-1"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="row in displayRows" :key="row.id">
+            <tr :class="isPinned(row.id) ? 'table-warning' : ''"
+                :data-row-id="row.id">
+              <td class="text-center">
+                <button type="button"
+                        class="btn btn-icon btn-link btn-sm p-0"
+                        data-pin-toggle
+                        @click="togglePin(row.id)"
+                        :aria-label="isPinned(row.id) ? 'unpin' : 'pin'"
+                        :title="isPinned(row.id) ? 'Unpin' : 'Pin to top'">
+                  <span x-text="isPinned(row.id) ? '★' : '☆'"></span>
+                </button>
+              </td>
+              <template x-for="col in visibleColumns" :key="col.key">
+                <td :class="col.mono ? 'mono' : ''"
+                    x-html="renderCell(row, col)"></td>
+              </template>
+              <td class="text-end">
+                <a class="btn btn-sm btn-link"
+                   :href="'/generators/' + row.id">view</a>
+              </td>
+            </tr>
+          </template>
+          <template x-if="!loading && rows.length === 0">
+            <tr>
+              <td :colspan="visibleColumns.length + 2"
+                  class="text-center text-secondary py-4">
+                No generators match the current filters.
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <nav class="mt-3" aria-label="Generators pagination" x-show="totalPages > 1">
+    <ul class="pagination">
+      <li class="page-item" :class="currentPage <= 1 ? 'disabled' : ''">
+        <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">
+          &laquo;
+        </a>
+      </li>
+      <template x-for="p in pageWindow" :key="p">
+        <li class="page-item" :class="p === currentPage ? 'active' : ''">
+          <a class="page-link" href="#" @click.prevent="goToPage(p)" x-text="p"></a>
+        </li>
+      </template>
+      <li class="page-item" :class="currentPage >= totalPages ? 'disabled' : ''">
+        <a class="page-link" href="#" @click.prevent="goToPage(currentPage + 1)">
+          &raquo;
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  {# Per-column popover (chip-style) #}
+  <div class="filter-popover card shadow-sm position-absolute"
+       x-show="popoverOpen"
+       :style="popoverStyle"
+       @click.stop
+       @click.away="popoverOpen = null"
+       data-col-popover-panel>
+    <div class="card-body p-2">
+      <template x-if="popoverOpen">
+        <div>
+          <p class="text-secondary small mb-2"
+             x-text="'Filter ' + (columnByKey(popoverOpen)?.label || '')"></p>
+          <div class="mb-2">
+            <input type="text"
+                   class="form-control form-control-sm"
+                   placeholder="value…"
+                   x-model="popoverDraft"
+                   @keydown.enter.prevent="applyPopover()"/>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-primary" @click="applyPopover()">Apply</button>
+            <button class="btn btn-sm btn-outline-secondary"
+                    @click="clearPopover()">Clear</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
 </div>
 
 <script>
-function generatorPool() {
-    return {
-        ...rngTableFilterMethods(),
+function generatorList() {
+  const PIN_KEY = "regpoly.gen.pinned";
+  const DEFAULT_COLS = ["family", "k", "L", "primitive", "search_run_id"];
 
-        families: [],
-        familyLocked: false,
-        paramSpecs: [],
-        paramValues: {},
-        kValues: [],
-        searchRunIds: [],
-        items: [],
-        total: 0,
-        page: 1,
+  function loadPins() {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(PIN_KEY) || "[]"));
+    } catch (e) { return new Set(); }
+  }
+  function savePins(set) {
+    try { localStorage.setItem(PIN_KEY, JSON.stringify([...set])); }
+    catch (e) { /* ignore */ }
+  }
 
-        filter: { family: '', k: '', search_run_id: '', p: {} },
-        sort: { key: null, dir: null },
-        colFilters: {},
+  return {
+    allColumns: [
+      { key: "family",         label: "Family",     mono: false },
+      { key: "k",              label: "k",          mono: false },
+      { key: "L",              label: "L",          mono: false },
+      { key: "primitive",      label: "Primitive",  mono: false },
+      { key: "char_poly",      label: "char_poly",  mono: true  },
+      { key: "hamming_weight", label: "HW",         mono: false },
+      { key: "search_run_id",  label: "Search",     mono: false },
+      { key: "found_at_try",   label: "Try",        mono: false },
+      { key: "library_id",     label: "Library",    mono: false },
+    ],
+    visibleColumns: [],
+    visibleColumnSet: new Set(),
 
-        rowsForFilter() { return this.items; },
-        rowValue(r, key) {
-            if (key.startsWith('p:')) {
-                const v = r.all_params
-                    ? r.all_params[key.slice(2)] : undefined;
-                if (Array.isArray(v)) return JSON.stringify(v);
-                return v;
-            }
-            return r[key];
-        },
+    rows: [],
+    total: 0,
+    limit: 50,
+    offset: 0,
+    loading: false,
+    density: "comfortable",
 
-        columns() {
-            const cols = [{ key: 'id', label: 'ID', mono: false }];
-            if (!this.filter.family) {
-                cols.push({ key: 'family', label: 'Family', mono: false });
-            }
-            cols.push({ key: 'k', label: 'k', mono: false });
-            cols.push({ key: 'L', label: 'L', mono: false });
-            for (const p of this.paramSpecs) {
-                cols.push({
-                    key: 'p:' + p.name, label: p.name,
-                    mono: true, paramSpec: p,
-                });
-            }
-            cols.push({ key: 'search_run_id', label: 'Search', mono: false });
-            return cols;
-        },
-        columnByKey(key) {
-            return this.columns().find(c => c.key === key)
-                || { key, label: key, mono: false };
-        },
+    pinned: loadPins(),
 
-        cellText(g, col) {
-            if (col.key.startsWith('p:')) {
-                return this.formatVal(col.paramSpec,
-                    g.all_params ? g.all_params[col.paramSpec.name] : undefined);
-            }
-            if (col.key === 'search_run_id') {
-                return g.search_run_id == null ? '' : '#' + g.search_run_id;
-            }
-            const v = g[col.key];
-            if (v === null || v === undefined) return '';
-            return String(v);
-        },
+    popoverOpen: null,
+    popoverDraft: "",
+    popoverStyle: "left: 0; top: 0; min-width: 14rem; z-index: 1080;",
 
-        displayRows() {
-            return rngTableApply(this.items, this.sort, this.colFilters,
-                                 (r, k) => this.rowValue(r, k));
-        },
+    init() {
+      this.applyURL();
+      window.addEventListener("popstate", () => {
+        this.applyURL();
+        this.reload();
+      });
+      this.reload();
+    },
 
-        _escape(s) {
-            return String(s)
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        },
-        tbodyHtml() {
-            const cols = this.columns();
-            return this.displayRows().map(g => {
-                const tds = cols.map(col => {
-                    const cls = col.mono ? ' class="mono"' : '';
-                    return `<td${cls}>${this._escape(this.cellText(g, col))}</td>`;
-                }).join('');
-                const link =
-                    `<td><a href="/generators/${g.id}">view</a></td>`;
-                return `<tr>${tds}${link}</tr>`;
-            }).join('');
-        },
+    applyURL() {
+      const qs = new URLSearchParams(location.search);
+      this.limit = parseInt(qs.get("limit") || "50", 10);
+      this.offset = parseInt(qs.get("offset") || "0", 10);
+      this.density = qs.get("density") === "compact"
+        ? "compact" : "comfortable";
 
-        displayLabel(col, d) {
-            if (col.paramSpec) return this.formatVal(col.paramSpec, d.display);
-            if (col.key === 'search_run_id') {
-                if (d.value === '' || d.value === null || d.value === undefined)
-                    return '(none)';
-                return '#' + d.value;
-            }
-            if (d.value === null || d.value === undefined || d.value === '')
-                return '(empty)';
-            return d.value;
-        },
+      const colsParam = qs.get("cols");
+      const cols = colsParam
+        ? colsParam.split(",").map(s => s.trim()).filter(Boolean)
+        : DEFAULT_COLS.slice();
+      const valid = new Set(this.allColumns.map(c => c.key));
+      const filtered = cols.filter(k => valid.has(k));
+      this.visibleColumns = (filtered.length ? filtered : DEFAULT_COLS)
+        .map(k => this.allColumns.find(c => c.key === k))
+        .filter(Boolean);
+      this.visibleColumnSet = new Set(this.visibleColumns.map(c => c.key));
+    },
 
-        clickSort(key) { this.sort = rngTableToggleSort(this.sort, key); },
-        sortArrow(key) { return rngTableSortArrow(this.sort, key); },
+    get currentPage() { return Math.floor(this.offset / this.limit) + 1; },
+    get totalPages() { return Math.max(1, Math.ceil(this.total / this.limit)); },
+    get pageWindow() {
+      const p = this.currentPage, n = this.totalPages;
+      const start = Math.max(1, p - 3);
+      const end = Math.min(n, start + 6);
+      const out = [];
+      for (let i = start; i <= end; i++) out.push(i);
+      return out;
+    },
 
-        formatVal(p, v) {
-            // Bitmask fields are pre-formatted server-side as "0x…"
-            // strings.  Here we only have to render arrays and
-            // passthrough everything else.
-            if (v === null || v === undefined) return '';
-            if (Array.isArray(v)) return '[' + v.join(', ') + ']';
-            return String(v);
-        },
+    async reload() {
+      this.loading = true;
+      const qs = new URLSearchParams(location.search);
+      // Strip ui-only params before forwarding to v2 endpoint.
+      qs.delete("density");
+      qs.delete("cols");
+      qs.delete("sort");
+      qs.delete("dir");
+      qs.set("limit", String(this.limit));
+      qs.set("offset", String(this.offset));
+      try {
+        const r = await fetch("/api/v2/generators?" + qs.toString());
+        const data = await r.json();
+        this.rows = data.rows || [];
+        this.total = data.total || 0;
+      } catch (e) {
+        console.warn("v2 generators reload failed", e);
+        this.rows = []; this.total = 0;
+      } finally {
+        this.loading = false;
+      }
+    },
 
-        async init() {
-            const res = await fetch('/api/generators/families');
-            this.families = await res.json();
+    get displayRows() {
+      const pinned = this.rows.filter(r => this.pinned.has(r.id));
+      const others = this.rows.filter(r => !this.pinned.has(r.id));
+      return [...pinned, ...others];
+    },
 
-            const qs = new URLSearchParams(window.location.search);
-            if (qs.has('family')) {
-                this.filter.family = qs.get('family');
-                this.familyLocked = true;
-            }
-            const pendingK = qs.get('k') || '';
-            const pendingSRI = qs.get('search_run_id') || '';
-            const pendingP = {};
-            for (const [k, v] of qs.entries()) {
-                if (k.startsWith('p_')) pendingP[k.slice(2)] = v;
-            }
+    columnByKey(key) {
+      return this.allColumns.find(c => c.key === key);
+    },
 
-            if (this.filter.family) {
-                const famRes = await fetch(
-                    '/api/families/' + encodeURIComponent(this.filter.family));
-                const fam = await famRes.json();
-                this.paramSpecs = fam.params;
-                const seededP = {}, seededValues = {};
-                for (const p of this.paramSpecs) {
-                    seededP[p.name] = String(pendingP[p.name] ?? '');
-                    seededValues[p.name] = [];
-                }
-                this.filter.p = seededP;
-                this.paramValues = seededValues;
-            }
-            this.filter.k = pendingK;
-            this.filter.search_run_id = pendingSRI;
+    toggleColumn(key) {
+      let cols = this.visibleColumns.map(c => c.key);
+      if (cols.includes(key)) cols = cols.filter(k => k !== key);
+      else cols.push(key);
+      const qs = new URLSearchParams(location.search);
+      qs.set("cols", cols.join(","));
+      const url = location.pathname + "?" + qs.toString();
+      history.pushState({}, "", url);
+      this.applyURL();
+    },
 
-            await this.refreshDropdowns();
-            await this.reload();
-        },
+    isPinned(id) { return this.pinned.has(id); },
+    togglePin(id) {
+      if (this.pinned.has(id)) this.pinned.delete(id);
+      else this.pinned.add(id);
+      this.pinned = new Set([...this.pinned]); // refresh reactivity
+      savePins(this.pinned);
+    },
 
-        async onFamilyChange() {
-            this.paramSpecs = [];
-            this.paramValues = {};
-            this.filter.p = {};
-            this.filter.k = '';
-            this.filter.search_run_id = '';
-            this.page = 1;
-            if (this.filter.family) {
-                const famRes = await fetch(
-                    '/api/families/' + encodeURIComponent(this.filter.family));
-                const fam = await famRes.json();
-                this.paramSpecs = fam.params;
-                const seededP = {}, seededValues = {};
-                for (const p of this.paramSpecs) {
-                    seededP[p.name] = '';
-                    seededValues[p.name] = [];
-                }
-                this.filter.p = seededP;
-                this.paramValues = seededValues;
-            }
-            await this.refreshDropdowns();
-            await this.reload();
-        },
+    goToPage(p) {
+      const np = Math.max(1, Math.min(this.totalPages, p));
+      const qs = new URLSearchParams(location.search);
+      qs.set("limit", String(this.limit));
+      qs.set("offset", String((np - 1) * this.limit));
+      const url = location.pathname + "?" + qs.toString();
+      history.pushState({}, "", url);
+      this.applyURL();
+      this.reload();
+    },
 
-        async onFilterChange() {
-            this.page = 1;
-            await this.refreshDropdowns();
-            let cleared = false;
-            if (this.filter.k !== '' &&
-                !this.kValues.map(String).includes(String(this.filter.k))) {
-                this.filter.k = '';
-                cleared = true;
-            }
-            if (this.filter.search_run_id !== '' &&
-                !this.searchRunIds.map(String)
-                    .includes(String(this.filter.search_run_id))) {
-                this.filter.search_run_id = '';
-                cleared = true;
-            }
-            for (const p of this.paramSpecs) {
-                const sel = this.filter.p[p.name];
-                if (sel !== '' && sel != null) {
-                    const avail = (this.paramValues[p.name] || []).map(String);
-                    if (!avail.includes(String(sel))) {
-                        this.filter.p[p.name] = '';
-                        cleared = true;
-                    }
-                }
-            }
-            if (cleared) await this.refreshDropdowns();
-            await this.reload();
-        },
+    toggleColPopover(key, ev) {
+      if (this.popoverOpen === key) {
+        this.popoverOpen = null;
+        return;
+      }
+      this.popoverOpen = key;
+      const qs = new URLSearchParams(location.search);
+      this.popoverDraft = qs.get(this._popoverParam(key)) || "";
+      // Anchor popover under the clicked button.
+      const rect = ev.currentTarget.getBoundingClientRect();
+      const top = rect.bottom + window.scrollY + 4;
+      const left = rect.left + window.scrollX;
+      this.popoverStyle =
+        `left: ${left}px; top: ${top}px; min-width: 14rem; z-index: 1080;`;
+    },
 
-        buildFilterQS(excludeKey = null) {
-            const qs = new URLSearchParams();
-            if (this.filter.family) qs.set('family', this.filter.family);
-            if (excludeKey !== 'k' && this.filter.k !== '')
-                qs.set('k', this.filter.k);
-            if (excludeKey !== 'search_run_id'
-                && this.filter.search_run_id !== '')
-                qs.set('search_run_id', this.filter.search_run_id);
-            for (const [k, v] of Object.entries(this.filter.p)) {
-                if (excludeKey === k) continue;
-                if (v !== '' && v != null) qs.set('p_' + k, v);
-            }
-            return qs;
-        },
+    _popoverParam(key) {
+      // Map column → URL filter parameter. Top-level facets (family/k)
+      // map directly; everything else falls back to ?p_{name}.
+      const TOPLEVEL = ["family", "k", "k_min", "k_max",
+                        "search_run_id", "primitive", "has_search_results"];
+      if (TOPLEVEL.includes(key)) return key;
+      return "p_" + key;
+    },
 
-        async refreshDropdowns() {
-            const fetchVals = async (name) => {
-                const qs = this.buildFilterQS(name);
-                qs.set('name', name);
-                const r = await fetch(
-                    '/api/generators/param-values?' + qs.toString());
-                return [name, (await r.json()).values || []];
-            };
-            const names = ['k', 'search_run_id',
-                           ...this.paramSpecs.map(p => p.name)];
-            const results = await Promise.all(names.map(fetchVals));
-            const map = Object.fromEntries(results);
-            this.kValues = map.k || [];
-            this.searchRunIds = map.search_run_id || [];
-            const filled = {};
-            for (const p of this.paramSpecs) {
-                filled[p.name] = map[p.name] || [];
-            }
-            this.paramValues = filled;
-        },
+    applyPopover() {
+      if (!this.popoverOpen) return;
+      const param = this._popoverParam(this.popoverOpen);
+      const qs = new URLSearchParams(location.search);
+      const v = (this.popoverDraft || "").trim();
+      if (v) qs.set(param, v); else qs.delete(param);
+      qs.set("offset", "0");
+      const url = location.pathname + "?" + qs.toString();
+      history.pushState({}, "", url);
+      this.popoverOpen = null;
+      this.applyURL();
+      this.reload();
+    },
 
-        async reload() {
-            const qs = this.buildFilterQS();
-            qs.set('per_page', '50');
-            qs.set('page', String(this.page));
-            const r = await fetch('/api/generators?' + qs.toString());
-            const data = await r.json();
-            this.items = data.items || [];
-            this.total = data.total || 0;
-        },
+    clearPopover() {
+      if (!this.popoverOpen) return;
+      const param = this._popoverParam(this.popoverOpen);
+      const qs = new URLSearchParams(location.search);
+      qs.delete(param);
+      qs.set("offset", "0");
+      const url = location.pathname + "?" + qs.toString();
+      history.pushState({}, "", url);
+      this.popoverOpen = null;
+      this.applyURL();
+      this.reload();
+    },
 
-        prev() { if (this.page > 1) { this.page--; this.reload(); } },
-        next() { this.page++; this.reload(); },
-    };
+    _esc(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    },
+
+    renderCell(row, col) {
+      switch (col.key) {
+        case "family":
+          return this._esc(row.family);
+        case "k":
+        case "L":
+        case "hamming_weight":
+        case "found_at_try":
+          return row[col.key] == null ? "" : this._esc(row[col.key]);
+        case "primitive": {
+          const prim = row.char_poly && row.char_poly.length > 0;
+          return prim
+            ? '<span class="badge bg-success-lt">yes</span>'
+            : '<span class="badge bg-secondary-lt">no</span>';
+        }
+        case "char_poly": {
+          const v = row.char_poly;
+          if (!v) return "";
+          // Apply table-context truncation rule (first 8 + middle 12 + last 8).
+          const s = String(v);
+          let body;
+          if (s.length > 32) {
+            const head = s.slice(0, 10);            // "0x" + 8 hex
+            const midStart = Math.floor(s.length / 2) - 6;
+            const mid = s.slice(midStart, midStart + 12);
+            const tail = s.slice(-8);
+            body = `${head}…${mid}…${tail}`;
+          } else {
+            body = s;
+          }
+          return `<span class="hex-value mono" data-hex="${this._esc(s)}"
+                        data-copy title="${this._esc(s)}">${this._esc(body)}</span>`;
+        }
+        case "search_run_id":
+          if (row.search_run_id == null) return "";
+          return `<a href="/primitive-search/${row.search_run_id}">#${row.search_run_id}</a>`;
+        case "library_id":
+          if (!row.library_id) return "";
+          return `<a href="/library/${this._esc(row.library_id)}">${this._esc(row.library_id)}</a>`;
+        default:
+          return this._esc(row[col.key]);
+      }
+    },
+  };
 }
 </script>
 {% endblock %}
