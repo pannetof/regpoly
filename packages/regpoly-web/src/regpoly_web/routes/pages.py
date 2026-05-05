@@ -10,7 +10,7 @@ backwards-compatible templates that highlight a family.
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from regpoly_web.routes.families import KNOWN_FAMILIES
 
@@ -241,17 +241,21 @@ async def library_page(request: Request):
     )
 
 
-@router.get("/library/papers", response_class=HTMLResponse)
+@router.get(
+    "/library/papers",
+    responses={
+        307: {
+            "description": "Redirect to /library?tab=papers — the "
+                           "library merge in the v2 redesign collapses "
+                           "the standalone papers page into a tab.",
+        },
+    },
+)
 async def library_papers_page(request: Request):
-    return _render(
-        request, "library/papers.html",
-        title="Papers",
-        crumbs=[
-            {"label": "Dashboard", "href": "/"},
-            {"label": "Library", "href": "/library"},
-            {"label": "Papers", "href": None},
-        ],
-    )
+    """v2 redesign — /library/papers preserved as a 307 redirect to
+    /library?tab=papers so S7.2 user-story URLs keep working without
+    a flag-day for any client that bookmarked them."""
+    return RedirectResponse(url="/library?tab=papers", status_code=307)
 
 
 @router.get("/library/{paper_id}", response_class=HTMLResponse)

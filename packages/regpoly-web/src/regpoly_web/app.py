@@ -21,8 +21,6 @@ from regpoly_web.config import (
     find_papers_dir,
 )
 from regpoly_web.database import init_sync, open_async
-from fastapi import APIRouter
-
 from regpoly_web.routes import (
     families,
     generators,
@@ -33,6 +31,7 @@ from regpoly_web.routes import (
     tempering_search,
     tested_generators,
 )
+from regpoly_web.routes.v2 import router as v2_router
 from regpoly_web.tasks.analysis import analyze_generator
 from regpoly_web.tasks.pool import TaskPool
 
@@ -144,15 +143,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(tested_generators.router, prefix="/api")
     app.include_router(import_export.router, prefix="/api")
 
-    # v2 namespace reservation — every contract change in the redesign
-    # mounts under /api/v2/. P1 ships only a healthz stub; P2+ adds the
-    # real endpoints. v1 (existing /api/) remains unchanged.
-    v2_router = APIRouter()
-
-    @v2_router.get("/healthz")
-    def _v2_healthz():
-        return {"status": "ok", "version": 2}
-
+    # v2 namespace — every contract change in the redesign mounts
+    # under /api/v2/. v1 (existing /api/) remains unchanged.
     app.include_router(v2_router, prefix="/api/v2", tags=["v2"])
     app.state.v2_router_registered = True
 
