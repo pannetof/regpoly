@@ -6,6 +6,13 @@
 
 // ══════════════════════════════════════════════════════════════════════════
 // PolVect — flat contiguous storage for l polynomials of degree ≤ degmax
+//
+// All per-vector polynomial operations (degree update, shift, XOR-shift,
+// XOR with another vector) are members of PolVect. They use
+// `this->resolution` to walk only the active coordinates; storage is
+// always sized for the maximum resolution. DualLatticeBase calls
+// set_all_polvect_resolutions() to update every basis vector's
+// resolution as the algorithm grows the basis.
 // ══════════════════════════════════════════════════════════════════════════
 
 PolVect::PolVect(int resolution_, int degmax)
@@ -23,8 +30,225 @@ void PolVect::swap(PolVect& other) {
     std::swap(resolution, other.resolution);
 }
 
+// ── Per-coordinate setters ─────────────────────────────────────────────────
+
+void PolVect::set_coord_zero(int j) {
+    if (deg == INT_MIN) return;
+    uint64_t* d = coord(j);
+    int nw = deg / WL;
+    for (int i = 0; i <= nw; i++)
+        d[i] = 0ULL;
+}
+
+void PolVect::set_coord_one(int j) {
+    set_coord_zero(j);
+    coord(j)[0] = 1ULL << 63;  // bit 0 = MSB = z^0
+    if (deg == INT_MIN) {
+        deg = 0;
+        indicemaxdeg = j;
+    }
+}
+
+void PolVect::set_coord_from_bv(int j, const BitVect& A) {
+    uint64_t* d = coord(j);
+    int nw = std::min(A.nwords(), nwords);
+    for (int w = 0; w < nw; w++)
+        d[w] = A.data()[w];
+    for (int w = nw; w < nwords; w++)
+        d[w] = 0ULL;
+
+    // Find highest degree in this coordinate.
+    // MSB-first: lowest bit position = highest polynomial degree.
+    for (int k = nw - 1; k >= 0; k--) {
+        if (d[k]) {
+            int ctz = __builtin_ctzll(d[k]);
+            int deg_j = k * WL + (WL - 1 - ctz);
+            if (deg < deg_j) {
+                deg = deg_j;
+                indicemaxdeg = j;
+            }
+            return;
+        }
+    }
+}
+
+// ── update_deg — uses __builtin_ctzll for fast scanning ───────────────────
+//
+// MSB-first: within word k, bit position p = degree k*64 + (63-p).
+// Highest degree = lowest bit position → use __builtin_ctzll.
+
+void PolVect::update_deg() {
+    int K = deg / WL;
+    int LL = deg - WL * K;
+
+    for (int k = K; k >= 0; k--) {
+        uint64_t blob = 0ULL;
+        for (int j = 0; j < resolution; j++)
+            blob |= coord(j)[k];
+        // In the top word, mask out bits for degrees above deg:
+        // degrees 0..LL within this word → bit positions (63-LL)..63.
+        if (k == K)
+            blob &= ~0ULL << (WL - 1 - LL);
+        if (blob) {
+            int ctz = __builtin_ctzll(blob);
+            deg = k * WL + (WL - 1 - ctz);
+            uint64_t mask = 1ULL << ctz;
+            for (int j = 0; j < resolution; j++) {
+                if (coord(j)[k] & mask) {
+                    indicemaxdeg = j;
+                    return;
+                }
+            }
+        }
+        LL = WL - 1;
+    }
+    deg = INT_MIN;
+    indicemaxdeg = INT_MIN;
+}
+
+// ── assign_shifted — *this = a * z^S ──────────────────────────────────────
+
+void PolVect::assign_shifted(const PolVect& a, int S) {
+    int N = (a.deg + S) / WL;
+    int nbblocks = S / WL;
+    int nbbits = S - nbblocks * WL;
+
+    if (nbbits != 0) {
+        int WLmn = WL - nbbits;
+        for (int ii = 0; ii < resolution; ii++) {
+            uint64_t* rd = coord(ii);
+            const uint64_t* ad = a.coord(ii);
+            for (int i = 0; i < nbblocks; i++)
+                rd[i] = 0ULL;
+            int i = nbblocks;
+            rd[i++] = ad[0] >> nbbits;
+            for (; i <= N; i++)
+                rd[i] = (ad[i - nbblocks] >> nbbits) | (ad[i - nbblocks - 1] << WLmn);
+        }
+    } else {
+        for (int ii = 0; ii < resolution; ii++) {
+            uint64_t* rd = coord(ii);
+            const uint64_t* ad = a.coord(ii);
+            for (int i = 0; i < nbblocks; i++)
+                rd[i] = 0ULL;
+            int i = nbblocks;
+            rd[i++] = ad[0];
+            for (; i <= N; i++)
+                rd[i] = ad[i - nbblocks];
+        }
+    }
+    deg = a.deg + S;
+    indicemaxdeg = a.indicemaxdeg;
+}
+
+// ── add_shifted — *this XOR= a * z^S in-place ─────────────────────────────
+
+void PolVect::add_shifted(const PolVect& a, int S) {
+    int nbblocks = S / WL;
+    int nbbits = S - nbblocks * WL;
+
+    if (a.deg + S == deg) {
+        int N = deg / WL;
+        if (nbbits != 0) {
+            int WLmn = WL - nbbits;
+            for (int ii = 0; ii < resolution; ii++) {
+                uint64_t* rd = coord(ii);
+                const uint64_t* ad = a.coord(ii);
+                int i = nbblocks;
+                rd[i++] ^= ad[0] >> nbbits;
+                for (; i <= N; i++)
+                    rd[i] ^= (ad[i - nbblocks] >> nbbits) | (ad[i - nbblocks - 1] << WLmn);
+            }
+        } else {
+            for (int ii = 0; ii < resolution; ii++) {
+                uint64_t* rd = coord(ii);
+                const uint64_t* ad = a.coord(ii);
+                int i = nbblocks;
+                rd[i++] ^= ad[0];
+                for (; i <= N; i++)
+                    rd[i] ^= ad[i - nbblocks];
+            }
+        }
+        indicemaxdeg = a.indicemaxdeg;
+        update_deg();
+        return;
+    }
+
+    if (a.deg + S < deg) {
+        int N = (a.deg + S) / WL;
+        if (nbbits != 0) {
+            int WLmn = WL - nbbits;
+            for (int ii = 0; ii < resolution; ii++) {
+                uint64_t* rd = coord(ii);
+                const uint64_t* ad = a.coord(ii);
+                int i = nbblocks;
+                rd[i++] ^= ad[0] >> nbbits;
+                for (; i < N; i++)
+                    rd[i] ^= (ad[i - nbblocks] >> nbbits) | (ad[i - nbblocks - 1] << WLmn);
+                rd[i] ^= (ad[i - nbblocks - 1] << WLmn);
+            }
+        } else {
+            for (int ii = 0; ii < resolution; ii++) {
+                uint64_t* rd = coord(ii);
+                const uint64_t* ad = a.coord(ii);
+                int i = nbblocks;
+                rd[i++] ^= ad[0];
+                for (; i <= N; i++)
+                    rd[i] ^= ad[i - nbblocks];
+            }
+        }
+        deg = a.deg + S;
+        indicemaxdeg = a.indicemaxdeg;
+        update_deg();
+        return;
+    }
+    // a.deg + S > deg: not reachable in lenstra's usage.
+}
+
+void PolVect::add_self_mult(const PolVect& a, int s) {
+    if (deg == INT_MIN)
+        assign_shifted(a, s);
+    else
+        add_shifted(a, s);
+}
+
+// ── assign_xor — *this = a XOR b (b may be tail-masked) ────────────────────
+
+void PolVect::assign_xor(const PolVect& a, PolVect& b) {
+    if (a.deg == b.deg) {
+        deg = a.deg;
+        int nw = a.deg / WL;
+        for (int k = nw; k >= 0; k--)
+            for (int j = 0; j < resolution; j++)
+                coord(j)[k] = a.coord(j)[k] ^ b.coord(j)[k];
+        update_deg();
+        return;
+    }
+    if (a.deg > b.deg) {
+        deg = a.deg;
+        indicemaxdeg = a.indicemaxdeg;
+        int bK = b.deg / WL;
+        int bLL = b.deg - bK * WL;
+        for (int j = 0; j < resolution; j++) {
+            uint64_t* rd = coord(j);
+            const uint64_t* ad = a.coord(j);
+            uint64_t* bd = b.coord(j);  // NOTE: b is mutated (tail masking)
+            for (int k = a.deg / WL; k > bK; k--)
+                rd[k] = ad[k];
+            // Mask out insignificant bits in b (preserves original
+            // C-code optimisation that left b's high-degree bits stale
+            // but ensured the XOR result was clean).
+            bd[bK] &= ~0ULL << (WL - bLL - 1);
+            for (int k = bK; k >= 0; k--)
+                rd[k] = ad[k] ^ bd[k];
+        }
+        return;
+    }
+    // a.deg < b.deg: not reachable in lenstra's usage.
+}
+
 // ══════════════════════════════════════════════════════════════════════════
-// DualLatticeBase construction
+// DualLatticeBase
 // ══════════════════════════════════════════════════════════════════════════
 
 DualLatticeBase::DualLatticeBase(int maxresolution, int degmax)
@@ -38,239 +262,18 @@ DualLatticeBase::DualLatticeBase(int maxresolution, int degmax)
     invperm_.resize(maxresolution);
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// Element operations — identical logic to original, using flat coord()
-// ══════════════════════════════════════════════════════════════════════════
-
-void DualLatticeBase::set_element_zero(PolVect& P, int j) {
-    if (P.deg == INT_MIN) return;
-    uint64_t* d = P.coord(j);
-    int nw = P.deg / WL;
-    for (int i = 0; i <= nw; i++)
-        d[i] = 0ULL;
-}
-
-void DualLatticeBase::set_element_one(PolVect& P, int j) {
-    set_element_zero(P, j);
-    P.coord(j)[0] = 1ULL << 63;  // bit 0 = MSB = z^0
-    if (P.deg == INT_MIN) {
-        P.deg = 0;
-        P.indicemaxdeg = j;
-    }
-}
-
-void DualLatticeBase::set_element_from_bv(PolVect& P, int j, const BitVect& A) {
-    uint64_t* d = P.coord(j);
-    int nw = std::min(A.nwords(), P.nwords);
-    for (int w = 0; w < nw; w++)
-        d[w] = A.data()[w];
-    for (int w = nw; w < P.nwords; w++)
-        d[w] = 0ULL;
-
-    // Find highest degree in this coordinate.
-    // MSB-first: lowest bit position = highest polynomial degree.
-    for (int k = nw - 1; k >= 0; k--) {
-        if (d[k]) {
-            int ctz = __builtin_ctzll(d[k]);
-            int deg_j = k * WL + (WL - 1 - ctz);
-            if (P.deg < deg_j) {
-                P.deg = deg_j;
-                P.indicemaxdeg = j;
-            }
-            return;
-        }
-    }
+void DualLatticeBase::set_all_polvect_resolutions(int r) {
+    for (auto& v : vect_) v.resolution = r;
 }
 
 int DualLatticeBase::element_norme_equal(const PolVect& P, int j, int norme) const {
     const uint64_t* d = P.coord(perm_[j]);
-    int w = norme / WL;
-    int b = 63 - (norme % WL);
+    int w = norme / PolVect::WL;
+    int b = 63 - (norme % PolVect::WL);
     return (d[w] >> b) & 1;
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// update_polvect_deg — uses __builtin_clzll for fast scanning
-// ══════════════════════════════════════════════════════════════════════════
-
-void DualLatticeBase::update_polvect_deg(PolVect& a) {
-    // MSB-first: within word k, bit position p = degree k*64 + (63-p).
-    // Highest degree = lowest bit position → use __builtin_ctzll.
-    int K = a.deg / WL;
-    int LL = a.deg - WL * K;
-
-    for (int k = K; k >= 0; k--) {
-        uint64_t blob = 0ULL;
-        for (int j = 0; j < resolution_; j++)
-            blob |= a.coord(j)[k];
-        // In the top word, mask out bits for degrees above a.deg:
-        // degrees 0..LL within this word → bit positions (63-LL)..63
-        if (k == K)
-            blob &= ~0ULL << (WL - 1 - LL);
-        if (blob) {
-            int ctz = __builtin_ctzll(blob);
-            a.deg = k * WL + (WL - 1 - ctz);
-            uint64_t mask = 1ULL << ctz;
-            for (int j = 0; j < resolution_; j++) {
-                if (a.coord(j)[k] & mask) {
-                    a.indicemaxdeg = j;
-                    return;
-                }
-            }
-        }
-        LL = WL - 1;
-    }
-    a.deg = INT_MIN;
-    a.indicemaxdeg = INT_MIN;
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// add_polvect — res = a XOR b  (EXACT logic from original code)
-// ══════════════════════════════════════════════════════════════════════════
-
-void DualLatticeBase::add_polvect(PolVect& res, PolVect& a, PolVect& b) {
-    if (a.deg == b.deg) {
-        res.deg = a.deg;
-        int nw = a.deg / WL;
-        for (int k = nw; k >= 0; k--)
-            for (int j = 0; j < resolution_; j++)
-                res.coord(j)[k] = a.coord(j)[k] ^ b.coord(j)[k];
-        update_polvect_deg(res);
-        return;
-    }
-    if (a.deg > b.deg) {
-        res.deg = a.deg;
-        res.indicemaxdeg = a.indicemaxdeg;
-        int bK = b.deg / WL;
-        int bLL = b.deg - bK * WL;
-        for (int j = 0; j < resolution_; j++) {
-            uint64_t* rd = res.coord(j);
-            const uint64_t* ad = a.coord(j);
-            uint64_t* bd = b.coord(j);  // NOTE: b is modified (tail masking)
-            for (int k = a.deg / WL; k > bK; k--)
-                rd[k] = ad[k];
-            // Mask out insignificant bits in b (same as original C code)
-            bd[bK] &= ~0ULL << (WL - bLL - 1);
-            for (int k = bK; k >= 0; k--)
-                rd[k] = ad[k] ^ bd[k];
-        }
-        return;
-    }
-    // a.deg < b.deg: should not happen in algorithm's usage
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// multbys — r = a * z^S  (EXACT logic from original code)
-// ══════════════════════════════════════════════════════════════════════════
-
-void DualLatticeBase::multbys(PolVect& r, const PolVect& a, int S) {
-    int N = (a.deg + S) / WL;
-    int nbblocks = S / WL;
-    int nbbits = S - nbblocks * WL;
-
-    if (nbbits != 0) {
-        int WLmn = WL - nbbits;
-        for (int ii = 0; ii < resolution_; ii++) {
-            uint64_t* rd = r.coord(ii);
-            const uint64_t* ad = a.coord(ii);
-            for (int i = 0; i < nbblocks; i++)
-                rd[i] = 0ULL;
-            int i = nbblocks;
-            rd[i++] = ad[0] >> nbbits;
-            for (; i <= N; i++)
-                rd[i] = (ad[i - nbblocks] >> nbbits) | (ad[i - nbblocks - 1] << WLmn);
-        }
-    } else {
-        for (int ii = 0; ii < resolution_; ii++) {
-            uint64_t* rd = r.coord(ii);
-            const uint64_t* ad = a.coord(ii);
-            for (int i = 0; i < nbblocks; i++)
-                rd[i] = 0ULL;
-            int i = nbblocks;
-            rd[i++] = ad[0];
-            for (; i <= N; i++)
-                rd[i] = ad[i - nbblocks];
-        }
-    }
-    r.deg = a.deg + S;
-    r.indicemaxdeg = a.indicemaxdeg;
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// multbys2 — r XOR= a * z^S in-place  (EXACT logic from original code)
-// ══════════════════════════════════════════════════════════════════════════
-
-void DualLatticeBase::multbys2(PolVect& r, const PolVect& a, int S) {
-    int nbblocks = S / WL;
-    int nbbits = S - nbblocks * WL;
-
-    if (a.deg + S == r.deg) {
-        int N = r.deg / WL;
-        if (nbbits != 0) {
-            int WLmn = WL - nbbits;
-            for (int ii = 0; ii < resolution_; ii++) {
-                uint64_t* rd = r.coord(ii);
-                const uint64_t* ad = a.coord(ii);
-                int i = nbblocks;
-                rd[i++] ^= ad[0] >> nbbits;
-                for (; i <= N; i++)
-                    rd[i] ^= (ad[i - nbblocks] >> nbbits) | (ad[i - nbblocks - 1] << WLmn);
-            }
-        } else {
-            for (int ii = 0; ii < resolution_; ii++) {
-                uint64_t* rd = r.coord(ii);
-                const uint64_t* ad = a.coord(ii);
-                int i = nbblocks;
-                rd[i++] ^= ad[0];
-                for (; i <= N; i++)
-                    rd[i] ^= ad[i - nbblocks];
-            }
-        }
-        r.indicemaxdeg = a.indicemaxdeg;
-        update_polvect_deg(r);
-        return;
-    }
-
-    if (a.deg + S < r.deg) {
-        int N = (a.deg + S) / WL;
-        if (nbbits != 0) {
-            int WLmn = WL - nbbits;
-            for (int ii = 0; ii < resolution_; ii++) {
-                uint64_t* rd = r.coord(ii);
-                const uint64_t* ad = a.coord(ii);
-                int i = nbblocks;
-                rd[i++] ^= ad[0] >> nbbits;
-                for (; i < N; i++)
-                    rd[i] ^= (ad[i - nbblocks] >> nbbits) | (ad[i - nbblocks - 1] << WLmn);
-                rd[i] ^= (ad[i - nbblocks - 1] << WLmn);
-            }
-        } else {
-            for (int ii = 0; ii < resolution_; ii++) {
-                uint64_t* rd = r.coord(ii);
-                const uint64_t* ad = a.coord(ii);
-                int i = nbblocks;
-                rd[i++] ^= ad[0];
-                for (; i <= N; i++)
-                    rd[i] ^= ad[i - nbblocks];
-            }
-        }
-        r.deg = a.deg + S;
-        r.indicemaxdeg = a.indicemaxdeg;
-        update_polvect_deg(r);
-        return;
-    }
-}
-
-void DualLatticeBase::add_self_polvect_mult(PolVect& res, const PolVect& a, int s) {
-    if (res.deg == INT_MIN)
-        multbys(res, a, s);
-    else
-        multbys2(res, a, s);
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// DualBase
-// ══════════════════════════════════════════════════════════════════════════
+// ── DualBase ──────────────────────────────────────────────────────────────
 
 void DualLatticeBase::dual_base(const std::vector<BitVect>& polys, const BitVect& M, int res) {
     for (int i = 0; i < maxresolution_; i++) {
@@ -278,30 +281,30 @@ void DualLatticeBase::dual_base(const std::vector<BitVect>& polys, const BitVect
         invperm_[i] = i;
     }
     resolution_ = res;
+    set_all_polvect_resolutions(res);
 
     vb(0).zero_lazy();
-    set_element_from_bv(vb(0), 0, M);
+    vb(0).set_coord_from_bv(0, M);
 
     for (int i = 1; i < res; i++) {
         vb(i).zero_lazy();
-        set_element_from_bv(vb(i), 0, polys[i]);
-        set_element_one(vb(i), i);
+        vb(i).set_coord_from_bv(0, polys[i]);
+        vb(i).set_coord_one(i);
     }
 }
 
 void DualLatticeBase::dual_base_increase(const std::vector<BitVect>& polys) {
     resolution_++;
+    set_all_polvect_resolutions(resolution_);
     int newi = resolution_ - 1;
     for (int j = 0; j <= newi - 1; j++)
-        set_element_zero(vb(j), newi);
+        vb(j).set_coord_zero(newi);
     vb(newi).zero_lazy();
-    set_element_from_bv(vb(newi), 0, polys[newi]);
-    set_element_one(vb(newi), newi);
+    vb(newi).set_coord_from_bv(0, polys[newi]);
+    vb(newi).set_coord_one(newi);
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// Lenstra helpers
-// ══════════════════════════════════════════════════════════════════════════
+// ── Lenstra helpers ───────────────────────────────────────────────────────
 
 void DualLatticeBase::renumber(int m, int resolution) {
     int min_val = INT_MAX;
@@ -358,7 +361,8 @@ void DualLatticeBase::permute_coord(int m) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// Lenstra's algorithm — EXACT logic from original code
+// Lenstra's algorithm — EXACT logic as before, now in terms of PolVect
+// methods (renamed for clarity).
 // ══════════════════════════════════════════════════════════════════════════
 
 int DualLatticeBase::lenstra(int res) {
@@ -370,6 +374,8 @@ int DualLatticeBase::lenstra(int res) {
 
     PolVect temp(maxresolution_, degmax_);
     PolVect sum(maxresolution_, degmax_);
+    temp.resolution = resolution_;
+    sum.resolution = resolution_;
 
     while (m < resolution) {
         renumber(m, resolution);
@@ -383,7 +389,7 @@ int DualLatticeBase::lenstra(int res) {
             if (x[i]) {
                 int Normebi = vb(i).deg;
                 int s = Normebmp1 - Normebi;
-                add_self_polvect_mult(sum, vb(i), s);
+                sum.add_self_mult(vb(i), s);
             }
         }
 
@@ -392,7 +398,7 @@ int DualLatticeBase::lenstra(int res) {
             temp.swap(vb(m + 1));
             swap_flag = 1;
         } else {
-            add_polvect(temp, vb(m + 1), sum);
+            temp.assign_xor(vb(m + 1), sum);
             swap_flag = 0;
         }
 
