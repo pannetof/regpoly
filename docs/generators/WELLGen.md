@@ -6,14 +6,16 @@
 
 Well Equidistributed Long-period Linear (WELL) generators. The state
 is r words of w bits stored in a circular buffer. The recurrence uses
-8 transformation matrices (T0 through T7) applied to combinations of
-state words at configurable offsets, providing high flexibility in
-tuning equidistribution properties.
+8 algorithm slots T0..T7. Each slot is filled with a transformation
+class Mi (i=0..6) from Table I of Panneton et al. (2006); the M-class
+table further down lists each class's formula.
 
 ## Mathematical recurrence
 
-The state consists of r words V[0], V[1], ..., V[r-1] in a circular
-buffer indexed by i. At each step:
+Slots T0..T7 are positions in the WELL recurrence; each is filled with
+one of the M0..M6 classes per the parameter table. The state consists
+of r words V[0], V[1], ..., V[r-1] in a circular buffer indexed by i.
+At each step:
 
 ```
 z0 = (V[(i+r-1) % r] & upper_mask) | (V[(i+r-2) % r] & lower_mask)
@@ -36,29 +38,40 @@ lower_mask = bits p-1 down to 0    (bottom p bits)
 
 ### Transformation matrix types
 
-Each of the 8 matrices T0-T7 is one of the following types:
+Each of the 8 algorithm slots T0..T7 is filled with one of the seven
+M-class transformations from paper Table I:
 
-| Type | Name       | Formula | Parameters |
-|------|------------|---------|------------|
-| 0    | T0         | `v XOR (v >> s)` | `s` (shift amount, in `paramsint[0]`) |
-| 1    | Identity   | `v` | none |
-| 2    | T2         | `if LSB(v) then (v >> 1) XOR a else (v >> 1)` | `a` (mask, in `paramsulong[0]`) |
-| 3    | T3         | `v >> s` | `s` (shift amount, in `paramsint[0]`) |
-| 4    | T4         | `v XOR ((v >> s) & a)` | `s` (in `paramsint[0]`), `a` (mask, in `paramsulong[0]`) |
-| 5    | T5         | `rotate(v, s) & b XOR (if v & c then a else 0)` | `s` (in `paramsint[0]`), `a` (in `paramsulong[0]`), `b` (in `paramsulong[1]`), `c` (in `paramsulong[2]`) |
-| 6    | T6         | `v XOR (v >> s1) XOR (v >> s2) XOR (v >> s3)` | `s1, s2, s3` (in `paramsint[0..2]`) |
-| 7    | ZERO       | `0` | none |
+| Type | Paper Mi         | Formula | Parameters |
+|------|------------------|---------|------------|
+| 0    | M0               | `y = 0` | none |
+| 1    | M1               | `y = x` (identity) | none |
+| 2    | M2(t)            | `y = x ≫ t` if `t ≥ 0`, else `x ≪ −t` | `t` ∈ `paramsint[0]` |
+| 3    | M3(t)            | `y = x ⊕ shift(x, t)` (same sign rule as M2) | `t` ∈ `paramsint[0]` |
+| 4    | M4(a)            | `y = (x ≫ 1) ⊕ a` if LSB(x), else `x ≫ 1` | `a` ∈ `paramsulong[0]` |
+| 5    | M5(t, b)         | `y = x ⊕ (shift(x, t) & b)` | `t` ∈ `paramsint[0]`, `b` ∈ `paramsulong[0]` |
+| 6    | M6\*(q, a, b, c) | `y = (rotate_left(x, q) & b) ⊕ (a if (x & c) else 0)` | `q` ∈ `paramsint[0]`, `a, b, c` ∈ `paramsulong[0..2]` |
+
+**M6\*** is a strict generalisation of paper Table I's M6: arguments
+`b` and `c` are full 32-bit masks, supersetting the paper's
+parametric `d_s` and `x_t = 1` test. Setting `b = ~0`,
+`c = (1 << t)`, and `a` as published reproduces the exact paper
+formula.
+
+**Bit-indexing convention.** `LSB(x)` corresponds to the paper's
+`x_{w-1}` under the column-vector convention of §1.
 
 Each matrix entry has:
-- `type`: integer 0-7 selecting the formula
+- `type`: integer 0-6 selecting the Mi class
 - `paramsint[0..2]`: up to 3 integer parameters (shift amounts)
 - `paramsulong[0..2]`: up to 3 unsigned parameters (bitmasks)
 
 ### Computational cost
 
-Each type has an associated cost (number of operations):
-T0=3, T1=1, T2=5, T3=2, T4=4, T5=8, T6=7, T7=0. The total cost of a
-generator is the sum of the costs of its 8 matrices.
+Each Mi class has an associated cost (number of operations):
+M0=0, M1=1, M2=2, M3=3, M4=5, M5=4, M6=8. Costs are not monotonic in
+M-index (M4 > M5) because conditional XOR is more expensive than
+masked shift on most architectures. The total cost of a generator is
+the sum over its 8 algorithm slots, repeating Mi costs as needed.
 
 ## Parameters
 
@@ -70,7 +83,7 @@ generator is the sum of the costs of its 8 matrices.
 | `m1`        | `int`      | search     | `range` (1 to r-1) | Offset to first tap word |
 | `m2`        | `int`      | search     | `range` (1 to r-1) | Offset to second tap word |
 | `m3`        | `int`      | search     | `range` (1 to r-1) | Offset to third tap word |
-| `mat_types` | `int_vec`  | search     | `none` (must be provided) | List of 8 integers: the type (0-7) for each matrix T0-T7 |
+| `mat_types` | `int_vec`  | search     | `none` (must be provided) | List of 8 integers: the Mi class index (0–6) for each algorithm slot T0..T7 |
 | `mat_pi`    | `int_vec`  | search     | `none` (must be provided) | Flat list of 24 integers: 3 integer params per matrix (8 x 3) |
 | `mat_pu`    | `uint_vec` | search     | `none` (must be provided) | Flat list of 24 unsigned integers: 3 unsigned params per matrix (8 x 3) |
 
@@ -95,14 +108,14 @@ Classical examples:
 
 ## Search examples
 
-### WELL512-class with known matrix configuration
+### WELL512a (paper Table II)
 
 ```yaml
 search:
   family: WELLRNG
   L: 32
   limit:
-    max_tries: 50000
+    max_tries: 1
 
 structural_params:
   w: 32
@@ -110,19 +123,20 @@ structural_params:
   p: 0
 
 fixed_params:
-  m1:                # randomized in [1, 15]
-  m2:                # randomized in [1, 15]
-  m3:                # randomized in [1, 15]
-  mat_types: [0, 1, 0, 3, 4, 1, 6, 7]
-  mat_pi:
-    # T0(s=13), T1=Id, T2=T0(s=9), T3=T3(s=5), T4=T4(s=18), T5=Id, T6=T6(s1=1,s2=7,s3=15), T7=Zero
-    [13, 0, 0,   0, 0, 0,   9, 0, 0,   5, 0, 0,   18, 0, 0,   0, 0, 0,   1, 7, 15,   0, 0, 0]
-  mat_pu:
-    # Unsigned params: only T4 needs a mask at index 4*3=12
-    [0, 0, 0,   0, 0, 0,   0, 0, 0,   0, 0, 0,   0xD3E43FCD, 0, 0,   0, 0, 0,   0, 0, 0,   0, 0, 0]
+  m1: 13
+  m2: 9
+  m3: 5
+  # T0=M3(-16), T1=M3(-15), T2=M3(11), T3=M0,
+  # T4=M3(-2),  T5=M3(-18), T6=M2(-28), T7=M5(-5, a1)
+  mat_types: [3, 3, 3, 0, 3, 3, 2, 5]
+  mat_pi:    [-16, 0, 0,  -15, 0, 0,  11, 0, 0,    0, 0, 0,
+               -2, 0, 0,  -18, 0, 0,  -28, 0, 0,  -5, 0, 0]
+  # Only slot T7 (an M5 instance) carries a mask at index 7*3=21.
+  mat_pu:    [0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0,
+              0, 0, 0,    0, 0, 0,    0, 0, 0,    0xda442d24, 0, 0]
 ```
 
-### WELL19937 with fixed offsets and matrix types
+### WELL19937a (paper Table II)
 
 ```yaml
 search:
@@ -141,12 +155,19 @@ fixed_params:
   m1: 70
   m2: 179
   m3: 449
-  mat_types: [0, 1, 0, 3, 4, 1, 6, 7]
-  mat_pi:  [25, 0, 0,   0, 0, 0,   27, 0, 0,   7, 0, 0,   22, 0, 0,   0, 0, 0,   3, 11, 19,   0, 0, 0]
-  mat_pu:  [0, 0, 0,    0, 0, 0,   0, 0, 0,    0, 0, 0,    0xE73C5628, 0, 0,   0, 0, 0,   0, 0, 0,   0, 0, 0]
+  # T0=M3(-25), T1=M3(27), T2=M2(9), T3=M3(1),
+  # T4=M1,      T5=M3(-9), T6=M3(-21), T7=M3(21)
+  mat_types: [3, 3, 2, 3, 1, 3, 3, 3]
+  mat_pi:    [-25, 0, 0,  27, 0, 0,   9, 0, 0,   1, 0, 0,
+                0, 0, 0,  -9, 0, 0, -21, 0, 0,  21, 0, 0]
+  mat_pu:    [0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0,
+              0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0]
 ```
 
-### Minimal cost WELL1024 (only identity and zero matrices)
+### Minimal-cost WELL1024 search shape (synthetic)
+
+This is not a published generator; it shows the parameter shape for a
+search that explores only the cheap M-classes (M0, M1, M2, M3).
 
 ```yaml
 search:
@@ -164,9 +185,12 @@ fixed_params:
   m1:                # randomized
   m2:                # randomized
   m3:                # randomized
-  mat_types: [0, 1, 3, 3, 0, 1, 0, 7]
-  mat_pi:  [16, 0, 0,   0, 0, 0,   15, 0, 0,   11, 0, 0,   19, 0, 0,   0, 0, 0,   4, 0, 0,   0, 0, 0]
-  mat_pu:  [0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0,   0, 0, 0,   0, 0, 0]
+  # Slot classes: M3, M1, M2, M2, M3, M1, M3, M0 — no masks needed.
+  mat_types: [3, 1, 2, 2, 3, 1, 3, 0]
+  mat_pi:    [16, 0, 0,   0, 0, 0,  15, 0, 0,  11, 0, 0,
+              19, 0, 0,   0, 0, 0,   4, 0, 0,   0, 0, 0]
+  mat_pu:    [0, 0, 0,    0, 0, 0,   0, 0, 0,   0, 0, 0,
+              0, 0, 0,    0, 0, 0,   0, 0, 0,   0, 0, 0]
 ```
 
 ---

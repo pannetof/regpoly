@@ -37,7 +37,9 @@ private:
     int r_;
     int p_;         // output mask bits
     int m1_, m2_, m3_;
-    std::vector<MatrixEntry> matrices_;  // 8 entries
+    // 8 algorithm slots T0..T7 in the WELL recurrence; each slot's
+    // class is one of M0..M6 from Table I of Panneton et al. (2006).
+    std::vector<MatrixEntry> matrices_;
     int i_;         // circular buffer pointer
     int state_bits_; // w * r (full state size for circular buffer)
     uint64_t maskp_;   // UPPER mask: p least significant bits

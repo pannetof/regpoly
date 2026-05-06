@@ -457,6 +457,20 @@ read_carry(std::ifstream& f, int L, const std::string& filename) {
             mat_pu.push_back(parse_hex(toks[idx++], filename));
         }
 
+        // Remap legacy 0..7 type indices to paper Mi (0..6) in memory.
+        // The .dat file on disk is unchanged. Old type 6 (multi-shift
+        // XOR) has no paper equivalent and is rejected.
+        static const int OLD_TO_NEW[8] = {3, 1, 4, 2, 5, 6, -1, 0};
+        for (int& t : mat_types) {
+            if (t < 0 || t >= 8 || OLD_TO_NEW[t] < 0)
+                throw std::runtime_error(
+                    "legacy_reader: carry .dat in " + filename
+                    + " uses obsolete WELL transformation type "
+                    + std::to_string(t)
+                    + " (no paper Mi equivalent; was the multi-shift extension)");
+            t = OLD_TO_NEW[t];
+        }
+
         Params pp;
         pp.set_int("w", w);
         pp.set_int("r", r);

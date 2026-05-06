@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <stdexcept>
 #include <vector>
 
 #include "legacy_reader.h"
@@ -171,12 +172,56 @@ TEST(LegacyReader, CarrySpecsFromFixture) {
     EXPECT_EQ(specs.front().params.get_int_vec("mat_types").size(), 8u);
     EXPECT_EQ(specs.front().params.get_int_vec("mat_pi").size(), 24u);
     EXPECT_EQ(specs.front().params.get_uint_vec("mat_pu").size(), 24u);
+
+    // .dat row 1 raw types are {0, 0, 3, 0, 1, 0, 0, 0} (legacy 0..7).
+    // After the in-memory OLD_TO_NEW remap they should read as paper
+    // Mi (M3, M3, M2, M3, M1, M3, M3, M3) — exactly WELL19937a.
+    EXPECT_EQ(specs.front().params.get_int_vec("mat_types"),
+              (std::vector<int>{3, 3, 2, 3, 1, 3, 3, 3}));
+
+    // Anti-regression: the remap must not perturb pi or pu.
+    EXPECT_EQ(specs.front().params.get_int_vec("mat_pi"),
+              (std::vector<int>{
+                  -25, 0, 0,  27, 0, 0,   9, 0, 0,   1, 0, 0,
+                    0, 0, 0,  -9, 0, 0, -21, 0, 0,  21, 0, 0}));
+    EXPECT_EQ(specs.front().params.get_uint_vec("mat_pu"),
+              std::vector<uint64_t>(24, 0));
 }
 
 TEST(LegacyReader, CarryBuildsGenerators) {
     auto gens = read_generators(fix("carry32_624_31_final.dat"), 32);
     ASSERT_EQ(gens.size(), 1u);
     EXPECT_EQ(gens.front()->name(), "Carry Generator");
+}
+
+TEST(LegacyReader, RejectsObsoleteWellType6) {
+    // Synthesise a minimal carry .dat whose first slot uses old type 6
+    // (multi-shift XOR). This had no paper Mi equivalent and was
+    // dropped by the M0..M6 rename — the reader must throw.
+    auto tmp = fs::temp_directory_path() / "well_type6_reject.dat";
+    {
+        std::ofstream f(tmp);
+        f << "carry\n"
+          << "32 16 0\n"
+          << "1\n"
+          // m1 m2 m3 then 8 slots of (type, pi[3], pu[3] hex).
+          << " 1 2 3"
+          << "   6 1 0 0 00000000 00000000 00000000"
+          << "   1 0 0 0 00000000 00000000 00000000"
+          << "   1 0 0 0 00000000 00000000 00000000"
+          << "   1 0 0 0 00000000 00000000 00000000"
+          << "   1 0 0 0 00000000 00000000 00000000"
+          << "   1 0 0 0 00000000 00000000 00000000"
+          << "   1 0 0 0 00000000 00000000 00000000"
+          << "   1 0 0 0 00000000 00000000 00000000\n";
+    }
+    EXPECT_THROW(read_generator_specs(tmp.string(), 32), std::runtime_error);
+    try {
+        read_generator_specs(tmp.string(), 32);
+    } catch (const std::runtime_error& e) {
+        EXPECT_NE(std::string(e.what()).find("obsolete"), std::string::npos);
+    }
+    fs::remove(tmp);
 }
 
 // ── Matsumoto ─────────────────────────────────────────────────────────

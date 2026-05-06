@@ -28,6 +28,7 @@ add_executable(regpoly_cpp_tests
     test_seek_config.cpp
     test_catalog.cpp
     test_legacy_reader.cpp
+    test_well_byte_for_byte.cpp
     test_tempering_optimizer.cpp
     test_tempering_search.cpp
     test_yaml_cpp_smoke.cpp

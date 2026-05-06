@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <sstream>
 #include <iomanip>
+#include <stdexcept>
 
 WELLGen::WELLGen(int w, int r, int p, int m1, int m2, int m3,
                      const std::vector<MatrixEntry>& matrices, int L)
@@ -21,28 +22,33 @@ std::string WELLGen::name() const { return "Carry Generator"; }
 // ── Display matching POL output ─────────────────────────────────────────
 
 int WELLGen::type_cost(int type) {
-    static const int costs[] = {3, 1, 5, 2, 4, 8, 7, 0};
-    return (type >= 0 && type < 8) ? costs[type] : 0;
+    // Costs indexed by Mi class (paper Table I, M0..M6).
+    // Intentionally non-monotonic: M4 (conditional XOR) is dearer than
+    // M5 (masked shift) on most architectures.
+    static const int costs[7] = {0, 1, 2, 3, 5, 4, 8};
+    return (type >= 0 && type < 7) ? costs[type] : 0;
 }
 
 std::string WELLGen::type_display(int type, const int* pi, const uint64_t* pu) {
     std::ostringstream oss;
     switch (type) {
-        case 0: oss << "T0(" << pi[0] << ")"; break;
-        case 1: oss << "Identity"; break;
-        case 2: oss << "T2(" << std::hex << std::setfill('0') << std::setw(8)
+        case 0: oss << "M0"; break;
+        case 1: oss << "M1"; break;
+        case 2: oss << "M2(" << pi[0] << ")"; break;
+        case 3: oss << "M3(" << pi[0] << ")"; break;
+        case 4: oss << "M4(" << std::hex << std::setfill('0') << std::setw(8)
                     << (unsigned)(pu[0] & M32) << std::dec << ")"; break;
-        case 3: oss << "T3(" << pi[0] << ")"; break;
-        case 4: oss << "T4(" << pi[0] << "," << std::hex << std::setfill('0')
-                    << std::setw(8) << (unsigned)(pu[0] & M32) << std::dec << ")"; break;
-        case 5: oss << "T5(" << pi[0] << ","
+        case 5: oss << "M5(" << pi[0] << ","
+                    << std::hex << std::setfill('0') << std::setw(8)
+                    << (unsigned)(pu[0] & M32) << std::dec << ")"; break;
+        // M6* is a strict generalisation of paper Table I's M6: the three
+        // pu masks supersede the paper's parametric (d_s, x_t-test, a).
+        case 6: oss << "M6*(" << pi[0] << ","
                     << std::hex << std::setfill('0')
                     << std::setw(8) << (unsigned)(pu[0] & M32) << ","
                     << std::setw(8) << (unsigned)(pu[1] & M32) << ","
                     << std::setw(8) << (unsigned)(pu[2] & M32) << std::dec << ")"; break;
-        case 6: oss << "T6(" << pi[0] << "," << pi[1] << "," << pi[2] << ")"; break;
-        case 7: oss << "ZERO"; break;
-        default: oss << "Unknown"; break;
+        default: oss << "Unknown(" << type << ")"; break;
     }
     return oss.str();
 }
@@ -58,6 +64,8 @@ std::string WELLGen::display_str() const {
         << "  m3=" << std::setw(3) << m3_
         << "  wordno= " << std::setw(3) << 0;
     int cost = 0;
+    // 8 algorithm slots in the WELL recurrence (T0..T7); each slot's
+    // class is one of M0..M6 from paper Table I.
     for (int j = 0; j < 8 && j < (int)matrices_.size(); j++) {
         oss << "\nA_" << j << " = "
             << type_display(matrices_[j].type,
@@ -112,28 +120,34 @@ uint64_t WELLGen::ShiftR(uint64_t v, int s) {
 }
 
 // apply_matrix: all arithmetic in 32-bit semantics.
+//
+// `type` is a paper Mi class index (0..6) from Table I of
+// Panneton, L'Ecuyer & Matsumoto (2006). M6* is a strict
+// generalisation of paper M6 — the three pu masks supersede the
+// paper's parametric (d_s, x_t-test, a). The default branch
+// preserves identity-fallback so that mid-search candidates with
+// out-of-range types degrade silently rather than crash inside next();
+// from_params() is the fail-fast gate.
 uint64_t WELLGen::apply_matrix(int type, uint64_t v, const int* pi, const uint64_t* pu) {
     v &= M32;
     switch (type) {
-        case 0:
-            return (v ^ ShiftR(v, pi[0])) & M32;
-        case 1:
+        case 0:  // M0 — zero
+            return 0;
+        case 1:  // M1 — identity
             return v;
-        case 2:
-            return (v & 1) ? (((v >> 1) ^ pu[0]) & M32) : (v >> 1);
-        case 3:
+        case 2:  // M2(t) — shift
             return ShiftR(v, pi[0]);
-        case 4:
+        case 3:  // M3(t) — x ⊕ shift(x, t)
+            return (v ^ ShiftR(v, pi[0])) & M32;
+        case 4:  // M4(a) — MT-style: (v>>1) ⊕ a if LSB(v) else (v>>1)
+            return (v & 1) ? (((v >> 1) ^ pu[0]) & M32) : (v >> 1);
+        case 5:  // M5(t, b) — x ⊕ (shift(x, t) & b)
             return (v ^ (ShiftR(v, pi[0]) & pu[0])) & M32;
-        case 5: {
+        case 6: {  // M6*(q, a, b, c) — rotate, mask, conditional XOR
             uint64_t cond = v & pu[2];
             uint64_t rot = (((v << pi[0]) | (v >> (32 - pi[0]))) & pu[1]) & M32;
             return (rot ^ (cond ? pu[0] : 0ULL)) & M32;
         }
-        case 6:
-            return (v ^ ShiftR(v, pi[0]) ^ ShiftR(v, pi[1]) ^ ShiftR(v, pi[2])) & M32;
-        case 7:
-            return 0;
         default:
             return v;
     }
@@ -223,6 +237,16 @@ std::unique_ptr<Generator> WELLGen::from_params(const Params& params, int L) {
             matrices[j].paramsulong[x] = (idx < (int)mat_pu_u64.size())
                 ? mat_pu_u64[idx] : 0;
         }
+    }
+    // Fail-fast on out-of-range type indices. The paper Mi numbering
+    // is 0..6; the legacy 0..7 numbering pre-dates the M0..M6 rename.
+    for (int j = 0; j < 8; j++) {
+        if (matrices[j].type < 0 || matrices[j].type > 6)
+            throw std::out_of_range(
+                "WELLGen: mat_types[" + std::to_string(j) + "] = "
+                + std::to_string(matrices[j].type)
+                + " is not a paper Mi class (0..6). The 0..7 numbering "
+                  "predates the M0..M6 rename; re-export legacy YAMLs.");
     }
     return std::make_unique<WELLGen>(w, r, p, m1, m2, m3, matrices, L);
 }
