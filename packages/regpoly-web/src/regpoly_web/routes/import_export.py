@@ -112,6 +112,24 @@ async def _import_one_generators_file(
 
     family_raw = data["family"]
     family = resolve_family(family_raw)
+
+    # WELL YAMLs predating the M0..M6 rename use a different mat_types
+    # numbering. PyYAML strips comments, so a body key is the only
+    # reliable marker. The renumbering script in shared/yaml/... adds
+    # `mat_types_version: 2` at the top level; reject any WELL upload
+    # without it. Operators with private legacy YAMLs can re-export
+    # them through a current regpoly-web instance, or run the
+    # migrate_well_mat_types CLI on the source DB.
+    if family == "WELLGen":
+        v = data.get("mat_types_version")
+        if v != 2:
+            raise HTTPException(
+                400,
+                f"WELL YAML at {path} is missing 'mat_types_version: 2'. "
+                "It may pre-date the M0..M6 rename; re-export from a "
+                "current regpoly-web instance, or run "
+                "'migrate_well_mat_types' on the source DB first.",
+            )
     common = data.get("common") or {}
     generators = data.get("generators") or []
 
