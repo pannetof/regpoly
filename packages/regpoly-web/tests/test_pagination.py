@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2 red — server-side pagination on /api/v2/ list endpoints.
 
 Every v2 list endpoint follows the same contract:

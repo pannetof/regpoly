@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """SSE event-stream parser for contract tests.
 
 Splits a text event-stream body into a list of (name, data) tuples

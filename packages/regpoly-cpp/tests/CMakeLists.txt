@@ -19,6 +19,7 @@ add_executable(regpoly_cpp_tests
     test_smoke.cpp
     test_combination.cpp
     test_combined_generator.cpp
+    test_default_test_method.cpp
     test_primitive_search.cpp
     test_primitivity.cpp
     test_random_samplers.cpp
@@ -33,6 +34,7 @@ add_executable(regpoly_cpp_tests
 )
 target_include_directories(regpoly_cpp_tests PRIVATE
     ../src/include/algebra
+    ../src/include/analyses
     ../src/include/core
     ../src/include/generators
     ../src/include/transforms

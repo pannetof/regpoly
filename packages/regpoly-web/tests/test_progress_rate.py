@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 3 red — Rolling-rate helper, keyed by run_id.
 
 The helper is a 5-second rolling window over (timestamp, tries) samples

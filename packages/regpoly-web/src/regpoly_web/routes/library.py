@@ -1,8 +1,12 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """API for the published-generators library (paper-centric)."""
 
 from __future__ import annotations
 
 import asyncio
+import logging
 import uuid
 from concurrent.futures import Future
 
@@ -14,31 +18,74 @@ from regpoly_web.param_format import (
     format_gen_params,
     format_tempering_list,
 )
-from regpoly_web.routes.families import _markdown_to_html
+from regpoly_web.routes.families import _KNOWN_TESTS, _markdown_to_html
 from regpoly_web.tasks.library_test import run_library_test
 
 router = APIRouter()
+log = logging.getLogger(__name__)
 
 
-# Canonical names of families whose characteristic polynomial is
-# reducible due to SIMD-lane redundancy.  YAML entries can spell these
-# in several legacy forms (``SFMT``, ``dSFMT``, ``DSFMT``, ``MTGP`` …),
-# so callers must normalise via :func:`resolve_family` before checking.
-_SIMD_FAMILIES = {"SFMTGen", "DSFMTGen", "MTGPGen", "RMT64Gen"}
+# Methods whose recommendation indicates a reducible characteristic
+# polynomial (so harase, which assumes primitive χ, must be rejected).
+# Used as a guard against explicit user overrides; the rule itself
+# lives in C++ Generator::default_test_method.
+_REDUCIBLE_CHI_METHODS = frozenset({"notprimitive", "simd_notprimitive"})
 
 
-def _has_reducible_chi(g: Generator) -> bool:
-    """True iff χ of this combined generator is provably reducible
-    (combined generators have χ = ∏ χ_j; SIMD-lane families carry
-    redundant bits that factor the per-component χ)."""
-    from regpoly.core.generator import resolve_family
-    if len(g.components) > 1:
-        return True
-    fams = {
-        resolve_family(c.get("family", ""), c.get("params") or {})
-        for c in g.components
-    }
-    return bool(fams & _SIMD_FAMILIES)
+def _default_test_methods_for(g: Generator) -> dict[str, str | None]:
+    """Build the per-test-type default-method map for a catalog entry.
+
+    Instantiates the generator (read-only — no DB writes) and asks the
+    underlying C++ Generator for its recommendation per test type.
+    Returns ``{test_type: method | None}`` covering every entry in
+    ``_KNOWN_TESTS``. Synchronous; expensive (Berlekamp-Massey on χ
+    for some non-SIMD scalar families), so callers wrap in
+    asyncio.to_thread and consult ``_default_test_methods_cached``
+    to amortise the cost across requests.
+    """
+    import regpoly._regpoly_cpp as _cpp
+    from regpoly.core.combination import Combination
+    from regpoly.core.combination_build import build_combinaison_inputs
+
+    gen_lists, temperings = build_combinaison_inputs(g.components, g.Lmax)
+    comb = Combination.CreateFromFiles(gen_lists, g.Lmax, temperings)
+    comb.reset()
+
+    if comb.J == 1:
+        cpp_gen = comb[0]._cpp_gen
+    else:
+        gens = [comb[j]._cpp_gen for j in range(comb.J)]
+        trans = [
+            [t._cpp_trans for t in comp.trans if hasattr(t, '_cpp_trans')]
+            for comp in comb.components
+        ]
+        cpp_gen = _cpp.CombinedGenerator(gens, trans, comb.L)
+
+    return {t: cpp_gen.default_test_method(t) for t in _KNOWN_TESTS}
+
+
+async def _default_test_methods_cached(
+    request: Request, paper: Paper, g: Generator,
+) -> dict[str, str | None]:
+    """Process-local cache around _default_test_methods_for.
+
+    Keyed by ``(gen_id, paper.source_mtime)`` — when the YAML file
+    backing the paper is edited and reload_if_stale picks up the new
+    mtime, the cache key changes and the entry is recomputed
+    automatically. The cache lives on app.state for the lifetime of
+    the FastAPI process; entries from older mtimes become unreachable
+    once any caller re-asks (memory grows by O(catalog size) at most).
+    """
+    cache: dict[tuple[str, float], dict[str, str | None]] = (
+        getattr(request.app.state, "_default_methods_cache", None)
+        or {})
+    request.app.state._default_methods_cache = cache
+    key = (g.id, float(getattr(paper, "source_mtime", 0.0)))
+    if key in cache:
+        return cache[key]
+    result = await asyncio.to_thread(_default_test_methods_for, g)
+    cache[key] = result
+    return result
 
 
 def _catalog(request: Request) -> Catalog:
@@ -221,6 +268,22 @@ async def get_generator(request: Request, gen_id: str) -> dict:
     row["instantiated"] = await _instantiated_ids(
         request.app.state.db, g.id)
     row["paper"] = _paper_summary(paper)
+    if g.valid:
+        try:
+            row["default_test_methods"] = await _default_test_methods_cached(
+                request, paper, g)
+        except (FileNotFoundError, KeyError, ValueError) as e:
+            # Catalog/parameter issue: log and degrade gracefully so
+            # rendering still succeeds. Other exception classes are
+            # let through so they surface as 500s instead of becoming
+            # invisible "no recommendation" UI states.
+            log.warning(
+                "default_test_methods unavailable for %s: %s", g.id, e,
+            )
+            row["default_test_methods"] = {
+                t: None for t in _KNOWN_TESTS}
+    else:
+        row["default_test_methods"] = {t: None for t in _KNOWN_TESTS}
     return row
 
 
@@ -259,7 +322,7 @@ async def run_test(request: Request, gen_id: str) -> dict:
     loc = cat.generator(gen_id)
     if loc is None:
         raise HTTPException(404, f"Unknown generator id: {gen_id}")
-    _, g = loc
+    paper, g = loc
     if not g.valid:
         raise HTTPException(
             400, {"code": "invalid_entry", "errors": g.errors})
@@ -269,25 +332,37 @@ async def run_test(request: Request, gen_id: str) -> dict:
         body = await request.json()
     except Exception:
         pass
-    test_config = (body or {}).get("test") or {
-        "type": "equidistribution", "method": "matricial"}
+    # When no test config is supplied, default to equidistribution and
+    # let the worker resolve the method via the generator's
+    # default_test_method (no client-side method assumption).
+    test_config = (body or {}).get("test") or {"type": "equidistribution"}
 
-    # Reject harase on reducible χ at the API boundary as well — the
-    # primal-lattice search has no finite upper bound when χ is
-    # reducible (SIMD families, J>1) and would peg a worker forever.
+    # Reject harase on reducible χ at the API boundary — the primal-
+    # lattice search has no finite upper bound when χ is reducible and
+    # would peg a worker forever. The C++ Generator::default_test_method
+    # is the canonical signal: a recommendation of "notprimitive" or
+    # "simd_notprimitive" implies reducible χ. Goes through the cached
+    # helper so the detail-page fetch and this check share state.
     if (test_config.get("type") == "equidistribution"
-            and test_config.get("method") == "harase"
-            and _has_reducible_chi(g)):
-        raise HTTPException(
-            400,
-            {"code": "method_not_supported",
-             "method": "harase",
-             "message": "harase does not terminate on this generator "
-                        "(reducible characteristic polynomial). "
-                        "Pick simd_notprimitive (single SIMD-family "
-                        "component) or lattice (combined generator) "
-                        "instead."},
-        )
+            and test_config.get("method") == "harase"):
+        try:
+            defaults = await _default_test_methods_cached(request, paper, g)
+            recommended = defaults.get("equidistribution")
+        except (FileNotFoundError, KeyError, ValueError) as e:
+            log.warning(
+                "harase reducibility check skipped for %s: %s", g.id, e,
+            )
+            recommended = None
+        if recommended in _REDUCIBLE_CHI_METHODS:
+            raise HTTPException(
+                400,
+                {"code": "method_not_supported",
+                 "method": "harase",
+                 "recommended": recommended,
+                 "message": "harase does not terminate on this generator "
+                            "(reducible characteristic polynomial). "
+                            "Pick the recommended method instead."},
+            )
 
     db_path = request.app.state.settings.db_path
     jobs: dict = request.app.state.run_test_jobs

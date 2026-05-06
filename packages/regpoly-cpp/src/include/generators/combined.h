@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #pragma once
 
 #include "generator.h"
@@ -80,6 +83,25 @@ public:
     std::vector<Generator*> raw_component_pointers() const;
     std::vector<std::vector<Transformation*>>
         raw_tempering_pointers() const;
+
+    // Override base Generator's component decomposition: expose this
+    // wrapper's components instead of treating *this as a single
+    // primitive. Polymorphic replacement for the dynamic_cast pattern
+    // formerly used at every kernel adapter site.
+    std::vector<Generator*> components() const override {
+        return raw_component_pointers();
+    }
+    std::vector<std::vector<Transformation*>> tempering_chains() const override {
+        return raw_tempering_pointers();
+    }
+
+protected:
+    // For "equidistribution": combined chi is the product of components'
+    // chi over GF(2), hence reducible whenever there are >= 2 components
+    // of positive degree — notprimitive is the only safe choice. The
+    // J=1 degenerate case defers to the wrapped component to preserve
+    // the JEquals1MatchesPrimitive invariant.
+    std::optional<std::string> compute_default_test_method(const std::string& test_type) const override;
 
 private:
     std::vector<std::unique_ptr<Generator>> components_;

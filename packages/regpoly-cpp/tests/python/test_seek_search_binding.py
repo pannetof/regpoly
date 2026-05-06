@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2.4b: pybind11 binding for the SeekDriver.
 
 C++ semantics are exercised in detail by test_seek_search.cpp. Here

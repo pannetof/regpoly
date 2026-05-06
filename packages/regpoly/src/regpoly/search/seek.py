@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """
 seek.py — Seek class: runs the equidistribution search.
 
@@ -276,27 +279,36 @@ def _build_cpp_comb_from_python(py_comb: Combination):
     return cpp_comb
 
 
-_EQ_METHOD_TO_KIND = {
-    METHOD_MATRICIAL:        "EquidistributionMatricial",
-    METHOD_DUALLATTICE:      "EquidistributionLattice",
-    METHOD_HARASE:           "EquidistributionHarase",
-    METHOD_NOTPRIMITIVE:     "EquidistributionNotPrimitive",
-    METHOD_SIMD_NOTPRIMITIVE:"EquidistributionSimdNotPrimitive",
-    METHOD_NOTHING:          "EquidistributionNothing",
+# Map from the Python METHOD_* integer constants to the canonical
+# string names known to C++ MethodRegistry. The C++ side is the source
+# of truth — this map only translates Python's integer enum (kept for
+# backward compatibility with notebooks/tests) into those strings.
+_EQ_METHOD_TO_NAME = {
+    METHOD_MATRICIAL:         "matricial",
+    METHOD_DUALLATTICE:       "lattice",
+    METHOD_HARASE:            "harase",
+    METHOD_NOTPRIMITIVE:      "notprimitive",
+    METHOD_SIMD_NOTPRIMITIVE: "simd_notprimitive",
+    METHOD_NOTHING:           "nothing",
 }
 
 
 def _build_test_specs(tests: list) -> list:
     """Convert each Python test instance to a SeekTestSpec for the C++
     driver. Order is preserved — the driver runs them in order and
-    short-circuits on equidistribution / tuplets failure."""
+    short-circuits on equidistribution / tuplets failure.
+
+    Equidistribution variants are dispatched via the canonical
+    SeekTestKind.Equidistribution + SeekTestSpec.method_name string;
+    the C++ MethodRegistry resolves the string at run() time. No more
+    parallel enum mapping between Python and C++.
+    """
     out = []
     for t in tests:
         spec = _cpp.SeekTestSpec()
         if isinstance(t, EquidistributionTest):
-            kind_name = _EQ_METHOD_TO_KIND.get(
-                t.method, "EquidistributionMatricial")
-            spec.kind = getattr(_cpp.SeekTestKind, kind_name)
+            spec.kind = _cpp.SeekTestKind.Equidistribution
+            spec.method_name = _EQ_METHOD_TO_NAME.get(t.method, "matricial")
             spec.eq_L_max_test = t.L
             spec.eq_delta = [min(d, _INT_MAX_C) for d in t.delta]
             spec.eq_mse = min(t.mse, _INT_MAX_C)

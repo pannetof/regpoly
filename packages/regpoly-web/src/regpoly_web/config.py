@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Runtime configuration for the regpoly web application."""
 
 from __future__ import annotations
@@ -17,9 +20,15 @@ class Settings:
     pool_size: int = 4
     progress_poll_seconds: float = 0.5
     reload: bool = False
+    # P6 — confine `/api/import/generators-dir` to a known root.
+    # Defaults to None which means "any path" (legacy behaviour) for
+    # backwards-compat in tests. Production should set this to the
+    # workspace root or a dedicated drop directory.
+    import_root: Path | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
+        root_env = os.environ.get("REGPOLY_IMPORT_ROOT")
         return cls(
             db_path=os.environ.get("REGPOLY_DB", "regpoly.db"),
             host=os.environ.get("REGPOLY_HOST", "127.0.0.1"),
@@ -29,6 +38,7 @@ class Settings:
                 os.environ.get("REGPOLY_POLL_SECONDS", "0.5")
             ),
             reload=os.environ.get("REGPOLY_RELOAD", "0") == "1",
+            import_root=Path(root_env).resolve() if root_env else None,
         )
 
 

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Persistence helpers for typed analysis results (Phase 5.4b/c).
 
 `save_typed_result` takes a Python analysis-result object

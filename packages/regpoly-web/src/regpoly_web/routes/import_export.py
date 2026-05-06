@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """YAML import/export endpoints (migration and backwards-compatibility)."""
 
 from __future__ import annotations
@@ -31,26 +34,60 @@ async def import_generators_file(
     return await _import_one_generators_file(request, Path(body.file_path))
 
 
+def _resolve_under_import_root(request: Request, path: Path) -> Path:
+    """Resolve a user-supplied path and confine it to settings.import_root.
+    Rejects path-traversal: if the resolved path is not under the
+    configured root, raise 400. When `import_root` is None (legacy /
+    test mode) the guard is a no-op."""
+    p = path.resolve()
+    root = getattr(request.app.state.settings, "import_root", None)
+    if root is None:
+        return p
+    try:
+        if not p.is_relative_to(root):
+            raise HTTPException(
+                400,
+                f"Directory {p} is outside the allowed import_root {root}",
+            )
+    except (ValueError, AttributeError):  # py<3.9 fallback
+        try:
+            p.relative_to(root)
+        except ValueError as exc:
+            raise HTTPException(
+                400,
+                f"Directory {p} is outside the allowed import_root {root}",
+            ) from exc
+    return p
+
+
 @router.post("/import/generators-dir")
 async def import_generators_dir(
     request: Request, body: ImportDirRequest
 ) -> dict:
     """Recursively import every generators YAML file under a directory."""
-    root = Path(body.directory)
-    if not root.is_dir():
-        raise HTTPException(404, f"Not a directory: {root}")
+    root_in = Path(body.directory)
+    if not root_in.is_dir():
+        raise HTTPException(404, f"Not a directory: {root_in}")
+    root = _resolve_under_import_root(request, root_in)
 
     imported_files = 0
     imported_rows = 0
     errors: list[dict] = []
 
-    for yml in sorted(root.rglob("*.yaml")):
-        try:
-            res = await _import_one_generators_file(request, yml)
-            imported_files += 1
-            imported_rows += res.get("inserted", 0)
-        except Exception as exc:
-            errors.append({"file": str(yml), "error": str(exc)})
+    # P6 — pick up both *.yaml and *.yml so the directory walker
+    # matches what the file picker accepts.
+    seen: set[Path] = set()
+    for pattern in ("*.yaml", "*.yml"):
+        for yml in sorted(root.rglob(pattern)):
+            if yml in seen:
+                continue
+            seen.add(yml)
+            try:
+                res = await _import_one_generators_file(request, yml)
+                imported_files += 1
+                imported_rows += res.get("inserted", 0)
+            except Exception as exc:
+                errors.append({"file": str(yml), "error": str(exc)})
 
     return {
         "imported_files": imported_files,
@@ -160,7 +197,8 @@ async def import_audit(request: Request) -> dict:
     """Recent yaml_import rows for the Tools page imports tab."""
     db = request.app.state.db
     async with db.execute(
-        "SELECT id, file_path, import_type, row_count, created_at "
+        "SELECT id, file_path, import_type, row_count, "
+        "imported_at AS created_at "
         "FROM yaml_import ORDER BY id DESC LIMIT 100"
     ) as cur:
         rows = await cur.fetchall()

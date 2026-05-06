@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "combined.h"
 
 #include <NTL/GF2X.h>
@@ -206,4 +209,16 @@ void CombinedGenerator::refresh_concatenated_state() {
                 concat.set_bit(off + i, 1);
     }
     set_raw_state(concat);
+}
+
+std::optional<std::string> CombinedGenerator::compute_default_test_method(const std::string& test_type) const {
+    // J=1 is a degenerate combined that wraps a single primitive: defer
+    // to the wrapped component so the wrapper is observationally equal
+    // to the primitive (matches the JEquals1MatchesPrimitive invariant).
+    // Goes through the component's public default_test_method so the
+    // component's own cache is consulted/populated.
+    if (components_.size() == 1)
+        return components_[0]->default_test_method(test_type);
+    if (test_type == "equidistribution") return std::string("notprimitive");
+    return std::nullopt;
 }

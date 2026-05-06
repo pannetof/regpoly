@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 6 red — tempering-detail page Tabler rewrite (Researcher #1).
 
 After P6 the page must:

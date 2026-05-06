@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """ProcessPoolExecutor wrapper for running long searches in worker processes.
 
 Each search task receives the SQLite path and its search_run_id.  It opens

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "me_harase.h"
 #include "me_helpers.h"  // polychar_comb, MeLatResult
 #include <climits>

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Display formatting for generator / transformation parameters.
 
 All bitmask-like fields (anything the C++ ``ParamSpec`` flags as

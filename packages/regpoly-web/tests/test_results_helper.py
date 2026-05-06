@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 5.4b — typed-result write helper tests.
 
 Exercises `regpoly_web.results.save_typed_result` against the v2 typed

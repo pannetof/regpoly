@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 4.2: tests for the seek-style YAML config loader.
 //
 // Covers parse-shape verification (the SeekConfig struct populated as

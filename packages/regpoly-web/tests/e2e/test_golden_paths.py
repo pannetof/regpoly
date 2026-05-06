@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 5.5 — 8 Playwright golden-path e2e tests.
 
 Per Q7 of the v2.0 plan, the 8 paths are:

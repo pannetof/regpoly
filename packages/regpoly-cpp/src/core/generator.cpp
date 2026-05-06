@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "generator.h"
 #include "bm.h"
 #include <vector>
@@ -122,6 +125,36 @@ bool Generator::is_full_period() const {
             return false;
     }
     return true;
+}
+
+// ── default_test_method (cached wrapper around compute_*) ───────────────
+
+std::optional<std::string> Generator::default_test_method(const std::string& test_type) const {
+    auto it = default_test_method_cache_.find(test_type);
+    if (it != default_test_method_cache_.end())
+        return it->second;
+    auto result = compute_default_test_method(test_type);
+    default_test_method_cache_.emplace(test_type, result);
+    return result;
+}
+
+std::optional<std::string> Generator::compute_default_test_method(const std::string& test_type) const {
+    if (test_type == "equidistribution") {
+        if (!is_full_period()) return std::string("notprimitive");
+        if (k_ > 100)          return std::string("harase");
+        return std::string("matricial");
+    }
+    return std::nullopt;
+}
+
+// ── Component decomposition (default: I am a single primitive) ─────────
+
+std::vector<Generator*> Generator::components() const {
+    return {const_cast<Generator*>(this)};
+}
+
+std::vector<std::vector<Transformation*>> Generator::tempering_chains() const {
+    return {{}};
 }
 
 // ── Transition matrix ────────────────────────────────────────────────────

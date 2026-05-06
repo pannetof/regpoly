@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 2.4 (TDD): PrimitiveSearchDriver.
 //
 // The driver re-randomizes a generator's non-structural parameters

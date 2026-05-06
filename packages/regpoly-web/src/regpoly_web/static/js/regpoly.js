@@ -23,12 +23,23 @@
     function currentTheme() {
         return document.documentElement.getAttribute("data-bs-theme") || "light";
     }
+    function paintThemeIcons() {
+        const dark = currentTheme() === "dark";
+        document.querySelectorAll("[data-theme-icon-light]").forEach(el => {
+            el.hidden = dark;        // sun shows in dark mode (=> click for light)
+        });
+        document.querySelectorAll("[data-theme-icon-dark]").forEach(el => {
+            el.hidden = !dark;       // moon shows in light mode (=> click for dark)
+        });
+    }
     function bindThemeToggle() {
         document.querySelectorAll("[data-theme-toggle]").forEach(btn => {
             btn.addEventListener("click", () => {
                 setTheme(currentTheme() === "dark" ? "light" : "dark");
+                paintThemeIcons();
             });
         });
+        paintThemeIcons();
     }
 
     /* ---------------- KaTeX ---------------- */
@@ -264,16 +275,29 @@
         const supports = opts.supports || [];
         return {
             chips: [],
-            density: "comfortable",
+            density: "compact",
             quickFilter: "",
             init() {
                 const params = new URLSearchParams(location.search);
                 this.chips = supports
                     .filter(k => params.get(k))
                     .map(k => ({ key: k, value: params.get(k) }));
-                this.density = params.get("density") === "compact"
-                    ? "compact" : "comfortable";
+                // Default to compact; only switch to cozy when the URL
+                // or saved preference says so explicitly.
+                let stored = null;
+                try { stored = localStorage.getItem("regpoly.density"); }
+                catch (e) {}
+                if (params.has("density")) {
+                    this.density = params.get("density") === "comfortable"
+                        ? "comfortable" : "compact";
+                } else if (stored === "comfortable") {
+                    this.density = "comfortable";
+                } else {
+                    this.density = "compact";
+                }
                 window.addEventListener("popstate", () => this.init());
+                window.addEventListener(
+                    "regpoly:filters-changed", () => this.init());
             },
             removeChip(chip) {
                 const params = new URLSearchParams(location.search);
@@ -306,11 +330,163 @@
         };
     };
 
+    /* ---------------- Toast region ----------------
+     * Mounted by base.html. Public API:
+     *   regpoly.toast({title, body, type})  // type: info|success|warn|error
+     *   regpoly.toast("simple message")
+     */
+    function toast(opts) {
+        const region = document.querySelector("[data-toast-region]");
+        if (!region) return;
+        const o = (typeof opts === "string") ? {body: opts} : (opts || {});
+        const type = o.type || "info";
+        const cls = {
+            info: "alert-info", success: "alert-success",
+            warn: "alert-warning", error: "alert-danger",
+        }[type] || "alert-info";
+        const el = document.createElement("div");
+        el.className = "rp-toast alert " + cls;
+        el.setAttribute("role", "status");
+        el.innerHTML =
+            (o.title ? '<strong>' + escapeHtml(o.title) + '</strong> ' : '') +
+            (o.body ? escapeHtml(o.body) : '');
+        region.appendChild(el);
+        setTimeout(() => {
+            el.style.transition = "opacity 220ms";
+            el.style.opacity = "0";
+            setTimeout(() => el.remove(), 240);
+        }, o.duration || 4000);
+    }
+    function escapeHtml(s) {
+        const div = document.createElement("div");
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    /* ---------------- Command palette (⌘K / Ctrl+K) ----------------
+     * Lightweight built-in (no cmdk dep) — fuzzy-find across nav
+     * items + the visible page's headers. Opens the <dialog
+     * data-command-palette> mounted by base.html.
+     */
+    function buildCommandPalette() {
+        const dlg = document.querySelector("dialog[data-command-palette]");
+        if (!dlg) return;
+        if (dlg.dataset.cmdkBuilt) return;
+        dlg.dataset.cmdkBuilt = "1";
+        dlg.innerHTML = `
+            <div class="rp-cmdk-root" data-cmdk-root role="dialog"
+                 aria-label="Command palette">
+                <div class="p-3 border-bottom">
+                    <input type="text" class="form-control"
+                           data-cmdk-input
+                           placeholder="Jump to page or generator…"
+                           autocomplete="off" autofocus>
+                </div>
+                <div class="rp-cmdk-list" data-cmdk-list role="listbox"
+                     style="max-height: 50vh; overflow: auto;"></div>
+            </div>
+        `;
+        const items = [
+            ["Dashboard", "/", "home"],
+            ["Generators", "/generators", "cpu"],
+            ["Combined generators", "/tested-generators", "math-function"],
+            ["Searches", "/searches", "player-play"],
+            ["Library", "/library", "search"],
+            ["Tools", "/tools", "settings"],
+            ["New primitive search", "/primitive-search", "player-play"],
+            ["New tempering search", "/tempering-search", "player-play"],
+        ];
+        const input = dlg.querySelector("[data-cmdk-input]");
+        const list = dlg.querySelector("[data-cmdk-list]");
+        function render(query) {
+            const q = (query || "").toLowerCase();
+            list.innerHTML = "";
+            const matched = items.filter(([label]) =>
+                !q || label.toLowerCase().includes(q));
+            matched.forEach(([label, href, icon], idx) => {
+                const a = document.createElement("a");
+                a.href = href;
+                a.className = "list-group-item list-group-item-action " +
+                    "d-flex align-items-center gap-2";
+                a.setAttribute("role", "option");
+                a.dataset.cmdkItem = String(idx);
+                a.innerHTML =
+                    `<svg width="18" height="18">` +
+                    `<use href="#tabler-${icon}"/></svg>` +
+                    `<span>${escapeHtml(label)}</span>`;
+                list.appendChild(a);
+            });
+        }
+        render("");
+        input.addEventListener("input", () => render(input.value));
+        input.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter") {
+                const first = list.querySelector("[data-cmdk-item]");
+                if (first) { ev.preventDefault(); first.click(); }
+            }
+            if (ev.key === "Escape") { dlg.close(); }
+        });
+        dlg.addEventListener("click", (ev) => {
+            if (ev.target === dlg) dlg.close();
+        });
+    }
+    function openCommandPalette() {
+        const dlg = document.querySelector("dialog[data-command-palette]");
+        if (!dlg) return;
+        buildCommandPalette();
+        if (typeof dlg.showModal === "function") {
+            try { dlg.showModal(); }
+            catch (e) { dlg.setAttribute("open", ""); }
+        } else {
+            dlg.setAttribute("open", "");
+        }
+        const input = dlg.querySelector("[data-cmdk-input]");
+        if (input) { input.value = ""; input.focus(); }
+    }
+    function bindCommandPalette() {
+        document.addEventListener("keydown", (ev) => {
+            if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "k") {
+                ev.preventDefault();
+                openCommandPalette();
+            }
+        });
+    }
+
+    /* ---------------- uPlot helpers ----------------
+     * Tiny wrappers over uPlot for sparklines + activity charts.
+     * No-ops gracefully when uPlot hasn't loaded yet.
+     */
+    function sparklineUplot(el, points, opts) {
+        if (typeof window.uPlot !== "function") return null;
+        if (!el || !points || points.length === 0) return null;
+        const xs = points.map((_, i) => i);
+        const data = [xs, points.slice()];
+        const o = opts || {};
+        const u = new window.uPlot({
+            width: o.width || 120,
+            height: o.height || 32,
+            scales: {x: {time: false}},
+            axes: [{show: false}, {show: false}],
+            legend: {show: false},
+            cursor: {show: false},
+            series: [
+                {},
+                {
+                    stroke: o.color || "var(--tblr-primary, #5B5BD6)",
+                    width: 1.5,
+                    fill: o.fill || "rgba(91, 91, 214, 0.10)",
+                },
+            ],
+        }, data, el);
+        return u;
+    }
+
     /* ---------------- DOMContentLoaded ---------------- */
     document.addEventListener("DOMContentLoaded", () => {
         bindThemeToggle();
         bindCopyDelegate();
         bindKeyboard();
+        bindCommandPalette();
         renderCharPolyCards();
         // KaTeX may not be loaded yet (it's deferred); poll briefly.
         let tries = 0;
@@ -323,4 +499,10 @@
         }
         tryRender();
     });
+
+    // Public API for inline templates / Alpine factories.
+    window.regpoly = window.regpoly || {};
+    window.regpoly.toast = toast;
+    window.regpoly.openCommandPalette = openCommandPalette;
+    window.regpoly.sparklineUplot = sparklineUplot;
 })();

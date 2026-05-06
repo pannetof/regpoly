@@ -1,106 +1,188 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "factory.h"
+#include "generator_registry.h"
+#include "transformation_registry.h"
+
+#include "ac1d.h"
+#include "dsfmt.h"
+#include "f2w_lfsr.h"
+#include "f2w_polylcg.h"
+#include "marsaxorshift.h"
+#include "matsumoto.h"
+#include "melg.h"
+#include "mt.h"
+#include "mtgp.h"
 #include "polylcg.h"
+#include "rmt64.h"
+#include "sfmt.h"
 #include "tausworthe.h"
 #include "tgfsr.h"
-#include "mt.h"
-#include "f2w_base.h"
-#include "f2w_polylcg.h"
-#include "f2w_lfsr.h"
-#include "matsumoto.h"
-#include "marsaxorshift.h"
-#include "ac1d.h"
-#include "well.h"
-#include "melg.h"
-#include "sfmt.h"
-#include "dsfmt.h"
-#include "mtgp.h"
-#include "xorshift128.h"
 #include "tinymt32.h"
-#include "rmt64.h"
+#include "well.h"
+#include "xorshift128.h"
+
+#include "lag_mask.h"
 #include "permutation.h"
 #include "temper_mk.h"
-#include "lag_mask.h"
+
 #include <stdexcept>
 
-// Phase 2.4: factory.cpp is now pure C++ — pybind11 wiring lives in
-// src/bindings/factory_bindings.cpp so factory functions can be linked
-// into regpoly_core (and used by the SearchDriver family).
+// ── Central registration of every concrete Generator and Transformation ─
+//
+// Adding a new generator family means:
+//   1. Write foo.h / foo.cpp with the Generator subclass.
+//   2. Add ONE line in this file: `GR::reg("FooGen", ...)`.
+//   3. Add ONE line in factory_bindings.cpp: a `py::class_<FooGen,
+//      Generator>(m, "FooGen")` registration.
+// (Plus aliases here if the family was renamed.)
+//
+// The factory entry points below (create_generator, get_gen_param_specs,
+// family_is_enumerable, make_gen_enumerator, create_transformation,
+// get_trans_param_specs) are pure registry lookups. There is no
+// per-family if-chain to maintain.
+
+namespace {
+
+using GR = GeneratorRegistry;
+
+void register_all_generators() {
+    static const int once = []{
+        GR::reg("PolyLCGGen",
+                &PolyLCGGen::from_params, &PolyLCGGen::param_specs);
+        GR::reg_alias("PolyLCG", "PolyLCGGen");
+
+        GR::reg("TauswortheGen",
+                &TauswortheGen::from_params, &TauswortheGen::param_specs,
+                /*bind=*/{},
+                &TauswortheGen::make_enumerator);
+        GR::reg_alias("Tausworthe", "TauswortheGen");
+
+        GR::reg("TGFSRGen",
+                &TGFSRGen::from_params, &TGFSRGen::param_specs);
+        GR::reg_alias("TGFSR", "TGFSRGen");
+
+        GR::reg("MTGen",
+                &MTGen::from_params, &MTGen::param_specs);
+        GR::reg_alias("MersenneTwister", "MTGen");
+
+        GR::reg("F2wPolyLCGGen",
+                &F2wPolyLCGGen::from_params, &F2wPolyLCGGen::param_specs);
+        GR::reg_alias("GenF2wPolyLCG", "F2wPolyLCGGen");
+
+        GR::reg("F2wLFSRGen",
+                &F2wLFSRGen::from_params, &F2wLFSRGen::param_specs);
+        GR::reg_alias("GenF2wLFSR", "F2wLFSRGen");
+
+        GR::reg("MatsumotoGen",
+                &MatsumotoGen::from_params, &MatsumotoGen::param_specs);
+
+        GR::reg("MarsaXorshiftGen",
+                &MarsaXorshiftGen::from_params, &MarsaXorshiftGen::param_specs);
+
+        GR::reg("AC1DGen",
+                &AC1DGen::from_params, &AC1DGen::param_specs);
+
+        GR::reg("WELLGen",
+                &WELLGen::from_params, &WELLGen::param_specs);
+        GR::reg_alias("WELLRNG", "WELLGen");
+
+        GR::reg("MELGGen",
+                &MELGGen::from_params, &MELGGen::param_specs);
+        GR::reg_alias("MELG", "MELGGen");
+
+        GR::reg("SFMTGen",
+                &SFMTGen::from_params, &SFMTGen::param_specs);
+        GR::reg_alias("SFMT", "SFMTGen");
+
+        GR::reg("DSFMTGen",
+                &DSFMTGen::from_params, &DSFMTGen::param_specs);
+        GR::reg_alias("dSFMTGen", "DSFMTGen");
+
+        GR::reg("MTGPGen",
+                &MTGPGen::from_params, &MTGPGen::param_specs);
+        GR::reg_alias("MTGP", "MTGPGen");
+
+        GR::reg("XorShift128Gen",
+                &XorShift128Gen::from_params, &XorShift128Gen::param_specs);
+        GR::reg_alias("XorShift128", "XorShift128Gen");
+
+        GR::reg("TinyMT32Gen",
+                &TinyMT32Gen::from_params, &TinyMT32Gen::param_specs);
+        GR::reg_alias("TinyMT32", "TinyMT32Gen");
+
+        GR::reg("RMT64Gen",
+                &RMT64Gen::from_params, &RMT64Gen::param_specs);
+        GR::reg_alias("RMT64", "RMT64Gen");
+        return 0;
+    }();
+    (void)once;
+}
+
+using TR = TransformationRegistry;
+
+void register_all_transformations() {
+    static const int once = []{
+        TR::reg("permut",
+                [](const Params& p){ return PermutationTrans::from_params(p); },
+                &PermutationTrans::param_specs);
+        TR::reg("tempMK",
+                [](const Params& p){ return TemperMKTrans::from_params("tempMK", p); },
+                &TemperMKTrans::param_specs);
+        TR::reg("tempMK2",
+                [](const Params& p){ return TemperMKTrans::from_params("tempMK2", p); },
+                &TemperMKTrans::param_specs);
+        TR::reg("laggedTempering",
+                [](const Params& p){ return LaggedTempering::from_params(p); },
+                &LaggedTempering::param_specs);
+        return 0;
+    }();
+    (void)once;
+}
+
+}  // namespace
+
+// ── Public factory entry points (pure registry lookups) ─────────────────
 
 std::unique_ptr<Generator> create_generator(
     const std::string& family, const Params& params, int L)
 {
-    if (family == "PolyLCG"         || family == "PolyLCGGen")        return PolyLCGGen::from_params(params, L);
-    if (family == "Tausworthe"      || family == "TauswortheGen")     return TauswortheGen::from_params(params, L);
-    if (family == "TGFSR"           || family == "TGFSRGen")          return TGFSRGen::from_params(params, L);
-    if (family == "MersenneTwister" || family == "MTGen")             return MTGen::from_params(params, L);
-    if (family == "GenF2wPolyLCG"   || family == "F2wPolyLCGGen")     return F2wPolyLCGGen::from_params(params, L);
-    if (family == "GenF2wLFSR"      || family == "F2wLFSRGen")        return F2wLFSRGen::from_params(params, L);
-    if (family == "MatsumotoGen")                                     return MatsumotoGen::from_params(params, L);
-    if (family == "MarsaXorshiftGen")                                 return MarsaXorshiftGen::from_params(params, L);
-    if (family == "AC1DGen")                                          return AC1DGen::from_params(params, L);
-    if (family == "WELLRNG"         || family == "WELLGen")           return WELLGen::from_params(params, L);
-    if (family == "MELG"            || family == "MELGGen")           return MELGGen::from_params(params, L);
-    if (family == "SFMT"            || family == "SFMTGen")           return SFMTGen::from_params(params, L);
-    if (family == "dSFMTGen"        || family == "DSFMTGen")          return DSFMTGen::from_params(params, L);
-    if (family == "MTGP"            || family == "MTGPGen")           return MTGPGen::from_params(params, L);
-    if (family == "XorShift128"     || family == "XorShift128Gen")    return XorShift128Gen::from_params(params, L);
-    if (family == "TinyMT32"        || family == "TinyMT32Gen")       return TinyMT32Gen::from_params(params, L);
-    if (family == "RMT64"           || family == "RMT64Gen")          return RMT64Gen::from_params(params, L);
-    throw std::invalid_argument("Unknown generator family: " + family);
-}
-
-std::unique_ptr<Transformation> create_transformation(
-    const std::string& type, const Params& params)
-{
-    if (type == "permut")                        return PermutationTrans::from_params(params);
-    if (type == "tempMK" || type == "tempMK2")   return TemperMKTrans::from_params(type, params);
-    if (type == "laggedTempering")               return LaggedTempering::from_params(params);
-    throw std::invalid_argument("Unknown transformation type: " + type);
+    register_all_generators();
+    return GR::lookup(family).from_params(params, L);
 }
 
 std::vector<ParamSpec> get_gen_param_specs(const std::string& family)
 {
-    if (family == "PolyLCG"         || family == "PolyLCGGen")        return PolyLCGGen::param_specs();
-    if (family == "Tausworthe"      || family == "TauswortheGen")     return TauswortheGen::param_specs();
-    if (family == "TGFSR"           || family == "TGFSRGen")          return TGFSRGen::param_specs();
-    if (family == "MersenneTwister" || family == "MTGen")             return MTGen::param_specs();
-    if (family == "GenF2wPolyLCG"   || family == "F2wPolyLCGGen"
-                                    || family == "GenF2wLFSR"
-                                    || family == "F2wLFSRGen")        return F2wPolyLCGGen::param_specs();
-    if (family == "MatsumotoGen")                                     return MatsumotoGen::param_specs();
-    if (family == "MarsaXorshiftGen")                                 return MarsaXorshiftGen::param_specs();
-    if (family == "AC1DGen")                                          return AC1DGen::param_specs();
-    if (family == "WELLRNG"         || family == "WELLGen")           return WELLGen::param_specs();
-    if (family == "MELG"            || family == "MELGGen")           return MELGGen::param_specs();
-    if (family == "SFMT"            || family == "SFMTGen")           return SFMTGen::param_specs();
-    if (family == "dSFMTGen"        || family == "DSFMTGen")          return DSFMTGen::param_specs();
-    if (family == "MTGP"            || family == "MTGPGen")           return MTGPGen::param_specs();
-    if (family == "XorShift128"     || family == "XorShift128Gen")    return XorShift128Gen::param_specs();
-    if (family == "TinyMT32"        || family == "TinyMT32Gen")       return TinyMT32Gen::param_specs();
-    if (family == "RMT64"           || family == "RMT64Gen")          return RMT64Gen::param_specs();
-    throw std::invalid_argument("Unknown generator family: " + family);
+    register_all_generators();
+    return GR::lookup(family).param_specs();
 }
-
-std::vector<ParamSpec> get_trans_param_specs(const std::string& type)
-{
-    if (type == "permut")                        return PermutationTrans::param_specs();
-    if (type == "tempMK" || type == "tempMK2")   return TemperMKTrans::param_specs();
-    if (type == "laggedTempering")               return LaggedTempering::param_specs();
-    throw std::invalid_argument("Unknown transformation type: " + type);
-}
-
-// ── Exhaustive-search enumerator registry ─────────────────────────────────
 
 bool family_is_enumerable(const std::string& family)
 {
-    if (family == "Tausworthe" || family == "TauswortheGen") return true;
-    return false;
+    register_all_generators();
+    auto* info = GR::find(family);
+    return info && static_cast<bool>(info->make_enumerator);
 }
 
 std::unique_ptr<GenEnumerator> make_gen_enumerator(
     const std::string& family, const Params& resolved, int L)
 {
-    if (family == "Tausworthe" || family == "TauswortheGen")
-        return TauswortheGen::make_enumerator(resolved, L);
-    return nullptr;
+    register_all_generators();
+    auto* info = GR::find(family);
+    if (!info || !info->make_enumerator) return nullptr;
+    return info->make_enumerator(resolved, L);
+}
+
+std::unique_ptr<Transformation> create_transformation(
+    const std::string& type, const Params& params)
+{
+    register_all_transformations();
+    return TR::lookup(type).from_params(params);
+}
+
+std::vector<ParamSpec> get_trans_param_specs(const std::string& type)
+{
+    register_all_transformations();
+    return TR::lookup(type).param_specs();
 }

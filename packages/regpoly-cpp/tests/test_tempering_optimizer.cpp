@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 2.4d (TDD): TemperingOptimizerDriver.
 //
 // Drives the recursive optimize(v) loop with a small TemperMK fixture

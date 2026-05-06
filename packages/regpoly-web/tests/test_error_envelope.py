@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2 red — JSON error envelope contract.
 
 Per Developer persona D-7: standardise on FastAPI's default

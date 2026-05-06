@@ -23,16 +23,10 @@
     </template>
 
     <button type="button"
-            class="btn btn-sm btn-outline-secondary"
+            class="btn btn-sm btn-outline-secondary ms-auto"
             data-density-toggle
             @click="toggleDensity()">
       <span x-text="density === 'compact' ? 'Compact ✓' : 'Compact'"></span>
     </button>
-
-    <input type="search"
-           class="form-control form-control-sm w-auto ms-auto"
-           placeholder="Filter rows…"
-           data-filter-focus
-           x-model="quickFilter"/>
   </div>
 </div>

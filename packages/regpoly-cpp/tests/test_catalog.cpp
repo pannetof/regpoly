@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 3.2 (TDD): paper-centric Catalog in C++.
 //
 // Loads the real docs/library/*.yaml fixtures and asserts the

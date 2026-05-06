@@ -46,11 +46,80 @@
 } %}
 {% macro status_badge(status, error_message=None) -%}
 {%- set bg, icon = _STATUS_CLASSES.get(status, ("bg-secondary-lt", "dots")) -%}
-<span class="badge {{ bg }}"
+<span class="badge {{ bg }} d-inline-flex align-items-center gap-1"
+      data-status="{{ status }}"
       {%- if error_message %} title="{{ error_message }}" data-error-message="{{ error_message }}"{%- endif %}>
-  <span class="badge-icon">{{ status }}</span>
+  <svg width="12" height="12" aria-hidden="true"><use href="#tabler-{{ icon }}"/></svg>
+  <span>{{ status }}</span>
 </span>
 {%- endmacro %}
+
+
+{# -- metric_card_hero ----------------------------------------------- #}
+{# A heavier metric card with a brand-gradient top stripe + display
+   typography. Use for the dashboard's primary metric row only. #}
+{% macro metric_card_hero(title, value, subtitle=None, icon=None) %}
+<div class="card card-sm metric-card--hero">
+  <div class="card-body">
+    <div class="row align-items-center">
+      {% if icon %}
+      <div class="col-auto">
+        <span class="bg-primary-lt avatar">
+          <svg width="22" height="22"><use href="#tabler-{{ icon }}"/></svg>
+        </span>
+      </div>
+      {% endif %}
+      <div class="col">
+        <div class="text-secondary text-uppercase small fw-medium"
+             style="letter-spacing: .06em;">{{ title }}</div>
+        <div class="display-number">{{ value }}</div>
+        {% if subtitle %}<div class="text-secondary small">{{ subtitle }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+
+{# -- params_kv ----------------------------------------------------- #}
+{# Render a dict of generator parameters as key/value chips with hex
+   values rendered through `hex_value` and a per-row click-to-copy
+   affordance. Replaces every JSON.stringify literal page-render. #}
+{% macro params_kv(obj) %}
+{% if obj %}
+<div class="rp-params-kv d-flex flex-wrap gap-2">
+  {% for k, v in obj.items() %}
+    <span class="tag tag-rounded">
+      <span class="text-secondary">{{ k }}</span>
+      <span class="ms-1">
+        {%- set sv = v | string -%}
+        {%- if sv.startswith("0x") or sv.startswith("0X") -%}
+          {{ hex_value(sv, "table") }}
+        {%- else -%}
+          <span class="mono" data-copy data-hex="{{ sv }}" title="{{ sv }}">{{ sv }}</span>
+        {%- endif -%}
+      </span>
+    </span>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+
+{# -- skeleton_rows ------------------------------------------------- #}
+{# Simple shimmer skeleton placeholder while a list page is loading.
+   Pairs with .skeleton in regpoly.css. #}
+{% macro skeleton_rows(cols=4, rows=6) %}
+<table class="table table-sm">
+  <tbody>
+    {% for r in range(rows) %}
+    <tr>
+      {% for c in range(cols) %}<td><div class="skeleton" style="width: 80%;"></div></td>{% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}
 
 
 {# -- hex_value -----------------------------------------------------

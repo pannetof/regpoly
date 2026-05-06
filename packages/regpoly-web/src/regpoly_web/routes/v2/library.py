@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """GET /api/v2/library + /api/v2/library/papers + counts.
 
 Backed by the in-memory Catalog held on app.state.library. Sliced and
@@ -58,6 +61,7 @@ async def v2_list_library_generators(
     request: Request,
     family: str | None = None,
     paper_id: str | None = None,
+    k: int | None = None,
     starred: bool | None = None,
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
@@ -74,6 +78,8 @@ async def v2_list_library_generators(
         for gen in getattr(paper, "generators", []) or []:
             row = _gen_to_dict(paper, gen)
             if family and row.family != family:
+                continue
+            if k is not None and row.k != k:
                 continue
             rows.append(row)
     total = len(rows)

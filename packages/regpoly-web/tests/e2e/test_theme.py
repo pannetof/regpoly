@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 1 red set — theme defaults and persistence.
 
 Light is the default; the toggle in the navbar persists choice in

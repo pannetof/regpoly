@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """GET /api/v2/{primitive,tempering}-searches/{id}/history — index-bucket
 downsampling that returns *exactly* K points (or fewer if the run hasn't
 emitted that much progress yet).
@@ -20,6 +23,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from regpoly_web.database import json_loads
+from regpoly_web.routes.v2._downsample import bucket_downsample
 
 router = APIRouter()
 
@@ -32,20 +36,9 @@ class HistoryResponse(BaseModel):
 
 
 def _bucket_downsample(values: list[float], k: int) -> list[float]:
-    if k <= 0 or not values:
-        return []
-    if len(values) <= k:
-        return list(values)
-    out: list[float] = []
-    n = len(values)
-    for i in range(k):
-        start = (i * n) // k
-        end = ((i + 1) * n) // k
-        if end <= start:
-            end = start + 1
-        bucket = values[start:end]
-        out.append(bucket[-1])
-    return out
+    """Backwards-compatible alias for the shared helper. Kept so
+    third-party code that imports this name doesn't break."""
+    return bucket_downsample(values, k)
 
 
 @router.get(

@@ -1,5 +1,9 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "seek_config.h"
 
+#include "equidistribution_method.h"
 #include "factory.h"
 #include "legacy_reader.h"
 
@@ -305,23 +309,15 @@ SeekTestSpec parse_test(const YAML::Node& tn,
         std::string method = tn["method"]
             ? tn["method"].as<std::string>("matricial")
             : "matricial";
-        if (method == "matricial") {
-            spec.kind = SeekTestKind::EquidistributionMatricial;
-        } else if (method == "lattice") {
-            spec.kind = SeekTestKind::EquidistributionLattice;
-        } else if (method == "harase") {
-            spec.kind = SeekTestKind::EquidistributionHarase;
-        } else if (method == "notprimitive") {
-            spec.kind = SeekTestKind::EquidistributionNotPrimitive;
-        } else if (method == "simd_notprimitive") {
-            spec.kind = SeekTestKind::EquidistributionSimdNotPrimitive;
-        } else if (method == "nothing") {
-            spec.kind = SeekTestKind::EquidistributionNothing;
-        } else {
+        // Method-name validation lives in MethodRegistry; the YAML
+        // parser no longer owns the list.
+        if (!MethodRegistry::has(method)) {
             throw std::runtime_error(filename + ": tests["
                 + std::to_string(test_index)
                 + "].method '" + method + "' is unknown");
         }
+        spec.kind = SeekTestKind::Equidistribution;
+        spec.method_name = method;
         spec.eq_L_max_test = Lmax;
         int64_t mse = INT_MAX;
         if (tn["max_gap_sum"]) {

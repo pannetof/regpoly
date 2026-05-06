@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "tgfsr.h"
 #include <cstdio>
 #include <NTL/GF2X.h>

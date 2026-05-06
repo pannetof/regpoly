@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 3.1: yaml-cpp dependency smoke test. Just verifies the
 // vendored library is reachable, parses a small document correctly,
 // and round-trips a value the way the catalog code will need.

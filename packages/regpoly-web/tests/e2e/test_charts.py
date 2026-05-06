@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 6 red — real chart system (uPlot) replaces bare polylines."""
 
 from __future__ import annotations

@@ -34,7 +34,6 @@
             <th>Family</th>
             <th>Library</th>
             <th>Search</th>
-            <th class="w-1"></th>
           </tr>
         </thead>
         <tbody>
@@ -50,14 +49,20 @@
                   <span x-text="isPinned(row.id) ? '★' : '☆'"></span>
                 </button>
               </td>
-              <td x-text="row.id"></td>
+              <td>
+                <a class="fw-medium"
+                   :href="'/tested-generators/' + row.id"
+                   x-text="row.id"></a>
+              </td>
               <td x-text="row.J ?? ''"></td>
               <td x-text="row.k_g ?? ''"></td>
               <td x-text="row.Lmax ?? ''"></td>
               <td x-text="row.family || ''"></td>
               <td>
                 <template x-if="row.library_id">
-                  <a :href="'/library/' + row.library_id"
+                  <a :href="row.paper_id
+                            ? '/library/' + row.paper_id + '/' + row.library_id
+                            : '/library/' + row.library_id"
                      x-text="row.library_id"></a>
                 </template>
               </td>
@@ -67,15 +72,11 @@
                      x-text="'#' + row.search_run_id"></a>
                 </template>
               </td>
-              <td class="text-end">
-                <a class="btn btn-sm btn-link"
-                   :href="'/tested-generators/' + row.id">view</a>
-              </td>
             </tr>
           </template>
           <template x-if="!loading && rows.length === 0">
             <tr>
-              <td colspan="9"
+              <td colspan="8"
                   class="text-center text-secondary py-4">
                 No combined generators match the current filters.
               </td>
@@ -86,7 +87,7 @@
     </div>
   </div>
 
-  <nav class="mt-3" aria-label="Tested generators pagination" x-show="totalPages > 1">
+  <nav class="mt-3" aria-label="Combined generators pagination" x-show="totalPages > 1">
     <ul class="pagination">
       <li class="page-item" :class="currentPage <= 1 ? 'disabled' : ''">
         <a class="page-link" href="#" @click.prevent="goToPage(currentPage - 1)">
@@ -132,7 +133,7 @@ function testedBrowser() {
     limit: 50,
     offset: 0,
     loading: false,
-    density: "comfortable",
+    density: "compact",
 
     pinned: loadPins(),
 
@@ -149,8 +150,9 @@ function testedBrowser() {
       const qs = new URLSearchParams(location.search);
       this.limit = parseInt(qs.get("limit") || "50", 10);
       this.offset = parseInt(qs.get("offset") || "0", 10);
-      this.density = qs.get("density") === "compact"
-        ? "compact" : "comfortable";
+      // Compact is the default; only switch to cozy on explicit URL/local.
+      this.density = qs.get("density") === "comfortable"
+        ? "comfortable" : "compact";
     },
 
     get currentPage() { return Math.floor(this.offset / this.limit) + 1; },

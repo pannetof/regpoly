@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
@@ -5,6 +8,7 @@
 #include "bitvect.h"
 #include "combination.h"
 #include "combined.h"
+#include "equidistribution_method.h"
 #include "equidistribution_runner.h"
 #include "generator.h"
 #include "transformation.h"
@@ -28,6 +32,7 @@
 #include "tuplets_runner.h"
 
 #include <NTL/GF2X.h>
+#include <cctype>
 #include <NTL/GF2XFactoring.h>
 #include <NTL/ZZ.h>
 
@@ -115,7 +120,29 @@ static Params dict_to_params(const py::dict& d) {
                 p.set_int(key, static_cast<int64_t>(uval));
             }
         } else if (py::isinstance<py::str>(val)) {
-            p.set_string(key, val.cast<std::string>());
+            // Hex/decimal literals stored as strings in YAML (e.g. MT's
+            // 'a' = '0x9908B0DF') must convert to int — generator
+            // factories call params.get_int(key). Mirrors the same
+            // conversion done by catalog.cpp's String case so the
+            // Python and direct-YAML paths agree.
+            std::string s = val.cast<std::string>();
+            bool parsed = false;
+            try {
+                if (s.size() > 2 && s[0] == '0'
+                    && (s[1] == 'x' || s[1] == 'X')) {
+                    uint64_t u = std::stoull(s.substr(2), nullptr, 16);
+                    p.set_int(key, static_cast<int64_t>(u));
+                    parsed = true;
+                } else if (!s.empty()
+                           && (std::isdigit(static_cast<unsigned char>(s[0]))
+                               || s[0] == '-' || s[0] == '+')) {
+                    p.set_int(key, std::stoll(s));
+                    parsed = true;
+                }
+            } catch (...) {
+                parsed = false;
+            }
+            if (!parsed) p.set_string(key, s);
         } else if (py::isinstance<py::list>(val)) {
             // Try as vector<int> first, then vector<uint64_t>
             try {
@@ -194,7 +221,8 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
         .def("transition_matrix", &Generator::transition_matrix)
         .def("get_output", &Generator::get_output)
         .def("copy", [](const Generator& g) { return g.copy(); })
-        .def("state", [](const Generator& g) -> BitVect { return g.state().copy(); });
+        .def("state", [](const Generator& g) -> BitVect { return g.state().copy(); })
+        .def("default_test_method", &Generator::default_test_method, py::arg("test_type"));
 
     // Backwards-compat: legacy French class name still resolves to the same type.
     m.attr("Generateur") = m.attr("Generator");
@@ -1001,6 +1029,14 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
     // run_seek_search.
 
     py::enum_<SeekTestKind>(m, "SeekTestKind")
+        // Canonical (post-R3/R4): test type only — method is in
+        // SeekTestSpec.method_name.
+        .value("Equidistribution",  SeekTestKind::Equidistribution)
+        .value("CollisionFree",     SeekTestKind::CollisionFree)
+        .value("Tuplets",           SeekTestKind::Tuplets)
+        // Deprecated aliases. Translate internally to
+        // (Equidistribution, method_name=...) inside run_seek_search.
+        // Kept for backward compatibility with existing Python callers.
         .value("EquidistributionMatricial",
                SeekTestKind::EquidistributionMatricial)
         .value("EquidistributionLattice",
@@ -1012,13 +1048,23 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
         .value("EquidistributionSimdNotPrimitive",
                SeekTestKind::EquidistributionSimdNotPrimitive)
         .value("EquidistributionNothing",
-               SeekTestKind::EquidistributionNothing)
-        .value("CollisionFree",     SeekTestKind::CollisionFree)
-        .value("Tuplets",           SeekTestKind::Tuplets);
+               SeekTestKind::EquidistributionNothing);
+
+    // Exposed so the Python wrapper and tests can share the canonical
+    // vocabulary with C++ instead of maintaining a parallel string map.
+    m.def("equidistribution_method_names",
+          []() { return MethodRegistry::names(); },
+          "List the equidistribution method names known to "
+          "MethodRegistry. The Python YAML parser consults this list "
+          "rather than maintaining its own parallel enum.");
+    m.def("has_equidistribution_method",
+          [](const std::string& name) { return MethodRegistry::has(name); },
+          py::arg("name"));
 
     py::class_<SeekTestSpec>(m, "SeekTestSpec")
         .def(py::init<>())
         .def_readwrite("kind",            &SeekTestSpec::kind)
+        .def_readwrite("method_name",     &SeekTestSpec::method_name)
         .def_readwrite("eq_L_max_test",   &SeekTestSpec::eq_L_max_test)
         .def_readwrite("eq_delta",        &SeekTestSpec::eq_delta)
         .def_readwrite("eq_mse",          &SeekTestSpec::eq_mse)

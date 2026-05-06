@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 3.3 (TDD): C++ port of regpoly.io.legacy_reader.
 //
 // Each test parses a real fixture from shared/legacy_parameters/,

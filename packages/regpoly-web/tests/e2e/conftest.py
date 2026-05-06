@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 5.5 — Playwright e2e fixtures.
 
 Spawns the FastAPI app via uvicorn in a background thread bound to a

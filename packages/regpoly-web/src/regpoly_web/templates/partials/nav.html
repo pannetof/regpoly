@@ -1,4 +1,4 @@
-{# Flat sidebar — Dashboard / Generators / Tested generators / Searches /
+{# Flat sidebar — Dashboard / Generators / Combined generators / Searches /
    Library / Tools. Reads from the `nav_items` global registered in app.py.
    Highlights the current entry by matching against request.url.path. #}
 
@@ -10,9 +10,31 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <h1 class="navbar-brand navbar-brand-autodark">
-      <a href="/" class="text-decoration-none">
-        <strong>regpoly</strong>
+    <h1 class="navbar-brand navbar-brand-autodark d-flex align-items-center gap-2">
+      <a href="/" class="text-decoration-none d-flex align-items-center gap-2">
+        {# Inline SVG mark — 3×3 dot grid, two filled diagonally as a
+           nod to GF(2) bit-matrix structure. Recolours via CSS var. #}
+        <svg class="rp-mark" data-logo-mark width="22" height="22"
+             viewBox="0 0 22 22" aria-hidden="true">
+          <g fill="currentColor" opacity="0.32">
+            <circle cx="3" cy="3" r="2"/>
+            <circle cx="11" cy="3" r="2"/>
+            <circle cx="19" cy="3" r="2"/>
+            <circle cx="3" cy="11" r="2"/>
+            <circle cx="11" cy="11" r="2"/>
+            <circle cx="19" cy="11" r="2"/>
+            <circle cx="3" cy="19" r="2"/>
+            <circle cx="11" cy="19" r="2"/>
+            <circle cx="19" cy="19" r="2"/>
+          </g>
+          <g fill="var(--rp-mark-fill, #5B5BD6)">
+            <circle cx="3" cy="19" r="2.4"/>
+            <circle cx="11" cy="11" r="2.4"/>
+            <circle cx="19" cy="3" r="2.4"/>
+          </g>
+        </svg>
+        <strong style="font-family: var(--rp-display);
+                       font-weight: 600; letter-spacing: -0.01em;">regpoly</strong>
       </a>
     </h1>
 
@@ -21,16 +43,32 @@
     <div class="navbar-nav flex-row order-md-last">
       <button class="btn btn-icon btn-link nav-link"
               data-theme-toggle aria-label="toggle dark mode" type="button">
-        <span class="theme-toggle-icon" data-theme-icon-light>☀</span>
-        <span class="theme-toggle-icon" data-theme-icon-dark hidden>☾</span>
+        <span class="theme-toggle-icon" data-theme-icon-light>
+          <svg width="20" height="20"><use href="#tabler-sun"/></svg>
+        </span>
+        <span class="theme-toggle-icon" data-theme-icon-dark hidden>
+          <svg width="20" height="20"><use href="#tabler-moon"/></svg>
+        </span>
       </button>
     </div>
 
     <div class="collapse navbar-collapse" id="sidebar-menu">
       <ul class="navbar-nav pt-lg-3">
+        {% set _nav_icons = {
+            "/": "home",
+            "/generators": "cpu",
+            "/tested-generators": "math-function",
+            "/searches": "player-play",
+            "/library": "search",
+            "/tools": "settings"
+        } %}
         {% for item in nav_items %}
         <li class="nav-item {% if request.url.path == item.href or (item.href != '/' and request.url.path.startswith(item.href)) %}active{% endif %}">
-          <a class="nav-link" href="{{ item.href }}">
+          <a class="nav-link d-flex align-items-center gap-2"
+             href="{{ item.href }}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <svg width="18" height="18"><use href="#tabler-{{ _nav_icons.get(item.href, 'cpu') }}"/></svg>
+            </span>
             <span class="nav-link-title">{{ item.label }}</span>
           </a>
         </li>

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2 red — Compact mode density toggle (Analyst persona A-1)."""
 
 from __future__ import annotations

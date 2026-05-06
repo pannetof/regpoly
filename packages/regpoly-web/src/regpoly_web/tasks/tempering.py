@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Tempering-search worker task.
 
 Runs inside a child process.  Loads the search configuration from the DB
@@ -21,6 +24,20 @@ from regpoly_web.database import json_dumps, json_loads, sync_connect
 from regpoly_web.results import save_typed_result
 
 _CANCEL_POLL_EVERY = 1   # check cancellation once per combo
+_HEARTBEAT_INTERVAL = 5.0  # seconds — keep the live UI awake on quiet combos
+
+
+def should_emit_heartbeat(*, now: float, last_emit: float,
+                          interval: float = _HEARTBEAT_INTERVAL) -> bool:
+    """True iff a progress heartbeat is due.
+
+    Inside `_search_one_combo` the worker only writes a progress row
+    when a new best is found, so a long quiet combo can leave the UI
+    stuck on a stale row. Callers pass the wall-clock now and the
+    timestamp of the last emit; this helper reports whether enough
+    time has elapsed to justify a fresh row.
+    """
+    return (now - last_emit) >= interval
 
 
 def run_tempering_search(db_path: str, run_id: int) -> None:
@@ -145,10 +162,27 @@ def _search_one_combo(conn, run_id: int, comb: Combination, test,
     best_se: int | None = None
     best_result = None
     best_params: list[list[dict]] | None = None
+    last_heartbeat = time.time()
 
     for t in range(nb_tries):
         if t % 10 == 0 and _read_status(conn, run_id) in ("cancelled", "paused"):
             return None
+
+        now = time.time()
+        if should_emit_heartbeat(now=now, last_emit=last_heartbeat):
+            _write_progress(
+                conn, run_id,
+                current_info={
+                    "combo_idx": combo_idx,
+                    "try": t,
+                    "nb_tries": nb_tries,
+                    "se": best_se,
+                    "best_overall_se": best_overall_se,
+                    "heartbeat": True,
+                },
+                message=f"combo {combo_idx} try {t}: heartbeat",
+            )
+            last_heartbeat = now
 
         for comp in comb.components:
             for trans in comp.trans:

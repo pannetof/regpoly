@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """
 bitvect.py — BitVect class implementing all bit-vector operations from vectorsF2.c.
 

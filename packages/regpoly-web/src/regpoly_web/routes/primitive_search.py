@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """API endpoints for primitive searches (create, list, cancel, SSE progress)."""
 
 from __future__ import annotations
@@ -432,6 +435,14 @@ async def primitive_search_progress_sse(
     db_path = settings.db_path
     poll = settings.progress_poll_seconds
 
+    # P6 — SSE versioning. Without ?v=2 the stream is byte-for-byte
+    # identical to pre-redesign (only unnamed `data:` blocks plus the
+    # named `event: end` terminal). With ?v=2 the v2 named `progress`
+    # channel is additionally emitted carrying rate_rolling_5s and a
+    # wall-clock timestamp `t` measured as seconds since the stream
+    # opened.
+    v2_enabled = request.query_params.get("v") == "2"
+
     async def event_stream():
         import time as _time
         import aiosqlite
@@ -440,6 +451,7 @@ async def primitive_search_progress_sse(
         # only place we have a wall-clock + tries pair we can sample
         # for the v2 rate_rolling_5s field).
         rr = RollingRate(window_sec=5.0)
+        stream_start = _time.time()
         async with aiosqlite.connect(db_path) as conn:
             conn.row_factory = aiosqlite.Row
             last_id = 0
@@ -470,20 +482,20 @@ async def primitive_search_progress_sse(
                     }
                     yield f"data: {json.dumps(payload)}\n\n"
 
-                    # v2 named `progress` channel — adds rolling rate +
-                    # cum_finds + t (wall-clock seconds since stream
-                    # opened). UI consumes this exclusively.
-                    v2_payload = dict(payload)
-                    v2_payload["current_info"] = {
-                        **info,
-                        "rate_rolling_5s": rr_value,
-                        "cum_finds": int(row["found_count"] or 0),
-                        "t": now,
-                    }
-                    yield (
-                        "event: progress\n"
-                        f"data: {json.dumps(v2_payload)}\n\n"
-                    )
+                    if v2_enabled:
+                        # v2 named `progress` channel — adds rolling rate +
+                        # cum_finds + t (seconds since stream opened).
+                        v2_payload = dict(payload)
+                        v2_payload["current_info"] = {
+                            **info,
+                            "rate_rolling_5s": rr_value,
+                            "cum_finds": int(row["found_count"] or 0),
+                            "t": now - stream_start,
+                        }
+                        yield (
+                            "event: progress\n"
+                            f"data: {json.dumps(v2_payload)}\n\n"
+                        )
                     last_id = row["id"]
 
                 # Emit terminal event if the run has finished

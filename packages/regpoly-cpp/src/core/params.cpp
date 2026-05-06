@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "params.h"
 
 void Params::set_int(const std::string& key, int64_t val) { ints_[key] = val; }

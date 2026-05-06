@@ -12,7 +12,17 @@
     <span class="ms-3 text-secondary" x-text="items.length + ' run(s)'"></span>
 
     <div class="ms-auto d-flex align-items-center gap-2">
-      <label class="text-secondary small mb-0" for="searches-refresh">
+      <div class="btn-group">
+        <a href="/primitive-search" class="btn btn-sm btn-primary">
+          <svg width="16" height="16" class="me-1"><use href="#tabler-plus"/></svg>
+          New primitive search
+        </a>
+        <a href="/tempering-search" class="btn btn-sm btn-outline-primary">
+          <svg width="16" height="16" class="me-1"><use href="#tabler-plus"/></svg>
+          New combined-generator search
+        </a>
+      </div>
+      <label class="text-secondary small mb-0 ms-2" for="searches-refresh">
         Refresh
       </label>
       <select id="searches-refresh"
@@ -354,7 +364,10 @@ function searchesPage() {
                               { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        alert("Failed: " + (body.detail || res.statusText));
+        (window.regpoly && window.regpoly.toast)
+          ? window.regpoly.toast({type: "error", title: "Failed",
+                                  body: body.detail || res.statusText})
+          : console.error("Failed:", body.detail || res.statusText);
         return;
       }
       await this.reload();

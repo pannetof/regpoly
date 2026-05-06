@@ -1,9 +1,14 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #pragma once
 #include "bitvect.h"
 #include "params.h"
 #include <memory>
+#include <optional>
 #include <string>
 #include <sstream>
+#include <unordered_map>
 #include <vector>
 class Generator {
 public:
@@ -131,13 +136,52 @@ public:
     // meaning the generator has full period 2^k - 1.
     bool is_full_period() const;
 
+    // Returns the recommended method for the given test_type, or
+    // std::nullopt if no default is defined for that test_type.
+    // Memoised — the underlying computation can call is_full_period()
+    // (Berlekamp-Massey + factor 2^k - 1), which is expensive for
+    // large k. The cache is per-instance and NOT thread-safe; callers
+    // that share a single Generator across threads must serialise
+    // access externally. (Today's callers build fresh per-request
+    // Combinations, so no instance is shared.)
+    std::optional<std::string> default_test_method(const std::string& test_type) const;
+
+protected:
+    // Subclasses with a known answer (SIMD families, CombinedGenerator)
+    // override this; the base implementation handles "equidistribution"
+    // via the is_full_period() / k() runtime rule. Callers must go
+    // through default_test_method() to benefit from memoisation.
+    virtual std::optional<std::string> compute_default_test_method(const std::string& test_type) const;
+
+public:
+
     // Compute the K×K transition matrix.
     // Returns K row BitVects, where row[i] has bit j set if A[i][j] = 1.
     std::vector<BitVect> transition_matrix() const;
+
+    // Component decomposition for kernels that operate on a list of
+    // primitive generators plus a per-component tempering chain.
+    // The default treats `*this` as a single primitive with no
+    // tempering — exactly the right answer for every concrete subclass
+    // EXCEPT CombinedGenerator, which overrides to expose its components.
+    //
+    // Eliminates the dynamic_cast<CombinedGenerator*> formerly scattered
+    // across single_gen_adapters.cpp, equidistribution_runner.cpp, and
+    // tuplets_runner.cpp.
+    //
+    // Returned pointers alias the Generator's internal components and
+    // are valid for the lifetime of `*this`. Forward declaration so
+    // generator.h does not need to include transformation.h.
+    virtual std::vector<Generator*> components() const;
+    virtual std::vector<std::vector<class Transformation*>> tempering_chains() const;
 
 protected:
     BitVect state_;
     int k_;
     int L_;
+
+private:
+    mutable std::unordered_map<std::string, std::optional<std::string>>
+        default_test_method_cache_;
 };
 

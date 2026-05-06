@@ -18,6 +18,7 @@ regpoly.db-shm
 
 # MkDocs build output
 site/
+.cache/
 
 # IDE
 .vscode/
@@ -25,3 +26,6 @@ site/
 
 # Ruff cache
 .ruff_cache/
+
+# Local Claude Code session state
+.claude/

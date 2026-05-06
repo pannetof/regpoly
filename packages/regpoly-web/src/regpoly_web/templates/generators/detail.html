@@ -148,7 +148,7 @@
                 </template>
             </section>
 
-            <section>
+            <section class="mb-3">
                 <h3>Equidistribution (PIS method)</h3>
                 <template x-if="gen.pis_gaps">
                     <div>
@@ -157,30 +157,55 @@
                             (<span x-text="'se'"></span>):
                             <strong x-text="gen.pis_se"></strong>
                             <template x-if="gen.pis_se === 0">
-                                <span class="status-pill status-completed">ME</span>
+                                <span class="badge bg-success-lt ms-2">ME</span>
                             </template>
                         </p>
-                        <table class="compact">
-                            <thead>
-                                <tr><th>v</th><th>⌊k/v⌋</th>
-                                    <th>t_v</th><th>gap</th></tr>
-                            </thead>
-                            <tbody>
-                                <template x-for="(g, idx) in gen.pis_gaps" :key="idx">
-                                    <tr>
-                                        <td x-text="idx + 1"></td>
-                                        <td x-text="Math.floor(gen.k / (idx + 1))"></td>
-                                        <td x-text="Math.floor(gen.k / (idx + 1)) - g"></td>
-                                        <td :class="g === 0 ? 'equidist-cell-ok'
-                                                  : g <= 2 ? 'equidist-cell-warn'
-                                                           : 'equidist-cell-bad'"
-                                            x-text="g"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                        <p x-show="gen.pis_elapsed">
-                            <small>Computed in
+                        <div class="card equidist-chart-card">
+                          <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                              <span class="text-secondary small">
+                                Dimension-gap profile —
+                                <span x-text="(gen.pis_gaps || []).filter(g => g > 0).length"></span>
+                                non-zero of <span x-text="gen.pis_gaps.length"></span>
+                              </span>
+                              <button type="button" class="btn btn-sm btn-link"
+                                      @click="$el.dataset.copied='1';
+                                              navigator.clipboard.writeText(JSON.stringify(gen.pis_gaps))"
+                                      data-copy-equidist>
+                                <svg width="14" height="14"><use href="#tabler-external-link"/></svg>
+                                Copy as JSON
+                              </button>
+                            </div>
+                            <template x-for="stripe in equidStripes(gen.pis_gaps)" :key="stripe.start">
+                              <table class="table table-sm table-bordered mono mb-2 equidist-grid">
+                                <thead>
+                                  <tr>
+                                    <th class="text-secondary">ℓ</th>
+                                    <template x-for="cell in stripe.cells" :key="cell.l">
+                                      <th class="text-secondary text-end" x-text="cell.l"></th>
+                                    </template>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <th class="text-secondary">δ</th>
+                                    <template x-for="cell in stripe.cells" :key="cell.l">
+                                      <td class="text-end"
+                                          :class="cell.gap === 0 ? 'equidist-cell-ok'
+                                                  : cell.gap <= 2 ? 'equidist-cell-warn'
+                                                                  : 'equidist-cell-bad'"
+                                          :data-l="cell.l"
+                                          :data-delta="cell.gap"
+                                          x-text="cell.gap === 0 ? '' : cell.gap"></td>
+                                    </template>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </template>
+                          </div>
+                        </div>
+                        <p x-show="gen.pis_elapsed" class="mt-2">
+                            <small class="text-secondary">Computed in
                                 <span x-text="gen.pis_elapsed.toFixed(2)"></span>s
                                 on <span x-text="gen.pis_computed_at"></span>.
                             </small>
@@ -188,11 +213,11 @@
                     </div>
                 </template>
                 <template x-if="gen.pis_error">
-                    <pre style="color:#c92a2a; white-space: pre-wrap"
-                         x-text="gen.pis_error"></pre>
+                    <div class="alert alert-danger" role="alert"
+                         x-text="gen.pis_error"></div>
                 </template>
                 <template x-if="!gen.pis_gaps && !gen.pis_error">
-                    <p><em>Analysis pending…</em></p>
+                    <p class="text-secondary"><em>Analysis pending…</em></p>
                 </template>
             </section>
 
@@ -629,6 +654,21 @@ function generatorDetail(id) {
             if (cv) cv.style.cursor = 'grab';
         },
 
+        // Slice the gap array into fixed-width horizontal stripes so the
+        // table layout matches /tested-generators and /library.
+        equidStripes(arr, width = 32) {
+            if (!arr || !arr.length) return [];
+            const out = [];
+            for (let i = 0; i < arr.length; i += width) {
+                const cells = [];
+                for (let j = i; j < Math.min(i + width, arr.length); j++) {
+                    cells.push({ l: j + 1, gap: arr[j] });
+                }
+                out.push({ start: i + 1, cells });
+            }
+            return out;
+        },
+
         // D_max — the largest non-zero gap on the equidistribution
         // profile. The pis_gaps array (when present) carries one
         // entry per dimension v from 1 upward; D_max is the maximum.
@@ -647,7 +687,10 @@ function generatorDetail(id) {
                 location.href = '/generators';
             } else {
                 const body = await r.json().catch(() => ({}));
-                alert('Failed: ' + (body.detail || r.statusText));
+                (window.regpoly && window.regpoly.toast)
+                  ? window.regpoly.toast({type: "error", title: "Failed",
+                                          body: body.detail || r.statusText})
+                  : console.error("Failed:", body.detail || r.statusText);
                 this.confirmDelete = false;
             }
         },

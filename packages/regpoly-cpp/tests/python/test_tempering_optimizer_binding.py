@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2.4d: pybind11 binding for the TemperingOptimizerDriver.
 
 The C++ recursion is exercised by test_tempering_optimizer.cpp. Here

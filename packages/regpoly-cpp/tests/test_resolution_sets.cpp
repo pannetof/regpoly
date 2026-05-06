@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 2.1 (TDD): cross-check Psi_12 / Phi_4 against the published
 // Python algorithm. Reference vectors below were captured from the
 // existing regpoly.analyses implementation on a small parameter grid.

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2.4: pybind11 binding for the PrimitiveSearchDriver.
 
 The C++ loop semantics are exercised in detail by

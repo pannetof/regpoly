@@ -1,11 +1,16 @@
 {# Breadcrumb partial — accepts `crumbs = [{"label": str, "href": str|None}]`
-   from the page context. Rendered inside the page header. #}
+   from the page context. Rendered inside the page header.
 
-{% if crumbs %}
+   The last crumb is omitted because the page_header.html h2 already
+   shows the current-page title — repeating it in the trail just
+   doubles the same words on every page. #}
+
+{% set _trail = crumbs[:-1] if crumbs else [] %}
+{% if _trail %}
 <ol class="breadcrumb breadcrumb-arrows" aria-label="breadcrumbs">
-  {% for c in crumbs %}
-    <li class="breadcrumb-item {% if loop.last %}active{% endif %}">
-      {% if c.href and not loop.last %}
+  {% for c in _trail %}
+    <li class="breadcrumb-item">
+      {% if c.href %}
         <a href="{{ c.href }}">{{ c.label }}</a>
       {% else %}
         {{ c.label }}

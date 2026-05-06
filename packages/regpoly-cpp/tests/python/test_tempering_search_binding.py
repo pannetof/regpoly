@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2.4c: pybind11 binding shape test for run_tempering_search.
 
 C++ semantics are exercised in detail by test_tempering_search.cpp.

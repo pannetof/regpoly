@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """HTML page routes (Jinja2-rendered).
 
 P1 redesign: every render passes ``page_title`` and ``crumbs`` so the
@@ -161,20 +164,18 @@ async def generator_detail_page(request: Request, gen_id: int):
 
 @router.get("/primitive-search", response_class=HTMLResponse)
 async def primitive_search_page(request: Request):
+    """Render the primitive-search form. When `?family=` is supplied
+    the form is family-locked; otherwise it shows the family selector."""
     family = request.query_params.get("family")
-    if not family:
-        raise HTTPException(
-            404, "Full-Period searches are launched from a family page."
-        )
+    crumbs = [{"label": "Dashboard", "href": "/"}]
+    if family:
+        crumbs.append({"label": family, "href": f"/family/{family}"})
+    crumbs.append({"label": "Full-period search", "href": None})
     return _render(
         request, "primitive_search/form.html",
         title="New full-period search",
         pretitle=family,
-        crumbs=[
-            {"label": "Dashboard", "href": "/"},
-            {"label": family, "href": f"/family/{family}"},
-            {"label": "Full-period search", "href": None},
-        ],
+        crumbs=crumbs,
     )
 
 
@@ -229,10 +230,10 @@ async def tempering_search_detail(request: Request, run_id: int):
 async def tested_generators_page(request: Request):
     return _render(
         request, "tested_generators/list.html",
-        title="Tested generators",
+        title="Combined generators",
         crumbs=[
             {"label": "Dashboard", "href": "/"},
-            {"label": "Tested generators", "href": None},
+            {"label": "Combined generators", "href": None},
         ],
     )
 
@@ -241,10 +242,10 @@ async def tested_generators_page(request: Request):
 async def tested_generator_detail(request: Request, tg_id: int):
     return _render(
         request, "tested_generators/detail.html",
-        title=f"Tested generator #{tg_id}",
+        title=f"Combined generator #{tg_id}",
         crumbs=[
             {"label": "Dashboard", "href": "/"},
-            {"label": "Tested generators", "href": "/tested-generators"},
+            {"label": "Combined generators", "href": "/tested-generators"},
             {"label": f"#{tg_id}", "href": None},
         ],
         tg_id=tg_id,

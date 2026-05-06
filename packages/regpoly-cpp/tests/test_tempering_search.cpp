@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 2.4c (TDD): TemperingSearchDriver — per-combo / per-try search loop.
 //
 // This driver iterates a Combination, fires a Python-supplied on_try

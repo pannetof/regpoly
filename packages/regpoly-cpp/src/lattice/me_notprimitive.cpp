@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "me_notprimitive.h"
 #include "me_helpers.h"   // test_me_lat (full-period fast path)
                              // + find_polys/normalize_polys (slow path)

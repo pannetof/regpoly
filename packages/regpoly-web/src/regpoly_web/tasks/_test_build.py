@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Shared factory for the three test types used by the tempering-search
 worker and the published-generators library runner."""
 

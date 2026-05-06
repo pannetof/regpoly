@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Smoke tests for the paper-centric published-generators catalog."""
 
 from __future__ import annotations

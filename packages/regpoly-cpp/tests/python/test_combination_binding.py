@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2.4b-pre: pybind11 binding for Component + Combination.
 
 C++ iterator semantics are exercised in detail by test_combination.cpp.

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """GET /api/v2/tested-generators — chip facets + has_results filter.
 
 `?has_results=true` joins the v2 typed-result tables
@@ -7,10 +10,62 @@ only tested generators with at least one typed analysis row appear.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
 router = APIRouter()
+
+
+class _TestedComponent(BaseModel):
+    component_index: int | None = None
+    generator_id: int | None = None
+    family: str | None = None
+    L: int | None = None
+    k: int | None = None
+    all_params: dict | list | None = None
+    tempering_params: list | None = None
+
+
+class TestedGeneratorDetail(BaseModel):
+    id: int
+    search_run_id: int | None = None
+    Lmax: int | None = None
+    k_g: int | None = None
+    J: int | None = None
+    created_at: str | None = None
+    library_id: str | None = None
+    paper_id: str | None = None
+    components: list[_TestedComponent]
+    results: list = []
+
+
+@router.get(
+    "/tested-generators/{tg_id}", response_model=TestedGeneratorDetail,
+)
+async def v2_get_tested_generator(
+    request: Request, tg_id: int,
+) -> TestedGeneratorDetail:
+    """Full-detail companion to the v2 list/publish endpoints. Returns
+    the row + components + per-test results in one call so an SDK
+    consumer doesn't need to fan out across v1+v2 namespaces."""
+    from regpoly_web.routes.tested_generators import _fetch_tested
+    db = request.app.state.db
+    tg = await _fetch_tested(db, tg_id)
+    if tg is None:
+        raise HTTPException(404, f"Tested generator {tg_id} not found")
+    catalog = getattr(request.app.state, "library", None)
+    return TestedGeneratorDetail(
+        id=int(tg["id"]),
+        search_run_id=tg.get("search_run_id"),
+        Lmax=tg.get("Lmax"),
+        k_g=tg.get("k_g"),
+        J=tg.get("J"),
+        created_at=str(tg["created_at"]) if tg.get("created_at") else None,
+        library_id=tg.get("library_id"),
+        paper_id=_paper_id_for_library_id(catalog, tg.get("library_id")),
+        components=[_TestedComponent(**c) for c in tg.get("components") or []],
+        results=tg.get("results") or [],
+    )
 
 
 class _TestedRow(BaseModel):
@@ -20,6 +75,17 @@ class _TestedRow(BaseModel):
     k_g: int | None
     J: int | None
     library_id: str | None
+    paper_id: str | None = None
+
+
+def _paper_id_for_library_id(catalog, library_id: str | None) -> str | None:
+    if not library_id or catalog is None:
+        return None
+    for paper in catalog.papers():
+        for gen in getattr(paper, "generators", []) or []:
+            if getattr(gen, "id", None) == library_id:
+                return paper.id
+    return None
 
 
 class TestedGeneratorList(BaseModel):
@@ -120,12 +186,17 @@ async def v2_list_tested_generators(
     async with db.execute(list_sql, [*params, limit, offset]) as cur:
         rows = await cur.fetchall()
 
+    catalog = getattr(request.app.state, "library", None)
     return TestedGeneratorList(
         rows=[
             _TestedRow(
                 id=r["id"], search_run_id=r["search_run_id"],
                 Lmax=r["Lmax"], k_g=r["k_g"], J=r["J"],
                 library_id=r["library_id"] if "library_id" in r.keys() else None,
+                paper_id=_paper_id_for_library_id(
+                    catalog,
+                    r["library_id"] if "library_id" in r.keys() else None,
+                ),
             )
             for r in rows
         ],

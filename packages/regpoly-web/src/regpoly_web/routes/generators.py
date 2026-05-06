@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """API endpoints for primitive generators stored in the database."""
 
 from __future__ import annotations

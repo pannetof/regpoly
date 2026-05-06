@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2.4: pybind11 binding for primitivity entries.
 
 The C++ algorithm (Mersenne fast path + Cunningham-style factor table)

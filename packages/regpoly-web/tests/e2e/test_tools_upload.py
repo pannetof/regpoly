@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 6 red — Tools "Import" button performs an actual upload.
 
 Before P6 the button just sets an error message. After P6 it submits

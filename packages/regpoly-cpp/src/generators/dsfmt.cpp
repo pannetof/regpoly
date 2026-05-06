@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "dsfmt.h"
 #include <algorithm>
 #include <cstdio>
@@ -243,4 +246,9 @@ std::vector<ParamSpec> DSFMTGen::param_specs() {
         {"msk1", "int", true, false, 0, "", "", false},
         {"msk2", "int", true, false, 0, "", "", false},
     };
+}
+
+std::optional<std::string> DSFMTGen::compute_default_test_method(const std::string& test_type) const {
+    if (test_type == "equidistribution") return std::string("simd_notprimitive");
+    return std::nullopt;
 }

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "rmt64.h"
 #include <cstdio>
 
@@ -93,4 +96,16 @@ std::vector<ParamSpec> RMT64Gen::param_specs() {
         {"maskb", "int", true, false, 0, "", "", false},
         {"maskc", "int", true, false, 0, "", "", false},
     };
+}
+
+std::optional<std::string> RMT64Gen::compute_default_test_method(const std::string& test_type) const {
+    // RMT64 has reducible chi by construction (per the class header
+    // doc) but no SIMD lane structure (simd_lane_count() = 1, no
+    // override). The matching equidistribution method is "notprimitive"
+    // — not "simd_notprimitive" which assumes lane-interleaved super-
+    // words. Mirrors the family routing in
+    // packages/regpoly/tests/test_mttoolbox_crosscheck.py:44-53 where
+    // RMT64 falls through to METHOD_NOTPRIMITIVE.
+    if (test_type == "equidistribution") return std::string("notprimitive");
+    return std::nullopt;
 }

@@ -3,32 +3,42 @@
 {% block title %}New combined generator search{% endblock %}
 
 {% block content %}
-<h1>New combined generator search</h1>
-
 <div x-data="temperingSearchForm()" x-init="init()">
+
+  <p class="text-secondary mb-3 small">
+    Each component contributes one generator to the combined XOR. Pick a
+    pool of candidate generators per component; the search tries every
+    valid combination.
     <template x-if="lockedFamily">
-        <p>
-            <mark class="filter-pill">
-                Family locked to <strong x-text="lockedFamily"></strong>
-                <a href="/tempering-search" title="Clear family lock">×</a>
-            </mark>
-        </p>
+      <span class="badge bg-primary-lt ms-2">
+        Family: <strong class="ms-1" x-text="lockedFamily"></strong>
+        <a href="/tempering-search" class="text-reset ms-2"
+           title="Clear family lock"
+           aria-label="Clear family lock">
+          <svg width="12" height="12"><use href="#tabler-x"/></svg>
+        </a>
+      </span>
     </template>
+  </p>
 
-    <h3>Components</h3>
-    <p><small>Each component contributes one generator to the combined
-        XOR.  Pick a pool of candidate generators; the search tries every
-        valid combination.</small></p>
+  <div class="row row-cards">
+    <!-- ──────────────── Left column: components (8) ──────────────── -->
+    <div class="col-12 col-lg-8">
 
-    <template x-for="(comp, ci) in components" :key="ci">
-        <article>
-            <header>
-                <strong>Component <span x-text="ci + 1"></span></strong>
-                <button @click="removeComponent(ci)" class="secondary"
-                        style="float:right" x-show="components.length > 1">
-                    Remove
-                </button>
-            </header>
+      <template x-for="(comp, ci) in components" :key="ci">
+        <div class="card form-section-card">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <h3 class="card-title mb-0">
+              Component <span x-text="ci + 1"></span>
+            </h3>
+            <button type="button" class="btn btn-icon btn-link btn-sm text-danger"
+                    @click="removeComponent(ci)"
+                    x-show="components.length > 1"
+                    aria-label="Remove component">
+              <svg width="16" height="16"><use href="#tabler-x"/></svg>
+            </button>
+          </div>
+          <div class="card-body">
 
             <details>
                 <summary>
@@ -39,13 +49,13 @@
                     <p><em>No generators selected yet.</em></p>
                 </template>
                 <div x-show="comp.generator_ids.length">
-                    <button type="button" class="secondary outline"
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
                             @click="clearSelection(ci)"
-                            style="margin-bottom: 0.4rem">
+                           >
                         Clear all
                     </button>
                     <div class="selected-scroll">
-                        <table class="compact">
+                        <table class="table table-sm table-vcenter">
                             <thead>
                                 <tr>
                                     <th></th>
@@ -71,7 +81,7 @@
                                     <tr>
                                         <td>
                                             <button type="button"
-                                                    class="secondary outline"
+                                                    class="btn btn-sm btn-outline-secondary"
                                                     @click="removeSelected(ci, row.id)"
                                                     title="Remove">×</button>
                                         </td>
@@ -130,34 +140,43 @@
                     (<span x-text="comp.generator_ids.length"></span> selected)
                 </summary>
 
-                <label x-show="ci > 0">
-                    <input type="checkbox" x-model="comp.shareWithFirst"
+                <label class="form-check form-switch mb-3" x-show="ci > 0">
+                    <input class="form-check-input" type="checkbox"
+                           x-model="comp.shareWithFirst"
                            @change="onShareChange(ci)">
-                    Share generator pool with component 1
+                    <span class="form-check-label">
+                      Share generator pool with component 1
+                    </span>
                 </label>
 
                 <div x-show="!comp.shareWithFirst || ci === 0">
-                    <div class="grid">
-                        <label x-show="!lockedFamily">Family
-                            <select x-model="comp.filter.family"
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-4" x-show="!lockedFamily">
+                            <label class="form-label">Family</label>
+                            <select class="form-select form-select-sm"
+                                    x-model="comp.filter.family"
                                     @change="onCompFamilyChange(ci)">
                                 <option value="">(any)</option>
                                 <template x-for="f in families" :key="f.name">
                                     <option :value="f.name" x-text="f.name"></option>
                                 </template>
                             </select>
-                        </label>
-                        <label>k
-                            <select x-model="comp.filter.k"
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">k</label>
+                            <select class="form-select form-select-sm"
+                                    x-model="comp.filter.k"
                                     @change="onCompFilterChange(ci)">
                                 <option value="">(any)</option>
                                 <template x-for="v in comp.kValues" :key="v">
                                     <option :value="v" x-text="v"></option>
                                 </template>
                             </select>
-                        </label>
-                        <label>Search
-                            <select x-model="comp.filter.search_run_id"
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Search</label>
+                            <select class="form-select form-select-sm"
+                                    x-model="comp.filter.search_run_id"
                                     @change="onCompFilterChange(ci)">
                                 <option value="">(any)</option>
                                 <template x-for="v in comp.searchRunIds"
@@ -166,39 +185,43 @@
                                             x-text="'#' + v"></option>
                                 </template>
                             </select>
-                        </label>
+                        </div>
                     </div>
 
                     <template x-if="comp.filter.family && comp.paramSpecs.length">
-                        <div class="grid">
+                        <div class="row g-2 mb-2">
                             <template x-for="p in comp.paramSpecs" :key="p.name">
-                                <label>
-                                    <span x-text="p.name"></span>
-                                    <select x-model="comp.filter.p[p.name]"
+                                <div class="col-md-3">
+                                    <label class="form-label mono"
+                                           x-text="p.name"></label>
+                                    <select class="form-select form-select-sm"
+                                            x-model="comp.filter.p[p.name]"
                                             @change="onCompFilterChange(ci)">
                                         <option value="">(any)</option>
                                         <template x-for="v in (comp.paramValues[p.name] || [])" :key="v">
                                             <option :value="v" x-text="formatVal(p, v)"></option>
                                         </template>
                                     </select>
-                                </label>
+                                </div>
                             </template>
                         </div>
                     </template>
 
-                    <div role="group" style="margin: 0.5rem 0">
-                        <button type="button" @click="selectAllMatching(ci)">
+                    <div class="btn-list mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                @click="selectAllMatching(ci)">
                             Select all
                             <span x-text="comp.matchingTotal"></span> matching
                         </button>
-                        <button type="button" @click="selectVisible(ci)">
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                @click="selectVisible(ci)">
                             Select visible
                         </button>
-                        <button type="button" class="secondary"
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
                                 @click="deselectAllMatching(ci)">
                             Deselect matching
                         </button>
-                        <button type="button" class="secondary outline"
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
                                 @click="clearSelection(ci)"
                                 :disabled="comp.generator_ids.length === 0">
                             Clear selection
@@ -216,7 +239,7 @@
                         </small>
                     </p>
 
-                    <table class="compact">
+                    <table class="table table-sm table-vcenter">
                         <thead>
                             <tr>
                                 <th></th>
@@ -300,110 +323,182 @@
                     (<span x-text="comp.tempering.length"></span> transform(s))
                 </summary>
                 <template x-for="(t, ti) in comp.tempering" :key="ti">
-                    <div class="param-grid" style="margin-bottom:1rem">
-                        <label style="grid-column: span 3">
-                            Transformation type
-                            <select x-model="t.type"
-                                    @change="onTransTypeChange(ci, ti)">
-                                <option value="">Choose…</option>
-                                <template x-for="tt in transformations" :key="tt.name">
-                                    <option :value="tt.name" x-text="tt.name"></option>
-                                </template>
-                            </select>
-                            <button @click="removeTrans(ci, ti)"
-                                    class="secondary">×</button>
-                        </label>
-
-                        <template x-for="p in getTransSpecs(t.type)" :key="p.name">
-                            <template x-if="true">
-                                <div style="display:contents">
-                                    <span class="param-name" x-text="p.name"></span>
-                                    <input type="text" x-model="t.params[p.name]"
-                                           :placeholder="transHint(p)">
-                                    <span class="param-flag">
-                                        <span x-text="p.structural ? 'structural' : ''"></span>
-                                        <template x-if="p.rand_type && p.rand_type !== 'none'">
-                                            <span> · random: <span x-text="p.rand_type"></span></span>
-                                        </template>
-                                        <template x-if="p.optimizable">
-                                            <span> · <strong>optimizable</strong></span>
-                                        </template>
-                                    </span>
-                                </div>
+                    <div class="transform-row">
+                      <div class="d-flex align-items-end gap-2 mb-2">
+                        <div class="flex-grow-1">
+                          <label class="form-label">Transformation type</label>
+                          <select class="form-select"
+                                  x-model="t.type"
+                                  @change="onTransTypeChange(ci, ti)">
+                            <option value="">Choose…</option>
+                            <template x-for="tt in transformations" :key="tt.name">
+                              <option :value="tt.name" x-text="tt.name"></option>
                             </template>
-                        </template>
-                    </div>
-                </template>
+                          </select>
+                        </div>
+                        <button type="button"
+                                class="btn btn-icon btn-link text-danger"
+                                @click="removeTrans(ci, ti)"
+                                aria-label="Remove transformation">
+                          <svg width="16" height="16"><use href="#tabler-x"/></svg>
+                        </button>
+                      </div>
+                      <div class="row g-2">
+                        <template x-for="p in getTransSpecs(t.type)" :key="p.name">
+                          <div class="col-md-6">
+                            <label class="form-label d-flex align-items-center gap-1">
+                              <span class="mono" x-text="p.name"></span>
+                              <template x-if="p.structural">
+                                <span class="badge bg-secondary-lt">structural</span>
+                              </template>
+                              <template x-if="p.optimizable">
+                                <span class="badge bg-primary-lt">optimizable</span>
+                              </template>
+                            </label>
+                            <input type="text" class="form-control mono"
+                                   x-model="t.params[p.name]"
+                                   :placeholder="transHint(p)">
+                            <template x-if="p.rand_type && p.rand_type !== 'none'">
+                              <small class="form-hint">random:
+                                <span class="mono" x-text="p.rand_type"></span>
+                              </small>
+                            </template>
+                          </div><!-- /.col-md-6 -->
+                        </template><!-- /x-for p in transSpecs -->
+                      </div><!-- /.row g-2 -->
+                    </div><!-- /.transform-row -->
+                </template><!-- /x-for (t, ti) in comp.tempering -->
 
-                <button @click="addTrans(ci)" class="secondary outline">
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        @click="addTrans(ci)">
                     + Add transformation
                 </button>
             </details>
-        </article>
-    </template>
+          </div><!-- /.card-body -->
+        </div><!-- /.card (component) -->
+      </template>
 
-    <button @click="addComponent()" class="secondary outline">
+      <button type="button" class="btn btn-outline-secondary w-100"
+              @click="addComponent()">
         + Add component
-    </button>
+      </button>
+    </div><!-- /col-lg-8 -->
 
-    <h3>Test</h3>
-    <label>Test type
-        <select x-model="test.type">
-            <option value="equidistribution">Equidistribution (ME)</option>
-            <option value="collision_free">Collision-free (CF)</option>
-            <option value="tuplets">Tuplets</option>
-        </select>
-    </label>
+    <!-- ──────────────── Right rail (4) ──────────────── -->
+    <div class="col-12 col-lg-4">
+      <div class="sticky-rail">
 
-    <div class="grid">
-        <label>max_gap_sum (mse)
-            <input type="number" x-model.number="test.max_gap_sum">
-        </label>
-        <label x-show="test.type === 'equidistribution'">
-            Method
-            <select x-model="test.method">
-                <option value="matricial">matricial</option>
-                <option value="lattice">lattice</option>
-                <option value="harase">harase</option>
-                <option value="nothing">nothing</option>
-            </select>
-        </label>
-    </div>
-
-    <h3>Search settings</h3>
-    <div class="grid">
-        <label>Lmax
-            <input type="number" x-model.number="Lmax" min="1">
-        </label>
-        <label x-show="hasAnyTempering()">nb_tries
-            <input type="number" x-model.number="nb_tries" min="1">
-        </label>
-    </div>
-
-    <template x-if="hasOptimizableTempering()">
-        <div>
-            <h3>Bitmask optimizer (optional)</h3>
-            <label><input type="checkbox" x-model="useOptimizer">
-                Use TemperingOptimizer for optimizable bitmasks (tempMK b/c, lag b)
-            </label>
-            <div class="grid" x-show="useOptimizer">
-                <label>max_essais
-                    <input type="number" x-model.number="optimizer.max_essais">
-                </label>
-                <label>n_restarts
-                    <input type="number" x-model.number="optimizer.n_restarts">
-                </label>
-            </div>
+        <!-- Launch card -->
+        <div class="card form-section-card">
+          <div class="card-body">
+            <button type="button"
+                    class="btn btn-primary btn-lg w-100"
+                    @click="submit()"
+                    :disabled="!canSubmit() || busy">
+              <svg width="16" height="16" class="me-1"
+                   x-show="!busy"><use href="#tabler-player-play"/></svg>
+              <span x-text="busy ? 'Launching…' : 'Launch combined generator search'"></span>
+            </button>
+            <template x-if="error">
+              <div class="alert alert-danger mt-3 mb-0" role="alert"
+                   x-text="error"></div>
+            </template>
+          </div>
         </div>
-    </template>
 
-    <hr>
+        <!-- Test config card -->
+        <div class="card form-section-card">
+          <div class="card-header">
+            <h3 class="card-title mb-0">Test</h3>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">Test type</label>
+              <select class="form-select" x-model="test.type">
+                <option value="equidistribution">Equidistribution (ME)</option>
+                <option value="collision_free">Collision-free (CF)</option>
+                <option value="tuplets">Tuplets</option>
+              </select>
+            </div>
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="form-label">max_gap_sum (mse)</label>
+                <input type="number" class="form-control mono"
+                       x-model.number="test.max_gap_sum">
+              </div>
+              <div class="col-12" x-show="test.type === 'equidistribution'">
+                <label class="form-label">Method</label>
+                <select class="form-select" x-model="test.method">
+                  <option value="matricial">matricial</option>
+                  <option value="lattice">lattice</option>
+                  <option value="harase">harase</option>
+                  <option value="notprimitive">notprimitive</option>
+                  <option value="simd_notprimitive">simd_notprimitive</option>
+                  <option value="nothing">nothing</option>
+                </select>
+                <template x-if="testMethodFamilyWarning()">
+                  <div class="alert alert-danger small mt-2 mb-0"
+                       x-text="testMethodFamilyWarning()"></div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <button @click="submit()" :disabled="!canSubmit() || busy">
-        <span x-text="busy ? 'Launching…' : 'Launch combined generator search'"></span>
-    </button>
+        <!-- Budget card -->
+        <div class="card form-section-card">
+          <div class="card-header">
+            <h3 class="card-title mb-0">Budget</h3>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="form-label">Lmax</label>
+                <input type="number" class="form-control mono"
+                       x-model.number="Lmax" min="1">
+              </div>
+              <div class="col-12" x-show="hasAnyTempering()">
+                <label class="form-label">nb_tries</label>
+                <input type="number" class="form-control mono"
+                       x-model.number="nb_tries" min="1">
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <p x-show="error" style="color:#c92a2a" x-text="error"></p>
+        <!-- Optimizer card (only when applicable) -->
+        <template x-if="hasOptimizableTempering()">
+          <div class="card form-section-card">
+            <div class="card-header">
+              <h3 class="card-title mb-0">Bitmask optimizer</h3>
+            </div>
+            <div class="card-body">
+              <label class="form-check form-switch mb-2">
+                <input type="checkbox" class="form-check-input"
+                       x-model="useOptimizer">
+                <span class="form-check-label small">
+                  Use TemperingOptimizer for optimizable bitmasks
+                  (tempMK b/c, lag b)
+                </span>
+              </label>
+              <div class="row g-2" x-show="useOptimizer">
+                <div class="col-12">
+                  <label class="form-label">max_essais</label>
+                  <input type="number" class="form-control mono"
+                         x-model.number="optimizer.max_essais">
+                </div>
+                <div class="col-12">
+                  <label class="form-label">n_restarts</label>
+                  <input type="number" class="form-control mono"
+                         x-model.number="optimizer.n_restarts">
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div><!-- /.sticky-rail -->
+    </div><!-- /col-lg-4 -->
+  </div><!-- /row -->
 </div>
 
 <script>
@@ -647,12 +742,67 @@ function temperingSearchForm() {
                 return;
             }
 
+            // Duplicate flow: tempering detail's `duplicate()` JS writes
+            // a payload to sessionStorage `regpoly.tempering.duplicate`
+            // and redirects here with `?duplicate_from=<run_id>`. We
+            // consume the payload (fall back to the run endpoint when
+            // sessionStorage is empty — eg. opened in a different tab).
+            if (qs.has('duplicate_from')) {
+                const runId = qs.get('duplicate_from');
+                let payload = null;
+                try {
+                    const raw = sessionStorage.getItem(
+                        'regpoly.tempering.duplicate'
+                    );
+                    if (raw) payload = JSON.parse(raw);
+                } catch (e) { payload = null; }
+                if (payload && String(payload.run_id) === String(runId)) {
+                    this._applyDuplicatePayload(payload);
+                    sessionStorage.removeItem('regpoly.tempering.duplicate');
+                    return;
+                }
+                await this._prefillFromRun(runId);
+                return;
+            }
+
             this.components = [this._makeComponent()];
             if (this.lockedFamily) {
                 await this.onCompFamilyChange(0); // loads specs for locked family
             } else {
                 await this.onCompFilterChange(0);
             }
+        },
+
+        // Apply a sessionStorage duplicate payload {run_id, Lmax,
+        // nb_tries, test_config, optimizer_config, components[]} so
+        // the form repaints without a server round-trip.
+        _applyDuplicatePayload(payload) {
+            this.Lmax = payload.Lmax ?? 32;
+            this.nb_tries = payload.nb_tries ?? 100;
+            if (payload.test_config) {
+                this.test = {
+                    type: payload.test_config.type || 'equidistribution',
+                    max_gap_sum: payload.test_config.max_gap_sum ?? 0,
+                    method: payload.test_config.method || 'matricial',
+                };
+            }
+            if (payload.optimizer_config) {
+                this.useOptimizer = true;
+                this.optimizer = {
+                    max_essais: payload.optimizer_config.max_essais ?? 400,
+                    n_restarts: payload.optimizer_config.n_restarts ?? 1,
+                };
+            } else {
+                this.useOptimizer = false;
+            }
+            const comps = Array.isArray(payload.components)
+                ? payload.components : [];
+            this.components = comps.length
+                ? comps.map(c => ({
+                    ...this._makeComponent(),
+                    ...c,
+                }))
+                : [this._makeComponent()];
         },
 
         // Preload every knob from an existing tempering-search run so
@@ -1143,6 +1293,39 @@ function temperingSearchForm() {
         hasAnyTempering() {
             return this.components.some(c =>
                 c.tempering.some(t => t.type));
+        },
+
+        // Coarse warning surfaced near the method dropdown when the
+        // selected method is incompatible with the chosen component
+        // families. Uses the family-level `simd_hint` from the
+        // /api/families response — the *authoritative* per-instance
+        // recommendation lives in C++ Generator::default_test_method
+        // and is consulted at run time. This banner is a UX warning
+        // only.
+        testMethodFamilyWarning() {
+            if (this.test.type !== 'equidistribution') return '';
+            const m = this.test.method;
+            const families = this.components
+                .map(c => (c.filter && c.filter.family) || '')
+                .filter(Boolean);
+            if (!families.length) return '';
+            const simdSet = new Set(
+                this.families.filter(f => f.simd_hint).map(f => f.name));
+            const anySimd = families.some(f => simdSet.has(f));
+            const isCombined = families.length > 1;
+            if (anySimd && m !== 'simd_notprimitive') {
+                return 'A SIMD-style family is selected; '
+                    + 'simd_notprimitive is the recommended method. '
+                    + 'matricial / harase produce inaccurate results '
+                    + 'on these generators (reducible χ).';
+            }
+            if (isCombined && (m === 'matricial' || m === 'harase')) {
+                return 'Combined generators have reducible χ '
+                    + '(product of component χ); matricial / harase '
+                    + 'measure against the wrong baseline. '
+                    + 'Use notprimitive or lattice instead.';
+            }
+            return '';
         },
 
         // True iff any chosen transformation exposes an optimizable

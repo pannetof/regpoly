@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """GET /api/v2/generators/{id}/transition-matrix-coords — re-export of v1.
 
 The shape of the response (binary uint32 pairs blob) and headers

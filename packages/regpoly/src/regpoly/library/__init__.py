@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Published-generators library — paper-centric catalog.
 
 Phase 3.2: the catalog parser, dataclasses, and YAML loader live in

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 6 red — security guards: path-traversal + CSV-injection."""
 
 from __future__ import annotations

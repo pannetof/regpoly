@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 5.4 — schema v1 → v2 in-place migration.
 
 The v2 schema (see schema.sql) introduces three typed result tables

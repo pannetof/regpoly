@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """FastAPI application for the regpoly web UI."""
 
 from __future__ import annotations
@@ -47,7 +50,7 @@ from regpoly_web.routes.families import KNOWN_FAMILIES as _KNOWN_FAMILIES  # noq
 templates.env.globals["nav_items"] = [
     {"label": "Dashboard",          "href": "/",                   "icon": "home"},
     {"label": "Generators",         "href": "/generators",         "icon": "cpu"},
-    {"label": "Tested generators",  "href": "/tested-generators",  "icon": "test-pipe"},
+    {"label": "Combined generators","href": "/tested-generators",  "icon": "test-pipe"},
     {"label": "Searches",           "href": "/searches",           "icon": "search"},
     {"label": "Library",            "href": "/library",            "icon": "book"},
     # Tools surface (Import / Export / Imports audit trail) lands in P5.

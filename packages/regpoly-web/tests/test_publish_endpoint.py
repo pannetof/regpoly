@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 4 red — Publish / Unpublish on tested-generator detail.
 
 POST /api/v2/tested-generators/{id}/publish body {library_id} → 200,
@@ -11,18 +14,18 @@ from __future__ import annotations
 def test_post_publish_attaches_library_id(seeded_client) -> None:
     r = seeded_client.post(
         "/api/v2/tested-generators/4242/publish",
-        json={"library_id": "matsumoto2008"},
+        json={"library_id": "sfmt19937"},
     )
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["tested_gen_id"] == 4242
-    assert body["library_id"] == "matsumoto2008"
+    assert body["library_id"] == "sfmt19937"
 
 
 def test_delete_publish_clears_library_id(seeded_client) -> None:
     seeded_client.post(
         "/api/v2/tested-generators/4242/publish",
-        json={"library_id": "matsumoto2008"},
+        json={"library_id": "sfmt19937"},
     )
     r = seeded_client.delete("/api/v2/tested-generators/4242/publish")
     assert r.status_code == 200
@@ -33,11 +36,11 @@ def test_delete_publish_clears_library_id(seeded_client) -> None:
 def test_publish_idempotent(seeded_client) -> None:
     a = seeded_client.post(
         "/api/v2/tested-generators/4242/publish",
-        json={"library_id": "matsumoto2008"},
+        json={"library_id": "sfmt19937"},
     )
     b = seeded_client.post(
         "/api/v2/tested-generators/4242/publish",
-        json={"library_id": "matsumoto2008"},
+        json={"library_id": "sfmt19937"},
     )
     assert a.status_code == 200
     assert b.status_code == 200
@@ -46,7 +49,7 @@ def test_publish_idempotent(seeded_client) -> None:
 def test_publish_unknown_id_returns_404(seeded_client) -> None:
     r = seeded_client.post(
         "/api/v2/tested-generators/999999/publish",
-        json={"library_id": "matsumoto2008"},
+        json={"library_id": "sfmt19937"},
     )
     assert r.status_code == 404
 

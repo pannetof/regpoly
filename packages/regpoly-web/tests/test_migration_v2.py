@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 5.4 — schema v1 → v2 migration tests.
 
 Builds a hand-crafted v1 DB (the Phase-0 schema, without the typed

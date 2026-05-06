@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """
 legacy_reader.py — thin Python shim over the C++ legacy .dat parsers.
 

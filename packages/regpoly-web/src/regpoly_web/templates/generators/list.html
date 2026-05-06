@@ -39,6 +39,51 @@
     </div>
   </div>
 
+  {# Explicit filter row: family / k / search id. Synced to URL so chips,
+     filters and pagination stay in lock-step. #}
+  <div class="card card-sm mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label form-label-sm mb-1">Family</label>
+          <select class="form-select form-select-sm"
+                  x-model="filters.family"
+                  @change="applyFilters()">
+            <option value="">All families</option>
+            <template x-for="f in familyOptions" :key="f.name">
+              <option :value="f.name"
+                      x-text="f.name + ' (' + f.count + ')'"></option>
+            </template>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label form-label-sm mb-1">k</label>
+          <input type="number" min="1"
+                 class="form-control form-control-sm"
+                 placeholder="any"
+                 x-model="filters.k"
+                 @change="applyFilters()"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label form-label-sm mb-1">Search id</label>
+          <input type="number" min="1"
+                 class="form-control form-control-sm"
+                 placeholder="any"
+                 x-model="filters.search_run_id"
+                 @change="applyFilters()"/>
+        </div>
+        <div class="col-md-3 text-md-end">
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  @click="clearFilters()"
+                  :disabled="!hasFilters">
+            Clear filters
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="table-responsive">
       <table class="table table-vcenter table-hover card-table"
@@ -48,9 +93,17 @@
           <tr>
             <th style="width: 2.2rem;" aria-label="Pin"></th>
             <template x-for="col in visibleColumns" :key="col.key">
-              <th :class="col.mono ? 'mono' : ''"
-                  :data-col-key="col.key">
+              <th :class="(col.mono ? 'mono ' : '') + (col.sortable ? 'sortable-header' : '')"
+                  :data-col-key="col.key"
+                  :style="col.sortable ? 'cursor: pointer;' : ''"
+                  @click="col.sortable && clickSort(col.key)">
                 <span x-text="col.label"></span>
+                <span x-show="col.sortable"
+                      class="text-secondary ms-1"
+                      style="font-size: 0.75em;"
+                      x-text="sort.key === col.key
+                                ? (sort.dir === 'asc' ? '▲' : '▼')
+                                : '↕'"></span>
                 <button type="button"
                         class="btn btn-icon btn-link btn-sm ms-1 p-0 align-baseline"
                         data-col-popover
@@ -59,7 +112,6 @@
                         :title="'Filter ' + col.label">▾</button>
               </th>
             </template>
-            <th class="w-1"></th>
           </tr>
         </thead>
         <tbody>
@@ -80,15 +132,11 @@
                 <td :class="col.mono ? 'mono' : ''"
                     x-html="renderCell(row, col)"></td>
               </template>
-              <td class="text-end">
-                <a class="btn btn-sm btn-link"
-                   :href="'/generators/' + row.id">view</a>
-              </td>
             </tr>
           </template>
           <template x-if="!loading && rows.length === 0">
             <tr>
-              <td :colspan="visibleColumns.length + 2"
+              <td :colspan="visibleColumns.length + 1"
                   class="text-center text-secondary py-4">
                 No generators match the current filters.
               </td>
@@ -166,15 +214,15 @@ function generatorList() {
 
   return {
     allColumns: [
-      { key: "family",         label: "Family",     mono: false },
-      { key: "k",              label: "k",          mono: false },
-      { key: "L",              label: "L",          mono: false },
-      { key: "primitive",      label: "Primitive",  mono: false },
-      { key: "char_poly",      label: "char_poly",  mono: true  },
-      { key: "hamming_weight", label: "HW",         mono: false },
-      { key: "search_run_id",  label: "Search",     mono: false },
-      { key: "found_at_try",   label: "Try",        mono: false },
-      { key: "library_id",     label: "Library",    mono: false },
+      { key: "id",             label: "ID",         mono: false, sortable: true  },
+      { key: "family",         label: "Family",     mono: false, sortable: true  },
+      { key: "k",              label: "k",          mono: false, sortable: true  },
+      { key: "L",              label: "L",          mono: false, sortable: true  },
+      { key: "primitive",      label: "Primitive",  mono: false, sortable: false },
+      { key: "hamming_weight", label: "HW",         mono: false, sortable: true  },
+      { key: "search_run_id",  label: "Search",     mono: false, sortable: true  },
+      { key: "found_at_try",   label: "Try",        mono: false, sortable: true  },
+      { key: "library_id",     label: "Library",    mono: false, sortable: true  },
     ],
     visibleColumns: [],
     visibleColumnSet: new Set(),
@@ -184,7 +232,7 @@ function generatorList() {
     limit: 50,
     offset: 0,
     loading: false,
-    density: "comfortable",
+    density: "compact",
 
     pinned: loadPins(),
 
@@ -192,28 +240,64 @@ function generatorList() {
     popoverDraft: "",
     popoverStyle: "left: 0; top: 0; min-width: 14rem; z-index: 1080;",
 
+    sort: { key: "id", dir: "desc" },
+    filters: { family: "", k: "", search_run_id: "" },
+    familyOptions: [],
+
+    get hasFilters() {
+      return !!(this.filters.family || this.filters.k
+                || this.filters.search_run_id);
+    },
+
     init() {
       this.applyURL();
       window.addEventListener("popstate", () => {
         this.applyURL();
         this.reload();
       });
+      this._loadFamilyOptions();
       this.reload();
+    },
+
+    async _loadFamilyOptions() {
+      try {
+        const r = await fetch("/api/v2/generators/families/counts");
+        const data = await r.json();
+        this.familyOptions = Object.keys(data || {})
+          .sort()
+          .map(name => ({ name, count: data[name] }));
+      } catch (e) {
+        this.familyOptions = [];
+      }
     },
 
     applyURL() {
       const qs = new URLSearchParams(location.search);
       this.limit = parseInt(qs.get("limit") || "50", 10);
       this.offset = parseInt(qs.get("offset") || "0", 10);
-      this.density = qs.get("density") === "compact"
-        ? "compact" : "comfortable";
+      this.density = qs.get("density") === "comfortable"
+        ? "comfortable" : "compact";
+
+      const sortKey = qs.get("sort") || "id";
+      const valid = new Set(this.allColumns
+        .filter(c => c.sortable).map(c => c.key));
+      this.sort = {
+        key: valid.has(sortKey) ? sortKey : "id",
+        dir: (qs.get("dir") || "").toLowerCase() === "asc" ? "asc" : "desc",
+      };
+
+      this.filters = {
+        family: qs.get("family") || "",
+        k: qs.get("k") || "",
+        search_run_id: qs.get("search_run_id") || "",
+      };
 
       const colsParam = qs.get("cols");
       const cols = colsParam
         ? colsParam.split(",").map(s => s.trim()).filter(Boolean)
         : DEFAULT_COLS.slice();
-      const valid = new Set(this.allColumns.map(c => c.key));
-      const filtered = cols.filter(k => valid.has(k));
+      const validCols = new Set(this.allColumns.map(c => c.key));
+      const filtered = cols.filter(k => validCols.has(k));
       this.visibleColumns = (filtered.length ? filtered : DEFAULT_COLS)
         .map(k => this.allColumns.find(c => c.key === k))
         .filter(Boolean);
@@ -237,10 +321,11 @@ function generatorList() {
       // Strip ui-only params before forwarding to v2 endpoint.
       qs.delete("density");
       qs.delete("cols");
-      qs.delete("sort");
-      qs.delete("dir");
       qs.set("limit", String(this.limit));
       qs.set("offset", String(this.offset));
+      // Forward sort state explicitly (URL may not carry it on first load).
+      qs.set("sort", this.sort.key);
+      qs.set("dir", this.sort.dir);
       try {
         const r = await fetch("/api/v2/generators?" + qs.toString());
         const data = await r.json();
@@ -252,6 +337,59 @@ function generatorList() {
       } finally {
         this.loading = false;
       }
+    },
+
+    clickSort(key) {
+      // Cycle: not-sorted → asc → desc → asc … (default lands on desc for id)
+      let dir;
+      if (this.sort.key !== key) {
+        dir = "asc";
+      } else {
+        dir = this.sort.dir === "asc" ? "desc" : "asc";
+      }
+      this.sort = { key, dir };
+      const qs = new URLSearchParams(location.search);
+      qs.set("sort", key);
+      qs.set("dir", dir);
+      qs.set("offset", "0");
+      const url = location.pathname + "?" + qs.toString();
+      history.pushState({}, "", url);
+      this.applyURL();
+      this.reload();
+    },
+
+    applyFilters() {
+      const qs = new URLSearchParams(location.search);
+      const setOrDelete = (k, v) => {
+        const trimmed = String(v ?? "").trim();
+        if (trimmed) qs.set(k, trimmed); else qs.delete(k);
+      };
+      setOrDelete("family", this.filters.family);
+      setOrDelete("k", this.filters.k);
+      setOrDelete("search_run_id", this.filters.search_run_id);
+      qs.set("offset", "0");
+      const url = location.pathname + "?" + qs.toString();
+      history.pushState({}, "", url);
+      this.applyURL();
+      this.reload();
+      window.dispatchEvent(new CustomEvent("regpoly:filters-changed"));
+    },
+
+    clearFilters() {
+      const qs = new URLSearchParams(location.search);
+      ["family", "k", "k_min", "k_max", "search_run_id",
+       "primitive", "has_search_results"].forEach(k => qs.delete(k));
+      // Drop p_* popover filters too.
+      [...qs.keys()].forEach(k => {
+        if (k.startsWith("p_")) qs.delete(k);
+      });
+      qs.set("offset", "0");
+      const url = location.pathname +
+        (qs.toString() ? "?" + qs.toString() : "");
+      history.pushState({}, "", url);
+      this.applyURL();
+      this.reload();
+      window.dispatchEvent(new CustomEvent("regpoly:filters-changed"));
     },
 
     get displayRows() {
@@ -354,6 +492,8 @@ function generatorList() {
 
     renderCell(row, col) {
       switch (col.key) {
+        case "id":
+          return `<a class="fw-medium" href="/generators/${row.id}">${row.id}</a>`;
         case "family":
           return this._esc(row.family);
         case "k":

@@ -7,18 +7,41 @@
 <div x-data="dashboard()" x-init="init()" data-active-runs>
 
     {# ───────── Row 1: 4 metric cards ───────── #}
+    {# Inlined (rather than calling metric_card) because we need the
+       value slot to be an Alpine `x-text` binding, and Jinja's
+       `replace` filter HTML-escapes the replacement string. #}
     <div class="row row-deck row-cards mb-3">
         <div class="col-sm-6 col-lg-3">
-            {{ metric_card("Active runs", "—", icon=None) | replace('—', '<span x-text="counts.active_runs">—</span>') | safe }}
+            <div class="card card-sm">
+              <div class="card-body">
+                <div class="font-weight-medium">Active runs</div>
+                <div class="display-number" x-text="counts.active_runs">—</div>
+              </div>
+            </div>
         </div>
         <div class="col-sm-6 col-lg-3">
-            {{ metric_card("Generators tested", "—") | replace('—', '<span x-text="counts.generators_tested">—</span>') | safe }}
+            <div class="card card-sm">
+              <div class="card-body">
+                <div class="font-weight-medium">Generators tested</div>
+                <div class="display-number" x-text="counts.generators_tested">—</div>
+              </div>
+            </div>
         </div>
         <div class="col-sm-6 col-lg-3">
-            {{ metric_card("Searches all-time", "—") | replace('—', '<span x-text="counts.searches_total">—</span>') | safe }}
+            <div class="card card-sm">
+              <div class="card-body">
+                <div class="font-weight-medium">Searches all-time</div>
+                <div class="display-number" x-text="counts.searches_total">—</div>
+              </div>
+            </div>
         </div>
         <div class="col-sm-6 col-lg-3">
-            {{ metric_card("Last 24h finds", "—") | replace('—', '<span x-text="counts.finds_last_24h">—</span>') | safe }}
+            <div class="card card-sm">
+              <div class="card-body">
+                <div class="font-weight-medium">Last 24h finds</div>
+                <div class="display-number" x-text="counts.finds_last_24h">—</div>
+              </div>
+            </div>
         </div>
     </div>
 
@@ -145,9 +168,9 @@
                 <div class="card-body">
                     <div class="d-flex flex-column gap-2">
                         <a href="/tempering-search" class="btn btn-primary">New tempering search</a>
-                        <a href="/family/MTGen?embed=0#new-primitive" class="btn btn-outline-primary">New primitive search</a>
+                        <a href="/primitive-search" class="btn btn-outline-primary">New primitive search</a>
                         <a href="/generators" class="btn btn-outline-secondary">Browse generators</a>
-                        <a href="/tested-generators" class="btn btn-outline-secondary">Browse tested generators</a>
+                        <a href="/tested-generators" class="btn btn-outline-secondary">Browse combined generators</a>
                         <a href="/library" class="btn btn-outline-secondary">Browse library</a>
                     </div>
                 </div>

@@ -156,34 +156,14 @@ endif()
 
 # ── Public-API headers ──────────────────────────────────────────────────
 # Installed under ${CMAKE_INSTALL_PREFIX}/include/regpoly/.
+# Single source of truth: REGPOLY_PUBLIC_HEADER_BASES (defined above)
+# plus the umbrella header. The configure_file loop above stages copies
+# under ${BINARY_DIR}/include/regpoly/; this install rule pulls them
+# from their source paths, so we reuse the same list.
 
 set(REGPOLY_PUBLIC_HEADERS
     include/regpoly/regpoly.h
-    src/include/algebra/bitvect.h
-    src/include/algebra/primitivity.h
-    src/include/core/combination.h
-    src/include/search/search_types.h
-    src/include/search/primitive_search.h
-    src/include/search/seek_search.h
-    src/include/search/tempering_optimizer.h
-    src/include/search/tempering_search.h
-    src/include/library/catalog.h
-    src/include/io/legacy_reader.h
-    src/include/yaml_config/seek_config.h
-    src/include/core/generator.h
-    src/include/core/transformation.h
-    src/include/core/params.h
-    src/include/algebra/gauss.h
-    src/include/analyses/resolution_sets.h
-    src/include/analyses/equidistribution_runner.h
-    src/include/analyses/tuplets_runner.h
-    src/include/generators/combined.h
-    src/include/lattice/me_helpers.h
-    src/include/lattice/me_harase.h
-    src/include/lattice/me_notprimitive.h
-    src/include/lattice/me_notprimitive_simd.h
-    src/include/lattice/temper_optimizer.h
-    src/include/lattice/dual_lattice.h
+    ${REGPOLY_PUBLIC_HEADER_BASES}
 )
 install(FILES ${REGPOLY_PUBLIC_HEADERS}
         DESTINATION include/regpoly)

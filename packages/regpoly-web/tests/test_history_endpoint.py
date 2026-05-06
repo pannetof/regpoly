@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 3 red — v2 history endpoints (exact-K bucket downsampling)."""
 
 from __future__ import annotations

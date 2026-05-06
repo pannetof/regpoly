@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Cross-check: regpoly d(1..5) ≡ MTToolBox calc_equidist d(1..5).
 
 Loads the per-family parameter catalogs from

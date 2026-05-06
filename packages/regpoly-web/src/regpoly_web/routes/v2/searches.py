@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """GET /api/v2/searches/histories — batch sparkline payload.
 
 Per Researcher persona R-9: avoid the N+1 fetches on /searches by
@@ -13,6 +16,8 @@ from typing import Literal
 
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel
+
+from regpoly_web.routes.v2._downsample import bucket_downsample
 
 router = APIRouter()
 
@@ -30,22 +35,20 @@ class HistoriesEnvelope(BaseModel):
 async def _history_points_for_run(
     db, run_id: int, run_type: str, points: int,
 ) -> list[int]:
-    """Index-bucket down-sampling — exact `min(N, points)` samples."""
+    """Index-bucket down-sampling via the shared helper. Sparkline
+    metric is `tries_done` (a strictly-increasing counter) rather
+    than `found_count` — a primitive run with zero finds is still
+    making progress and the dashboard must show it."""
+    metric = "tries_done" if run_type == "primitive" else "tries_done"
     sql = (
-        "SELECT id, found_count "
-        "FROM search_progress "
+        f"SELECT id, {metric} AS metric FROM search_progress "
         "WHERE search_type = ? AND search_run_id = ? "
         "ORDER BY id ASC"
     )
     async with db.execute(sql, [run_type, run_id]) as cur:
         rows = await cur.fetchall()
-    if not rows:
-        return []
-    n = len(rows)
-    if n <= points:
-        return [int(r["found_count"] or 0) for r in rows]
-    return [int(rows[i * n // points]["found_count"] or 0)
-            for i in range(points)]
+    series = [int(r["metric"] or 0) for r in rows]
+    return bucket_downsample(series, points)
 
 
 def _parse_ids(raw: str | None) -> list[int]:

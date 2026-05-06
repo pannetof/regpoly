@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Materialise per-family `*_mttoolbox_reference.py` modules.
 
 Reads catalog entries from ``docs/library/*_params.yaml``, invokes the

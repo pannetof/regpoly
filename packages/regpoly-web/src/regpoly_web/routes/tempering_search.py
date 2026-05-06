@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """API endpoints for tempering searches (create, list, cancel, SSE progress)."""
 
 from __future__ import annotations
@@ -397,9 +400,13 @@ async def tempering_search_progress_sse(
     db_path = settings.db_path
     poll = settings.progress_poll_seconds
 
+    # P6 — SSE versioning gate, same as primitive (see comment there).
+    v2_enabled = request.query_params.get("v") == "2"
+
     async def event_stream():
         import time as _time
         import aiosqlite
+        stream_start = _time.time()
         async with aiosqlite.connect(db_path) as conn:
             conn.row_factory = aiosqlite.Row
             last_id = 0
@@ -426,27 +433,28 @@ async def tempering_search_progress_sse(
                     }
                     yield f"data: {json.dumps(payload)}\n\n"
 
-                    # v2 named `progress` channel — adds best_score,
-                    # best_params (already in info), best_id (None
-                    # mid-run), and a wall-clock t.
-                    v2_info = {
-                        **info,
-                        "best_score": (info.get("best_overall_se")
-                                       or info.get("se")),
-                        "best_params": info.get("best_params"),
-                        "best_id": best_id_emitted,
-                        "t": _time.time(),
-                    }
-                    yield (
-                        "event: progress\n"
-                        "data: "
-                        + json.dumps({
-                            "current_info": v2_info,
-                            "message": row["message"],
-                            "updated_at": row["updated_at"],
-                        })
-                        + "\n\n"
-                    )
+                    if v2_enabled:
+                        # v2 named `progress` channel — adds best_score,
+                        # best_params (already in info), best_id (None
+                        # mid-run), and a stream-relative `t`.
+                        v2_info = {
+                            **info,
+                            "best_score": (info.get("best_overall_se")
+                                           or info.get("se")),
+                            "best_params": info.get("best_params"),
+                            "best_id": best_id_emitted,
+                            "t": _time.time() - stream_start,
+                        }
+                        yield (
+                            "event: progress\n"
+                            "data: "
+                            + json.dumps({
+                                "current_info": v2_info,
+                                "message": row["message"],
+                                "updated_at": row["updated_at"],
+                            })
+                            + "\n\n"
+                        )
                     last_id = row["id"]
 
                 async with conn.execute(

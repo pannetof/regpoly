@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 6 red — axe-playwright AA accessibility audit.
 
 Wired into the e2e dep group as `axe-playwright-python`. CI fails on

@@ -3,123 +3,204 @@
 {% block title %}Combined generator search #{{ run_id }}{% endblock %}
 
 {% block content %}
+{% from "macros/ui.html" import status_badge, metric_card %}
 <div x-data="temperingSearchDetail({{ run_id }})" x-init="init()">
-    <hgroup>
-        <h1>Combined generator search #{{ run_id }}</h1>
-        <p><template x-if="run">
-            <span><span x-text="run.test_type"></span>
-                · Lmax=<span x-text="run.Lmax"></span>
-                · nb_tries=<span x-text="run.nb_tries"></span></span>
-        </template></p>
-    </hgroup>
 
+    {# ── Hero strip with status + 5-action button row ── #}
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+      <div>
+        <h1 class="h2 mb-1">Combined generator search #{{ run_id }}</h1>
+        <template x-if="run">
+          <div class="text-secondary small">
+            <span x-text="run.test_type"></span>
+            · Lmax=<span x-text="run.Lmax"></span>
+            · nb_tries=<span x-text="run.nb_tries"></span>
+            · <span class="badge" :class="badgeFor(run.status)"
+                    :data-status="run.status"
+                    x-text="run.status"></span>
+          </div>
+        </template>
+      </div>
+      <template x-if="run">
+        <div class="btn-list">
+          <button class="btn btn-outline-warning btn-sm"
+                  data-action="pause"
+                  @click="pause()"
+                  :disabled="run.status !== 'running'">
+            <svg width="14" height="14"><use href="#tabler-player-pause"/></svg>
+            Pause
+          </button>
+          <button class="btn btn-outline-success btn-sm"
+                  data-action="resume"
+                  @click="resume()"
+                  :disabled="run.status !== 'paused'">
+            <svg width="14" height="14"><use href="#tabler-player-play"/></svg>
+            Resume
+          </button>
+          <button class="btn btn-outline-danger btn-sm"
+                  data-action="cancel"
+                  @click="cancel()"
+                  :disabled="run.status !== 'running' && run.status !== 'pending'">
+            <svg width="14" height="14"><use href="#tabler-cancel"/></svg>
+            Cancel
+          </button>
+          <button class="btn btn-outline-secondary btn-sm"
+                  data-action="restart"
+                  @click="restart()">
+            Restart
+          </button>
+          <button class="btn btn-outline-primary btn-sm"
+                  data-action="duplicate"
+                  @click="duplicate()"
+                  data-duplicate>
+            Duplicate
+          </button>
+        </div>
+      </template>
+    </div>
+
+    <template x-if="run && run.error_message">
+      <div class="alert alert-danger" role="alert" x-text="run.error_message"></div>
+    </template>
+
+    {# ── 4 metric cards (Combos / Rate / Best / ETA) ── #}
     <template x-if="run">
-        <article>
-            <header>Status
-                <span class="status-pill" :class="'status-' + run.status"
-                      x-text="run.status"></span>
-            </header>
-            <template x-if="run.error_message">
-                <pre style="white-space: pre-wrap; color:#c92a2a"
-                     x-text="run.error_message"></pre>
-            </template>
-            <ul>
-                <li>Combinations done: <span x-text="run.combos_done"></span>
-                    <template x-if="run.combos_total">
-                        / <span x-text="run.combos_total"></span>
-                    </template>
-                </li>
-                <li>Best se so far:
-                    <strong x-text="run.best_se ?? '—'"></strong></li>
-                <li>Elapsed:
-                    <span x-text="(run.elapsed_seconds || 0).toFixed(1)"></span>s</li>
-                <template x-if="progress && progress.message">
-                    <li><em x-text="progress.message"></em></li>
+      <div class="row row-cards mb-3">
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="text-secondary text-uppercase small fw-medium">Combos</div>
+              <div class="display-number">
+                <span x-text="run.combos_done ?? 0"></span>
+                <template x-if="run.combos_total">
+                  <small class="text-secondary"> / <span x-text="run.combos_total"></span></small>
                 </template>
-            </ul>
-            <footer>
-                <button @click="cancel()"
-                        :disabled="run.status !== 'running' && run.status !== 'pending'">
-                    Cancel
-                </button>
-                <button class="secondary" @click="restart()">
-                    Restart (edit parameters)
-                </button>
-                <button class="secondary" @click="duplicate()"
-                        data-duplicate>
-                    Duplicate
-                </button>
-            </footer>
-        </article>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="text-secondary text-uppercase small fw-medium">Rate</div>
+              <div class="display-number">
+                <span x-text="liveRate()"></span>
+                <small class="text-secondary"> /s</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="text-secondary text-uppercase small fw-medium">Best se</div>
+              <div class="display-number"
+                   x-text="run.best_se ?? '—'"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="text-secondary text-uppercase small fw-medium">ETA</div>
+              <div class="display-number"
+                   x-text="liveEta()"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    {# ── best_se sparkline (uPlot mounts here) ── #}
+    <template x-if="run">
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="text-secondary small mb-2">Best se over time</div>
+          <div data-best-se-sparkline style="width: 100%; height: 80px;"></div>
+        </div>
+      </div>
     </template>
 
     {# Best-so-far card — appears once SSE has posted a `progress`
        payload that includes best_score/best_params/best_id. #}
     <template x-if="bestState && bestState.best_score != null">
-        <article class="best-so-far">
-            <header><strong>Best so far</strong></header>
-            <ul>
-                <li>Best score:
-                    <strong x-text="bestState.best_score"></strong></li>
-                <template x-if="bestState.best_params">
-                    <li>Best params:
-                        <code class="mono"
-                              data-copy
-                              :data-copy-text="JSON.stringify(bestState.best_params)"
-                              x-text="JSON.stringify(bestState.best_params)"></code>
-                    </li>
-                </template>
-                <template x-if="bestState.best_id">
-                    <li>
-                        <a :href="'/tested-generators/' + bestState.best_id"
-                           class="btn btn-sm btn-outline-primary"
-                           data-best-link>
-                            Open in catalog →
-                        </a>
-                    </li>
-                </template>
-            </ul>
-        </article>
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <strong>Best so far</strong>
+              <template x-if="bestState.best_id">
+                <a :href="'/tested-generators/' + bestState.best_id"
+                   class="btn btn-sm btn-outline-primary"
+                   data-best-link>
+                  Open in catalog
+                  <svg width="14" height="14"><use href="#tabler-arrow-right"/></svg>
+                </a>
+              </template>
+            </div>
+            <div class="row g-3">
+              <div class="col-auto">
+                <div class="text-secondary small">Best score</div>
+                <div class="display-number" x-text="bestState.best_score"></div>
+              </div>
+              <template x-if="bestState.best_params">
+                <div class="col">
+                  <div class="text-secondary small">Best params</div>
+                  <code class="mono"
+                        data-copy
+                        :data-copy-text="JSON.stringify(bestState.best_params)"
+                        x-text="JSON.stringify(bestState.best_params)"></code>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
     </template>
 
     <!-- ─── Search configuration ─────────────────────────────────── -->
 
     <template x-if="run">
         <section>
-            <h3>Search configuration</h3>
-            <table class="compact">
-                <tbody>
-                    <tr><td>Test</td>
+            <details class="card mb-3">
+              <summary class="card-header">
+                <strong>Search configuration</strong>
+              </summary>
+              <div class="card-body">
+                <table class="table table-sm table-vcenter">
+                  <tbody>
+                    <tr><td class="text-secondary">Test</td>
                         <td class="mono" x-text="JSON.stringify(run.test_config)"></td></tr>
-                    <tr><td>Lmax</td>
+                    <tr><td class="text-secondary">Lmax</td>
                         <td x-text="run.Lmax"></td></tr>
-                    <tr><td>nb_tries</td>
+                    <tr><td class="text-secondary">nb_tries</td>
                         <td x-text="run.nb_tries"></td></tr>
-                    <tr><td>Optimizer</td>
+                    <tr><td class="text-secondary">Optimizer</td>
                         <td class="mono"
                             x-text="run.optimizer_config
                                     ? JSON.stringify(run.optimizer_config)
                                     : '(none)'"></td></tr>
-                    <tr><td>Created</td>
+                    <tr><td class="text-secondary">Created</td>
                         <td x-text="run.created_at"></td></tr>
-                </tbody>
-            </table>
+                  </tbody>
+                </table>
+              </div>
+            </details>
 
-            <h4 style="margin-top: 1rem">Components</h4>
+            <h4 class="mt-3">Components</h4>
             <template x-for="c in (run.components || [])"
                       :key="c.component_index">
-                <article>
-                    <header>
+                <div class="card mb-2">
+                    <div class="card-header">
                         <strong>Component
                             <span x-text="c.component_index"></span></strong>
                         <template x-if="c.shared_with_component !== null
                                         && c.shared_with_component !== undefined">
-                            <span>
+                            <span class="text-secondary ms-2">
                                 · shares pool with component
                                 <span x-text="c.shared_with_component"></span>
                             </span>
                         </template>
-                    </header>
+                    </div>
+                    <div class="card-body">
 
                     <details>
                         <summary>
@@ -143,7 +224,7 @@
                                         || !c.tempering_config.length">
                             <p><em>(none)</em></p>
                         </template>
-                        <table class="compact"
+                        <table class="table table-sm table-vcenter"
                                x-show="c.tempering_config
                                        && c.tempering_config.length">
                             <thead>
@@ -156,7 +237,8 @@
                             <tbody x-html="temperingTbody(c)"></tbody>
                         </table>
                     </details>
-                </article>
+                    </div>
+                </div>
             </template>
         </section>
     </template>
@@ -171,7 +253,7 @@
         <em>No combined generators saved yet for this search.</em>
     </p>
 
-    <table class="compact" x-show="results.length">
+    <table class="table table-sm table-vcenter" x-show="results.length">
         <thead>
             <tr>
                 <template x-for="col in columns()" :key="col.key">
@@ -187,18 +269,24 @@
                                 title="Filter">▾</button>
                     </th>
                 </template>
-                <th></th>
             </tr>
         </thead>
         <tbody>
             <template x-for="row in tableRows()" :key="row.id">
                 <tr>
                     <template x-for="cell in row.cells" :key="cell.key">
-                        <td :class="cell.mono ? 'mono' : ''"
-                            x-text="cell.text"></td>
+                        <td :class="cell.mono ? 'mono' : ''">
+                            <template x-if="cell.key === 'id'">
+                                <a class="fw-medium"
+                                   :href="'/tested-generators/' + row.id"
+                                   target="_top"
+                                   x-text="cell.text"></a>
+                            </template>
+                            <template x-if="cell.key !== 'id'">
+                                <span x-text="cell.text"></span>
+                            </template>
+                        </td>
                     </template>
-                    <td><a :href="'/tested-generators/' + row.id"
-                           target="_top">view</a></td>
                 </tr>
             </template>
         </tbody>
@@ -328,7 +416,7 @@ function temperingSearchDetail(id) {
                     `<td>${search}</td>` +
                 '</tr>';
             }).join('');
-            return '<table class="compact">' +
+            return '<table class="table table-sm table-vcenter">' +
                 `<thead><tr>${headCells}</tr></thead>` +
                 `<tbody>${body}</tbody></table>`;
         },
@@ -493,7 +581,10 @@ function temperingSearchDetail(id) {
         sortArrow(key) { return rngTableSortArrow(this.sort, key); },
 
         openSSE() {
-            this.sse = new EventSource('/api/tempering-searches/' + id + '/progress');
+            // ?v=2 opts in to the v2 named `progress` channel; without
+            // it the endpoint emits only v1 unnamed `data:` events.
+            this.sse = new EventSource(
+                '/api/tempering-searches/' + id + '/progress?v=2');
             this.sse.onmessage = (e) => {
                 try {
                     const data = JSON.parse(e.data);
@@ -552,6 +643,51 @@ function temperingSearchDetail(id) {
             await fetch('/api/tempering-searches/' + id + '/cancel',
                 {method: 'POST'});
             this.loadRun();
+        },
+
+        async pause() {
+            await fetch('/api/tempering-searches/' + id + '/pause',
+                {method: 'POST'});
+            this.loadRun();
+        },
+
+        async resume() {
+            await fetch('/api/tempering-searches/' + id + '/resume',
+                {method: 'POST'});
+            this.loadRun();
+        },
+
+        badgeFor(status) {
+            const map = {
+                pending: 'bg-secondary-lt',
+                running: 'bg-primary-lt',
+                paused:  'bg-warning-lt',
+                completed: 'bg-success-lt',
+                cancelled: 'bg-orange-lt',
+                failed:  'bg-danger-lt',
+            };
+            return map[status] || 'bg-secondary-lt';
+        },
+
+        liveRate() {
+            const r = this.run || {};
+            const elapsed = (this.progress?.rate_rolling_5s
+                ?? this.progress?.rate);
+            if (elapsed != null) return Number(elapsed).toFixed(2);
+            const e = r.elapsed_seconds || 0;
+            const c = r.combos_done || 0;
+            return e > 0 ? (c / e).toFixed(2) : '—';
+        },
+
+        liveEta() {
+            const eta = this.progress?.eta_seconds;
+            if (eta != null) return Math.round(eta) + 's';
+            const r = this.run || {};
+            if (!r.combos_total) return '—';
+            const remaining = r.combos_total - (r.combos_done || 0);
+            const rate = parseFloat(this.liveRate());
+            if (!isFinite(rate) || rate <= 0) return '—';
+            return Math.round(remaining / rate) + 's';
         },
 
         restart() {

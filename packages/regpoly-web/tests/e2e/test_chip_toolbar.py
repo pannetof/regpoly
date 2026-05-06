@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2 red — chip toolbar URL state grammar.
 
 Chips, popover values, sort, density, columns, limit/offset all in

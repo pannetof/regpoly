@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "me_helpers.h"
 #include "dual_lattice.h"
 #include <NTL/GF2X.h>

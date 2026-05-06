@@ -3,108 +3,147 @@
 {% block title %}{{ paper_id }}{% endblock %}
 
 {% block content %}
-<div x-data='paperDetail("{{ paper_id }}")' x-init="load()">
-    <template x-if="!paper">
-        <p><em>Loading…</em></p>
-    </template>
+<div x-data='paperDetail("{{ paper_id }}")' x-init="load()" data-paper-detail>
+  <template x-if="!paper">
+    <p class="text-secondary">Loading…</p>
+  </template>
 
-    <template x-if="paper">
-        <div>
-            <hgroup>
-                <h1 x-text="paper.display"></h1>
-                <p>
-                    <em x-text="paper.title"></em>
-                </p>
-            </hgroup>
+  <template x-if="paper">
+    <div>
 
-            <!-- Abstract rendered first so the reader sees the
-                 summary before the bibliographic block. -->
-            <template x-if="paper.abstract_html">
-                <article>
-                    <header><strong>Abstract</strong></header>
-                    <div x-html="paper.abstract_html"
-                         x-effect="renderMath()"></div>
-                </article>
-            </template>
+      <!-- Header strip -->
+      <div class="d-flex align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="mb-0">
+          <span class="text-secondary">Paper</span>
+          <span x-text="paper.display"></span>
+        </h2>
+        <template x-if="paper.starred">
+          <svg width="18" height="18" class="ms-1 text-warning"
+               aria-label="Featured paper">
+            <use href="#tabler-star-filled"/>
+          </svg>
+        </template>
+        <span class="ms-2 text-secondary"
+              x-text="paper.title"></span>
 
-            <!-- ACM Transactions-style reference -->
-            <article>
-                <header><strong>Reference</strong></header>
-                <p x-text="paper.citation"></p>
-                <p>
-                    <a :href="paper.doi" target="_blank"
-                       role="button" class="secondary outline"
-                       x-text="paper.doi"></a>
-                    <template x-if="paper.pdf">
-                        <a :href="'/' + paper.pdf" target="_blank"
-                           role="button" class="secondary outline"
-                           style="margin-left: 0.5rem">📄 PDF</a>
-                    </template>
-                </p>
-                <template x-if="paper.bibkey">
-                    <p><small>BibTeX key:
-                        <code x-text="paper.bibkey"></code></small></p>
-                </template>
-            </article>
-
-            <template x-if="paper.notes_html">
-                <article>
-                    <header><strong>Notes</strong></header>
-                    <div x-html="paper.notes_html"
-                         x-effect="renderMath()"></div>
-                </article>
-            </template>
-
-            <!-- Generators proposed in this paper -->
-            <h3>Generators (<span x-text="paper.generators.length"></span>)</h3>
-            <table class="compact">
-                <thead>
-                    <tr>
-                        <th>Display</th>
-                        <th>Family</th>
-                        <th>Combined</th>
-                        <th>J</th>
-                        <th>Lmax</th>
-                        <th>Tempering</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <template x-for="g in paper.generators" :key="g.id">
-                        <tr>
-                            <td>
-                                <strong x-text="g.display"></strong>
-                                <template x-if="g.starred">
-                                    <span title="Featured generator">★</span>
-                                </template>
-                            </td>
-                            <td x-text="g.family"></td>
-                            <td x-text="g.combined ? 'yes' : 'no'"></td>
-                            <td x-text="g.J"></td>
-                            <td x-text="g.Lmax"></td>
-                            <td class="mono"
-                                x-text="summarizeTempering(g)"></td>
-                            <td>
-                                <template x-if="g.instantiated
-                                                && g.instantiated.tested_ids
-                                                && g.instantiated.tested_ids.length">
-                                    <span class="status-pill status-completed">
-                                        in DB
-                                    </span>
-                                </template>
-                            </td>
-                            <td>
-                                <a :href="'/library/' + paper.id + '/' + g.id">
-                                    view
-                                </a>
-                            </td>
-                        </tr>
-                    </template>
-                </tbody>
-            </table>
+        <div class="ms-auto btn-list">
+          <template x-if="paper.doi">
+            <a class="btn btn-sm btn-outline-secondary"
+               :href="paper.doi" target="_blank" rel="noopener">
+              <svg width="14" height="14"><use href="#tabler-external-link"/></svg>
+              DOI
+            </a>
+          </template>
+          <template x-if="paper.pdf">
+            <a class="btn btn-sm btn-outline-secondary"
+               :href="'/' + paper.pdf" target="_blank" rel="noopener">
+              <svg width="14" height="14"><use href="#tabler-file-type-pdf"/></svg>
+              PDF
+            </a>
+          </template>
         </div>
-    </template>
+      </div>
+
+      <!-- Abstract -->
+      <template x-if="paper.abstract_html">
+        <div class="card mb-3">
+          <div class="card-header">
+            <h3 class="card-title">Abstract</h3>
+          </div>
+          <div class="card-body">
+            <div x-html="paper.abstract_html"
+                 x-effect="renderMath()"></div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Reference / citation -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-title">Reference</h3>
+        </div>
+        <div class="card-body">
+          <p class="mb-1" x-text="paper.citation"></p>
+          <template x-if="paper.doi">
+            <p class="mb-1">
+              <a :href="paper.doi" target="_blank" rel="noopener"
+                 class="mono small" x-text="paper.doi"></a>
+            </p>
+          </template>
+          <template x-if="paper.bibkey">
+            <p class="mb-0 small text-secondary">
+              BibTeX key: <code class="mono" x-text="paper.bibkey"></code>
+            </p>
+          </template>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <template x-if="paper.notes_html">
+        <div class="card mb-3">
+          <div class="card-header">
+            <h3 class="card-title">Notes</h3>
+          </div>
+          <div class="card-body">
+            <div x-html="paper.notes_html"
+                 x-effect="renderMath()"></div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Generators table — Display column is the link -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-title">
+            Generators
+            (<span x-text="paper.generators.length"></span>)
+          </h3>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-vcenter card-table">
+            <thead>
+              <tr>
+                <th>Display</th>
+                <th>Family</th>
+                <th>Combined</th>
+                <th>J</th>
+                <th>Lmax</th>
+                <th>Tempering</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="g in paper.generators" :key="g.id">
+                <tr>
+                  <td>
+                    <a :href="'/library/' + paper.id + '/' + g.id"
+                       class="fw-medium" x-text="g.display"></a>
+                    <template x-if="g.starred">
+                      <span title="Featured generator"
+                            aria-label="featured" class="ms-1">★</span>
+                    </template>
+                  </td>
+                  <td x-text="g.family"></td>
+                  <td x-text="g.combined ? 'yes' : 'no'"></td>
+                  <td x-text="g.J"></td>
+                  <td x-text="g.Lmax"></td>
+                  <td class="mono small"
+                      x-text="summarizeTempering(g)"></td>
+                  <td>
+                    <template x-if="g.instantiated
+                                    && g.instantiated.tested_ids
+                                    && g.instantiated.tested_ids.length">
+                      <span class="badge bg-success-lt">in DB</span>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </template>
 </div>
 
 <script>
@@ -117,8 +156,6 @@ function paperDetail(pid) {
             if (r.ok) this.paper = await r.json();
         },
         summarizeTempering(g) {
-            // tempering_summary is a list of per-component chains;
-            // each chain is a list of {type, params} steps.
             const chains = g.tempering_summary || [];
             if (!chains.length || chains.every(c => !c.length)) {
                 return '—';

@@ -1,0 +1,75 @@
+{# Equidistribution chart macro — renders an SVG bar chart over the
+   full ℓ-axis (1..k) with hover tooltips and per-bar focusable rects
+   for keyboard navigation. Replaces the redundant sparse table that
+   used to appear under the chart on detail pages.
+
+   Inputs:
+     - sparse: dict[str|int, int] (delta value indexed by ℓ; missing
+       entries are treated as 0). Or a list of integers indexed 0..k.
+     - k:      int — the upper bound of ℓ. Bars rendered for ℓ in 1..k.
+     - title:  optional caption.
+#}
+
+{% macro _coerce_sparse(sparse, k) %}
+{% endmacro %}
+
+{% macro equidist_chart(sparse, k, title=None, height=180) %}
+{% set _data = [] %}
+{% set _max = 1 %}
+{% if sparse is mapping %}
+  {% for v in range(1, k + 1) %}
+    {% set d = sparse.get(v, sparse.get(v|string, 0)) | int %}
+    {% if d > _max %}{% set _max = d %}{% endif %}
+    {% set _ = _data.append((v, d)) %}
+  {% endfor %}
+{% elif sparse %}
+  {% for v in range(1, k + 1) %}
+    {% set d = sparse[v] if v < sparse|length else 0 %}
+    {% set d = d | int %}
+    {% if d > _max %}{% set _max = d %}{% endif %}
+    {% set _ = _data.append((v, d)) %}
+  {% endfor %}
+{% else %}
+  {% for v in range(1, k + 1) %}
+    {% set _ = _data.append((v, 0)) %}
+  {% endfor %}
+{% endif %}
+
+<div class="card equidist-chart-card">
+  <div class="card-body">
+    {% if title %}<div class="card-title">{{ title }}</div>{% endif %}
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <span class="text-secondary small">δ over ℓ ∈ 1..{{ k }}</span>
+      <button type="button" class="btn btn-sm btn-link"
+              data-equidist-copy
+              data-equidist-payload='{{ _data | tojson }}'>
+        <svg width="14" height="14"><use href="#tabler-external-link"/></svg>
+        Copy as JSON
+      </button>
+    </div>
+    <svg class="equidist-chart"
+         data-equidist-chart
+         viewBox="0 0 {{ (k * 6) + 20 }} {{ height }}"
+         preserveAspectRatio="none"
+         role="img"
+         aria-label="Equidistribution profile of length {{ k }}"
+         style="width: 100%; height: {{ height }}px;">
+      {% set bar_w = 5 %}
+      {% set bar_gap = 1 %}
+      {% set chart_h = height - 18 %}
+      {% for v, d in _data %}
+        {% set h = (d / _max) * chart_h if _max else 0 %}
+        {% set x = ((v - 1) * (bar_w + bar_gap)) + 10 %}
+        {% set y = (chart_h - h) %}
+        {% set cls = "equidist-cell-ok" if d == 0 else ("equidist-cell-warn" if d <= 2 else "equidist-cell-bad") %}
+        <rect class="{{ cls }}" tabindex="0"
+              x="{{ x }}" y="{{ y }}"
+              width="{{ bar_w }}" height="{{ h }}"
+              data-l="{{ v }}" data-delta="{{ d }}">
+          <title>ℓ={{ v }}, δ={{ d }}</title>
+        </rect>
+      {% endfor %}
+    </svg>
+  </div>
+</div>
+{% endmacro %}

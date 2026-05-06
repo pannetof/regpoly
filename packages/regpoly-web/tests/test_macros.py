@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 1 red set — macro render tests for the v2 design system.
 
 These tests render Jinja macros against the same environment FastAPI

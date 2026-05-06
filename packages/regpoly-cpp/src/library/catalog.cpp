@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "catalog.h"
 
 #include "factory.h"
@@ -162,11 +165,15 @@ void apply_param(Params& dst, const std::string& key, const ParamValue& v) {
             break;
         case ParamKind::String: {
             // Try hex/decimal parse; fall back to set_string.
+            // Use stoull for hex so values >= 2^63 (uint64 bitmasks
+            // like SFMT mask4) preserve their bit pattern when stored
+            // as int64 — matches dict_to_params in bindings.cpp.
             const auto& s = v.string_val;
             try {
                 if (s.size() > 2 && s[0] == '0'
                     && (s[1] == 'x' || s[1] == 'X')) {
-                    dst.set_int(key, std::stoll(s.substr(2), nullptr, 16));
+                    uint64_t u = std::stoull(s.substr(2), nullptr, 16);
+                    dst.set_int(key, static_cast<int64_t>(u));
                 } else {
                     dst.set_int(key, std::stoll(s));
                 }

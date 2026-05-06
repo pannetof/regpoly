@@ -192,22 +192,42 @@
                 </template>
               </ul>
               <template x-if="r.detail && r.detail.ecart">
-                <details>
-                  <summary>Non-zero dimension gaps
-                    (<span x-text="Object.keys(r.detail.ecart).length"></span>)</summary>
-                  <table class="table table-sm mt-1">
-                    <template x-for="[l, gap] in Object.entries(r.detail.ecart)"
-                              :key="l">
-                      <tr>
-                        <td class="mono">ℓ=<span x-text="l"></span></td>
-                        <td class="mono"
-                            :class="gap > 3 ? 'equidist-cell-bad'
-                                    : gap > 1 ? 'equidist-cell-warn'
-                                              : 'equidist-cell-ok'"
-                            x-text="gap"></td>
-                      </tr>
+                <details open>
+                  <summary>Dimension-gap profile
+                    (<span x-text="Object.keys(r.detail.ecart).length"></span>
+                    non-zero of <span x-text="tg.Lmax"></span>)</summary>
+                  <div class="table-responsive mt-2">
+                    <template x-for="stripe in equidStripes(r.detail.ecart, tg.Lmax)"
+                              :key="stripe.start">
+                      <table class="table table-sm table-bordered mono mb-2 equidist-grid">
+                        <thead>
+                          <tr>
+                            <th class="text-secondary"
+                                style="white-space: nowrap;">
+                              ℓ
+                            </th>
+                            <template x-for="cell in stripe.cells" :key="cell.l">
+                              <th class="text-center text-secondary"
+                                  x-text="cell.l"></th>
+                            </template>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <th class="text-secondary"
+                                style="white-space: nowrap;">δ</th>
+                            <template x-for="cell in stripe.cells" :key="cell.l">
+                              <td class="text-center"
+                                  :class="cell.gap === 0 ? 'equidist-cell-ok'
+                                          : cell.gap <= 2 ? 'equidist-cell-warn'
+                                                          : 'equidist-cell-bad'"
+                                  x-text="cell.gap === 0 ? '' : cell.gap"></td>
+                            </template>
+                          </tr>
+                        </tbody>
+                      </table>
                     </template>
-                  </table>
+                  </div>
                 </details>
               </template>
             </div>
@@ -348,6 +368,24 @@ function testedDetail(id) {
       return (s / 3600).toFixed(1) + "h";
     },
 
+    // Render the dimension-gap profile as one or more 32-wide stripes
+    // (ℓ = 1..32, 33..64, ...) so the user can scan δ-per-ℓ in a tabular
+    // format. Sparse `ecart` keys map to their gap; missing entries are 0.
+    equidStripes(ecart, lmax, width = 32) {
+      const max = Math.max(1, lmax | 0);
+      const stripes = [];
+      for (let start = 1; start <= max; start += width) {
+        const end = Math.min(start + width - 1, max);
+        const cells = [];
+        for (let l = start; l <= end; l++) {
+          const gap = (ecart[l] ?? ecart[String(l)] ?? 0) | 0;
+          cells.push({ l, gap });
+        }
+        stripes.push({ start, end, cells });
+      }
+      return stripes;
+    },
+
     openPublish() {
       this.publishError = "";
       this.publishDraft = (this.tg && this.tg.library_id) || "";
@@ -387,7 +425,10 @@ function testedDetail(id) {
         location.href = "/tested-generators";
       } else {
         const body = await r.json().catch(() => ({}));
-        alert("Failed: " + (body.detail || r.statusText));
+        (window.regpoly && window.regpoly.toast)
+          ? window.regpoly.toast({type: "error", title: "Failed",
+                                  body: body.detail || r.statusText})
+          : console.error("Failed:", body.detail || r.statusText);
         this.confirmDelete = false;
       }
     },

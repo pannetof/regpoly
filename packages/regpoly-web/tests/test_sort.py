@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 6 red — per-column sort on v2 list endpoints.
 
 Today /api/v2/generators hard-codes ORDER BY id DESC. Add ?sort=<col>

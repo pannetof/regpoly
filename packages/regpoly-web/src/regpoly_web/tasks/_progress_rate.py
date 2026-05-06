@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Rolling-rate helper for SSE progress payloads.
 
 The v1 `rate` field is preserved as **instantaneous** (tries / elapsed)
@@ -67,3 +70,16 @@ def for_run(run_id: int, window_sec: float = 5.0) -> RollingRate:
 def drop_run(run_id: int) -> None:
     """Discard the rolling-rate state for a finished run."""
     _rates.pop(run_id, None)
+
+
+def snapshot(run_id: int) -> dict | None:
+    """Read-only view of the rolling rate for an active run.
+
+    Used by `/api/v2/dashboard/summary` to surface a live rate without
+    owning the SSE handler. Returns None when the run hasn't been
+    observed yet (eg. another worker process or already-finished run).
+    """
+    rr = _rates.get(run_id)
+    if rr is None:
+        return None
+    return {"rate": rr.rate(), "eta_seconds": None}

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // AUTO-GENERATED from packages/regpoly/src/regpoly/data/primitive_factors.json
 // Regenerate via packages/regpoly-cpp/scripts/gen_primitive_factors_data.py
 // This file embeds prime factors of Phi_n(2) for primitivity testing.

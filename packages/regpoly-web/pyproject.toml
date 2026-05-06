@@ -7,7 +7,8 @@ name = "regpoly-web"
 version = "2.0.0"
 description = "FastAPI web shell over the regpoly library: search runs, generator catalogue, results browser."
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = "BSD-3-Clause"
+authors = [{name = "Francois Panneton, Ph.D."}]
 dependencies = [
     "regpoly",
     "fastapi>=0.110",

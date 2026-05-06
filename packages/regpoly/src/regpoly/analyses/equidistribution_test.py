@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """
 equidistribution_test.py — ME equidistribution test (METHOD_MATRICIAL).
 
@@ -25,6 +28,19 @@ METHOD_SIMD_NOTPRIMITIVE = 5  # SIMD-aware variant for SFMT/dSFMT/MTGP — same
                               # with lane-interleaved super-words to match
                               # Saito-Matsumoto 2008 published k(v) values.
 
+# Canonical mapping between the string names (used in YAML configs and
+# returned by the C++ Generator::default_test_method) and the integer
+# constants used by run(). Kept here so YAML parsing and default
+# resolution share a single source of truth.
+_STR_TO_METHOD = {
+    "matricial":         METHOD_MATRICIAL,
+    "lattice":           METHOD_DUALLATTICE,
+    "nothing":           METHOD_NOTHING,
+    "harase":            METHOD_HARASE,
+    "notprimitive":      METHOD_NOTPRIMITIVE,
+    "simd_notprimitive": METHOD_SIMD_NOTPRIMITIVE,
+}
+
 
 class EquidistributionTest(AbstractTest):
     """
@@ -35,11 +51,12 @@ class EquidistributionTest(AbstractTest):
 
     Attributes
     ----------
-    L       : int       — maximum resolution to test
-    delta   : list[int] — per-resolution gap bound (delta[l]); delta[0] unused
-    mse     : int       — maximum allowed sum of gaps (quasi-ME threshold)
-    meverif : bool      — whether the test is enabled
-    method  : int       — METHOD_MATRICIAL or METHOD_NOTHING
+    L       : int        — maximum resolution to test
+    delta   : list[int]  — per-resolution gap bound (delta[l]); delta[0] unused
+    mse     : int        — maximum allowed sum of gaps (quasi-ME threshold)
+    meverif : bool       — whether the test is enabled
+    method  : int | None — METHOD_* constant, or None to defer resolution
+                           to run() via the generator's default_test_method
     """
 
     def __init__(
@@ -48,11 +65,13 @@ class EquidistributionTest(AbstractTest):
         delta: list[int],
         mse: int,
         meverif: bool = True,
-        method: int = METHOD_MATRICIAL,
+        method: int | None = None,
     ) -> None:
-        if method not in (METHOD_MATRICIAL, METHOD_DUALLATTICE, METHOD_NOTHING,
-                          METHOD_HARASE, METHOD_NOTPRIMITIVE,
-                          METHOD_SIMD_NOTPRIMITIVE):
+        if method is not None and method not in (
+            METHOD_MATRICIAL, METHOD_DUALLATTICE, METHOD_NOTHING,
+            METHOD_HARASE, METHOD_NOTPRIMITIVE,
+            METHOD_SIMD_NOTPRIMITIVE,
+        ):
             raise ValueError(f"Unknown method: {method}")
         self.L       = L
         self.delta   = list(delta)      # indexed 0..L; delta[0] unused
@@ -65,26 +84,30 @@ class EquidistributionTest(AbstractTest):
         """
         YAML params:
             max_gap_sum: int — mse threshold
-            method: str — "matricial" (default) or "nothing"
+            method: str — one of "matricial", "lattice", "harase",
+                          "notprimitive", "simd_notprimitive", "nothing".
+                          Omit to defer to the generator's default
+                          (resolved at run() time).
             delta: list of {from, to, max} — per-resolution bounds (optional)
                    default: all delta[l] = sys.maxsize
         """
         import sys as _sys
 
         mse = params.get("max_gap_sum", _sys.maxsize)
-        method_str = params.get("method", "matricial")
-        if method_str == "matricial":
-            method = METHOD_MATRICIAL
-        elif method_str == "lattice":
-            method = METHOD_DUALLATTICE
-        elif method_str == "harase":
-            method = METHOD_HARASE
-        elif method_str == "notprimitive":
-            method = METHOD_NOTPRIMITIVE
-        elif method_str == "simd_notprimitive":
-            method = METHOD_SIMD_NOTPRIMITIVE
+        # Treat None / missing / empty-string as "no method specified" —
+        # run() will resolve via the generator's default_test_method.
+        # This avoids a silent METHOD_NOTHING fall-through when the
+        # caller passes method='' (e.g. from a form whose default
+        # was never populated).
+        raw_method = params.get("method")
+        if raw_method is None or raw_method == "":
+            method = None
         else:
-            method = METHOD_NOTHING
+            method = _STR_TO_METHOD.get(raw_method)
+            if method is None:
+                # Unknown non-empty string: treat as METHOD_NOTHING for
+                # backward compatibility with prior YAML behaviour.
+                method = METHOD_NOTHING
 
         # Build delta array indexed 0..Lmax
         delta = [_sys.maxsize] * (Lmax + 1)
@@ -104,7 +127,9 @@ class EquidistributionTest(AbstractTest):
         Compute dimension gaps Delta_l. Uses either the matricial method
         (Gaussian elimination) or the dual lattice method (Lenstra's algorithm).
         """
-        if not self.meverif or self.method == METHOD_NOTHING:
+        method = self._resolve_method(C) if self.method is None else self.method
+
+        if not self.meverif or method == METHOD_NOTHING:
             return EquidistributionResults(
                 L=self.L, ecart=[0] * (self.L + 1),
                 psi12=[False] * (self.L + 1), se=0,
@@ -112,16 +137,16 @@ class EquidistributionTest(AbstractTest):
                 meverif=self.meverif, delta=self.delta,
             )
 
-        if self.method == METHOD_DUALLATTICE:
+        if method == METHOD_DUALLATTICE:
             return self._run_lattice(C)
 
-        if self.method == METHOD_HARASE:
+        if method == METHOD_HARASE:
             return self._run_harase(C)
 
-        if self.method == METHOD_NOTPRIMITIVE:
+        if method == METHOD_NOTPRIMITIVE:
             return self._run_notprimitive(C)
 
-        if self.method == METHOD_SIMD_NOTPRIMITIVE:
+        if method == METHOD_SIMD_NOTPRIMITIVE:
             return self._run_simd_notprimitive(C)
 
         if self.L < C.L:
@@ -130,6 +155,39 @@ class EquidistributionTest(AbstractTest):
             )
 
         return self._run_matricial(C)
+
+    def _resolve_method(self, C: "Combination") -> int:
+        """
+        Ask the C++ generator for its recommended equidistribution method
+        when the YAML config did not specify one. For J=1, the underlying
+        primitive's default applies; for J>1, the CombinedGenerator is
+        consulted (its override returns "notprimitive" unconditionally).
+        Raises ValueError if the generator returns None.
+        """
+        import regpoly._regpoly_cpp as _cpp
+
+        if C.J == 1:
+            cpp_gen = C[0]._cpp_gen
+        else:
+            gens = [C[j]._cpp_gen for j in range(C.J)]
+            trans = [
+                [t._cpp_trans for t in comp.trans if hasattr(t, '_cpp_trans')]
+                for comp in C.components
+            ]
+            cpp_gen = _cpp.CombinedGenerator(gens, trans, C.L)
+
+        resolved = cpp_gen.default_test_method("equidistribution")
+        if resolved is None:
+            raise ValueError(
+                "Generator has no default method for equidistribution; "
+                "specify 'method:' in the YAML config"
+            )
+        method = _STR_TO_METHOD.get(resolved)
+        if method is None:
+            raise ValueError(
+                f"Generator returned an unknown default method: {resolved!r}"
+            )
+        return method
 
     def _run_matricial(self, C: "Combination") -> EquidistributionResults:
         """Phase 2.3: matricial orchestration loop now lives in C++."""

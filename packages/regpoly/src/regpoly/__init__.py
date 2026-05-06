@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """
 regpoly — Analysis and search for combined pseudo-random number generators
 based on modulo-2 linear recurrences (LFSRs over GF(2)).

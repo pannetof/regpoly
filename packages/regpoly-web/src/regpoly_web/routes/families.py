@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """API endpoints for generator families, transformations, and tests.
 
 These are read-only introspection routes: the web frontend uses them to
@@ -57,6 +60,22 @@ _KNOWN_TESTS: list[str] = [
 ]
 
 
+# Families whose every instance has a non-primitive characteristic
+# polynomial (SIMD-lane redundancy) AND whose recommended method is
+# "simd_notprimitive". Used as a UX hint at form-load time — the form
+# has no concrete generator to query yet, so it can't call the
+# authoritative C++ Generator::default_test_method. The *authoritative*
+# per-instance recommendation still lives in C++; this is a coarser,
+# family-level hint shown in search forms only.
+#
+# RMT64Gen is NOT in this set: its chi is reducible by construction but
+# it has no SIMD lane structure, so the right method is "notprimitive"
+# (see src/generators/rmt64.cpp::compute_default_test_method).
+_SIMD_HINT_FAMILIES: frozenset[str] = frozenset({
+    "SFMTGen", "DSFMTGen", "MTGPGen",
+})
+
+
 def _aliases_for(family: str) -> list[str]:
     return [a for a, canon in _FAMILY_ALIASES.items() if canon == family]
 
@@ -74,6 +93,9 @@ async def list_families() -> list[dict]:
             "name": fam,
             "aliases": _aliases_for(fam),
             "params": list(specs),
+            # Coarse hint for search forms; the per-instance authoritative
+            # recommendation lives in C++ Generator::default_test_method.
+            "simd_hint": fam in _SIMD_HINT_FAMILIES,
         })
     return result
 
@@ -132,7 +154,13 @@ async def transformation_detail(name: str) -> dict:
 
 @router.get("/tests")
 async def list_tests() -> list[dict]:
-    """Static metadata about available tests and their YAML parameters."""
+    """Static metadata about available tests and their YAML parameters.
+
+    The ``method`` choices for equidistribution must agree with the
+    enum at packages/regpoly/src/regpoly/analyses/equidistribution_test.py
+    (the canonical method enum) and with the C++ Generator override
+    return values in src/generators/{sfmt,dsfmt,mtgp,rmt64,combined}.cpp.
+    """
     return [
         {
             "name": "equidistribution",
@@ -141,8 +169,9 @@ async def list_tests() -> list[dict]:
                 {"name": "max_gap_sum", "type": "int", "required": False,
                  "description": "Maximum allowed total defect (mse)"},
                 {"name": "method", "type": "str", "required": False,
-                 "default": "matricial",
-                 "choices": ["matricial", "lattice", "harase", "nothing"]},
+                 "choices": ["matricial", "lattice", "harase",
+                             "notprimitive", "simd_notprimitive",
+                             "nothing"]},
                 {"name": "delta", "type": "list",
                  "description": "Per-resolution gap bounds",
                  "required": False},

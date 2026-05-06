@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 1 (TDD red): tests for the CombinedGenerator class.
 //
 // CombinedGenerator is a Generator subclass that owns J component

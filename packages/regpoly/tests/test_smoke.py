@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Smoke tests to verify the package loads and basic operations work."""
 
 from regpoly import BitMatrix, BitVect, Generator, Transformation

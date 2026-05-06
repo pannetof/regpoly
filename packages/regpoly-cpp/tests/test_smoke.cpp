@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 0 smoke test: confirms the GoogleTest harness builds and links against
 // regpoly_cpp_core. Phase 1+ replaces this with the CombinedGenerator suite and
 // the parameterized "iterate this property over all 18 families" tables.

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2 red — chip toolbar filter contract on v2 list endpoints.
 
 Every chip → a query-string facet. AND across facets. URL is the

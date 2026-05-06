@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #pragma once
 #include "generator.h"
 #include "param_spec.h"
@@ -49,6 +52,9 @@ public:
 
     int mexp() const { return mexp_; }
     int N() const { return N_; }
+
+protected:
+    std::optional<std::string> compute_default_test_method(const std::string& test_type) const override;
 
 private:
     int mexp_;

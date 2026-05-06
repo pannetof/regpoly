@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // regpoly-cli — standalone C++ command-line driver.
 //
 // Phase 4.1 ships two foundational subcommands that exercise the

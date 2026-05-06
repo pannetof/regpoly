@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2 regression guard — the existing /api/ namespace contract is
 preserved unchanged across the v2 redesign. v2 (renames, wrapper shape
 changes) lives under /api/v2/. External CLI / SDK consumers continue

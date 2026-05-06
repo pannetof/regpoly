@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2 red — Dashboard pinning + 5-row HTTP/1.1 SSE budget cap.
 
 Researcher persona R-1: pin by session-launched OR explicit star;

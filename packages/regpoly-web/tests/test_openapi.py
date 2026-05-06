@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 1+ — OpenAPI fixture + path presence.
 
 Phase 1 only asserts the OpenAPI spec is reachable. The /api/v2/
@@ -81,6 +84,7 @@ def test_every_v2_endpoint_declares_response_model(client) -> None:
         ("get", "/api/v2/generators/{gen_id}/transition-matrix-coords"),
         ("get", "/api/v2/healthz"),  # trivial dict
         ("get", "/api/v2/generators/export"),  # CSV alternative
+        ("get", "/api/v2/tested-generators/export"),  # CSV alternative
     }
 
     failures: list[str] = []

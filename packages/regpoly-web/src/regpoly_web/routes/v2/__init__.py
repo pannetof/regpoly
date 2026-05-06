@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """regpoly-web /api/v2/ namespace.
 
 The v2 namespace is where every breaking-shape change in the redesign
@@ -31,6 +34,9 @@ router = APIRouter()
 # Mount every sub-router under /api/v2/.
 router.include_router(dashboard.router)
 router.include_router(generators.router)
+# compare_export registers `/<entity>/compare` and must precede the
+# `/{id}` detail routes so FastAPI matches the static path first.
+router.include_router(compare_export.router)
 router.include_router(tested_generators.router)
 router.include_router(library.router)
 router.include_router(searches.router)
@@ -39,7 +45,6 @@ router.include_router(publish.router)
 router.include_router(related.router)
 router.include_router(transition_matrix.router)
 router.include_router(tools.router)
-router.include_router(compare_export.router)
 
 
 @router.get("/healthz")

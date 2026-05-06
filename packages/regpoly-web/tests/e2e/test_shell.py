@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 1 red set — breadcrumb + KaTeX + no-console-errors across the shell."""
 
 from __future__ import annotations

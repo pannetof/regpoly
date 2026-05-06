@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Background worker for "Run test" actions on library generators.
 
 The web request handler returns a job_id immediately; the actual test

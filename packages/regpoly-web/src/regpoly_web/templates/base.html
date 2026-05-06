@@ -27,6 +27,17 @@
       })();
     </script>
 
+    {# Typography stack — Inter (body), Geist (display), JetBrains Mono
+       (code). Loaded before Tabler so cascade overrides land cleanly. #}
+    <link rel="preconnect" href="https://rsms.me">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+
     {# Tabler — pinned subversion, not @latest. Bumping is deliberate. #}
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css">
@@ -37,22 +48,36 @@
        deferred optimization (not in P1 scope). #}
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    {# uPlot — minimalist chart library used by sparklines + activity
+       charts + the equidist chart macro. #}
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.min.css">
     {# v2 custom CSS, layered on top of Tabler tokens. #}
     <link rel="stylesheet" href="{{ url_for('static', path='css/regpoly.css') }}">
-    {# Legacy supplemental CSS (deleted in P5 once nothing references it). #}
-    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
 
     {# htmx kept for now (some templates still reference it); unused
        beyond the include in the redesign. #}
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js"></script>
 
-    {# app.js (legacy helpers used by inline x-data factories) MUST load
-       before Alpine, otherwise factories explode with ReferenceError.
-       regpoly.js (P1+) adds new functionality (theme, KaTeX runner, hex
-       copy, keyboard shortcuts). Both load before Alpine for parity. #}
+    {# Legacy supplemental CSS — still referenced by Pico-vocabulary
+       holdovers (.compact, .status-pill on a few un-converted
+       templates). Slated for deletion once those references are
+       fully migrated. #}
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+
+    {# Legacy app.js — `rngTableApply`, `rngTableToggleSort`,
+       `rngTableSortArrow`, `rngTableFilterMethods`, `fmtHex`. Still
+       used by tempering_search/{form,detail}.html. Slated for
+       migration into regpoly.js. #}
     <script defer src="{{ url_for('static', path='app.js') }}"></script>
+
+    {# regpoly.js — theme, KaTeX runner, hex copy, keyboard shortcuts,
+       toast region, command palette, uPlot wrappers. Loaded before
+       Alpine so factories registered on `window.<name>` are visible. #}
     <script defer src="{{ url_for('static', path='js/regpoly.js') }}"></script>
+    <script defer
+            src="https://cdn.jsdelivr.net/npm/uplot@1.6.30/dist/uPlot.iife.min.js"></script>
     <script defer
             src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script defer
@@ -67,6 +92,54 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body{% if hide_chrome %} class="embed"{% endif %}>
+
+{# ── Tabler Icons SVG sprite — single inline definition so every
+     <use href="#tabler-…"> reference in macros and templates resolves.
+     The set is intentionally narrow (only the icons referenced across
+     the v2 redesign); add more on demand. ── #}
+{% if not hide_chrome %}
+<svg data-tabler-sprite xmlns="http://www.w3.org/2000/svg" style="display:none">
+    {% set _icons = {
+        "home": "M5 12l-2 0l9 -9l9 9l-2 0M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6",
+        "cpu": "M5 5m0 1a1 1 0 0 1 1 -1h12a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-12a1 1 0 0 1 -1 -1zM9 9h6v6h-6zM3 10h2M3 14h2M10 3v2M14 3v2M21 10h-2M21 14h-2M10 21v-2M14 21v-2",
+        "search": "M3 10a7 7 0 1 0 14 0a7 7 0 0 0 -14 0M21 21l-6 -6",
+        "math-function": "M3 19a2 2 0 0 0 2 2c2 0 2 -4 3 -9s1 -9 3 -9a2 2 0 0 1 2 2M5 12h6M12 15c4 6 5 6 9 0",
+        "player-play": "M7 4v16l13 -8z",
+        "settings": "M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0",
+        "sun": "M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M3 12h1M12 3v1M20 12h1M12 20v1M5.6 5.6l.7 .7M18.4 5.6l-.7 .7M17.7 17.7l.7 .7M6.3 17.7l-.7 .7",
+        "moon": "M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z",
+        "star": "M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z",
+        "star-filled": "M8.243 7.34l-6.38 .925l-.113 .023a1 1 0 0 0 -.44 1.684l4.622 4.499l-1.09 6.355l-.013 .11a1 1 0 0 0 1.464 .944l5.706 -3l5.693 3l.1 .046a1 1 0 0 0 1.352 -1.1l-1.091 -6.355l4.624 -4.5l.078 -.085a1 1 0 0 0 -.633 -1.62l-6.38 -.926l-2.852 -5.78a1 1 0 0 0 -1.794 0l-2.853 5.78z",
+        "x": "M18 6l-12 12M6 6l12 12",
+        "check": "M5 12l5 5l10 -10",
+        "chevron-down": "M6 9l6 6l6 -6",
+        "arrow-right": "M5 12l14 0M13 18l6 -6M13 6l6 6",
+        "arrow-left": "M5 12l14 0M5 12l6 6M5 12l6 -6",
+        "alert-triangle": "M12 9v4M12 17h.01M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z",
+        "loader": "M12 6l0 -3M16.25 7.75l2.15 -2.15M18 12l3 0M16.25 16.25l2.15 2.15M12 18l0 3M7.75 16.25l-2.15 2.15M6 12l-3 0M7.75 7.75l-2.15 -2.15",
+        "dots": "M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0M19 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0",
+        "player-pause": "M6 5m0 1a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1zM14 5m0 1a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1z",
+        "cancel": "M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0M5.7 5.7l12.6 12.6",
+        "file-type-pdf": "M14 3v4a1 1 0 0 0 1 1h4M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2zM5 17h6M9 12v5",
+        "external-link": "M12 6h-6a2 2 0 0 0 -2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-6M11 13l9 -9M15 4h5v5",
+        "plus": "M12 5l0 14M5 12l14 0"
+    } %}
+    {% for name, path in _icons.items() %}
+    <symbol id="tabler-{{ name }}" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="{{ path }}"/></symbol>
+    {% endfor %}
+</svg>
+{% endif %}
+
+{# Toast region — slide-in notifications mounted once at body root.
+     `regpoly.toast({title, body, type})` inserts a Tabler-styled card
+     here and removes it after a timeout. Replaces native alert(). #}
+<div data-toast-region class="toast-region position-fixed top-0 end-0 p-3"
+     aria-live="polite" aria-atomic="true"
+     style="z-index: 1100; max-width: 360px;"></div>
+
+{# Command palette — ⌘K modal opened from regpoly.js. #}
+<dialog data-command-palette class="rp-cmdk-dialog"
+        aria-label="Command palette"></dialog>
 <div class="page">
 
     {% if not hide_chrome %}

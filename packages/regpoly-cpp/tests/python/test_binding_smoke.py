@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 0 smoke test for the regpoly_cpp pybind11 binding.
 
 Asserts the extension loads and exposes the minimal surface we depend on. Phase 1+

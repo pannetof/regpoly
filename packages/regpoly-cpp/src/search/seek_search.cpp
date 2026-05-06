@@ -1,146 +1,61 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "seek_search.h"
 
 #include "combined.h"
-#include "equidistribution_runner.h"
-#include "me_harase.h"
-#include "me_helpers.h"
-#include "me_notprimitive.h"
-#include "me_notprimitive_simd.h"
-#include "tuplets_runner.h"
+#include "equidistribution_method.h"
+#include "me_helpers.h"               // build_combined_from_combination
+#include "test.h"
 
 #include <chrono>
 #include <climits>
 #include <memory>
+#include <stdexcept>
+#include <vector>
 
 namespace {
 
-// Mirrors the Python EquidistributionResults.is_presque_me():
-//   verified must be true and se must be <= mse.
-// Used as the short-circuit condition.
-bool me_is_presque(const SeekIterResult& r, int mse) {
-    if (!r.me_verified) return false;
-    return r.me_se <= mse;
-}
+// Translate a SeekTestSpec into a polymorphic Test instance. This is
+// the ONLY translation site between the legacy spec API and the
+// polymorphic dispatch — adding a new method or test type means
+// editing the registries (factory.cpp's register_all_methods et al.),
+// NOT this function.
+std::unique_ptr<Test> spec_to_test(const SeekTestSpec& spec) {
+    // Legacy enumerator → method_name mapping. Used when the caller
+    // populated `kind` with a deprecated alias and left `method_name`
+    // empty.
+    auto resolve_method_name = [&]() -> std::string {
+        if (!spec.method_name.empty()) return spec.method_name;
+        switch (spec.kind) {
+            case SeekTestKind::EquidistributionMatricial:        return "matricial";
+            case SeekTestKind::EquidistributionLattice:          return "lattice";
+            case SeekTestKind::EquidistributionHarase:           return "harase";
+            case SeekTestKind::EquidistributionNotPrimitive:     return "notprimitive";
+            case SeekTestKind::EquidistributionSimdNotPrimitive: return "simd_notprimitive";
+            case SeekTestKind::EquidistributionNothing:          return "nothing";
+            // Equidistribution (canonical) requires explicit method_name.
+            default: return "matricial";  // historical default
+        }
+    };
 
-// Mirrors Python TupletsResults.is_ok():
-//   if !verified, treat as ok (test was disabled).
-//   else: verified means the bound was met.
-// In the C++ runner, `verified` is signaled by tup_threshold being
-// satisfied; for the simple case here we treat any returned struct
-// as ok (the Python code's is_ok logic isn't easily replicated here
-// without re-doing the dispatch). Phase 5 will tighten this when the
-// web tests need it; for now matching Python's default is enough.
-bool tup_is_ok_approximation(const SeekIterResult& r) {
-    return r.tup_is_ok;
-}
-
-void run_equidist_test(
-    SeekIterResult& iter,
-    const SeekTestSpec& spec,
-    const Generator& combined,
-    int kg, int L)
-{
-    iter.me_ran = true;
-    iter.me_test_L = spec.eq_L_max_test;
-
-    if (spec.kind == SeekTestKind::EquidistributionNothing) {
-        iter.me_ecart.assign(spec.eq_L_max_test + 1, 0);
-        iter.me_se = 0;
-        iter.me_verified = false;
-        iter.me_is_me = false;
-        return;
+    // Test-type discrimination collapses to three cases.
+    if (spec.kind == SeekTestKind::CollisionFree) {
+        return std::unique_ptr<Test>(new CollisionFreeTestRunner());
+    }
+    if (spec.kind == SeekTestKind::Tuplets) {
+        return std::unique_ptr<Test>(new TupletsTestRunner(
+            spec.tup_d, spec.tup_h,
+            spec.tup_threshold, spec.tup_testtype));
     }
 
-    if (spec.kind == SeekTestKind::EquidistributionMatricial) {
-        auto r = run_matricial_equidistribution(
-            combined, kg, L, spec.eq_L_max_test,
-            spec.eq_delta, spec.eq_mse);
-        iter.me_ecart = std::move(r.ecart);
-        iter.me_se = r.se;
-        iter.me_verified = r.verified;
-        iter.me_is_me = (iter.me_se == 0) && iter.me_verified;
-        return;
-    }
-
-    if (spec.kind == SeekTestKind::EquidistributionLattice) {
-        auto r = test_me_lat(
-            combined, kg, L, spec.eq_L_max_test,
-            spec.eq_delta, spec.eq_mse);
-        iter.me_ecart = std::move(r.ecart);
-        iter.me_se = r.se;
-        iter.me_verified = true;
-        iter.me_is_me = (iter.me_se == 0);
-        return;
-    }
-
-    if (spec.kind == SeekTestKind::EquidistributionHarase) {
-        auto r = test_me_harase(
-            combined, kg, L, spec.eq_L_max_test,
-            spec.eq_delta, spec.eq_mse);
-        iter.me_ecart = std::move(r.ecart);
-        iter.me_se = r.se;
-        iter.me_verified = true;
-        iter.me_is_me = (iter.me_se == 0);
-        return;
-    }
-
-    if (spec.kind == SeekTestKind::EquidistributionNotPrimitive) {
-        auto r = test_me_notprimitive(
-            combined, kg, L, spec.eq_L_max_test,
-            spec.eq_delta, spec.eq_mse);
-        iter.me_ecart = std::move(r.ecart);
-        iter.me_se = r.se;
-        iter.me_verified = true;
-        iter.me_is_me = (iter.me_se == 0);
-        return;
-    }
-
-    if (spec.kind == SeekTestKind::EquidistributionSimdNotPrimitive) {
-        auto r = test_me_notprimitive_simd(
-            combined, kg, L, spec.eq_L_max_test,
-            spec.eq_delta, spec.eq_mse);
-        iter.me_ecart = std::move(r.ecart);
-        iter.me_se = r.se;
-        iter.me_verified = true;
-        iter.me_is_me = (iter.me_se == 0);
-        return;
-    }
-}
-
-void run_cf_test(
-    SeekIterResult& iter,
-    const Generator& combined,
-    int kg, int L,
-    int L_for_phi4)
-{
-    iter.cf_ran = true;
-    auto r = run_collision_free(combined, kg, L, L_for_phi4);
-    iter.cf_ecart_cf = std::move(r.ecart_cf);
-    iter.cf_secf = r.secf;
-    iter.cf_verified = r.verified;
-}
-
-void run_tup_test(
-    SeekIterResult& iter,
-    const SeekTestSpec& spec,
-    const Generator& combined,
-    int kg, int L)
-{
-    iter.tup_ran = true;
-    auto r = run_tuplets(combined, kg, L, spec.tup_d,
-                         spec.tup_h, spec.tup_threshold,
-                         spec.tup_testtype);
-    iter.tup_firstpart_max = r.firstpart_max;
-    iter.tup_firstpart_sum = r.firstpart_sum;
-    iter.tup_secondpart_max = r.secondpart_max;
-    iter.tup_secondpart_sum = r.secondpart_sum;
-    // The runner doesn't return is_ok / verified in its dict; Phase 2.3
-    // codified the same convention as Python — verified is implicit
-    // from the kind being enabled. Leave is_ok true so the loop does
-    // not short-circuit on tuplets unless callers wire something
-    // tighter later.
-    iter.tup_verified = true;
-    iter.tup_is_ok = true;
+    // Everything else is an equidistribution variant.
+    auto method = MethodRegistry::create(resolve_method_name());
+    return std::unique_ptr<Test>(new EquidistributionTestRunner(
+        std::move(method),
+        spec.eq_L_max_test,
+        spec.eq_delta,
+        spec.eq_mse));
 }
 
 }  // namespace
@@ -157,11 +72,17 @@ SeekResult run_seek_search(
     if (nbtries < 1) nbtries = 1;
     if (progress_interval < 1) progress_interval = 1;
 
+    // Build polymorphic Test instances once per call. Each Test
+    // owns its EquidistributionMethod (if applicable) and is reused
+    // across iterations.
+    std::vector<std::unique_ptr<Test>> runners;
+    runners.reserve(tests.size());
+    for (const auto& spec : tests) runners.push_back(spec_to_test(spec));
+
     int64_t nbgen = 0;
     int64_t nb_select = 0;
     int64_t nb_me = 0;
     int no_try = 1;
-    bool first_iter = true;
     const auto t_start = std::chrono::steady_clock::now();
 
     while (true) {
@@ -178,35 +99,9 @@ SeekResult run_seek_search(
         SeekIterResult iter;
         bool passed = true;
 
-        // We need the ME test's L to feed CollisionFree (it uses
-        // me_results.L to compute Phi_4). Track separately.
-        int me_test_L_for_cf = comb.L();
-
-        for (const auto& spec : tests) {
-            if (spec.kind == SeekTestKind::CollisionFree) {
-                if (!iter.me_ran) {
-                    // The Python code passes me_results=None and falls
-                    // back to comb.L. Match that behaviour.
-                    me_test_L_for_cf = comb.L();
-                }
-                run_cf_test(iter, combined, comb.k_g(), comb.L(),
-                            me_test_L_for_cf);
-                continue;
-            }
-
-            if (spec.kind == SeekTestKind::Tuplets) {
-                run_tup_test(iter, spec, combined, comb.k_g(), comb.L());
-                if (!tup_is_ok_approximation(iter)) {
-                    passed = false;
-                    break;
-                }
-                continue;
-            }
-
-            // Otherwise: an equidistribution variant.
-            run_equidist_test(iter, spec, combined, comb.k_g(), comb.L());
-            me_test_L_for_cf = iter.me_test_L;
-            if (!me_is_presque(iter, spec.eq_mse)) {
+        for (const auto& runner : runners) {
+            runner->run(iter, combined, comb.k_g(), comb.L());
+            if (!runner->passed(iter)) {
                 passed = false;
                 break;
             }
@@ -234,9 +129,6 @@ SeekResult run_seek_search(
             if (!comb.next()) break;
             no_try = 1;
         }
-
-        first_iter = false;
-        (void)first_iter;
     }
 
     const auto t_end = std::chrono::steady_clock::now();

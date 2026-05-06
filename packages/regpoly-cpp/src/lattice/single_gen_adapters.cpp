@@ -1,18 +1,13 @@
-// Phase 1 — single-Generator& adapter overloads for the lattice
-// equidistribution kernels.
-//
-// Each adapter detects whether the input is a CombinedGenerator. If so,
-// it unpacks the components and per-component tempering chains and
-// forwards to the existing vector overload, which already implements
-// the full algorithm. If the input is a primitive (non-Combined)
-// Generator, it is treated as a 1-component combination with no
-// tempering.
-//
-// This preserves exact behaviour of the existing pytest cross-checks
-// while exposing the new public API (single Generator&) that Phase 2+
-// migrates to consume natively.
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
 
-#include "combined.h"
+// Single-Generator& adapter overloads for the lattice equidistribution
+// kernels. Each adapter unpacks the input via the virtual
+// Generator::components() / Generator::tempering_chains() (whose default
+// returns {*this} / {{}} for primitives, overridden by CombinedGenerator
+// to return its components and per-component tempering) and forwards
+// to the existing vector overload.
+
 #include "generator.h"
 #include "transformation.h"
 #include "me_helpers.h"
@@ -25,22 +20,13 @@
 
 namespace {
 
-// Build (gens, trans) pair from a Generator&.
-//   - CombinedGenerator: unpack components and tempering chains.
-//   - Primitive Generator: 1-component, no tempering.
 struct Unpacked {
     std::vector<Generator*> gens;
     std::vector<std::vector<Transformation*>> trans;
 };
 
 Unpacked unpack(const Generator& gen) {
-    if (auto* cg = dynamic_cast<const CombinedGenerator*>(&gen)) {
-        return {cg->raw_component_pointers(), cg->raw_tempering_pointers()};
-    }
-    return {
-        std::vector<Generator*>{const_cast<Generator*>(&gen)},
-        std::vector<std::vector<Transformation*>>{{}},
-    };
+    return {gen.components(), gen.tempering_chains()};
 }
 
 }  // namespace

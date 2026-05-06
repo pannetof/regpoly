@@ -67,9 +67,9 @@
     <div class="col-sm-6 col-lg-3">
       <div class="card card-sm">
         <div class="card-body">
-          <div class="font-weight-medium">Rate (5s)</div>
+          <div class="font-weight-medium" x-text="rateLabel"></div>
           <div class="text-secondary">
-            <span x-text="rateRollingFmt"></span> /s
+            <span x-text="rateValueFmt"></span> /s
           </div>
         </div>
       </div>
@@ -84,19 +84,36 @@
     </div>
   </div>
 
-  <div class="card mb-3">
-    <div class="card-header">
-      <h3 class="card-title">Activity</h3>
+  {# Live tries-done sparkline — only shown while the run is active.
+     Plot semantics: each point is the cumulative tries_done value at
+     the moment a search_progress row was written (the worker emits
+     one every ~_PROGRESS_EVERY tries or ~_PROGRESS_MIN_SECONDS,
+     whichever comes first). For a completed run this section is
+     hidden because the worker only keeps the last ~10 progress rows,
+     so the chart would auto-scale ten near-identical end-of-run
+     samples and look like noise. #}
+  <template x-if="run && (run.status === 'running'
+                          || run.status === 'paused'
+                          || run.status === 'pending')">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Tries done over time</h3>
+        <span class="text-secondary small ms-2"
+              title="Cumulative tries_done sampled at each search_progress write
+(seeded from /api/v2/primitive-searches/{id}/history; live updates via SSE).">
+          live
+        </span>
+      </div>
+      <div class="card-body">
+        <svg width="100%" height="80" viewBox="0 0 600 80"
+             preserveAspectRatio="none" data-sparkline>
+          <polyline fill="none" stroke="var(--tblr-primary)"
+                    stroke-width="1.5"
+                    :points="sparkPoints"/>
+        </svg>
+      </div>
     </div>
-    <div class="card-body">
-      <svg width="100%" height="80" viewBox="0 0 600 80"
-           preserveAspectRatio="none" data-sparkline>
-        <polyline fill="none" stroke="var(--tblr-primary)"
-                  stroke-width="1.5"
-                  :points="sparkPoints"/>
-      </svg>
-    </div>
-  </div>
+  </template>
 
   <div class="row row-cards mb-3">
     <div class="col-md-6">
@@ -125,12 +142,17 @@
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Recent events</h3>
+          <h3 class="card-title mb-0">Recent events</h3>
+          <span class="text-secondary small ms-2"
+                title="Each row is a progress sample written by the search worker (every ~N tries or ~N seconds, whichever first).">
+            search-worker progress samples
+          </span>
           <div class="card-actions">
             <button type="button"
                     class="btn btn-icon btn-link btn-sm"
                     @click="logCollapsed = !logCollapsed"
-                    :aria-expanded="!logCollapsed">
+                    :aria-expanded="!logCollapsed"
+                    :title="logCollapsed ? 'Expand' : 'Collapse'">
               <span x-text="logCollapsed ? '▸' : '▾'"></span>
             </button>
           </div>
@@ -211,7 +233,9 @@ function primitiveSearchDetail(id) {
     async init() {
       await this.loadRun();
       await this.loadGenerators();
-      this.logCollapsed = this.run && this.run.status !== "running";
+      // Recent-events disclosure is user-controlled; we do not flip it
+      // open/closed based on run status (doing so used to slam the box
+      // shut the moment SSE emitted `end` for a completed run).
       // Seed history from /api/v2 history endpoint so a reopened tab
       // repaints with prior state.
       try {
@@ -246,10 +270,28 @@ function primitiveSearchDetail(id) {
         .includes(this.run.status);
     },
 
-    get rateRollingFmt() {
-      const v = this.progress?.current_info?.rate_rolling_5s
-             ?? this.progress?.current_info?.rate;
-      return v ? v.toFixed(0) : "—";
+    get isActive() {
+      return this.run && ["pending", "running", "paused"]
+        .includes(this.run.status);
+    },
+    get rateLabel() {
+      // While the search is live, the worker emits rate_rolling_5s
+      // snapshots which are meaningful. After completion, those
+      // snapshots are stale (and SSE replay can make them flicker on
+      // page open), so we switch to the final tries-per-second average.
+      return this.isActive ? "Rate (5s)" : "Avg rate";
+    },
+    get rateValueFmt() {
+      if (this.isActive) {
+        const v = this.progress?.current_info?.rate_rolling_5s
+               ?? this.progress?.current_info?.rate;
+        return v ? v.toFixed(0) : "—";
+      }
+      // Completed/cancelled/failed: compute overall avg from the run row.
+      const done = this.run?.tries_done;
+      const elapsed = this.run?.elapsed_seconds;
+      if (!done || !elapsed) return "—";
+      return (done / elapsed).toFixed(0);
     },
     get etaFmt() {
       const ci = this.progress?.current_info;
@@ -293,8 +335,10 @@ function primitiveSearchDetail(id) {
     },
 
     openSSE() {
+      // ?v=2 opts in to the v2 named `progress` channel; without it
+      // the endpoint emits only v1 unnamed `data:` events.
       this.sse = new EventSource(
-        "/api/primitive-searches/" + id + "/progress");
+        "/api/primitive-searches/" + id + "/progress?v=2");
       // Listen on the v2 named channel; the v1 unnamed channel is
       // intentionally ignored here so we don't double-count.
       this.sse.addEventListener("progress", (e) => {
@@ -321,7 +365,6 @@ function primitiveSearchDetail(id) {
         this.sse.close();
         this.loadRun();
         this.loadGenerators();
-        this.logCollapsed = true;
       });
     },
 

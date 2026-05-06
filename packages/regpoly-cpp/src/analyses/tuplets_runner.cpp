@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "tuplets_runner.h"
 
-#include "combined.h"
 #include "gauss.h"
 #include "transformation.h"
 
@@ -25,19 +27,14 @@ struct UnpackedGenerator {
     std::vector<int> gen_k;
 };
 
+// Polymorphic unpack via Generator::components() / tempering_chains().
+// Default (primitive) returns {*this} / {{}}; CombinedGenerator overrides.
 UnpackedGenerator unpack_for_kernel(const Generator& gen) {
-    if (auto* cg = dynamic_cast<const CombinedGenerator*>(&gen)) {
-        UnpackedGenerator u;
-        u.gens = cg->raw_component_pointers();
-        u.trans = cg->raw_tempering_pointers();
-        u.gen_k.reserve(u.gens.size());
-        for (auto* c : u.gens) u.gen_k.push_back(c->k());
-        return u;
-    }
     UnpackedGenerator u;
-    u.gens = {const_cast<Generator*>(&gen)};
-    u.trans = {{}};
-    u.gen_k = {gen.k()};
+    u.gens = gen.components();
+    u.trans = gen.tempering_chains();
+    u.gen_k.reserve(u.gens.size());
+    for (auto* c : u.gens) u.gen_k.push_back(c->k());
     return u;
 }
 

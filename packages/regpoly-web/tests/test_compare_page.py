@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 5 red — /generators/compare?ids=… side-by-side view."""
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "f2w_polylcg.h"
 
 F2wPolyLCGGen::F2wPolyLCGGen(int w, int r, int nbcoeff,

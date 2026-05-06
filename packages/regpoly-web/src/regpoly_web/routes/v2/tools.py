@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """POST /api/v2/import/generators/preview — dry-run import.
 
 Reads the YAML payload (uploaded file or path on disk), reports what
@@ -30,11 +33,11 @@ async def _previously_imported(db, file_path: str | None) -> str | None:
     if not file_path:
         return None
     async with db.execute(
-        "SELECT created_at FROM yaml_import WHERE file_path = ?",
+        "SELECT imported_at FROM yaml_import WHERE file_path = ?",
         (file_path,),
     ) as cur:
         row = await cur.fetchone()
-    return row["created_at"] if row else None
+    return row["imported_at"] if row else None
 
 
 def _count_in_yaml(data: dict) -> int:
@@ -81,4 +84,56 @@ async def v2_import_preview(
 
     return PreviewResponse(
         would_add=would_add, would_skip=would_skip, conflicts=conflicts,
+    )
+
+
+# ── P6 — POST /api/v2/import/generators (upload-and-commit) ────────────
+
+
+class ImportResponse(BaseModel):
+    file: str
+    inserted: int
+    duplicates: int
+    failures: list[dict] = []
+
+
+@router.post(
+    "/import/generators", response_model=ImportResponse,
+)
+async def v2_import_generators(
+    request: Request, file: UploadFile | None = File(default=None),
+) -> ImportResponse:
+    """Accept a multipart upload, persist to a tmp file, and route through
+    the existing v1 single-file importer. Replaces the broken JS-only
+    `commitImport()` flow on /tools."""
+    if file is None:
+        raise HTTPException(400, "Upload a YAML file as 'file'")
+    blob = await file.read()
+    import tempfile
+    from pathlib import Path as _Path
+
+    fname = file.filename or "upload.yml"
+    suffix = ".yml" if fname.endswith(".yml") else ".yaml"
+    with tempfile.NamedTemporaryFile(
+        prefix="regpoly_upload_", suffix=suffix, delete=False,
+    ) as tmp:
+        tmp.write(blob)
+        tmp_path = _Path(tmp.name)
+
+    from regpoly_web.routes.import_export import (
+        _import_one_generators_file,
+    )
+    try:
+        result = await _import_one_generators_file(request, tmp_path)
+    finally:
+        try:
+            tmp_path.unlink()
+        except OSError:
+            pass
+
+    return ImportResponse(
+        file=fname,
+        inserted=int(result.get("inserted", 0)),
+        duplicates=int(result.get("duplicates", 0)),
+        failures=result.get("failures", []),
     )

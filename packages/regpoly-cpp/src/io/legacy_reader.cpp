@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 3.3: legacy ".dat" parameter file reader (C++ port of
 // packages/regpoly/src/regpoly/io/legacy_reader.py). See the header
 // for the public API contract.

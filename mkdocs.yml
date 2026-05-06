@@ -122,6 +122,7 @@ nav:
       - Python: usage/python.md
       - C++: usage/cpp.md
       - Web: usage/web.md
+      - Web — user stories: usage/web-user-stories.md
       - Notebooks: usage/notebooks.md
   - Notebooks:
       - "Per-family":

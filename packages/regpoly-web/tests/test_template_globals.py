@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 1 red set — verify the redesigned base shell drops the
 families globals and registers nav_items.
 
@@ -35,7 +38,7 @@ def test_nav_items_global_registered(client) -> None:
     assert nav_items, "nav_items global must be registered for the flat sidebar"
     labels = [item.get("label") if isinstance(item, dict) else item
               for item in nav_items]
-    expected = {"Dashboard", "Generators", "Tested generators",
+    expected = {"Dashboard", "Generators", "Combined generators",
                 "Searches", "Library", "Tools"}
     assert set(labels) >= expected, (
         f"nav_items must include {expected}, got {labels}"

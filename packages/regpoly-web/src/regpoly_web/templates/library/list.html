@@ -33,10 +33,55 @@
   {# ─────── Configurations tab ─────── #}
   <div x-show="tab === 'configurations'" data-library-pane="configurations">
     <p class="text-secondary">
-      Canonical generators from the literature. Use the chip toolbar to
-      filter by family or starred-only; each row links to the generator's
-      detail page.
+      Canonical generators from the literature. Each row links to the
+      generator's detail page.
     </p>
+
+    <div class="card card-sm mb-3">
+      <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label form-label-sm mb-1">Family</label>
+            <select class="form-select form-select-sm"
+                    x-model="filters.family"
+                    @change="applyFilters()">
+              <option value="">All families</option>
+              <template x-for="f in familyOptions" :key="f.name">
+                <option :value="f.name"
+                        x-text="f.name + ' (' + f.count + ')'"></option>
+              </template>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label form-label-sm mb-1">k</label>
+            <input type="number" min="1"
+                   class="form-control form-control-sm"
+                   placeholder="any"
+                   x-model="filters.k"
+                   @change="applyFilters()"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label form-label-sm mb-1">Paper</label>
+            <select class="form-select form-select-sm"
+                    x-model="filters.paper_id"
+                    @change="applyFilters()">
+              <option value="">All papers</option>
+              <template x-for="p in paperOptions" :key="p.id">
+                <option :value="p.id" x-text="p.label"></option>
+              </template>
+            </select>
+          </div>
+          <div class="col-md-3 text-md-end">
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    @click="clearFilters()"
+                    :disabled="!hasFilters">
+              Clear filters
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="card">
       <div class="table-responsive">
@@ -49,16 +94,16 @@
               <th>k</th>
               <th>L</th>
               <th>Paper</th>
-              <th class="w-1"></th>
             </tr>
           </thead>
           <tbody>
             <template x-for="g in gens" :key="g.paper_id + ':' + g.id">
               <tr>
                 <td>
-                  <strong x-text="g.id"></strong>
+                  <a :href="'/library/' + g.paper_id + '/' + g.id"
+                     class="fw-medium" x-text="g.id"></a>
                   <template x-if="g.starred">
-                    <span title="Featured" aria-label="featured">★</span>
+                    <span title="Featured" aria-label="featured" class="ms-1">★</span>
                   </template>
                 </td>
                 <td x-text="g.family || ''"></td>
@@ -68,14 +113,10 @@
                   <a :href="'/library/' + g.paper_id"
                      x-text="g.paper_id"></a>
                 </td>
-                <td class="text-end">
-                  <a class="btn btn-sm btn-link"
-                     :href="'/library/' + g.paper_id + '/' + g.id">view</a>
-                </td>
               </tr>
             </template>
             <template x-if="gens.length === 0">
-              <tr><td colspan="6" class="text-center text-secondary py-4">
+              <tr><td colspan="5" class="text-center text-secondary py-4">
                 No published generators match.
               </td></tr>
             </template>
@@ -103,7 +144,6 @@
               <th>ID</th>
               <th>Display</th>
               <th>Generators</th>
-              <th class="w-1"></th>
             </tr>
           </thead>
           <tbody>
@@ -111,21 +151,18 @@
               <tr>
                 <td x-text="p.year || ''"></td>
                 <td>
-                  <span x-text="p.id"></span>
+                  <a :href="'/library/' + p.id"
+                     class="fw-medium" x-text="p.id"></a>
                   <template x-if="p.starred">
-                    <span title="Featured paper" aria-label="featured">★</span>
+                    <span title="Featured paper" aria-label="featured" class="ms-1">★</span>
                   </template>
                 </td>
                 <td x-text="p.display"></td>
                 <td x-text="p.n_generators"></td>
-                <td class="text-end">
-                  <a class="btn btn-sm btn-link"
-                     :href="'/library/' + p.id">view</a>
-                </td>
               </tr>
             </template>
             <template x-if="papers.length === 0">
-              <tr><td colspan="5" class="text-center text-secondary py-4">
+              <tr><td colspan="4" class="text-center text-secondary py-4">
                 No papers in library.
               </td></tr>
             </template>
@@ -140,9 +177,23 @@
 function libraryPage() {
   return {
     tab: "configurations",
-    density: "comfortable",
+    density: "compact",
     gens: [],
     papers: [],
+    filters: { family: "", k: "", paper_id: "" },
+    familyOptions: [],
+
+    get paperOptions() {
+      return (this.papers || []).map(p => ({
+        id: p.id,
+        label: (p.year ? p.year + " — " : "") + p.id,
+      }));
+    },
+
+    get hasFilters() {
+      return !!(this.filters.family || this.filters.k
+                || this.filters.paper_id);
+    },
 
     init() {
       this.applyURL();
@@ -150,15 +201,33 @@ function libraryPage() {
         this.applyURL();
         this.reload();
       });
+      this._loadFamilyOptions();
       this.reload();
+    },
+
+    async _loadFamilyOptions() {
+      try {
+        const r = await fetch("/api/v2/library/families/counts");
+        const data = await r.json();
+        this.familyOptions = Object.keys(data || {})
+          .sort()
+          .map(name => ({ name, count: data[name] }));
+      } catch (e) {
+        this.familyOptions = [];
+      }
     },
 
     applyURL() {
       const qs = new URLSearchParams(location.search);
       const t = qs.get("tab");
       this.tab = (t === "papers") ? "papers" : "configurations";
-      this.density = qs.get("density") === "compact"
-        ? "compact" : "comfortable";
+      this.density = qs.get("density") === "comfortable"
+        ? "comfortable" : "compact";
+      this.filters = {
+        family: qs.get("family") || "",
+        k: qs.get("k") || "",
+        paper_id: qs.get("paper_id") || "",
+      };
     },
 
     setTab(t) {
@@ -171,6 +240,34 @@ function libraryPage() {
       history.pushState({}, "", url);
     },
 
+    applyFilters() {
+      const qs = new URLSearchParams(location.search);
+      const setOrDelete = (k, v) => {
+        const trimmed = String(v ?? "").trim();
+        if (trimmed) qs.set(k, trimmed); else qs.delete(k);
+      };
+      setOrDelete("family", this.filters.family);
+      setOrDelete("k", this.filters.k);
+      setOrDelete("paper_id", this.filters.paper_id);
+      const url = location.pathname +
+        (qs.toString() ? "?" + qs.toString() : "");
+      history.pushState({}, "", url);
+      this.applyURL();
+      this.reload();
+      window.dispatchEvent(new CustomEvent("regpoly:filters-changed"));
+    },
+
+    clearFilters() {
+      const qs = new URLSearchParams(location.search);
+      ["family", "k", "paper_id", "starred"].forEach(k => qs.delete(k));
+      const url = location.pathname +
+        (qs.toString() ? "?" + qs.toString() : "");
+      history.pushState({}, "", url);
+      this.applyURL();
+      this.reload();
+      window.dispatchEvent(new CustomEvent("regpoly:filters-changed"));
+    },
+
     async reload() {
       const qs = new URLSearchParams(location.search);
       qs.delete("density");
@@ -178,10 +275,16 @@ function libraryPage() {
       qs.delete("cols");
       const limit = qs.get("limit") || "200";
       qs.set("limit", limit);
+      // Papers endpoint ignores family/k/paper_id, so split the query
+      // string between the two endpoints.
+      const papersQs = new URLSearchParams(qs);
+      papersQs.delete("family");
+      papersQs.delete("k");
+      papersQs.delete("paper_id");
       try {
         const [gensR, papersR] = await Promise.all([
           fetch("/api/v2/library?" + qs.toString()).then(r => r.json()),
-          fetch("/api/v2/library/papers?" + qs.toString()).then(r => r.json()),
+          fetch("/api/v2/library/papers?" + papersQs.toString()).then(r => r.json()),
         ]);
         this.gens = gensR.rows || [];
         this.papers = papersR.rows || [];

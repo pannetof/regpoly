@@ -1,10 +1,20 @@
-// Phase 2.4: pybind11 registrations for the generator family classes.
-// Split out of factory.cpp so the factory entry points
-// (create_generator, get_gen_param_specs, …) can live in regpoly_core
-// and be linked from the SearchDriver family without dragging
-// pybind11 in.
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
+// Pybind11 registration for Generator subclass types.
+//
+// The `py::class_<Cls, Generator>(m, name)` instantiations are
+// templated on the concrete C++ type, so they must be enumerated in
+// source — there is no way to call them generically from a runtime
+// registry. Adding a new family means appending ONE line to
+// `register_generator_types` below.
+//
+// Aliases for renamed families are pulled from GeneratorRegistry, so
+// they live alongside the canonical registration in factory.cpp and
+// do NOT need to be duplicated here.
 
 #include "factory.h"
+#include "generator_registry.h"
 
 #include "ac1d.h"
 #include "dsfmt.h"
@@ -28,44 +38,62 @@
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 
-// Each family is registered under its new canonical name; old names
-// remain accessible via aliases set up below so existing YAML and
-// SQLite rows continue to dispatch.
+namespace {
+
+// Forward declaration: defined alongside the canonical generator
+// registrations in factory.cpp; calling it here ensures the registry
+// is populated before we walk it for aliases.
+void ensure_registered() {
+    // Trigger the lazy initialiser inside factory.cpp by asking for any
+    // canonical entry. lookup() throws if the registry is empty, but
+    // create_generator with any known name has the same effect. The
+    // simplest portable hook is to ask through the public factory:
+    // any get_gen_param_specs call performs register_all_generators().
+    (void)get_gen_param_specs("PolyLCGGen");
+}
+
+// One-line helper for the common case (subclass of Generator).
+template <typename Cls>
+void bind_gen(py::module_& m, const char* name) {
+    py::class_<Cls, Generator, std::unique_ptr<Cls>>(m, name);
+}
+
+}  // namespace
+
 void register_generator_types(py::module_& m) {
-    py::class_<PolyLCGGen, Generator, std::unique_ptr<PolyLCGGen>>(m, "PolyLCGGen");
-    py::class_<TauswortheGen, Generator, std::unique_ptr<TauswortheGen>>(m, "TauswortheGen");
-    py::class_<TGFSRGen, Generator, std::unique_ptr<TGFSRGen>>(m, "TGFSRGen");
-    py::class_<MTGen, Generator, std::unique_ptr<MTGen>>(m, "MTGen");
+    // ── Concrete classes ───────────────────────────────────────────────
+    bind_gen<PolyLCGGen>      (m, "PolyLCGGen");
+    bind_gen<TauswortheGen>   (m, "TauswortheGen");
+    bind_gen<TGFSRGen>        (m, "TGFSRGen");
+    bind_gen<MTGen>           (m, "MTGen");
     py::class_<F2wBaseGen, Generator, std::unique_ptr<F2wBaseGen>>(m, "F2wBaseGen");
     py::class_<F2wPolyLCGGen, F2wBaseGen, std::unique_ptr<F2wPolyLCGGen>>(m, "F2wPolyLCGGen");
-    py::class_<F2wLFSRGen, F2wBaseGen, std::unique_ptr<F2wLFSRGen>>(m, "F2wLFSRGen");
-    py::class_<MatsumotoGen, Generator, std::unique_ptr<MatsumotoGen>>(m, "MatsumotoGen");
-    py::class_<MarsaXorshiftGen, Generator, std::unique_ptr<MarsaXorshiftGen>>(m, "MarsaXorshiftGen");
-    py::class_<AC1DGen, Generator, std::unique_ptr<AC1DGen>>(m, "AC1DGen");
-    py::class_<WELLGen, Generator, std::unique_ptr<WELLGen>>(m, "WELLGen");
-    py::class_<MELGGen, Generator, std::unique_ptr<MELGGen>>(m, "MELGGen");
-    py::class_<SFMTGen, Generator, std::unique_ptr<SFMTGen>>(m, "SFMTGen");
-    py::class_<DSFMTGen, Generator, std::unique_ptr<DSFMTGen>>(m, "DSFMTGen");
-    py::class_<MTGPGen, Generator, std::unique_ptr<MTGPGen>>(m, "MTGPGen");
-    py::class_<XorShift128Gen, Generator, std::unique_ptr<XorShift128Gen>>(m, "XorShift128Gen");
-    py::class_<TinyMT32Gen, Generator, std::unique_ptr<TinyMT32Gen>>(m, "TinyMT32Gen");
-    py::class_<RMT64Gen, Generator, std::unique_ptr<RMT64Gen>>(m, "RMT64Gen");
+    py::class_<F2wLFSRGen,    F2wBaseGen, std::unique_ptr<F2wLFSRGen>>   (m, "F2wLFSRGen");
+    bind_gen<MatsumotoGen>    (m, "MatsumotoGen");
+    bind_gen<MarsaXorshiftGen>(m, "MarsaXorshiftGen");
+    bind_gen<AC1DGen>         (m, "AC1DGen");
+    bind_gen<WELLGen>         (m, "WELLGen");
+    bind_gen<MELGGen>         (m, "MELGGen");
+    bind_gen<SFMTGen>         (m, "SFMTGen");
+    bind_gen<DSFMTGen>        (m, "DSFMTGen");
+    bind_gen<MTGPGen>         (m, "MTGPGen");
+    bind_gen<XorShift128Gen>  (m, "XorShift128Gen");
+    bind_gen<TinyMT32Gen>     (m, "TinyMT32Gen");
+    bind_gen<RMT64Gen>        (m, "RMT64Gen");
 
-    // Backwards-compat: expose every renamed family under its old Python-visible
-    // name as well, pointing at the same class object.
-    m.attr("PolyLCG")         = m.attr("PolyLCGGen");
-    m.attr("Tausworthe")      = m.attr("TauswortheGen");
-    m.attr("TGFSR")           = m.attr("TGFSRGen");
-    m.attr("MersenneTwister") = m.attr("MTGen");
-    m.attr("GenF2wBase")      = m.attr("F2wBaseGen");
-    m.attr("GenF2wLFSR")      = m.attr("F2wLFSRGen");
-    m.attr("GenF2wPolyLCG")   = m.attr("F2wPolyLCGGen");
-    m.attr("WELLRNG")         = m.attr("WELLGen");
-    m.attr("MELG")            = m.attr("MELGGen");
-    m.attr("SFMT")            = m.attr("SFMTGen");
-    m.attr("dSFMTGen")        = m.attr("DSFMTGen");
-    m.attr("MTGP")            = m.attr("MTGPGen");
-    m.attr("XorShift128")     = m.attr("XorShift128Gen");
-    m.attr("TinyMT32")        = m.attr("TinyMT32Gen");
-    m.attr("RMT64")           = m.attr("RMT64Gen");
+    // F2wBase legacy alias is a class, not a registry alias, so it is
+    // declared here directly (the registry handles only concrete
+    // creatable generators).
+    m.attr("GenF2wBase") = m.attr("F2wBaseGen");
+
+    // ── Aliases — pulled from the central registry ─────────────────────
+    // factory.cpp's register_all_generators() declares every family
+    // rename via GR::reg_alias. We mirror those into the Python module
+    // by walking the registry rather than maintaining a duplicate list.
+    ensure_registered();
+    for (const auto& [alias, canonical] : GeneratorRegistry::aliases()) {
+        if (py::hasattr(m, canonical.c_str())) {
+            m.attr(alias.c_str()) = m.attr(canonical.c_str());
+        }
+    }
 }

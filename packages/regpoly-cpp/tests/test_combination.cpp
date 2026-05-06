@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 2.4b-pre (TDD): Component + Combination iteration in C++.
 //
 // Mirrors the semantics of regpoly.core.combination. Reference

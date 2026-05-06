@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 6 red — tempering worker heartbeat.
 
 Today `tasks/tempering.py:_search_one_combo` only writes a progress

@@ -116,20 +116,111 @@
 
   {# ─── Export tab ─── #}
   <div x-show="tab === 'export'" data-tools-pane="export">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Export</h3>
+    <div class="row row-cards">
+      {# Selection-scoped — primitive generators #}
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header">
+            <h3 class="card-title mb-0">Generators</h3>
+            <span class="text-secondary small ms-2">primitive_generator rows</span>
+          </div>
+          <div class="card-body">
+            <p class="text-secondary small mb-2">
+              Pick rows on <a href="/generators">/generators</a> (use the
+              column filters and pin/copy ids), then paste them here.
+            </p>
+            <label class="form-label form-label-sm mb-1" for="exp-gen-ids">
+              IDs (comma- or whitespace-separated)
+            </label>
+            <textarea id="exp-gen-ids"
+                      class="form-control form-control-sm mono mb-2"
+                      rows="3"
+                      placeholder="e.g. 12, 47, 88"
+                      x-model="genIds"></textarea>
+            <div class="row g-2 align-items-end">
+              <div class="col-auto">
+                <label class="form-label form-label-sm mb-1" for="exp-gen-fmt">
+                  Format
+                </label>
+                <select id="exp-gen-fmt"
+                        class="form-select form-select-sm"
+                        x-model="genFmt">
+                  <option value="csv">CSV</option>
+                  <option value="json">JSON</option>
+                </select>
+              </div>
+              <div class="col-auto">
+                <button type="button"
+                        class="btn btn-sm btn-primary"
+                        :disabled="!genIdsList.length"
+                        @click="downloadSelection('generators')">
+                  Download
+                  <span x-show="genIdsList.length"
+                        class="ms-1 text-white-50"
+                        x-text="'(' + genIdsList.length + ')'"></span>
+                </button>
+              </div>
+              <div class="col-auto ms-auto">
+                <a href="/api/export/generators?family=TauswortheGen"
+                   class="btn btn-sm btn-outline-secondary"
+                   title="Whole-family YAML — one file per family.
+Replace ?family= with the family you want.">
+                  Whole-family YAML…
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card-body">
-        <p class="text-secondary">
-          Whole-database export emits one YAML file per family.
-          Selection-scoped CSV/JSON is available from the
-          <a href="/generators">Generators</a> list page (use the
-          row checkboxes + "Copy selection" toolbar item).
-        </p>
-        <a href="/api/export/generators" class="btn btn-primary">
-          Download all generators (YAML)
-        </a>
+
+      {# Selection-scoped — combined generators #}
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header">
+            <h3 class="card-title mb-0">Combined generators</h3>
+            <span class="text-secondary small ms-2">tested_generator rows</span>
+          </div>
+          <div class="card-body">
+            <p class="text-secondary small mb-2">
+              Pick rows on <a href="/tested-generators">/tested-generators</a>
+              and paste their ids. Single-row YAML (regpoly format) stays
+              available via the per-row download on each combined-generator
+              detail page.
+            </p>
+            <label class="form-label form-label-sm mb-1" for="exp-tg-ids">
+              IDs (comma- or whitespace-separated)
+            </label>
+            <textarea id="exp-tg-ids"
+                      class="form-control form-control-sm mono mb-2"
+                      rows="3"
+                      placeholder="e.g. 1, 2"
+                      x-model="tgIds"></textarea>
+            <div class="row g-2 align-items-end">
+              <div class="col-auto">
+                <label class="form-label form-label-sm mb-1" for="exp-tg-fmt">
+                  Format
+                </label>
+                <select id="exp-tg-fmt"
+                        class="form-select form-select-sm"
+                        x-model="tgFmt">
+                  <option value="csv">CSV</option>
+                  <option value="json">JSON</option>
+                </select>
+              </div>
+              <div class="col-auto">
+                <button type="button"
+                        class="btn btn-sm btn-primary"
+                        :disabled="!tgIdsList.length"
+                        @click="downloadSelection('tested-generators')">
+                  Download
+                  <span x-show="tgIdsList.length"
+                        class="ms-1 text-white-50"
+                        x-text="'(' + tgIdsList.length + ')'"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -172,6 +263,14 @@
 </div>
 
 <script>
+function _parseIdsCsv(raw) {
+  if (!raw) return [];
+  return raw.split(/[\s,]+/)
+    .map(s => s.trim())
+    .filter(s => /^\d+$/.test(s))
+    .map(s => parseInt(s, 10));
+}
+
 function toolsPage() {
   return {
     tab: "import",
@@ -182,6 +281,27 @@ function toolsPage() {
     running: false,
     dirPath: "",
     audit: [],
+
+    genIds: "",
+    genFmt: "csv",
+    tgIds: "",
+    tgFmt: "csv",
+
+    get genIdsList() { return _parseIdsCsv(this.genIds); },
+    get tgIdsList()  { return _parseIdsCsv(this.tgIds); },
+
+    downloadSelection(kind) {
+      const ids = (kind === "generators")
+        ? this.genIdsList : this.tgIdsList;
+      const fmt = (kind === "generators") ? this.genFmt : this.tgFmt;
+      if (!ids.length) return;
+      const url = "/api/v2/" + kind + "/export"
+        + "?ids=" + encodeURIComponent(ids.join(","))
+        + "&fmt=" + encodeURIComponent(fmt);
+      // Open in a new tab so the browser handles the download (and the
+      // user keeps their selection in the textareas).
+      window.open(url, "_blank");
+    },
 
     init() {
       this.applyURL();
@@ -236,12 +356,37 @@ function toolsPage() {
 
     async commitImport() {
       if (!this.file) return;
-      // The v1 endpoint takes a path on disk; uploads from the browser
-      // would need an alternative. Surface a friendly error rather than
-      // hide the limitation.
-      this.error = "Direct upload-then-commit isn't implemented yet — "
-        + "use the directory importer or place the file on the "
-        + "server and use POST /api/import/generators.";
+      this.running = true;
+      this.error = "";
+      try {
+        const fd = new FormData();
+        fd.append("file", this.file);
+        const r = await fetch("/api/v2/import/generators", {
+          method: "POST",
+          body: fd,
+        });
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          this.error = body.detail || r.statusText;
+          return;
+        }
+        const result = await r.json();
+        if (window.regpoly && window.regpoly.toast) {
+          window.regpoly.toast({
+            type: "success",
+            title: "Imported",
+            body: result.inserted + " new generator(s) added",
+          });
+        }
+        this.preview = null;
+        this.file = null;
+        await this.load();
+        this.setTab("imports");
+      } catch (e) {
+        this.error = String(e);
+      } finally {
+        this.running = false;
+      }
     },
 
     async commitDir() {

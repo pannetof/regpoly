@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #pragma once
 
 // Phase 3.3: parsers for the old text-based ".dat" parameter files.

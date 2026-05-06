@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #pragma once
 #include "generator.h"
 #include "param_spec.h"
@@ -69,6 +72,9 @@ public:
     BitVect simd_read_super_word(int start_mode) const override;
     void simd_add_state(const Generator& other) override;
     void simd_reset_word_index() override { pword_idx_ = 0; }
+
+protected:
+    std::optional<std::string> compute_default_test_method(const std::string& test_type) const override;
 
 private:
     int mexp_;

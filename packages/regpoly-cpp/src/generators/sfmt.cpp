@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 #include "sfmt.h"
 #include <algorithm>
 #include <cstdio>
@@ -395,4 +398,9 @@ std::vector<ParamSpec> SFMTGen::param_specs() {
         {"sr2",  "int",      true,  false, 0, "",     "", false},
         {"msk",  "uint_vec", true,  false, 0, "none", "", false},
     };
+}
+
+std::optional<std::string> SFMTGen::compute_default_test_method(const std::string& test_type) const {
+    if (test_type == "equidistribution") return std::string("simd_notprimitive");
+    return std::nullopt;
 }

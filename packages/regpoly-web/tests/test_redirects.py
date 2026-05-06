@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 2 red — /library/papers preserved via 307 redirect.
 
 S7.2 user-story URLs are pinned. The Library merge collapses

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """
 regpoly.analyses.pis — primary-invariant-subspace gap analysis for a
 single generator (no tempering chain).

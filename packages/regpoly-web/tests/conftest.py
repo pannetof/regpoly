@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """pytest fixtures for regpoly-web.
 
 Phase 5.3 introduces a FastAPI TestClient fixture backed by an
@@ -39,10 +42,14 @@ def web_settings(tmp_db_path: str):
     """
     from regpoly_web.config import Settings
 
+    from pathlib import Path
     return Settings(
         db_path=tmp_db_path,
         reload=False,
         pool_size=1,
+        # Confine import-dir to the tmp tree so the path-traversal
+        # security test can prove the guard is active.
+        import_root=Path(tmp_db_path).parent.resolve(),
     )
 
 

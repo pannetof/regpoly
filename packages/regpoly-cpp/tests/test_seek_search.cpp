@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
 // Phase 2.4b (TDD): SeekDriver — equidistribution search loop in C++.
 
 #include <gtest/gtest.h>

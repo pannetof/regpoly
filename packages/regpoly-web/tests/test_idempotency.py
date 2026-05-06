@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
 """Phase 3+P6 — POST lifecycle endpoints are idempotent for both run
 types and all four actions: cancel/pause/resume/restart × primitive/
 tempering. 8 cases. Calling twice never returns 409.
