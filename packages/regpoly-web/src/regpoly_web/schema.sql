@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS primitive_search_run (
     fixed_params      TEXT    NOT NULL,
     max_tries         INTEGER,
     max_seconds       REAL,
+    max_cost          INTEGER,
     status            TEXT    NOT NULL DEFAULT 'pending',
     tries_done        INTEGER NOT NULL DEFAULT 0,
     found_count       INTEGER NOT NULL DEFAULT 0,

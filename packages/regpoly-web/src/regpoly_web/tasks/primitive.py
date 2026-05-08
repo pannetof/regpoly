@@ -56,6 +56,7 @@ def _run_random(conn, run_id: int, job: dict) -> None:
     fixed_user = job["fixed_params"]
     max_tries = job["max_tries"]
     max_seconds = job["max_seconds"]
+    max_cost = job.get("max_cost") or 0
 
     try:
         specs = _introspection.get_gen_param_specs(family)
@@ -67,6 +68,15 @@ def _run_random(conn, run_id: int, job: dict) -> None:
     for key, val in fixed_user.items():
         if val is not None:
             fixed[key] = val
+
+    # WELL cost-cap: when active, every iteration draws a fresh
+    # `matrices` map under the cap. Validation that pin and cap are
+    # mutually exclusive happens at the route layer; here we just
+    # honour it. Import lazily so non-WELL workers don't pay for it.
+    cost_capped = max_cost > 0 and family == "WELLGen"
+    if cost_capped:
+        from regpoly.well import random_matrices as _sample_matrices
+        well_w = int(structural.get("w", 32))
 
     t_start = time.time()
     prior_elapsed = float(job["elapsed_seconds"] or 0.0)
@@ -96,8 +106,19 @@ def _run_random(conn, run_id: int, job: dict) -> None:
 
         tries += 1
 
+        # Per-iteration WELL cost-cap override: replace `matrices` with
+        # a freshly-sampled cost-bounded map. Use tries (after the
+        # increment above) as a deterministic seed source mixed with
+        # run_id so workers across different runs don't collide.
+        iter_fixed = fixed
+        if cost_capped:
+            iter_fixed = dict(fixed)
+            iter_fixed["matrices"] = _sample_matrices(
+                well_w, max_cost, seed=(run_id * 1_000_003) ^ tries
+            )
+
         try:
-            gen = Generator.create(family_raw, L, **fixed)
+            gen = Generator.create(family_raw, L, **iter_fixed)
         except Exception:
             continue
         params = gen.params
@@ -287,6 +308,7 @@ def _fetch_job(conn, run_id: int) -> dict | None:
         "fixed_params": json_loads(row["fixed_params"]) or {},
         "max_tries": row["max_tries"],
         "max_seconds": row["max_seconds"],
+        "max_cost": _row_get(row, "max_cost"),
         "tries_done": row["tries_done"],
         "found_count": row["found_count"],
         "elapsed_seconds": row["elapsed_seconds"],

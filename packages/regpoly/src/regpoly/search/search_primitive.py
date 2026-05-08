@@ -48,6 +48,7 @@ class PrimitiveSearch:
         max_tries: int | None,
         max_seconds: float | None,
         generators_dir: str,
+        max_cost: int | None = None,
     ) -> None:
         self.family = family
         self.L = L
@@ -55,6 +56,7 @@ class PrimitiveSearch:
         self.fixed_params = fixed_params
         self.max_tries = max_tries
         self.max_seconds = max_seconds
+        self.max_cost = max_cost
         self.generators_dir = generators_dir
         self.output_file = self._build_output_path()
 
@@ -69,6 +71,7 @@ class PrimitiveSearch:
         limit = search.get("limit", {})
         max_tries = limit.get("max_tries")
         max_seconds = limit.get("max_seconds")
+        max_cost = limit.get("max_cost")
         generators_dir = search.get("generators_dir", "yaml/generators")
 
         structural_params = config.get("structural_params",
@@ -83,6 +86,7 @@ class PrimitiveSearch:
             fixed_params=fixed_params,
             max_tries=max_tries,
             max_seconds=max_seconds,
+            max_cost=max_cost,
             generators_dir=generators_dir,
         )
 
@@ -140,6 +144,8 @@ class PrimitiveSearch:
             print(f"  Max tries: {self.max_tries}")
         if self.max_seconds:
             print(f"  Max seconds: {self.max_seconds}")
+        if self.max_cost:
+            print(f"  Max cost: {self.max_cost}")
         print(f"  Output: {self.output_file}")
         if existing:
             print(f"  Existing generators in file: {len(existing)}")
@@ -157,6 +163,7 @@ class PrimitiveSearch:
         cfg.fixed_params = fixed_search
         cfg.max_tries = self.max_tries or 0
         cfg.max_seconds = float(self.max_seconds or 0.0)
+        cfg.max_cost = int(self.max_cost or 0)
         cfg.progress_interval = 100
         cfg.random_seed = 0  # OS entropy
 

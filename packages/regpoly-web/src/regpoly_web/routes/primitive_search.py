@@ -42,6 +42,7 @@ def _row_to_run(row) -> dict:
         "fixed_params": json_loads(row["fixed_params"]),
         "max_tries": row["max_tries"],
         "max_seconds": row["max_seconds"],
+        "max_cost": _row_field(row, "max_cost"),
         "status": row["status"],
         "tries_done": row["tries_done"],
         "found_count": row["found_count"],
@@ -133,6 +134,33 @@ async def create_primitive_search(
     family_raw = body.family
     family = resolve_family(family_raw, body.structural_params)
 
+    # max_cost validation: WELL families only, 0..64 (8 × M6 = 64 is
+    # the ceiling). Pinning `matrices` while also asking for a search
+    # is mutually exclusive — pin fixes the cost; cap means vary.
+    if body.max_cost is not None:
+        if body.max_cost < 0 or body.max_cost > 64:
+            raise HTTPException(400, detail={
+                "code": "max_cost_out_of_range",
+                "message": "max_cost must be between 0 and 64.",
+            })
+        if body.max_cost > 0 and family != "WELLGen":
+            raise HTTPException(400, detail={
+                "code": "max_cost_well_only",
+                "message": (
+                    "max_cost only applies to WELL-family generators "
+                    f"(family={family!r})."
+                ),
+            })
+        if body.max_cost > 0 and body.fixed_params.get("matrices"):
+            raise HTTPException(400, detail={
+                "code": "max_cost_with_pinned_matrices",
+                "message": (
+                    "Pinning `matrices` and setting `max_cost` are "
+                    "mutually exclusive — pin fixes the cost; max_cost "
+                    "applies only when the search varies matrices."
+                ),
+            })
+
     # Probe once to compute k; also validates the user input.
     try:
         specs = _introspection.get_gen_param_specs(family)
@@ -143,6 +171,20 @@ async def create_primitive_search(
     for key, val in body.fixed_params.items():
         if val is not None:
             fixed[key] = val
+
+    # WELL cost-cap probe stub: the search samples `matrices` per
+    # iteration but the probe needs *some* matrices to construct one
+    # generator and read off k. Inject an all-M0 (cost 0) stub for the
+    # probe only — `body.fixed_params` is unchanged, so the search row
+    # records the user's actual unpinned config.
+    well_cost_capped = (
+        body.max_cost
+        and body.max_cost > 0
+        and family == "WELLGen"
+        and not fixed.get("matrices")
+    )
+    if well_cost_capped:
+        fixed["matrices"] = {f"T{i}": {"M": 0} for i in range(8)}
 
     # L is not user-facing; it is derived automatically (L=64 for
     # Tausworthe, L=k otherwise — see _effective_L).
@@ -171,15 +213,15 @@ async def create_primitive_search(
         """
         INSERT INTO primitive_search_run
             (family, L, k, structural_params, fixed_params,
-             max_tries, max_seconds, status,
+             max_tries, max_seconds, max_cost, status,
              search_mode, enum_index, enum_total, enum_axes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?)
         """,
         (
             family, effective_L, k,
             json_dumps(body.structural_params),
             json_dumps(body.fixed_params),
-            body.max_tries, body.max_seconds,
+            body.max_tries, body.max_seconds, body.max_cost,
             body.search_mode, enum_total_str, enum_axes_json,
         ),
     )
@@ -334,7 +376,7 @@ async def restart_primitive_search(request: Request, run_id: int) -> dict:
     pool = request.app.state.pool
     async with db.execute(
         "SELECT family, L, k, structural_params, fixed_params, "
-        "max_tries, max_seconds, search_mode, enum_total, enum_axes "
+        "max_tries, max_seconds, max_cost, search_mode, enum_total, enum_axes "
         "FROM primitive_search_run WHERE id = ?",
         (run_id,),
     ) as cur:
@@ -345,13 +387,14 @@ async def restart_primitive_search(request: Request, run_id: int) -> dict:
         """
         INSERT INTO primitive_search_run
             (family, L, k, structural_params, fixed_params,
-             max_tries, max_seconds, status,
+             max_tries, max_seconds, max_cost, status,
              search_mode, enum_index, enum_total, enum_axes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?)
         """,
         (row["family"], row["L"], row["k"],
          row["structural_params"], row["fixed_params"],
          row["max_tries"], row["max_seconds"],
+         _row_field(row, "max_cost"),
          _row_field(row, "search_mode", "random"),
          _row_field(row, "enum_total"),
          _row_field(row, "enum_axes")),

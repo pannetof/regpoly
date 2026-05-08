@@ -3,6 +3,7 @@
 
 #include "well.h"
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <sstream>
 #include <iomanip>
@@ -22,11 +23,21 @@ std::string WELLGen::name() const { return "Carry Generator"; }
 // ── Display matching POL output ─────────────────────────────────────────
 
 int WELLGen::type_cost(int Mi) {
+    return static_cost_for_Mi(Mi);
+}
+
+int WELLGen::static_cost_for_Mi(int Mi) {
     // Costs indexed by paper M-class (M0..M6).
     // Intentionally non-monotonic: M4 (conditional XOR) is dearer than
     // M5 (masked shift) on most architectures.
     static const int costs[7] = {0, 1, 2, 3, 5, 4, 8};
     return (Mi >= 0 && Mi < 7) ? costs[Mi] : 0;
+}
+
+int WELLGen::total_cost() const {
+    int sum = 0;
+    for (const auto& m : matrices_) sum += static_cost_for_Mi(m.Mi);
+    return sum;
 }
 
 std::string WELLGen::type_display(const MatrixEntry& m) {
@@ -395,4 +406,120 @@ std::vector<ParamSpec> WELLGen::param_specs() {
         {"m3",        "int",        false, false, 0,  "range",   "1,r-1", false},
         {"matrices",  "struct_map", false, false, 0,  "none",    "", false},
     };
+}
+
+// ── Cost-bounded matrices sampler ──────────────────────────────────────
+
+namespace {
+
+// Per-Mi arg samplers. Each fills the StructEntry with the named args
+// expected by `decode_matrix_entry` for that Mi.
+//
+// Ranges (paper Table I, with degenerate args excluded so search-time
+// candidates aren't trivially equivalent to a cheaper Mi):
+//   M2/M3/M5: t ∈ [-(w-1), -1] ∪ [1, w-1]   (excludes t=0 collapse)
+//   M4:       a ∈ [1, 2^w - 1]              (excludes a=0 half-shift)
+//   M5:       b ∈ [1, 2^w - 1]
+//   M6:       q,t,s ∈ [0, w-1]; a ∈ [1, 2^w - 1]
+int sample_signed_shift(int w, std::mt19937_64& rng) {
+    // Pick magnitude in [1, w-1], then sign.
+    std::uniform_int_distribution<int> mag(1, w - 1);
+    std::uniform_int_distribution<int> sign(0, 1);
+    int m = mag(rng);
+    return sign(rng) ? m : -m;
+}
+
+uint32_t sample_nonzero_u32(std::mt19937_64& rng) {
+    std::uniform_int_distribution<uint32_t> d(1, 0xFFFFFFFFu);
+    return d(rng);
+}
+
+void fill_args_for_Mi(int Mi, int w, std::mt19937_64& rng, StructEntry& e) {
+    switch (Mi) {
+        case 0:
+        case 1:
+            break;
+        case 2:
+        case 3:
+            e["t"] = static_cast<int64_t>(sample_signed_shift(w, rng));
+            break;
+        case 4:
+            e["a"] = static_cast<uint64_t>(sample_nonzero_u32(rng));
+            break;
+        case 5:
+            e["t"] = static_cast<int64_t>(sample_signed_shift(w, rng));
+            e["b"] = static_cast<uint64_t>(sample_nonzero_u32(rng));
+            break;
+        case 6: {
+            std::uniform_int_distribution<int> qd(0, w - 1);
+            e["q"] = static_cast<int64_t>(qd(rng));
+            e["t"] = static_cast<int64_t>(qd(rng));
+            e["s"] = static_cast<int64_t>(qd(rng));
+            e["a"] = static_cast<uint64_t>(sample_nonzero_u32(rng));
+            break;
+        }
+        default: break;
+    }
+}
+
+}  // namespace
+
+StructMap WELLGen::random_matrices(int w, int max_cost,
+                                    std::mt19937_64& rng) {
+    if (max_cost <= 0)
+        throw std::invalid_argument(
+            "WELLGen::random_matrices: max_cost must be > 0 (got "
+            + std::to_string(max_cost) + ")");
+    if (w != 32)
+        throw std::invalid_argument(
+            "WELLGen::random_matrices: only w=32 is supported today (got "
+            + std::to_string(w) + ")");
+
+    constexpr int kSlots = 8;
+    constexpr int kMaxRejectionAttempts = 64;
+
+    std::array<int, kSlots> Mis{};
+    bool accepted = false;
+
+    // Phase 1: rejection sampling. 8 i.i.d. uniform Mi draws from {0..6}.
+    std::uniform_int_distribution<int> Mi_dist(0, 6);
+    for (int attempt = 0; attempt < kMaxRejectionAttempts; ++attempt) {
+        int total = 0;
+        for (int j = 0; j < kSlots; ++j) {
+            Mis[j] = Mi_dist(rng);
+            total += static_cost_for_Mi(Mis[j]);
+        }
+        if (total <= max_cost) { accepted = true; break; }
+    }
+
+    // Phase 2: greedy-budgeted fallback. Shuffle slot order, then for
+    // each slot pick Mi uniformly from those whose cost ≤ remaining
+    // budget. Always succeeds because cost(M0) = 0 ≤ any non-negative
+    // remaining budget.
+    if (!accepted) {
+        std::array<int, kSlots> order{0, 1, 2, 3, 4, 5, 6, 7};
+        std::shuffle(order.begin(), order.end(), rng);
+        int remaining = max_cost;
+        for (int slot : order) {
+            std::vector<int> allowed;
+            allowed.reserve(7);
+            for (int Mi = 0; Mi < 7; ++Mi) {
+                if (static_cost_for_Mi(Mi) <= remaining)
+                    allowed.push_back(Mi);
+            }
+            std::uniform_int_distribution<size_t> pick(0, allowed.size() - 1);
+            int Mi = allowed[pick(rng)];
+            Mis[slot] = Mi;
+            remaining -= static_cost_for_Mi(Mi);
+        }
+    }
+
+    StructMap out;
+    for (int j = 0; j < kSlots; ++j) {
+        StructEntry e;
+        e["M"] = static_cast<int64_t>(Mis[j]);
+        fill_args_for_Mi(Mis[j], w, rng, e);
+        out["T" + std::to_string(j)] = std::move(e);
+    }
+    return out;
 }

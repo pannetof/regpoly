@@ -72,7 +72,9 @@ void register_generator_types(py::module_& m) {
     bind_gen<MatsumotoGen>    (m, "MatsumotoGen");
     bind_gen<MarsaXorshiftGen>(m, "MarsaXorshiftGen");
     bind_gen<AC1DGen>         (m, "AC1DGen");
-    bind_gen<WELLGen>         (m, "WELLGen");
+    py::class_<WELLGen, Generator, std::unique_ptr<WELLGen>>(m, "WELLGen")
+        .def("total_cost", &WELLGen::total_cost,
+             "Sum of per-Mi costs across the 8 algorithm slots T0..T7.");
     bind_gen<MELGGen>         (m, "MELGGen");
     bind_gen<SFMTGen>         (m, "SFMTGen");
     bind_gen<DSFMTGen>        (m, "DSFMTGen");

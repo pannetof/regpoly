@@ -30,11 +30,13 @@
 #include "tempering_optimizer.h"
 #include "tausworthe.h"
 #include "tuplets_runner.h"
+#include "well.h"
 
 #include <NTL/GF2X.h>
 #include <cctype>
 #include <NTL/GF2XFactoring.h>
 #include <NTL/ZZ.h>
+#include <random>
 
 namespace py = pybind11;
 
@@ -805,6 +807,57 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
        "sorted exponent list [0, q_1, ..., q_{t-2}, k].  Throws if the "
        "(k, nb_terms, quicktaus, L, s) combination is inadmissible.");
 
+    // ── well_random_matrices / well_total_cost ────────────────────────
+    //
+    // Free-function bindings around the WELL cost-bounded sampler. Used
+    // by the Python-side primitive search worker (web app) and by the
+    // `regpoly.well` Python module. The C++ search driver hits the same
+    // `WELLGen::random_matrices` static directly without going through
+    // these helpers.
+
+    m.def("well_random_matrices",
+          [](int w, int max_cost, uint64_t seed) -> py::dict {
+        std::mt19937_64 rng{seed};
+        StructMap sm = WELLGen::random_matrices(w, max_cost, rng);
+        py::dict outer;
+        for (const auto& slot : sm) {
+            py::dict inner;
+            for (const auto& arg : slot.second) {
+                inner[py::str(arg.first)] = scalar_to_py(arg.second);
+            }
+            outer[py::str(slot.first)] = inner;
+        }
+        return outer;
+    }, py::arg("w"), py::arg("max_cost"), py::arg("seed") = 0,
+       "Sample a WELL `matrices` map (slots T0..T7) whose total per-Mi "
+       "cost is <= max_cost. Uses rejection sampling with a "
+       "greedy-budgeted fallback. `seed` is consumed by a per-call "
+       "std::mt19937_64 for reproducibility. Throws "
+       "std::invalid_argument if max_cost <= 0 or w != 32.");
+
+    m.def("well_total_cost",
+          [](const py::dict& matrices) -> int {
+        int sum = 0;
+        for (auto kv : matrices) {
+            std::string slot = kv.first.cast<std::string>();
+            if (!py::isinstance<py::dict>(kv.second))
+                throw std::runtime_error(
+                    "well_total_cost: matrices['" + slot
+                    + "'] must be a dict");
+            auto inner = kv.second.cast<py::dict>();
+            if (!inner.contains("M"))
+                throw std::runtime_error(
+                    "well_total_cost: matrices['" + slot
+                    + "'] is missing required key 'M'");
+            int Mi = py::cast<int>(inner["M"]);
+            sum += WELLGen::static_cost_for_Mi(Mi);
+        }
+        return sum;
+    }, py::arg("matrices"),
+       "Sum of per-Mi costs across the slots in a `matrices` dict. "
+       "Each slot value must be a dict carrying an integer 'M' key "
+       "selecting the M-class (paper Table I).");
+
     // ── random_param: dispatch a non-generic rand_type to its family ──
     //
     // parametric.py owns the generic samplers (bitmask, range,
@@ -1012,6 +1065,7 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
             })
         .def_readwrite("max_tries", &PrimitiveSearchConfig::max_tries)
         .def_readwrite("max_seconds", &PrimitiveSearchConfig::max_seconds)
+        .def_readwrite("max_cost", &PrimitiveSearchConfig::max_cost)
         .def_readwrite("progress_interval",
                        &PrimitiveSearchConfig::progress_interval)
         .def_readwrite("random_seed", &PrimitiveSearchConfig::random_seed);

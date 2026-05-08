@@ -152,3 +152,51 @@ def test_wrong_arg_raises() -> None:
     bad["matrices"] = {**bad["matrices"], "T0": {"M": 3, "q": 5}}
     with pytest.raises(Exception):
         Generator.create("WELLRNG", 32, **bad)
+
+
+# ─── Cost-bounded sampler (regpoly.well) ──────────────────────────────
+
+
+def test_random_matrices_respects_cost_cap() -> None:
+    from regpoly import well
+
+    for cap in (1, 4, 12, 32, 64):
+        for seed in range(50):
+            m = well.random_matrices(32, cap, seed=seed)
+            assert well.total_cost(m) <= cap, (
+                f"cap={cap} seed={seed} produced cost {well.total_cost(m)}: {m}"
+            )
+
+
+def test_random_matrices_builds_a_valid_generator() -> None:
+    """100 cost-capped samples each produce a generator that
+    `Generator.create` accepts. This exercises the full bind →
+    decode → MatrixEntry validator path."""
+    from regpoly import well
+
+    for seed in range(100):
+        matrices = well.random_matrices(32, 12, seed=seed)
+        kwargs = {
+            "w": 32, "r": 16, "p": 0,
+            "m1": 13, "m2": 9, "m3": 5,
+            "matrices": matrices,
+        }
+        gen = Generator.create("WELLRNG", 32, **kwargs)
+        assert gen is not None
+        assert well.total_cost(matrices) <= 12
+
+
+def test_random_matrices_invalid_cap_raises() -> None:
+    from regpoly import well
+
+    with pytest.raises(Exception):
+        well.random_matrices(32, 0, seed=1)
+    with pytest.raises(Exception):
+        well.random_matrices(32, -3, seed=1)
+
+
+def test_random_matrices_unsupported_w_raises() -> None:
+    from regpoly import well
+
+    with pytest.raises(Exception):
+        well.random_matrices(64, 12, seed=1)

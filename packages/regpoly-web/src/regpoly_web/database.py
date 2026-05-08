@@ -55,6 +55,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
             ("enum_index",  "INTEGER NOT NULL DEFAULT 0"),
             ("enum_total",  "TEXT"),
             ("enum_axes",   "TEXT"),
+            ("max_cost",    "INTEGER"),
         ],
         "tested_generator": [
             ("library_id", "TEXT"),

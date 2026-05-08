@@ -203,6 +203,16 @@
                        x-model.number="max_seconds" min="1" step="any">
                 <small class="form-hint">Blank = unlimited.</small>
               </div>
+              <template x-if="family === 'WELLGen' || family === 'WELLRNG'">
+                <div class="col-md-6">
+                  <label class="form-label">Max cost</label>
+                  <input type="number" class="form-control mono"
+                         x-model.number="max_cost" min="1" max="64" step="1">
+                  <small class="form-hint">
+                    Sum of T0..T7 slot costs. Blank = unlimited; range 1..64.
+                  </small>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -321,6 +331,7 @@ function primitiveSearchForm() {
         paramRandom: {},   // per non-structural param: true = randomize
         max_tries: 10000,
         max_seconds: null,
+        max_cost: null,
         busy: false,
         error: '',
         // Estimate panel state
@@ -353,6 +364,9 @@ function primitiveSearchForm() {
                 }
                 if (qs.has('max_seconds')) {
                     this.max_seconds = qs.get('max_seconds');
+                }
+                if (qs.has('max_cost')) {
+                    this.max_cost = qs.get('max_cost');
                 }
                 if (qs.has('mode')) {
                     this.mode = qs.get('mode');
@@ -537,6 +551,10 @@ function primitiveSearchForm() {
                 fixed_params: fixed,
                 max_tries:   in_exhaustive ? null : (this.max_tries || null),
                 max_seconds: in_exhaustive ? null : (this.max_seconds || null),
+                // Use ?? not || so a literal 0 isn't coerced to null. The
+                // server treats 0 as "disabled" identically to null, but
+                // we forward the user's intent verbatim.
+                max_cost:    in_exhaustive ? null : (this.max_cost ?? null),
                 search_mode: this.mode,
                 confirm_huge: this.confirmHuge,
             };

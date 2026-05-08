@@ -30,6 +30,7 @@ add_executable(regpoly_cpp_tests
     test_legacy_reader.cpp
     test_well_byte_for_byte.cpp
     test_well_legacy_decode.cpp
+    test_well_random_matrices.cpp
     test_tempering_optimizer.cpp
     test_tempering_search.cpp
     test_yaml_cpp_smoke.cpp

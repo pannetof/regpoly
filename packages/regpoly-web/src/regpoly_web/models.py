@@ -44,6 +44,9 @@ class PrimitiveSearchCreate(BaseModel):
     fixed_params: dict[str, Any] = Field(default_factory=dict)
     max_tries: int | None = None
     max_seconds: float | None = None
+    # Cost cap for WELL families. Sum of T0..T7 slot costs (paper Table I);
+    # 8 × M6 = 64 is the ceiling. None or 0 → uncapped.
+    max_cost: int | None = None
     search_mode: Literal["random", "exhaustive"] = "random"
     # Required when an exhaustive run's total exceeds the huge-space
     # threshold (10**12).  Ignored for random runs.
@@ -59,6 +62,7 @@ class PrimitiveSearchRun(BaseModel):
     fixed_params: dict[str, Any]
     max_tries: int | None
     max_seconds: float | None
+    max_cost: int | None = None
     status: str
     tries_done: int
     found_count: int

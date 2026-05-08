@@ -37,6 +37,14 @@ struct PrimitiveSearchConfig {
     double max_seconds;        // 0.0 = no wall-time limit
     int progress_interval;     // emit on_progress every N tries; default 100
     uint64_t random_seed;      // 0 = derive from OS entropy
+    // WELL-only: upper bound on the sum of per-Mi costs across the 8
+    // algorithm slots T0..T7. 0 = disabled. When > 0 and family is a
+    // WELL alias, the search loop overrides `matrices` per-iteration
+    // with a freshly-sampled config whose total cost ≤ max_cost.
+    // Throws std::invalid_argument at search start if the user has
+    // also pinned `matrices` in fixed_params (pin + search are
+    // mutually exclusive).
+    int max_cost = 0;
 };
 
 using OnHitFn = std::function<void(const TestedGenerator&)>;

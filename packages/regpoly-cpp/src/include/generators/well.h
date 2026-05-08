@@ -4,8 +4,10 @@
 #pragma once
 #include "generator.h"
 #include "param_spec.h"
+#include "params.h"
 #include <cstdint>
 #include <memory>
+#include <random>
 #include <string>
 #include <vector>
 #include <functional>
@@ -39,6 +41,30 @@ public:
 
     static std::unique_ptr<Generator> from_params(const Params& params, int L);
     static std::vector<ParamSpec> param_specs();
+
+    // Total cost of this generator's matrices: sum of per-Mi costs over
+    // the 8 algorithm slots T0..T7. Costs come from POL/Panneton et al.
+    // and are non-monotonic: M0=0, M1=1, M2=2, M3=3, M4=5, M5=4, M6=8.
+    int total_cost() const;
+
+    // Cost of one M-class. Public so the cost-bounded sampler and
+    // external tooling (web app, search loop) can compute costs without
+    // instantiating a generator.
+    static int static_cost_for_Mi(int Mi);
+
+    // Sample a fresh `matrices` map whose total cost ≤ `max_cost`. Args
+    // per Mi are drawn uniformly from per-class ranges (paper Table I,
+    // degenerate values excluded). Throws std::invalid_argument if
+    // max_cost <= 0 or w != 32 (only w=32 is supported today).
+    //
+    // Algorithm: rejection sampling first (8 i.i.d. uniform Mi draws,
+    // accept if sum ≤ cap, up to 64 attempts), then a greedy-budgeted
+    // fallback (shuffle slot order, pick Mi from {Mi : cost ≤
+    // remaining_budget} per slot). The greedy distribution is biased
+    // toward expensive Mi early; acceptable because callers run many
+    // iterations.
+    static StructMap random_matrices(
+        int w, int max_cost, std::mt19937_64& rng);
 
     std::string name() const override;
     std::string display_str() const override;
