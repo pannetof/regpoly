@@ -36,63 +36,74 @@ upper_mask = bits w-1 down to p    (top w-p bits)
 lower_mask = bits p-1 down to 0    (bottom p bits)
 ```
 
-### Transformation matrix types
+### Transformation matrix classes
 
 Each of the 8 algorithm slots T0..T7 is filled with one of the seven
-M-class transformations from paper Table I:
+M-class transformations from paper Table I. Each Mi takes a small set
+of named arguments matching the paper:
 
-| Type | Paper Mi         | Formula | Parameters |
-|------|------------------|---------|------------|
-| 0    | M0               | `y = 0` | none |
-| 1    | M1               | `y = x` (identity) | none |
-| 2    | M2(t)            | `y = x ≫ t` if `t ≥ 0`, else `x ≪ −t` | `t` ∈ `paramsint[0]` |
-| 3    | M3(t)            | `y = x ⊕ shift(x, t)` (same sign rule as M2) | `t` ∈ `paramsint[0]` |
-| 4    | M4(a)            | `y = (x ≫ 1) ⊕ a` if LSB(x), else `x ≫ 1` | `a` ∈ `paramsulong[0]` |
-| 5    | M5(t, b)         | `y = x ⊕ (shift(x, t) & b)` | `t` ∈ `paramsint[0]`, `b` ∈ `paramsulong[0]` |
-| 6    | M6\*(q, a, b, c) | `y = (rotate_left(x, q) & b) ⊕ (a if (x & c) else 0)` | `q` ∈ `paramsint[0]`, `a, b, c` ∈ `paramsulong[0..2]` |
+| M | Args | Formula |
+|---|------|---------|
+| 0 | (none) | `y = 0` |
+| 1 | (none) | `y = x` (identity) |
+| 2 | `t` | `y = x ≫ t` if `t ≥ 0`, else `x ≪ −t` |
+| 3 | `t` | `y = x ⊕ shift(x, t)` (same sign rule as M2) |
+| 4 | `a` | `y = (x ≫ 1) ⊕ a` if LSB(x), else `x ≫ 1` |
+| 5 | `t`, `b` | `y = x ⊕ (shift(x, t) & b)` |
+| 6 | `q`, `t`, `s`, `a` | `y = (rotate_left(x, q) & d_s) ⊕ (a if x_t = 1 else 0)` |
 
-**M6\*** is a strict generalisation of paper Table I's M6: arguments
-`b` and `c` are full 32-bit masks, supersetting the paper's
-parametric `d_s` and `x_t = 1` test. Setting `b = ~0`,
-`c = (1 << t)`, and `a` as published reproduces the exact paper
-formula.
+For M6, `d_s` is the 32-bit mask with the (s+1)-th bit zero and all
+others one (paper Table I's `d_s`); the `x_t = 1` test selects the
+bit at MSB-position t. Both are synthesised at runtime from the
+small-integer fields, matching the paper exactly.
 
-**Bit-indexing convention.** `LSB(x)` corresponds to the paper's
-`x_{w-1}` under the column-vector convention of §1.
+**Bit-indexing convention.** M4's `x_{w-1}` resolves to the LSB under
+the paper's column-vector convention (§1). M6's `t` and `s` are
+0-indexed from the MSB.
 
-Each matrix entry has:
-- `type`: integer 0-6 selecting the Mi class
-- `paramsint[0..2]`: up to 3 integer parameters (shift amounts)
-- `paramsulong[0..2]`: up to 3 unsigned parameters (bitmasks)
+**Range constraints** (paper Table I):
+- M2/M3/M5: `−w ≤ t ≤ w` (signed shift; sign chooses direction)
+- M6: `0 ≤ q, t, s < w`
+- M4/M5/M6: `a`, `b` ∈ {0, …, 2^w − 1}
 
 ### Computational cost
 
 Each Mi class has an associated cost (number of operations):
-M0=0, M1=1, M2=2, M3=3, M4=5, M5=4, M6=8. Costs are not monotonic in
-M-index (M4 > M5) because conditional XOR is more expensive than
+`M0=0, M1=1, M2=2, M3=3, M4=5, M5=4, M6=8`. Costs are not monotonic
+in M-index (M4 > M5) because conditional XOR is more expensive than
 masked shift on most architectures. The total cost of a generator is
 the sum over its 8 algorithm slots, repeating Mi costs as needed.
 
 ## Parameters
 
-| Name        | Type       | Role       | Rand type | Description |
-|-------------|------------|------------|-----------|-------------|
-| `w`         | `int`      | structural | --        | Word size in bits (default: 32) |
-| `r`         | `int`      | structural | --        | Number of words in the circular buffer |
-| `p`         | `int`      | structural | --        | Separation point for boundary word masking |
-| `m1`        | `int`      | search     | `range` (1 to r-1) | Offset to first tap word |
-| `m2`        | `int`      | search     | `range` (1 to r-1) | Offset to second tap word |
-| `m3`        | `int`      | search     | `range` (1 to r-1) | Offset to third tap word |
-| `mat_types` | `int_vec`  | search     | `none` (must be provided) | List of 8 integers: the Mi class index (0–6) for each algorithm slot T0..T7 |
-| `mat_pi`    | `int_vec`  | search     | `none` (must be provided) | Flat list of 24 integers: 3 integer params per matrix (8 x 3) |
-| `mat_pu`    | `uint_vec` | search     | `none` (must be provided) | Flat list of 24 unsigned integers: 3 unsigned params per matrix (8 x 3) |
+| Name       | Type         | Role       | Rand type | Description |
+|------------|--------------|------------|-----------|-------------|
+| `w`        | `int`        | structural | --        | Word size in bits (default: 32) |
+| `r`        | `int`        | structural | --        | Number of words in the circular buffer |
+| `p`        | `int`        | structural | --        | Separation point for boundary word masking |
+| `m1`       | `int`        | search     | `range` (1 to r-1) | Offset to first tap word |
+| `m2`       | `int`        | search     | `range` (1 to r-1) | Offset to second tap word |
+| `m3`       | `int`        | search     | `range` (1 to r-1) | Offset to third tap word |
+| `matrices` | `struct_map` | search     | `none` (must be provided) | Map keyed by `T0..T7`; each value is a dict with `M` plus that class's named args |
 
-### Matrix parameter encoding
+### `matrices` shape
 
-The `mat_pi` and `mat_pu` vectors are flat arrays of length 24 (8
-matrices x 3 parameters each). For matrix j (0-indexed), the
-parameters are at indices `j*3`, `j*3+1`, `j*3+2`. Unused parameters
-should be set to 0.
+`matrices` is a YAML / Python map keyed by the slot label (`T0` … `T7`).
+Each value is itself a map: an `M` key naming the class (integer 0..6
+or string `"M0".."M6"`) plus the per-class arg names from the table
+above. Reading the YAML transcribes paper Table II directly:
+
+```yaml
+matrices:
+  T0: {M: 3, t: -25}      # T0 = M3(-25)
+  T1: {M: 3, t:  27}      # T1 = M3(27)
+  T2: {M: 2, t:   9}      # T2 = M2(9)
+  T3: {M: 3, t:   1}
+  T4: {M: 1}              # M1, no args
+  T5: {M: 3, t:  -9}
+  T6: {M: 3, t: -21}
+  T7: {M: 3, t:  21}
+```
 
 ## State size (period exponent)
 
@@ -126,14 +137,15 @@ fixed_params:
   m1: 13
   m2: 9
   m3: 5
-  # T0=M3(-16), T1=M3(-15), T2=M3(11), T3=M0,
-  # T4=M3(-2),  T5=M3(-18), T6=M2(-28), T7=M5(-5, a1)
-  mat_types: [3, 3, 3, 0, 3, 3, 2, 5]
-  mat_pi:    [-16, 0, 0,  -15, 0, 0,  11, 0, 0,    0, 0, 0,
-               -2, 0, 0,  -18, 0, 0,  -28, 0, 0,  -5, 0, 0]
-  # Only slot T7 (an M5 instance) carries a mask at index 7*3=21.
-  mat_pu:    [0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0,
-              0, 0, 0,    0, 0, 0,    0, 0, 0,    0xda442d24, 0, 0]
+  matrices:
+    T0: {M: 3, t: -16}
+    T1: {M: 3, t: -15}
+    T2: {M: 3, t:  11}
+    T3: {M: 0}
+    T4: {M: 3, t:  -2}
+    T5: {M: 3, t: -18}
+    T6: {M: 2, t: -28}
+    T7: {M: 5, t:  -5, b: 0xda442d24}      # paper a1
 ```
 
 ### WELL19937a (paper Table II)
@@ -155,13 +167,44 @@ fixed_params:
   m1: 70
   m2: 179
   m3: 449
-  # T0=M3(-25), T1=M3(27), T2=M2(9), T3=M3(1),
-  # T4=M1,      T5=M3(-9), T6=M3(-21), T7=M3(21)
-  mat_types: [3, 3, 2, 3, 1, 3, 3, 3]
-  mat_pi:    [-25, 0, 0,  27, 0, 0,   9, 0, 0,   1, 0, 0,
-                0, 0, 0,  -9, 0, 0, -21, 0, 0,  21, 0, 0]
-  mat_pu:    [0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0,
-              0, 0, 0,    0, 0, 0,    0, 0, 0,    0, 0, 0]
+  matrices:
+    T0: {M: 3, t: -25}
+    T1: {M: 3, t:  27}
+    T2: {M: 2, t:   9}
+    T3: {M: 3, t:   1}
+    T4: {M: 1}
+    T5: {M: 3, t:  -9}
+    T6: {M: 3, t: -21}
+    T7: {M: 3, t:  21}
+```
+
+### WELL44497a (paper Table II) — uses M6
+
+```yaml
+search:
+  family: WELLRNG
+  L: 32
+  limit:
+    max_tries: 1
+
+structural_params:
+  w: 32
+  r: 1391
+  p: 15
+
+fixed_params:
+  m1: 23
+  m2: 481
+  m3: 229
+  matrices:
+    T0: {M: 3, t: -24}
+    T1: {M: 3, t:  30}
+    T2: {M: 3, t: -10}
+    T3: {M: 2, t: -26}
+    T4: {M: 1}
+    T5: {M: 3, t:  20}
+    T6: {M: 6, q: 9, t: 14, s: 5, a: 0xb729fcec}     # paper a7
+    T7: {M: 1}
 ```
 
 ### Minimal-cost WELL1024 search shape (synthetic)
@@ -185,12 +228,15 @@ fixed_params:
   m1:                # randomized
   m2:                # randomized
   m3:                # randomized
-  # Slot classes: M3, M1, M2, M2, M3, M1, M3, M0 — no masks needed.
-  mat_types: [3, 1, 2, 2, 3, 1, 3, 0]
-  mat_pi:    [16, 0, 0,   0, 0, 0,  15, 0, 0,  11, 0, 0,
-              19, 0, 0,   0, 0, 0,   4, 0, 0,   0, 0, 0]
-  mat_pu:    [0, 0, 0,    0, 0, 0,   0, 0, 0,   0, 0, 0,
-              0, 0, 0,    0, 0, 0,   0, 0, 0,   0, 0, 0]
+  matrices:
+    T0: {M: 3, t: 16}
+    T1: {M: 1}
+    T2: {M: 2, t: 15}
+    T3: {M: 2, t: 11}
+    T4: {M: 3, t: 19}
+    T5: {M: 1}
+    T6: {M: 3, t:  4}
+    T7: {M: 0}
 ```
 
 ---

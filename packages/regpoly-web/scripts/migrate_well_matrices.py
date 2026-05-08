@@ -2,24 +2,32 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2026 Francois Panneton, Ph.D.
 
-"""Standalone CLI for the WELL mat_types renumbering.
+"""Standalone CLI for the WELL matrices payload migration.
 
-The C++ rename to paper M0..M6 numbering changed the semantic meaning
-of every WELL ``mat_types`` integer. JSON-encoded payloads in the
-SQLite DB (``primitive_generator``, ``primitive_search_run``,
-``tested_generator_component``, ``tempering_search_component``,
-``test_result``) are NOT covered by the C++ legacy_reader's read-time
-remap — this script does the equivalent for those payloads.
+The paper-aligned redesign replaced the flat-triple `mat_types`/
+`mat_pi`/`mat_pu` keys in JSON column payloads with a single
+structured `matrices: {T0..T7}` map. This CLI walks every JSON
+column that may carry a WELL row and rewrites the shape in place.
+
+Supersedes the 45cf403 `migrate_well_mat_types.py` (which only did
+integer remap). This CLI handles every state via the marker-row
+state machine in `well_matrices.py`:
+
+  - Fresh DB: integer remap + shape conversion + drop legacy keys.
+  - 45cf403-marker present: shape conversion only (integer remap was
+    already done).
+  - This-marker present: skip; nothing to do.
 
 Usage:
-    uv run python packages/regpoly-web/scripts/migrate_well_mat_types.py \\
+    uv run python packages/regpoly-web/scripts/migrate_well_matrices.py \\
         --db <db_path> [--dry-run] [--force]
 
-The migration is idempotent: re-runs are gated by a marker row in
-``yaml_import`` (``file_path = 'well-mat-types-migrated'``). Use
-``--force`` to re-run anyway. ``--dry-run`` prints the per-table
-counters without committing — recommended on a copy of the DB before
-applying to live data.
+Recommended workflow:
+  1. Stop the regpoly-web server (concurrent writes may interleave).
+  2. Back up var/regpoly.db.
+  3. Run with --dry-run on a copy of the DB; review the per-table
+     counters and the skipped-rows report.
+  4. Run for real on the live DB.
 """
 
 from __future__ import annotations
@@ -32,10 +40,10 @@ from pathlib import Path
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="migrate_well_mat_types",
+        prog="migrate_well_matrices",
         description=(
-            "Renumber WELL mat_types integers in JSON columns from the "
-            "legacy 0..7 scheme to paper M0..M6 (0..6)."
+            "Convert WELL `mat_types`/`mat_pi`/`mat_pu` JSON payloads "
+            "to the paper-aligned `matrices: {T0..T7}` form."
         ),
     )
     parser.add_argument(
@@ -55,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: DB file does not exist: {args.db}", file=sys.stderr)
         return 2
 
-    from regpoly_web.migrations.well_mat_types import migrate
+    from regpoly_web.migrations.well_matrices import migrate
 
     conn = sqlite3.connect(str(args.db))
     try:
@@ -67,12 +75,13 @@ def main(argv: list[str] | None = None) -> int:
             conn.rollback()
             return 3
 
-        print("=== well mat_types migration ===")
-        print(f"  rows scanned:  {counters.rows_scanned}")
-        print(f"  rows touched:  {counters.rows_touched}")
-        print(f"  rows skipped:  {counters.rows_skipped}")
+        print("=== well matrices migration ===")
+        print(f"  starting state: {counters.state}")
+        print(f"  rows scanned:   {counters.rows_scanned}")
+        print(f"  rows touched:   {counters.rows_touched}")
+        print(f"  rows skipped:   {counters.rows_skipped}")
         if counters.skipped_old_type6:
-            print("  skipped (old type 6 — no paper Mi equivalent):")
+            print("  skipped (legacy old-type-6, no paper Mi equivalent):")
             for table, rid in counters.skipped_old_type6:
                 print(f"    {table}.id={rid}")
         if counters.skipped_other:

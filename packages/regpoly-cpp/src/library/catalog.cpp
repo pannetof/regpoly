@@ -127,7 +127,48 @@ ParamValue node_to_param_value(const YAML::Node& n) {
         return ParamValue::make_string(s);
     }
     if (n.IsMap()) {
-        // Catalog params shouldn't have nested maps; serialize defensively.
+        // Recognise structured map-of-maps (e.g. WELL `matrices: {T0:
+        // {M, t}, ...}`). Every value must be a map of scalars.
+        bool is_struct_map = !n.size() == 0;
+        for (const auto& kv : n) {
+            if (!kv.second.IsMap()) { is_struct_map = false; break; }
+            for (const auto& sub : kv.second) {
+                if (!sub.second.IsScalar()) { is_struct_map = false; break; }
+            }
+            if (!is_struct_map) break;
+        }
+        if (is_struct_map) {
+            StructMap m;
+            for (const auto& kv : n) {
+                std::string slot = kv.first.as<std::string>();
+                StructEntry e;
+                for (const auto& arg : kv.second) {
+                    std::string ak = arg.first.as<std::string>();
+                    const auto& av = arg.second;
+                    const auto& tag = av.Tag();
+                    std::string s = av.as<std::string>();
+                    if (tag == "tag:yaml.org,2002:bool"
+                        || s == "true" || s == "false"
+                        || s == "True" || s == "False") {
+                        try { e[ak] = av.as<bool>(); continue; } catch (...) {}
+                    }
+                    int64_t iv = 0;
+                    if (try_parse_int(s, iv)) {
+                        if (s.size() > 2 && s[0] == '0'
+                            && (s[1] == 'x' || s[1] == 'X')) {
+                            e[ak] = static_cast<uint64_t>(iv);
+                        } else {
+                            e[ak] = iv;
+                        }
+                        continue;
+                    }
+                    e[ak] = s;
+                }
+                m[slot] = std::move(e);
+            }
+            return ParamValue::make_struct_map(std::move(m));
+        }
+        // Other map-valued nodes: serialise defensively.
         YAML::Emitter em; em << n;
         return ParamValue::make_string(em.c_str());
     }
@@ -209,6 +250,9 @@ void apply_param(Params& dst, const std::string& key, const ParamValue& v) {
             }
             break;
         }
+        case ParamKind::StructMap:
+            dst.set_struct_map(key, v.struct_map_val);
+            break;
     }
 }
 

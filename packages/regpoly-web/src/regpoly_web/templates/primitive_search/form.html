@@ -145,12 +145,29 @@
                             x-text="inputs[p.name] ? 'true' : 'false'"></span>
                     </label>
                   </template>
-                  <template x-if="p.type !== 'bool'">
+                  <template x-if="p.type !== 'bool' && p.type !== 'struct_map'">
                     <input type="text"
                            class="form-control mono"
                            x-model="inputs[p.name]"
                            @input="onInputChange()"
                            :disabled="isParamDisabled(p)">
+                  </template>
+                  <template x-if="p.type === 'struct_map'">
+                    <div>
+                      <textarea
+                          class="form-control mono"
+                          rows="10"
+                          spellcheck="false"
+                          x-model="inputs[p.name]"
+                          @input="onInputChange()"
+                          :disabled="isParamDisabled(p)"
+                          :placeholder="structMapPlaceholder(p.name)"></textarea>
+                      <small class="form-hint">
+                        Structured map (JSON object). For WELL
+                        <span class="mono">matrices</span>, see
+                        <a href="/docs/generators/WELLGen.md">docs/generators/WELLGen.md</a>.
+                      </small>
+                    </div>
                   </template>
                   <template x-if="p.rand_type && p.rand_type !== 'none'">
                     <small class="form-hint">
@@ -465,12 +482,27 @@ function primitiveSearchForm() {
             if (raw === '' || raw == null) return undefined;
             if (typeof raw === 'number') return raw;
             const trimmed = String(raw).trim();
-            if (trimmed.startsWith('[')) {
+            // JSON arrays AND objects (struct_map: WELL `matrices: {T0..T7}`).
+            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
                 try { return JSON.parse(trimmed); } catch (_) {}
             }
             if (/^-?\d+$/.test(trimmed)) return parseInt(trimmed, 10);
             if (/^0x[0-9a-fA-F]+$/.test(trimmed)) return parseInt(trimmed, 16);
             return trimmed;
+        },
+
+        structMapPlaceholder(name) {
+            // The only struct_map field today is WELL `matrices`.
+            // Render a paper-aligned skeleton the user can edit.
+            if (name === 'matrices') {
+                return JSON.stringify({
+                    T0: {M: 3, t: 0}, T1: {M: 1},
+                    T2: {M: 0},       T3: {M: 0},
+                    T4: {M: 0},       T5: {M: 0},
+                    T6: {M: 0},       T7: {M: 0}
+                }, null, 2);
+            }
+            return '{ ... }';
         },
 
         _readValue(p) {

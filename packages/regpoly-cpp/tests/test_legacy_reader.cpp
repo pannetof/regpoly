@@ -169,23 +169,45 @@ TEST(LegacyReader, CarrySpecsFromFixture) {
     EXPECT_EQ(specs.front().params.get_int("m1"), 70);
     EXPECT_EQ(specs.front().params.get_int("m2"), 179);
     EXPECT_EQ(specs.front().params.get_int("m3"), 449);
-    EXPECT_EQ(specs.front().params.get_int_vec("mat_types").size(), 8u);
-    EXPECT_EQ(specs.front().params.get_int_vec("mat_pi").size(), 24u);
-    EXPECT_EQ(specs.front().params.get_uint_vec("mat_pu").size(), 24u);
 
-    // .dat row 1 raw types are {0, 0, 3, 0, 1, 0, 0, 0} (legacy 0..7).
-    // After the in-memory OLD_TO_NEW remap they should read as paper
-    // Mi (M3, M3, M2, M3, M1, M3, M3, M3) — exactly WELL19937a.
-    EXPECT_EQ(specs.front().params.get_int_vec("mat_types"),
-              (std::vector<int>{3, 3, 2, 3, 1, 3, 3, 3}));
+    // The legacy reader emits matrices as a structured map keyed by
+    // T0..T7. Each entry is one paper Mi (M0..M6) with the named args
+    // matching paper Table I (no positional pi/pu). The flat triple
+    // mat_types/mat_pi/mat_pu is gone.
+    ASSERT_TRUE(specs.front().params.has_struct_map("matrices"));
+    const StructMap& m = specs.front().params.get_struct_map("matrices");
+    ASSERT_EQ(m.size(), 8u);
 
-    // Anti-regression: the remap must not perturb pi or pu.
-    EXPECT_EQ(specs.front().params.get_int_vec("mat_pi"),
-              (std::vector<int>{
-                  -25, 0, 0,  27, 0, 0,   9, 0, 0,   1, 0, 0,
-                    0, 0, 0,  -9, 0, 0, -21, 0, 0,  21, 0, 0}));
-    EXPECT_EQ(specs.front().params.get_uint_vec("mat_pu"),
-              std::vector<uint64_t>(24, 0));
+    // .dat row 1 = paper WELL19937a.
+    // Slots T0..T7 = M3(-25), M3(27), M2(9), M3(1), M1, M3(-9), M3(-21), M3(21).
+    auto check_m3 = [&](const std::string& key, int expected_t) {
+        ASSERT_EQ(m.count(key), 1u) << "missing slot " << key;
+        const StructEntry& e = m.at(key);
+        ASSERT_EQ(std::get<int64_t>(e.at("M")), 3);
+        EXPECT_EQ(std::get<int64_t>(e.at("t")), expected_t);
+    };
+    check_m3("T0", -25);
+    check_m3("T1",  27);
+    {
+        const StructEntry& e = m.at("T2");
+        ASSERT_EQ(std::get<int64_t>(e.at("M")), 2);
+        EXPECT_EQ(std::get<int64_t>(e.at("t")), 9);
+    }
+    check_m3("T3", 1);
+    {
+        const StructEntry& e = m.at("T4");
+        EXPECT_EQ(std::get<int64_t>(e.at("M")), 1);
+        // M1 has no args.
+        EXPECT_EQ(e.size(), 1u);
+    }
+    check_m3("T5",  -9);
+    check_m3("T6", -21);
+    check_m3("T7",  21);
+
+    // Anti-regression: the legacy flat-triple keys must NOT be present.
+    EXPECT_FALSE(specs.front().params.has("mat_types"));
+    EXPECT_FALSE(specs.front().params.has("mat_pi"));
+    EXPECT_FALSE(specs.front().params.has("mat_pu"));
 }
 
 TEST(LegacyReader, CarryBuildsGenerators) {

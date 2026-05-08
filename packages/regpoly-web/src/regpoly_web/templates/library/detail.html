@@ -548,6 +548,7 @@ function generatorDetail(paperId, genId) {
         },
         formatParam(v) {
             if (Array.isArray(v)) return '[' + v.join(', ') + ']';
+            if (v && typeof v === 'object') return JSON.stringify(v);
             return String(v);
         },
         instantiatedLink() {

@@ -92,10 +92,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
     # `regpoly-web migrate-family-names` command rather than running
     # automatically on startup.
     #
-    # The same opt-in pattern is used for the WELL mat_types
-    # renumbering (paper M0..M6 vs legacy 0..7). The renumbering is
+    # The same opt-in pattern is used for the WELL matrices payload
+    # migration (legacy `mat_types`/`mat_pi`/`mat_pu` flat triple →
+    # paper-aligned `matrices: {T0..T7}` map). The migration is
     # JSON-payload-only, so SCHEMA_VERSION is unaffected. See
-    # packages/regpoly-web/scripts/migrate_well_mat_types.py.
+    # packages/regpoly-web/scripts/migrate_well_matrices.py.
 
 
 def init_sync(db_path: str) -> None:

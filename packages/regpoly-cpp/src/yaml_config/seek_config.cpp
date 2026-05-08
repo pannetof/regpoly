@@ -46,16 +46,74 @@ bool try_parse_int(const std::string& s, int64_t& out) {
     return false;
 }
 
+// Coerce a YAML scalar to a ParamScalar (int / uint / bool / string).
+// Used by apply_yaml_to_params when assembling a StructMap entry from
+// a nested map-of-maps node. Mirrors the same lenient coercion rules.
+ParamScalar yaml_scalar_to_param(const YAML::Node& node) {
+    const auto& tag = node.Tag();
+    std::string s = node.as<std::string>();
+    if (tag == "tag:yaml.org,2002:bool"
+        || s == "true" || s == "false"
+        || s == "True" || s == "False") {
+        try { return node.as<bool>(); } catch (...) {}
+    }
+    int64_t iv = 0;
+    if (try_parse_int(s, iv)) {
+        // Hex literal? Surface as uint64_t so wide bitmasks survive.
+        if (s.size() > 2 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) {
+            return static_cast<uint64_t>(iv);
+        }
+        return iv;
+    }
+    return s;
+}
+
+// Detect whether a YAML map node represents a structured map-of-maps
+// (every value is itself a map of scalars). Used to recognise WELL-style
+// `matrices: {T0: {M: M3, t: -25}, ...}` blocks.
+bool looks_like_struct_map(const YAML::Node& node) {
+    if (!node.IsMap()) return false;
+    for (const auto& kv : node) {
+        if (!kv.second.IsMap()) return false;
+        for (const auto& sub : kv.second) {
+            if (!sub.second.IsScalar()) return false;
+        }
+    }
+    return !node.size() == 0;
+}
+
 // Apply one YAML-derived value into a Params, mirroring the Python
-// loader's lenient int / string / list coercion. Map-valued nodes
-// (e.g. `{ random: bitvect, bits: w }` for tempering) are silently
-// dropped — create_transformation then falls back to its default
-// randomization for that key.
+// loader's lenient int / string / list coercion.
 void apply_yaml_to_params(Params& dst,
                           const std::string& key,
                           const YAML::Node& node) {
+    // Reject the legacy WELL flat triple at the YAML loader layer.
+    // Mirrors the binding rejection so direct-YAML callers see the
+    // same error.
+    if (key == "mat_types" || key == "mat_pi" || key == "mat_pu") {
+        throw std::runtime_error(
+            "WELLGen: '" + key + "' is no longer accepted. "
+            "Use the structured 'matrices' map keyed by T0..T7. "
+            "See docs/generators/WELLGen.md.");
+    }
     if (node.IsMap()) {
-        // Random-value placeholder; drop and let the factory randomize.
+        if (looks_like_struct_map(node)) {
+            StructMap m;
+            for (const auto& kv : node) {
+                std::string slot = kv.first.as<std::string>();
+                StructEntry e;
+                for (const auto& arg : kv.second) {
+                    e[arg.first.as<std::string>()] =
+                        yaml_scalar_to_param(arg.second);
+                }
+                m[slot] = std::move(e);
+            }
+            dst.set_struct_map(key, std::move(m));
+            return;
+        }
+        // Other map-valued nodes (e.g. `{ random: bitvect, bits: w }`
+        // tempering placeholders) are dropped — create_transformation
+        // falls back to its default randomization for that key.
         return;
     }
     if (node.IsSequence()) {

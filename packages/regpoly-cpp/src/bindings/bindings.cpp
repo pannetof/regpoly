@@ -85,11 +85,72 @@ static BitVect pyint_to_bitvect(int nbits, const py::int_& val) {
 // py::dict -> Params conversion
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Convert a Python dict-of-scalars into a StructEntry (one row of a
+// StructMap). Every value must be int / bool / str / hex-string. Used
+// by the dict_to_params struct_map branch below.
+static StructEntry py_dict_to_struct_entry(const py::handle& val,
+                                            const std::string& slot_key) {
+    if (!py::isinstance<py::dict>(val))
+        throw std::runtime_error(
+            "matrices['" + slot_key + "'] must be a dict (got "
+            + std::string(py::str(val.get_type().attr("__name__"))) + ")");
+    StructEntry e;
+    auto d = val.cast<py::dict>();
+    for (auto kv : d) {
+        std::string k = kv.first.cast<std::string>();
+        py::handle v = kv.second;
+        // Order matters: bool is a subclass of int in Python.
+        if (py::isinstance<py::bool_>(v)) {
+            e[k] = v.cast<bool>();
+        } else if (py::isinstance<py::int_>(v)) {
+            // Use unsigned representation for non-negative values that
+            // fit in 32 bits unsigned but not int64_t. Default to int64.
+            try {
+                e[k] = v.cast<int64_t>();
+            } catch (...) {
+                e[k] = v.cast<uint64_t>();
+            }
+        } else if (py::isinstance<py::str>(v)) {
+            e[k] = v.cast<std::string>();
+        } else {
+            throw std::runtime_error(
+                "matrices['" + slot_key + "']." + k
+                + " must be int / bool / str");
+        }
+    }
+    return e;
+}
+
 static Params dict_to_params(const py::dict& d) {
     Params p;
     for (auto item : d) {
         std::string key = item.first.cast<std::string>();
         py::handle val = item.second;
+
+        // Reject the legacy WELL flat triple at the binding layer with
+        // a clear migration pointer. Some other generators may legitimately
+        // use these names in a non-WELL context (none today), so the check
+        // is by literal key only.
+        if (key == "mat_types" || key == "mat_pi" || key == "mat_pu") {
+            throw std::runtime_error(
+                "WELLGen: '" + key + "' is no longer accepted. "
+                "Use the structured 'matrices' map keyed by T0..T7. "
+                "See docs/generators/WELLGen.md.");
+        }
+
+        // Structured dict-of-dicts (e.g. WELL `matrices`). Recognise by
+        // shape: a top-level py::dict whose keys are str and whose
+        // values are themselves py::dict of scalars.
+        if (py::isinstance<py::dict>(val)) {
+            StructMap m;
+            auto outer = val.cast<py::dict>();
+            for (auto sub : outer) {
+                std::string slot = sub.first.cast<std::string>();
+                m[slot] = py_dict_to_struct_entry(sub.second, slot);
+            }
+            p.set_struct_map(key, std::move(m));
+            continue;
+        }
 
         // Handle "coeffs" specially: list of {value, position} dicts
         // → flatten to "coeff" (uint_vec) and "nocoeff" (int_vec)
@@ -160,6 +221,14 @@ static Params dict_to_params(const py::dict& d) {
 // Params -> py::dict conversion (mirror of dict_to_params)
 // ═══════════════════════════════════════════════════════════════════════════
 
+static py::object scalar_to_py(const ParamScalar& s) {
+    if (auto pi = std::get_if<int64_t>(&s)) return py::int_(*pi);
+    if (auto pu = std::get_if<uint64_t>(&s)) return py::int_(*pu);
+    if (auto ps = std::get_if<std::string>(&s)) return py::str(*ps);
+    if (auto pb = std::get_if<bool>(&s)) return py::bool_(*pb);
+    return py::none();
+}
+
 static py::dict params_to_dict(const Params& p) {
     py::dict d;
     for (const auto& kv : p.ints())      d[py::str(kv.first)] = py::int_(kv.second);
@@ -167,6 +236,17 @@ static py::dict params_to_dict(const Params& p) {
     for (const auto& kv : p.strings())   d[py::str(kv.first)] = py::str(kv.second);
     for (const auto& kv : p.int_vecs())  d[py::str(kv.first)] = py::cast(kv.second);
     for (const auto& kv : p.uint_vecs()) d[py::str(kv.first)] = py::cast(kv.second);
+    for (const auto& kv : p.struct_maps()) {
+        py::dict outer;
+        for (const auto& slot : kv.second) {
+            py::dict inner;
+            for (const auto& arg : slot.second) {
+                inner[py::str(arg.first)] = scalar_to_py(arg.second);
+            }
+            outer[py::str(slot.first)] = inner;
+        }
+        d[py::str(kv.first)] = outer;
+    }
     return d;
 }
 

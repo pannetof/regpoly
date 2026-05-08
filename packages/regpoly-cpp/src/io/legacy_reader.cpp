@@ -8,6 +8,7 @@
 #include "legacy_reader.h"
 
 #include "factory.h"
+#include "well_legacy_decode.h"
 
 #include <algorithm>
 #include <cassert>
@@ -440,35 +441,65 @@ read_carry(std::ifstream& f, int L, const std::string& filename) {
         int m2 = parse_int(toks[1], filename);
         int m3 = parse_int(toks[2], filename);
 
-        std::vector<int> mat_types;
-        std::vector<int> mat_pi;
-        std::vector<uint64_t> mat_pu;
-        mat_types.reserve(8);
-        mat_pi.reserve(24);
-        mat_pu.reserve(24);
+        // Remap legacy 0..7 type indices to paper Mi (0..6) in memory
+        // and rebuild as a paper-aligned StructMap. The .dat file on
+        // disk is unchanged. Old type 6 (multi-shift XOR) has no paper
+        // equivalent and is rejected. Old M6 (legacy code-type 5) used
+        // three full 32-bit masks; we decode them back to the paper's
+        // (q, t, s, a) form via well_legacy_decode helpers.
+        static const int OLD_TO_NEW[8] = {3, 1, 4, 2, 5, 6, -1, 0};
+        constexpr uint32_t M32 = 0xFFFFFFFFu;
+
+        StructMap matrices;
         size_t idx = 3;
         for (int k = 0; k < 8; ++k) {
-            mat_types.push_back(parse_int(toks[idx++], filename));
-            mat_pi.push_back(parse_int(toks[idx++], filename));
-            mat_pi.push_back(parse_int(toks[idx++], filename));
-            mat_pi.push_back(parse_int(toks[idx++], filename));
-            mat_pu.push_back(parse_hex(toks[idx++], filename));
-            mat_pu.push_back(parse_hex(toks[idx++], filename));
-            mat_pu.push_back(parse_hex(toks[idx++], filename));
-        }
+            int raw_type = parse_int(toks[idx++], filename);
+            int pi0 = parse_int(toks[idx++], filename);
+            int pi1 = parse_int(toks[idx++], filename);
+            int pi2 = parse_int(toks[idx++], filename);
+            (void)pi1; (void)pi2;  // M2..M5 use only pi[0]; old type-6 used pi[1..2] (now dropped).
+            uint64_t pu0 = parse_hex(toks[idx++], filename);
+            uint64_t pu1 = parse_hex(toks[idx++], filename);
+            uint64_t pu2 = parse_hex(toks[idx++], filename);
 
-        // Remap legacy 0..7 type indices to paper Mi (0..6) in memory.
-        // The .dat file on disk is unchanged. Old type 6 (multi-shift
-        // XOR) has no paper equivalent and is rejected.
-        static const int OLD_TO_NEW[8] = {3, 1, 4, 2, 5, 6, -1, 0};
-        for (int& t : mat_types) {
-            if (t < 0 || t >= 8 || OLD_TO_NEW[t] < 0)
+            if (raw_type < 0 || raw_type >= 8 || OLD_TO_NEW[raw_type] < 0)
                 throw std::runtime_error(
                     "legacy_reader: carry .dat in " + filename
                     + " uses obsolete WELL transformation type "
-                    + std::to_string(t)
+                    + std::to_string(raw_type)
                     + " (no paper Mi equivalent; was the multi-shift extension)");
-            t = OLD_TO_NEW[t];
+            int Mi = OLD_TO_NEW[raw_type];
+
+            std::string slot = "T" + std::to_string(k);
+            std::string ctx = filename + " (slot " + slot + ")";
+            StructEntry e;
+            e["M"] = static_cast<int64_t>(Mi);
+            switch (Mi) {
+                case 0:
+                case 1:
+                    break;  // no args
+                case 2:
+                case 3:
+                    e["t"] = static_cast<int64_t>(pi0);
+                    break;
+                case 4:
+                    e["a"] = static_cast<uint64_t>(pu0 & M32);
+                    break;
+                case 5:
+                    e["t"] = static_cast<int64_t>(pi0);
+                    e["b"] = static_cast<uint64_t>(pu0 & M32);
+                    break;
+                case 6: {
+                    int s = regpoly_well::decode_d_s_mask(pu1, ctx);
+                    int t_bit = regpoly_well::decode_test_mask(pu2, ctx);
+                    e["q"] = static_cast<int64_t>(pi0);
+                    e["t"] = static_cast<int64_t>(t_bit);
+                    e["s"] = static_cast<int64_t>(s);
+                    e["a"] = static_cast<uint64_t>(pu0 & M32);
+                    break;
+                }
+            }
+            matrices[std::move(slot)] = std::move(e);
         }
 
         Params pp;
@@ -478,9 +509,7 @@ read_carry(std::ifstream& f, int L, const std::string& filename) {
         pp.set_int("m1", m1);
         pp.set_int("m2", m2);
         pp.set_int("m3", m3);
-        pp.set_int_vec("mat_types", mat_types);
-        pp.set_int_vec("mat_pi", mat_pi);
-        pp.set_uint_vec("mat_pu", mat_pu);
+        pp.set_struct_map("matrices", std::move(matrices));
         // Python uses Generator.create("Carry2Gen", ...); the Python
         // alias table maps "Carry2Gen" → "WELLGen" before dispatch.
         // Skip the indirection here.

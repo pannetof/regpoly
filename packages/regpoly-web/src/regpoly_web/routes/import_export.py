@@ -112,26 +112,54 @@ async def _import_one_generators_file(
 
     family_raw = data["family"]
     family = resolve_family(family_raw)
-
-    # WELL YAMLs predating the M0..M6 rename use a different mat_types
-    # numbering. PyYAML strips comments, so a body key is the only
-    # reliable marker. The renumbering script in shared/yaml/... adds
-    # `mat_types_version: 2` at the top level; reject any WELL upload
-    # without it. Operators with private legacy YAMLs can re-export
-    # them through a current regpoly-web instance, or run the
-    # migrate_well_mat_types CLI on the source DB.
-    if family == "WELLGen":
-        v = data.get("mat_types_version")
-        if v != 2:
-            raise HTTPException(
-                400,
-                f"WELL YAML at {path} is missing 'mat_types_version: 2'. "
-                "It may pre-date the M0..M6 rename; re-export from a "
-                "current regpoly-web instance, or run "
-                "'migrate_well_mat_types' on the source DB first.",
-            )
     common = data.get("common") or {}
     generators = data.get("generators") or []
+
+    # WELL YAMLs must use the structured `matrices: {T0..T7}` form
+    # introduced in the paper-aligned redesign. The legacy flat triple
+    # mat_types/mat_pi/mat_pu and the orphan per-slot positional list
+    # `matrices: [{type, pi, pu}, ...]` are both rejected with a clear
+    # migration pointer. The structural shape — `matrices` is a map
+    # keyed by `T0..T7` — is its own discriminant.
+    if family == "WELLGen":
+        legacy_keys = ("mat_types", "mat_pi", "mat_pu", "mat_types_version")
+        for blob_kind, blob in (("top-level", data),
+                                ("common", common)):
+            for k in legacy_keys:
+                if k in blob:
+                    raise HTTPException(
+                        400,
+                        f"WELL YAML at {path}: legacy key '{k}' in "
+                        f"{blob_kind} is no longer accepted. Use the "
+                        "structured `matrices: {T0..T7}` form. See "
+                        "docs/generators/WELLGen.md.",
+                    )
+        for i, entry in enumerate(generators):
+            for k in legacy_keys:
+                if k in entry:
+                    raise HTTPException(
+                        400,
+                        f"WELL YAML at {path}: legacy key '{k}' in "
+                        f"generators[{i}] is no longer accepted. Use "
+                        "the structured `matrices: {T0..T7}` form. See "
+                        "docs/generators/WELLGen.md.",
+                    )
+            m = entry.get("matrices") or common.get("matrices")
+            if not isinstance(m, dict):
+                raise HTTPException(
+                    400,
+                    f"WELL YAML at {path}: generators[{i}] is missing "
+                    "`matrices` (must be a map keyed by T0..T7). See "
+                    "docs/generators/WELLGen.md.",
+                )
+            missing = [f"T{j}" for j in range(8) if f"T{j}" not in m]
+            if missing:
+                raise HTTPException(
+                    400,
+                    f"WELL YAML at {path}: generators[{i}] `matrices` "
+                    f"is missing slot(s) {missing}. All of T0..T7 must "
+                    "be present.",
+                )
 
     db = request.app.state.db
 
@@ -160,6 +188,15 @@ async def _import_one_generators_file(
         try:
             gen = Generator.create(family_raw, L, **merged)
         except Exception as exc:
+            # WELL `matrices` shape errors are user-visible 400s, not
+            # silent per-entry failures, so the operator gets a clear
+            # diagnostic instead of an HTTP 200 with a `failures` list.
+            if family == "WELLGen":
+                raise HTTPException(
+                    400,
+                    f"WELL YAML at {path}: invalid `matrices` shape "
+                    f"in generators[{generators.index(entry)}]: {exc}",
+                )
             failures.append({"entry": dict(entry), "error": str(exc)})
             continue
 

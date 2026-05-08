@@ -395,9 +395,12 @@ function generatorDetail(id) {
 
         formatVal(key, v) {
             // Bitmask fields are pre-formatted server-side as "0x…"
-            // strings; arrays render as "[a, b, c]"; everything else
-            // shows its native representation.
+            // strings; arrays render as "[a, b, c]"; structured params
+            // (e.g. WELL `matrices: {T0..T7}`) render as JSON so the
+            // user sees the paper-aligned shape rather than
+            // "[object Object]".
             if (Array.isArray(v)) return '[' + v.join(', ') + ']';
+            if (v && typeof v === 'object') return JSON.stringify(v);
             return String(v);
         },
 

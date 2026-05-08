@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+#include "params.h"   // StructMap typedef
+
 // Phase 3.2: paper-centric published-generators catalog in C++.
 //
 // Mirrors the data model of regpoly/library/__init__.py:
@@ -44,6 +46,7 @@ enum class ParamKind : uint8_t {
     String = 1,
     Bool = 2,
     IntList = 3,
+    StructMap = 4,
 };
 
 struct ParamValue {
@@ -52,6 +55,7 @@ struct ParamValue {
     std::string string_val;
     bool bool_val = false;
     std::vector<int64_t> int_list_val;
+    StructMap struct_map_val;
 
     static ParamValue make_int(int64_t v) {
         ParamValue p;
@@ -75,6 +79,12 @@ struct ParamValue {
         ParamValue p;
         p.kind = ParamKind::IntList;
         p.int_list_val = std::move(v);
+        return p;
+    }
+    static ParamValue make_struct_map(StructMap v) {
+        ParamValue p;
+        p.kind = ParamKind::StructMap;
+        p.struct_map_val = std::move(v);
         return p;
     }
 };
