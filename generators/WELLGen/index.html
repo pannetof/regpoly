@@ -1203,10 +1203,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#transformation-matrix-types" class="md-nav__link">
+  <a href="#transformation-matrix-classes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Transformation matrix types
+        Transformation matrix classes
       
     </span>
   </a>
@@ -1242,10 +1242,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#matrix-parameter-encoding" class="md-nav__link">
+  <a href="#matrices-shape" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Matrix parameter encoding
+        matrices shape
       
     </span>
   </a>
@@ -1296,6 +1296,17 @@
     <span class="md-ellipsis">
       
         WELL19937a (paper Table II)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#well44497a-paper-table-ii-uses-m6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WELL44497a (paper Table II) — uses M6
       
     </span>
   </a>
@@ -3293,10 +3304,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#transformation-matrix-types" class="md-nav__link">
+  <a href="#transformation-matrix-classes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Transformation matrix types
+        Transformation matrix classes
       
     </span>
   </a>
@@ -3332,10 +3343,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#matrix-parameter-encoding" class="md-nav__link">
+  <a href="#matrices-shape" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Matrix parameter encoding
+        matrices shape
       
     </span>
   </a>
@@ -3386,6 +3397,17 @@
     <span class="md-ellipsis">
       
         WELL19937a (paper Table II)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#well44497a-paper-table-ii-uses-m6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WELL44497a (paper Table II) — uses M6
       
     </span>
   </a>
@@ -3472,78 +3494,71 @@ At each step:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>upper_mask = bits w-1 down to p    (top w-p bits)
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>lower_mask = bits p-1 down to 0    (bottom p bits)
 </code></pre></div>
-<h3 id="transformation-matrix-types">Transformation matrix types<a class="headerlink" href="#transformation-matrix-types" title="Permanent link">&para;</a></h3>
+<h3 id="transformation-matrix-classes">Transformation matrix classes<a class="headerlink" href="#transformation-matrix-classes" title="Permanent link">&para;</a></h3>
 <p>Each of the 8 algorithm slots T0..T7 is filled with one of the seven
-M-class transformations from paper Table I:</p>
+M-class transformations from paper Table I. Each Mi takes a small set
+of named arguments matching the paper:</p>
 <table>
 <thead>
 <tr>
-<th>Type</th>
-<th>Paper Mi</th>
+<th>M</th>
+<th>Args</th>
 <th>Formula</th>
-<th>Parameters</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>0</td>
-<td>M0</td>
+<td>(none)</td>
 <td><code>y = 0</code></td>
-<td>none</td>
 </tr>
 <tr>
 <td>1</td>
-<td>M1</td>
+<td>(none)</td>
 <td><code>y = x</code> (identity)</td>
-<td>none</td>
 </tr>
 <tr>
 <td>2</td>
-<td>M2(t)</td>
+<td><code>t</code></td>
 <td><code>y = x ≫ t</code> if <code>t ≥ 0</code>, else <code>x ≪ −t</code></td>
-<td><code>t</code> ∈ <code>paramsint[0]</code></td>
 </tr>
 <tr>
 <td>3</td>
-<td>M3(t)</td>
+<td><code>t</code></td>
 <td><code>y = x ⊕ shift(x, t)</code> (same sign rule as M2)</td>
-<td><code>t</code> ∈ <code>paramsint[0]</code></td>
 </tr>
 <tr>
 <td>4</td>
-<td>M4(a)</td>
+<td><code>a</code></td>
 <td><code>y = (x ≫ 1) ⊕ a</code> if LSB(x), else <code>x ≫ 1</code></td>
-<td><code>a</code> ∈ <code>paramsulong[0]</code></td>
 </tr>
 <tr>
 <td>5</td>
-<td>M5(t, b)</td>
+<td><code>t</code>, <code>b</code></td>
 <td><code>y = x ⊕ (shift(x, t) &amp; b)</code></td>
-<td><code>t</code> ∈ <code>paramsint[0]</code>, <code>b</code> ∈ <code>paramsulong[0]</code></td>
 </tr>
 <tr>
 <td>6</td>
-<td>M6*(q, a, b, c)</td>
-<td><code>y = (rotate_left(x, q) &amp; b) ⊕ (a if (x &amp; c) else 0)</code></td>
-<td><code>q</code> ∈ <code>paramsint[0]</code>, <code>a, b, c</code> ∈ <code>paramsulong[0..2]</code></td>
+<td><code>q</code>, <code>t</code>, <code>s</code>, <code>a</code></td>
+<td><code>y = (rotate_left(x, q) &amp; d_s) ⊕ (a if x_t = 1 else 0)</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>M6*</strong> is a strict generalisation of paper Table I's M6: arguments
-<code>b</code> and <code>c</code> are full 32-bit masks, supersetting the paper's
-parametric <code>d_s</code> and <code>x_t = 1</code> test. Setting <code>b = ~0</code>,
-<code>c = (1 &lt;&lt; t)</code>, and <code>a</code> as published reproduces the exact paper
-formula.</p>
-<p><strong>Bit-indexing convention.</strong> <code>LSB(x)</code> corresponds to the paper's
-<code>x_{w-1}</code> under the column-vector convention of §1.</p>
-<p>Each matrix entry has:
-- <code>type</code>: integer 0-6 selecting the Mi class
-- <code>paramsint[0..2]</code>: up to 3 integer parameters (shift amounts)
-- <code>paramsulong[0..2]</code>: up to 3 unsigned parameters (bitmasks)</p>
+<p>For M6, <code>d_s</code> is the 32-bit mask with the (s+1)-th bit zero and all
+others one (paper Table I's <code>d_s</code>); the <code>x_t = 1</code> test selects the
+bit at MSB-position t. Both are synthesised at runtime from the
+small-integer fields, matching the paper exactly.</p>
+<p><strong>Bit-indexing convention.</strong> M4's <code>x_{w-1}</code> resolves to the LSB under
+the paper's column-vector convention (§1). M6's <code>t</code> and <code>s</code> are
+0-indexed from the MSB.</p>
+<p><strong>Range constraints</strong> (paper Table I):
+- M2/M3/M5: <code>−w ≤ t ≤ w</code> (signed shift; sign chooses direction)
+- M6: <code>0 ≤ q, t, s &lt; w</code>
+- M4/M5/M6: <code>a</code>, <code>b</code> ∈ {0, …, 2^w − 1}</p>
 <h3 id="computational-cost">Computational cost<a class="headerlink" href="#computational-cost" title="Permanent link">&para;</a></h3>
 <p>Each Mi class has an associated cost (number of operations):
-M0=0, M1=1, M2=2, M3=3, M4=5, M5=4, M6=8. Costs are not monotonic in
-M-index (M4 &gt; M5) because conditional XOR is more expensive than
+<code>M0=0, M1=1, M2=2, M3=3, M4=5, M5=4, M6=8</code>. Costs are not monotonic
+in M-index (M4 &gt; M5) because conditional XOR is more expensive than
 masked shift on most architectures. The total cost of a generator is
 the sum over its 8 algorithm slots, repeating Mi costs as needed.</p>
 <h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
@@ -3601,35 +3616,31 @@ the sum over its 8 algorithm slots, repeating Mi costs as needed.</p>
 <td>Offset to third tap word</td>
 </tr>
 <tr>
-<td><code>mat_types</code></td>
-<td><code>int_vec</code></td>
+<td><code>matrices</code></td>
+<td><code>struct_map</code></td>
 <td>search</td>
 <td><code>none</code> (must be provided)</td>
-<td>List of 8 integers: the Mi class index (0–6) for each algorithm slot T0..T7</td>
-</tr>
-<tr>
-<td><code>mat_pi</code></td>
-<td><code>int_vec</code></td>
-<td>search</td>
-<td><code>none</code> (must be provided)</td>
-<td>Flat list of 24 integers: 3 integer params per matrix (8 x 3)</td>
-</tr>
-<tr>
-<td><code>mat_pu</code></td>
-<td><code>uint_vec</code></td>
-<td>search</td>
-<td><code>none</code> (must be provided)</td>
-<td>Flat list of 24 unsigned integers: 3 unsigned params per matrix (8 x 3)</td>
+<td>Map keyed by <code>T0..T7</code>; each value is a dict with <code>M</code> plus that class's named args</td>
 </tr>
 </tbody>
 </table>
-<h3 id="matrix-parameter-encoding">Matrix parameter encoding<a class="headerlink" href="#matrix-parameter-encoding" title="Permanent link">&para;</a></h3>
-<p>The <code>mat_pi</code> and <code>mat_pu</code> vectors are flat arrays of length 24 (8
-matrices x 3 parameters each). For matrix j (0-indexed), the
-parameters are at indices <code>j*3</code>, <code>j*3+1</code>, <code>j*3+2</code>. Unused parameters
-should be set to 0.</p>
+<h3 id="matrices-shape"><code>matrices</code> shape<a class="headerlink" href="#matrices-shape" title="Permanent link">&para;</a></h3>
+<p><code>matrices</code> is a YAML / Python map keyed by the slot label (<code>T0</code> … <code>T7</code>).
+Each value is itself a map: an <code>M</code> key naming the class (integer 0..6
+or string <code>"M0".."M6"</code>) plus the per-class arg names from the table
+above. Reading the YAML transcribes paper Table II directly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">matrices</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">T0</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-25</span><span class="p p-Indicator">}</span><span class="w">      </span><span class="c1"># T0 = M3(-25)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">T1</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">27</span><span class="p p-Indicator">}</span><span class="w">      </span><span class="c1"># T1 = M3(27)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">T2</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">   </span><span class="nv">9</span><span class="p p-Indicator">}</span><span class="w">      </span><span class="c1"># T2 = M2(9)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">T3</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">   </span><span class="nv">1</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">T4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span><span class="w">              </span><span class="c1"># M1, no args</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">T5</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">-9</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">T6</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-21</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">T7</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">21</span><span class="p p-Indicator">}</span>
+</code></pre></div>
 <h2 id="state-size-period-exponent">State size (period exponent)<a class="headerlink" href="#state-size-period-exponent" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>k = w * r - p
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>k = w * r - p
 </code></pre></div>
 <p>Classical examples:
 - <strong>WELL19937:</strong> w=32, r=624, p=31 =&gt; k = 32<em>624 - 31 = 19937
@@ -3638,79 +3649,111 @@ should be set to 0.</p>
 - </em><em>WELL1024:</em><em> w=32, r=32,  p=0  =&gt; k = 32</em>32 = 1024</p>
 <h2 id="search-examples">Search examples<a class="headerlink" href="#search-examples" title="Permanent link">&para;</a></h2>
 <h3 id="well512a-paper-table-ii">WELL512a (paper Table II)<a class="headerlink" href="#well512a-paper-table-ii" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">search</span><span class="p">:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WELLRNG</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">L</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">limit</span><span class="p">:</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">max_tries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="nt">structural_params</span><span class="p">:</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nt">w</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="nt">r</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="nt">fixed_params</span><span class="p">:</span>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span><span class="nt">m1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">13</span>
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">  </span><span class="nt">m2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9</span>
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">  </span><span class="nt">m3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
-<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">  </span><span class="c1"># T0=M3(-16), T1=M3(-15), T2=M3(11), T3=M0,</span>
-<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">  </span><span class="c1"># T4=M3(-2),  T5=M3(-18), T6=M2(-28), T7=M5(-5, a1)</span>
-<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">  </span><span class="nt">mat_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">  </span><span class="nt">mat_pi</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">[</span><span class="nv">-16</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="nv">-15</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="nv">11</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span>
-<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">               </span><span class="nv">-2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="nv">-18</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="nv">-28</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="nv">-5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">  </span><span class="c1"># Only slot T7 (an M5 instance) carries a mask at index 7*3=21.</span>
-<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">  </span><span class="nt">mat_pu</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span>
-<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">              </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0xda442d24</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
-</code></pre></div>
-<h3 id="well19937a-paper-table-ii">WELL19937a (paper Table II)<a class="headerlink" href="#well19937a-paper-table-ii" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">search</span><span class="p">:</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WELLRNG</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">L</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">well19937_results.yaml</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">limit</span><span class="p">:</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">max_tries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nt">structural_params</span><span class="p">:</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nt">w</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="nt">r</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">624</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">31</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="nt">fixed_params</span><span class="p">:</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">  </span><span class="nt">m1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">70</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">  </span><span class="nt">m2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">179</span>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span><span class="nt">m3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">449</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">  </span><span class="c1"># T0=M3(-25), T1=M3(27), T2=M2(9), T3=M3(1),</span>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">  </span><span class="c1"># T4=M1,      T5=M3(-9), T6=M3(-21), T7=M3(21)</span>
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">  </span><span class="nt">mat_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">  </span><span class="nt">mat_pi</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">[</span><span class="nv">-25</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="nv">27</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">   </span><span class="nv">9</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">   </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span>
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">                </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="nv">-9</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-21</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="nv">21</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">  </span><span class="nt">mat_pu</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span>
-<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">              </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">limit</span><span class="p">:</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">max_tries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nt">structural_params</span><span class="p">:</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">w</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nt">r</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="nt">fixed_params</span><span class="p">:</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="nt">m1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">13</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">  </span><span class="nt">m2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">  </span><span class="nt">m3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span><span class="nt">matrices</span><span class="p">:</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">    </span><span class="nt">T0</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-16</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">    </span><span class="nt">T1</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-15</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">    </span><span class="nt">T2</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">11</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">    </span><span class="nt">T3</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">    </span><span class="nt">T4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">-2</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">    </span><span class="nt">T5</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-18</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">    </span><span class="nt">T6</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-28</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">    </span><span class="nt">T7</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">-5</span><span class="p p-Indicator">,</span><span class="nt"> b</span><span class="p">:</span><span class="w"> </span><span class="nv">0xda442d24</span><span class="p p-Indicator">}</span><span class="w">      </span><span class="c1"># paper a1</span>
+</code></pre></div>
+<h3 id="well19937a-paper-table-ii">WELL19937a (paper Table II)<a class="headerlink" href="#well19937a-paper-table-ii" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">search</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WELLRNG</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">L</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">output</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">well19937_results.yaml</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">limit</span><span class="p">:</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">max_tries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="nt">structural_params</span><span class="p">:</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span><span class="nt">w</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="nt">r</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">624</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">31</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="nt">fixed_params</span><span class="p">:</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">  </span><span class="nt">m1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">70</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">  </span><span class="nt">m2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">179</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">  </span><span class="nt">m3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">449</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">  </span><span class="nt">matrices</span><span class="p">:</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">    </span><span class="nt">T0</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-25</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">    </span><span class="nt">T1</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">27</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">    </span><span class="nt">T2</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">   </span><span class="nv">9</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">    </span><span class="nt">T3</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">   </span><span class="nv">1</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="w">    </span><span class="nt">T4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="w">    </span><span class="nt">T5</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">-9</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">    </span><span class="nt">T6</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-21</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="w">    </span><span class="nt">T7</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">21</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<h3 id="well44497a-paper-table-ii-uses-m6">WELL44497a (paper Table II) — uses M6<a class="headerlink" href="#well44497a-paper-table-ii-uses-m6" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">search</span><span class="p">:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WELLRNG</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nt">L</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="nt">limit</span><span class="p">:</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="nt">max_tries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nt">structural_params</span><span class="p">:</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="nt">w</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span><span class="nt">r</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1391</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="nt">fixed_params</span><span class="p">:</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span><span class="nt">m1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">23</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">  </span><span class="nt">m2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">481</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">  </span><span class="nt">m3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">229</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">  </span><span class="nt">matrices</span><span class="p">:</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">    </span><span class="nt">T0</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-24</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">    </span><span class="nt">T1</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">30</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">    </span><span class="nt">T2</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-10</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="w">    </span><span class="nt">T3</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">-26</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">    </span><span class="nt">T4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="w">    </span><span class="nt">T5</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">20</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="w">    </span><span class="nt">T6</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">6</span><span class="p p-Indicator">,</span><span class="nt"> q</span><span class="p">:</span><span class="w"> </span><span class="nv">9</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">14</span><span class="p p-Indicator">,</span><span class="nt"> s</span><span class="p">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">,</span><span class="nt"> a</span><span class="p">:</span><span class="w"> </span><span class="nv">0xb729fcec</span><span class="p p-Indicator">}</span><span class="w">     </span><span class="c1"># paper a7</span>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="w">    </span><span class="nt">T7</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
 </code></pre></div>
 <h3 id="minimal-cost-well1024-search-shape-synthetic">Minimal-cost WELL1024 search shape (synthetic)<a class="headerlink" href="#minimal-cost-well1024-search-shape-synthetic" title="Permanent link">&para;</a></h3>
 <p>This is not a published generator; it shows the parameter shape for a
 search that explores only the cheap M-classes (M0, M1, M2, M3).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">search</span><span class="p">:</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WELLRNG</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">L</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">limit</span><span class="p">:</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">max_tries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100000</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="nt">structural_params</span><span class="p">:</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span><span class="nt">w</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span><span class="nt">r</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="nt">fixed_params</span><span class="p">:</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">  </span><span class="nt">m1</span><span class="p">:</span><span class="w">                </span><span class="c1"># randomized</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">  </span><span class="nt">m2</span><span class="p">:</span><span class="w">                </span><span class="c1"># randomized</span>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">  </span><span class="nt">m3</span><span class="p">:</span><span class="w">                </span><span class="c1"># randomized</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">  </span><span class="c1"># Slot classes: M3, M1, M2, M2, M3, M1, M3, M0 — no masks needed.</span>
-<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">  </span><span class="nt">mat_types</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">  </span><span class="nt">mat_pi</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">[</span><span class="nv">16</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">   </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="nv">15</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">  </span><span class="nv">11</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span>
-<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">              </span><span class="nv">19</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">   </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">   </span><span class="nv">4</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">   </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">  </span><span class="nt">mat_pu</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">   </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">   </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span>
-<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">              </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">    </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">   </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w">   </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">search</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WELLRNG</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">L</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">limit</span><span class="p">:</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="nt">max_tries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100000</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="nt">structural_params</span><span class="p">:</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="nt">w</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="nt">r</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="nt">fixed_params</span><span class="p">:</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">  </span><span class="nt">m1</span><span class="p">:</span><span class="w">                </span><span class="c1"># randomized</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">  </span><span class="nt">m2</span><span class="p">:</span><span class="w">                </span><span class="c1"># randomized</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">  </span><span class="nt">m3</span><span class="p">:</span><span class="w">                </span><span class="c1"># randomized</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">  </span><span class="nt">matrices</span><span class="p">:</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">    </span><span class="nt">T0</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">16</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">    </span><span class="nt">T1</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">    </span><span class="nt">T2</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">15</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">    </span><span class="nt">T3</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">11</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">    </span><span class="nt">T4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">19</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="w">    </span><span class="nt">T5</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="w">    </span><span class="nt">T6</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">4</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="w">    </span><span class="nt">T7</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">}</span>
 </code></pre></div>
 <hr />
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
