@@ -1,0 +1,142 @@
+id: panneton-lecuyer-matsumoto-2006
+authors:
+  - {family: Panneton, given: François}
+  - {family: L'Ecuyer, given: Pierre}
+  - {family: Matsumoto, given: Makoto}
+year: 2006
+title: "Improved Long-Period Generators Based on Linear Recurrences Modulo 2"
+venue: ACM Transactions on Mathematical Software
+volume: "32"
+issue: "1"
+pages: "1–16"
+doi: https://doi.org/10.1145/1132973.1132974
+pdf: docs/papers/wellrng.pdf
+bibkey: PannetonLEcuyerMatsumoto2006WELL
+starred: true
+tags: [WELL, F2-linear, classic]
+
+abstract: |
+  Fast uniform random number generators with extremely long periods
+  have been defined and implemented based on linear recurrences modulo
+  2. The twisted GFSR and the Mersenne twister are famous examples.
+  Such generators have very weak statistical defects and the
+  initialization vector has a very strong influence on the quality of
+  the output sequence at the beginning. The authors propose a new
+  algorithm called the Well Equidistributed Long-period Linear (WELL),
+  which gives a better trade-off between speed, period length, and
+  equidistribution properties than previous generators of this type.
+  WELL combines the matrix recurrence framework of Panneton's thesis
+  with carefully chosen transformation matrices T0..T7 (paper Table I)
+  drawn from a small alphabet of M-class operations (M0..M6) and a
+  triple of offsets (m1, m2, m3). Three configurations — WELL512a,
+  WELL19937a, WELL44497a — are tabulated in Table II as the canonical
+  paper-published instances.
+
+notes: |
+  These three entries reproduce paper Table II byte-for-byte. The
+  C++ family is `WELLGen` (alias `WELLRNG` accepted at the API for
+  legacy callers). Each generator is `target: tested_generator` with
+  empty tempering — WELL output is the raw `z3` word produced by the
+  recurrence.
+
+  Cost cap reference: M0=0, M1=1, M2=2, M3=3, M4=5, M5=4, M6=8 — see
+  `docs/generators/WELLGen.md` for the search workflow under a per-
+  candidate `max_cost` budget.
+
+generators:
+  - id: well512a
+    display: WELL512a
+    family: WELLGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: WELLGen
+        L: 32
+        params:
+          w: 32
+          r: 16
+          p: 0
+          m1: 13
+          m2: 9
+          m3: 5
+          matrices:
+            T0: {M: 3, t: -16}
+            T1: {M: 3, t: -15}
+            T2: {M: 3, t:  11}
+            T3: {M: 0}
+            T4: {M: 3, t:  -2}
+            T5: {M: 3, t: -18}
+            T6: {M: 2, t: -28}
+            T7: {M: 5, t:  -5, b: 0xda442d24}      # paper a1
+        tempering: []
+    notes: |
+      Smallest WELL configuration in the paper; period $2^{512}-1$,
+      `k = w·r - p = 32·16 - 0 = 512`. The carry constant `a1` from
+      paper Table II is encoded in slot T7 as the `b` argument of M5.
+
+  - id: well19937a
+    display: WELL19937a
+    family: WELLGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: WELLGen
+        L: 32
+        params:
+          w: 32
+          r: 624
+          p: 31
+          m1: 70
+          m2: 179
+          m3: 449
+          matrices:
+            T0: {M: 3, t: -25}
+            T1: {M: 3, t:  27}
+            T2: {M: 2, t:   9}
+            T3: {M: 3, t:   1}
+            T4: {M: 1}
+            T5: {M: 3, t:  -9}
+            T6: {M: 3, t: -21}
+            T7: {M: 3, t:  21}
+        tempering: []
+    notes: |
+      Period $2^{19937}-1$ with the same state size as MT19937
+      (`k = 32·624 - 31 = 19937`); none of the slots use M4/M5/M6.
+      The byte-for-byte fixture `well19937a_1024.bin` in
+      `packages/regpoly-cpp/tests/fixtures/` locks this configuration.
+
+  - id: well44497a
+    display: WELL44497a
+    family: WELLGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: WELLGen
+        L: 32
+        params:
+          w: 32
+          r: 1391
+          p: 15
+          m1: 23
+          m2: 481
+          m3: 229
+          matrices:
+            T0: {M: 3, t: -24}
+            T1: {M: 3, t:  30}
+            T2: {M: 3, t: -10}
+            T3: {M: 2, t: -26}
+            T4: {M: 1}
+            T5: {M: 3, t:  20}
+            T6: {M: 6, q: 9, t: 14, s: 5, a: 0xb729fcec}    # paper a7
+            T7: {M: 1}
+        tempering: []
+    notes: |
+      The only paper Table II entry that uses the most expensive
+      M-class M6 (cost 8). Period $2^{44497}-1$;
+      `k = 32·1391 - 15 = 44497`.

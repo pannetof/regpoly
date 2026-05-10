@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#wellrng" class="md-skip">
+        <a href="#well" class="md-skip">
           Skip to content
         </a>
       
@@ -1313,11 +1313,50 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#minimal-cost-well1024-search-shape-synthetic" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost-bounded-search" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Minimal-cost WELL1024 search shape (synthetic)
+        Cost-bounded search
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cost-bounded search">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#yaml-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sampling-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sampling algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#web-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web UI
       
     </span>
   </a>
@@ -3414,11 +3453,50 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#minimal-cost-well1024-search-shape-synthetic" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cost-bounded-search" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Minimal-cost WELL1024 search shape (synthetic)
+        Cost-bounded search
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cost-bounded search">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#yaml-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sampling-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sampling algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#web-ui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web UI
       
     </span>
   </a>
@@ -3466,15 +3544,17 @@
   
 
 
-<h1 id="wellrng">WELLRNG<a class="headerlink" href="#wellrng" title="Permanent link">&para;</a></h1>
-<p><strong>C++ class:</strong> <code>WELLRNG</code>
-<strong>Name in code:</strong> <code>"Carry Generator"</code>
-<strong>Legacy aliases:</strong> <code>carry</code>, <code>Carry2Gen</code></p>
-<p>Well Equidistributed Long-period Linear (WELL) generators. The state
-is r words of w bits stored in a circular buffer. The recurrence uses
-8 algorithm slots T0..T7. Each slot is filled with a transformation
-class Mi (i=0..6) from Table I of Panneton et al. (2006); the M-class
-table further down lists each class's formula.</p>
+<h1 id="well">WELL<a class="headerlink" href="#well" title="Permanent link">&para;</a></h1>
+<p><strong>C++ class:</strong> <code>WELLGen</code>
+<strong>Name in code:</strong> <code>"Carry Generator"</code> (historical; returned by
+<code>Generator::name()</code>)
+<strong>Aliases accepted by the factory:</strong> <code>WELLRNG</code></p>
+<p>Well Equidistributed Long-period Linear (WELL) generators of Panneton,
+L'Ecuyer, &amp; Matsumoto (2006). The state is <code>r</code> words of <code>w</code> bits
+stored in a circular buffer. The recurrence uses 8 algorithm slots
+T0..T7. Each slot is filled with a transformation class Mi (i=0..6)
+from Table I of the paper; the M-class table further down lists each
+class's formula and computational cost.</p>
 <h2 id="mathematical-recurrence">Mathematical recurrence<a class="headerlink" href="#mathematical-recurrence" title="Permanent link">&para;</a></h2>
 <p>Slots T0..T7 are positions in the WELL recurrence; each is filled with
 one of the M0..M6 classes per the parameter table. The state consists
@@ -3619,7 +3699,7 @@ the sum over its 8 algorithm slots, repeating Mi costs as needed.</p>
 <td><code>matrices</code></td>
 <td><code>struct_map</code></td>
 <td>search</td>
-<td><code>none</code> (must be provided)</td>
+<td><code>none</code> — pin every slot, <strong>or</strong> drive the search with a cost cap (see <a href="#cost-bounded-search">Cost-bounded search</a>)</td>
 <td>Map keyed by <code>T0..T7</code>; each value is a dict with <code>M</code> plus that class's named args</td>
 </tr>
 </tbody>
@@ -3727,34 +3807,58 @@ above. Reading the YAML transcribes paper Table II directly:</p>
 <a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="w">    </span><span class="nt">T6</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">6</span><span class="p p-Indicator">,</span><span class="nt"> q</span><span class="p">:</span><span class="w"> </span><span class="nv">9</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">14</span><span class="p p-Indicator">,</span><span class="nt"> s</span><span class="p">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">,</span><span class="nt"> a</span><span class="p">:</span><span class="w"> </span><span class="nv">0xb729fcec</span><span class="p p-Indicator">}</span><span class="w">     </span><span class="c1"># paper a7</span>
 <a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="w">    </span><span class="nt">T7</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
 </code></pre></div>
-<h3 id="minimal-cost-well1024-search-shape-synthetic">Minimal-cost WELL1024 search shape (synthetic)<a class="headerlink" href="#minimal-cost-well1024-search-shape-synthetic" title="Permanent link">&para;</a></h3>
-<p>This is not a published generator; it shows the parameter shape for a
-search that explores only the cheap M-classes (M0, M1, M2, M3).</p>
+<h2 id="cost-bounded-search">Cost-bounded search<a class="headerlink" href="#cost-bounded-search" title="Permanent link">&para;</a></h2>
+<p>The full-period search has two modes for WELL families:</p>
+<ol>
+<li><strong>Pinned matrices</strong> — every slot's <code>M</code>-class (and per-class args)
+   is fixed in <code>fixed_params.matrices</code>; the search only varies the
+   integer offsets (<code>m1</code>, <code>m2</code>, <code>m3</code>).</li>
+<li><strong>Cost-bounded</strong> — the user sets a <code>max_cost</code> budget; the search
+   <em>samples</em> a fresh <code>matrices</code> map under the cap on every iteration,
+   alongside the offsets. This is the default workflow on the web UI.</li>
+</ol>
+<p>Pinning <code>matrices</code> and setting <code>max_cost</code> are <strong>mutually exclusive</strong>:
+pinning fixes the cost, and <code>max_cost</code> only does something when the
+search varies matrices. The driver rejects the combination at start.</p>
+<h3 id="yaml-example">YAML example<a class="headerlink" href="#yaml-example" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">search</span><span class="p">:</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">WELLRNG</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">L</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">limit</span><span class="p">:</span>
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="nt">max_tries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100000</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="nt">structural_params</span><span class="p">:</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="nt">w</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="nt">r</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="nt">fixed_params</span><span class="p">:</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">  </span><span class="nt">m1</span><span class="p">:</span><span class="w">                </span><span class="c1"># randomized</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">  </span><span class="nt">m2</span><span class="p">:</span><span class="w">                </span><span class="c1"># randomized</span>
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">  </span><span class="nt">m3</span><span class="p">:</span><span class="w">                </span><span class="c1"># randomized</span>
-<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">  </span><span class="nt">matrices</span><span class="p">:</span>
-<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">    </span><span class="nt">T0</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">16</span><span class="p p-Indicator">}</span>
-<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">    </span><span class="nt">T1</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">    </span><span class="nt">T2</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">15</span><span class="p p-Indicator">}</span>
-<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">    </span><span class="nt">T3</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">11</span><span class="p p-Indicator">}</span>
-<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">    </span><span class="nt">T4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w"> </span><span class="nv">19</span><span class="p p-Indicator">}</span>
-<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="w">    </span><span class="nt">T5</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">}</span>
-<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="w">    </span><span class="nt">T6</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="nt"> t</span><span class="p">:</span><span class="w">  </span><span class="nv">4</span><span class="p p-Indicator">}</span>
-<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="w">    </span><span class="nt">T7</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">M</span><span class="p">:</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">}</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="nt">max_cost</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12</span><span class="w">          </span><span class="c1"># 0 &lt; max_cost ≤ 64</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="nt">structural_params</span><span class="p">:</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="nt">w</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="nt">r</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">  </span><span class="nt">p</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="nt">fixed_params</span><span class="p">:</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">  </span><span class="nt">m1</span><span class="p">:</span><span class="w">                     </span><span class="c1"># randomized</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">  </span><span class="nt">m2</span><span class="p">:</span><span class="w">                     </span><span class="c1"># randomized</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">  </span><span class="nt">m3</span><span class="p">:</span><span class="w">                     </span><span class="c1"># randomized</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">  </span><span class="c1"># `matrices` MUST be omitted under a cost cap.</span>
 </code></pre></div>
+<h3 id="sampling-algorithm">Sampling algorithm<a class="headerlink" href="#sampling-algorithm" title="Permanent link">&para;</a></h3>
+<p>The C++ helper <code>WELLGen::random_matrices(w, max_cost, rng)</code> (also
+exposed to Python as <code>regpoly.well.random_matrices(w, max_cost, seed)</code>)
+draws an admissible <code>matrices</code> map:</p>
+<ol>
+<li>Up to 64 attempts of pure rejection sampling — 8 i.i.d. uniform Mi
+   draws from <code>{M0..M6}</code>; accept if total cost ≤ <code>max_cost</code>.</li>
+<li>On rejection, fall back to a greedy-budgeted draw: shuffle slot
+   indices, then for each slot pick <code>Mi</code> uniformly from
+   <code>{Mi : cost(Mi) ≤ remaining_budget}</code>. This always succeeds because
+   <code>cost(M0) = 0</code>.</li>
+</ol>
+<p>Per-class arg sampling uses the paper's stated ranges (with degenerate
+values that collapse the class excluded — e.g. <code>t = 0</code> is excluded from
+M2/M3/M5).</p>
+<h3 id="web-ui">Web UI<a class="headerlink" href="#web-ui" title="Permanent link">&para;</a></h3>
+<p>The <code>/primitive-search?family=WELLGen</code> form is <strong>max_cost-only</strong> for
+WELL: the <code>matrices</code> editor is hidden and a required <code>max_cost</code> field
+gates submission. To pin matrices, use the YAML/CLI path or POST
+directly to <code>/api/primitive-searches</code>.</p>
 <hr />
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
