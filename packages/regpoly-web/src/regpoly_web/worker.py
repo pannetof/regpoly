@@ -68,7 +68,7 @@ async def _cancel_running(dbpool, db_url: str) -> int:
                 await cur.execute(
                     f"UPDATE {table} "
                     f"SET status='cancelled', "
-                    f"    error_message=COALESCE(error_message,'shutdown'), "
+                    f"    error_message='shutdown', "
                     f"    updated_at=NOW() "
                     f"WHERE status='running'"
                 )
@@ -124,13 +124,20 @@ async def _amain() -> int:
         t.cancel()
     await asyncio.gather(*tasks, return_exceptions=True)
 
+    # Let in-flight C++ jobs finish naturally so they can commit their
+    # results; SIGKILL whatever is still running after the budget.
+    # `docker compose stop --timeout 70` gives the container ~70 s
+    # before the docker daemon SIGKILLs us, so 60 s leaves headroom.
+    search_pool.shutdown(wait=True, timeout=60)
+    analysis_pool.shutdown(wait=True, timeout=10)
+
+    # Anything still 'running' at this point definitionally outran the
+    # drain budget — mark it cancelled so the next worker boot's reap
+    # doesn't have to (and so the front-end stops showing it as live).
     n = await _cancel_running(dbpool, settings.db_url)
     if n:
-        logger.info("cancelled %d in-flight rows", n)
+        logger.info("cancelled %d in-flight rows after drain", n)
 
-    # Drain the pools so the C++ children get a chance to exit cleanly.
-    search_pool.shutdown()
-    analysis_pool.shutdown()
     await dbpool.close()
     logger.info("worker exit")
     return 0

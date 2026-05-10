@@ -148,17 +148,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             for t in bg_tasks:
                 t.cancel()
             if not settings.disable_internal_pool:
-                # Cancel running rows so dev-mode workers exit cleanly.
+                # Cancel pending+running rows so dev-mode workers exit
+                # cleanly. Covers the same three tables the worker
+                # container's reap path does.
                 async with app.state.dbpool.connection() as conn:
                     async with conn.cursor() as cur:
-                        await cur.execute(
-                            "UPDATE primitive_search_run SET status='cancelled' "
-                            "WHERE status IN ('pending', 'running')"
-                        )
-                        await cur.execute(
-                            "UPDATE tempering_search_run SET status='cancelled' "
-                            "WHERE status IN ('pending', 'running')"
-                        )
+                        for table in ("primitive_search_run",
+                                      "tempering_search_run",
+                                      "library_test_run"):
+                            await cur.execute(
+                                f"UPDATE {table} SET status='cancelled' "
+                                f"WHERE status IN ('pending', 'running')"
+                            )
                 if app.state.pool is not None:
                     app.state.pool.shutdown()
                 if app.state.analysis_pool is not None:

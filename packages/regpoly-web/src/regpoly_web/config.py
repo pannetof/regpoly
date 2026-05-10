@@ -83,7 +83,11 @@ class Settings:
 WEB_PACKAGE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = WEB_PACKAGE_DIR / "templates"
 STATIC_DIR = WEB_PACKAGE_DIR / "static"
-SCHEMA_PATH = WEB_PACKAGE_DIR / "schema.sql"  # legacy; not used on PG path
+# Legacy SQLite schema. The runtime PG path is driven by
+# `regpoly_web.migrations.m001_initial`; schema.sql is kept only for
+# `scripts/migrate_well_matrices.py` and its test suite, which run
+# against a SQLite database before PG migration (opt-in operator path).
+SCHEMA_PATH = WEB_PACKAGE_DIR / "schema.sql"
 
 
 def find_docs_dir() -> Path | None:

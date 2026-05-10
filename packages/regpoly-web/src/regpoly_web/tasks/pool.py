@@ -64,13 +64,29 @@ class TaskPool:
         fut = self._futures.get((kind, run_id))
         return fut is not None and not fut.done()
 
-    def shutdown(self) -> None:
-        # The caller has already flagged running searches as 'cancelled'
-        # in the DB, so worker state is preserved.  Workers running heavy
-        # C++ code may not respond to SIGTERM promptly — go straight to
-        # SIGKILL so the port releases instantly.
+    def shutdown(self, *, wait: bool = False, timeout: float = 0.0) -> None:
+        """Shut the pool down.
+
+        - ``wait=False`` (default): immediately SIGKILL every child so
+          the port releases instantly. Suitable for dev-mode app
+          shutdown where the caller has already marked running rows
+          ``status='cancelled'``.
+        - ``wait=True, timeout=N``: wait up to ``N`` seconds for
+          in-flight jobs to finish naturally, then SIGKILL whatever is
+          still alive. Used by the worker container's signal handler
+          so a clean ``docker compose stop --timeout 70`` lets running
+          C++ jobs commit their results before the kill.
+        """
         procs = list(self.executor._processes.values())
-        self.executor.shutdown(wait=False, cancel_futures=True)
+        if wait and timeout > 0:
+            import time as _time
+            self.executor.shutdown(wait=False, cancel_futures=True)
+            deadline = _time.monotonic() + timeout
+            for proc in procs:
+                remaining = max(0.0, deadline - _time.monotonic())
+                proc.join(timeout=remaining)
+        else:
+            self.executor.shutdown(wait=False, cancel_futures=True)
         for proc in procs:
             if proc.is_alive():
                 proc.kill()

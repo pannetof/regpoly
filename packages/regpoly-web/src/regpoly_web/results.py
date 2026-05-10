@@ -17,11 +17,12 @@ keep working without template changes.
 from __future__ import annotations
 
 import json
-import sqlite3
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import aiosqlite
+if TYPE_CHECKING:
+    import psycopg
+
 from regpoly.analyses.collision_free_results import CollisionFreeResults
 from regpoly.analyses.equidistribution_results import EquidistributionResults
 from regpoly.analyses.tuplets_results import TupletsResults
@@ -306,7 +307,7 @@ def _row_to_legacy_dict(row: Any) -> dict[str, Any]:
 
 
 async def read_typed_results_async(
-    db: aiosqlite.Connection, tested_gen_id: int
+    db, tested_gen_id: int
 ) -> list[dict[str, Any]]:
     """Async read for the FastAPI route layer."""
     out: list[dict[str, Any]] = []
@@ -320,7 +321,7 @@ async def read_typed_results_async(
 
 
 def read_typed_results_sync(
-    conn: sqlite3.Connection, tested_gen_id: int
+    conn, tested_gen_id: int
 ) -> list[dict[str, Any]]:
     """Sync read for worker / CLI use."""
     rows = conn.execute(

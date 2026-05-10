@@ -13,10 +13,8 @@ dependencies = [
     "regpoly",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
-    "aiosqlite>=0.19",
-    # psycopg3 (async + sync from one library) — added in dockerize plan
-    # Phase 1. aiosqlite stays alongside through the cutover commit so
-    # the existing SQLite-based code keeps working.
+    # psycopg3 (async + sync from one library) — sole DB client since
+    # the dockerize-plan SQLite→PG cutover (commit 4696ca9).
     "psycopg[binary,pool]>=3.2",
     "jinja2>=3.1",
     "python-multipart>=0.0.9",

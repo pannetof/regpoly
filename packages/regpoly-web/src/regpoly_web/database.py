@@ -215,14 +215,17 @@ class AsyncPoolDB:
 
     def execute(self, sql: str, params: Sequence | None = None):
         """Return an async context manager yielding a cursor."""
-        return _ShimCursorCM(self._pool, _qmark_to_pyformat(sql),
-                             _wrap_jsonb(params))
+        return _ShimCursorCM(
+            self._pool,
+            _qmark_to_pyformat(_translate_sqliteisms(sql)),
+            _wrap_jsonb(params),
+        )
 
     async def executemany(self, sql: str, seq: Sequence[Sequence]) -> None:
         async with self._pool.connection() as conn:
             async with conn.cursor() as cur:
                 await cur.executemany(
-                    _qmark_to_pyformat(sql),
+                    _qmark_to_pyformat(_translate_sqliteisms(sql)),
                     [_wrap_jsonb(p) for p in seq],
                 )
 
