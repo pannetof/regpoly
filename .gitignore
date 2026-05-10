@@ -29,3 +29,6 @@ site/
 
 # Local Claude Code session state
 .claude/
+
+# Deployment secrets
+deploy/.env

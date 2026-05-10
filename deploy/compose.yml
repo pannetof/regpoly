@@ -1,0 +1,136 @@
+# Five-service docker-compose stack for regpoly_monorepo on Hetzner CAX21
+# (dockerize-plan Phase 4). Pinned project name `regpoly` so volumes
+# survive directory renames; do not change after first deploy.
+
+name: regpoly
+
+services:
+  # ── PostgreSQL 16: queue + state. Single DB volume; not exposed
+  # publicly (compose-internal only).
+  db:
+    image: postgres:${POSTGRES_TAG:-16.6-alpine}
+    environment:
+      POSTGRES_USER: regpoly
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: regpoly
+    command:
+      - postgres
+      # Quiet down the chatty default; only log slow queries (>1s).
+      - -c
+      - log_statement=none
+      - -c
+      - log_min_duration_statement=1000
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U regpoly -d regpoly"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      # First-run initdb on ARM takes ~15-25s; give it a grace window
+      # so failed checks during initdb don't count toward retries.
+      start_period: 30s
+    restart: unless-stopped
+    logging: &log_default
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ── One-shot init: waits for db, applies migrations, reaps any stale
+  # 'running' rows. Compose's `condition: service_completed_successfully`
+  # ensures web + worker only start after init exits 0.
+  #
+  # --reap-orphans is opt-in (matches the WELL-series convention for
+  # destructive migrations). Compose passes it because deploy.sh drains
+  # the worker before bringing the stack up; any 'running' row at that
+  # point is definitionally orphaned.
+  init:
+    image: ghcr.io/pannetof/regpoly:${REGPOLY_TAG:-latest}
+    command: python -m regpoly_web.init --reap-orphans
+    environment:
+      REGPOLY_DB_URL: postgresql://regpoly:${DB_PASSWORD}@db:5432/regpoly
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    logging: *log_default
+
+  # ── Web: stateless FastAPI + uvicorn. No `ports:` — only Caddy
+  # exposes the network surface. --proxy-headers picks up
+  # X-Forwarded-* from Caddy so URL generation knows the public scheme.
+  web:
+    image: ghcr.io/pannetof/regpoly:${REGPOLY_TAG:-latest}
+    command: >
+      uvicorn regpoly_web.app:app
+      --host 0.0.0.0 --port 8000 --workers 1
+      --proxy-headers --forwarded-allow-ips=*
+    environment:
+      REGPOLY_WEB_DISABLE_INTERNAL_POOL: "1"
+      REGPOLY_DB_URL: postgresql://regpoly:${DB_PASSWORD}@db:5432/regpoly
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    logging: *log_default
+
+  # ── Worker: stateless. Polls the DB for pending searches via
+  # SELECT ... FOR UPDATE SKIP LOCKED. ProcessPoolExecutor inside.
+  # Touches /tmp/worker.alive every 10s for the healthcheck.
+  worker:
+    image: ghcr.io/pannetof/regpoly:${REGPOLY_TAG:-latest}
+    command: python -m regpoly_web.worker
+    environment:
+      REGPOLY_WORKER: "1"
+      REGPOLY_POOL_SIZE: "2"
+      REGPOLY_ANALYSIS_POOL_SIZE: "1"
+      REGPOLY_DB_URL: postgresql://regpoly:${DB_PASSWORD}@db:5432/regpoly
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      # Touchfile must be at most 30s old. Worker heartbeat task
+      # touches it every 10s; 30s threshold tolerates one missed beat.
+      test:
+        - "CMD-SHELL"
+        - 'test -f /tmp/worker.alive && test $$(($$(date +%s) - $$(stat -c %Y /tmp/worker.alive))) -lt 30'
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    logging: *log_default
+
+  # ── Caddy: TLS termination + basic auth + reverse proxy. The only
+  # service that publishes ports.
+  caddy:
+    image: caddy:${CADDY_TAG:-2.8-alpine}
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      LE_EMAIL: ${LE_EMAIL}
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER}
+      BASIC_AUTH_HASH: ${BASIC_AUTH_HASH}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+    logging: *log_default
+
+# DO NOT add a `ports:` block to db / web / worker — Docker bypasses
+# ufw and would expose them to the public internet. The CI grep gate
+# (added in Phase 6) enforces this.
+
+volumes:
+  pgdata: {}
+  caddy-data: {}
+  caddy-config: {}
