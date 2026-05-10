@@ -53,7 +53,7 @@ def analyze_generator(db_path: str, gen_id: int) -> None:
                 UPDATE primitive_generator
                 SET char_poly = ?, hamming_weight = ?,
                     pis_gaps = ?, pis_se = ?,
-                    pis_elapsed = ?, pis_computed_at = datetime('now'),
+                    pis_elapsed = ?, pis_computed_at = NOW(),
                     pis_error = NULL
                 WHERE id = ?
                 """,
@@ -70,7 +70,7 @@ def analyze_generator(db_path: str, gen_id: int) -> None:
             conn.execute(
                 """
                 UPDATE primitive_generator
-                SET pis_error = ?, pis_computed_at = datetime('now')
+                SET pis_error = ?, pis_computed_at = NOW()
                 WHERE id = ?
                 """,
                 (msg[:4000], gen_id),

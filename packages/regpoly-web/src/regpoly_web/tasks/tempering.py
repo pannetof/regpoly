@@ -495,7 +495,7 @@ def _read_status(conn, run_id: int) -> str | None:
 def _mark_running(conn, run_id: int) -> None:
     conn.execute(
         "UPDATE tempering_search_run SET status='running', "
-        "started_at=datetime('now') WHERE id = ?",
+        "started_at=NOW() WHERE id = ?",
         (run_id,),
     )
     conn.commit()
@@ -507,7 +507,7 @@ def _mark_cancelled(conn, run_id: int, combos_done: int, elapsed: float,
         """
         UPDATE tempering_search_run
         SET status='cancelled', combos_done=?, elapsed_seconds=?,
-            best_se=?, finished_at=datetime('now')
+            best_se=?, finished_at=NOW()
         WHERE id = ?
         """,
         (combos_done, elapsed, best_se, run_id),
@@ -521,7 +521,7 @@ def _mark_completed(conn, run_id: int, combos_done: int, elapsed: float,
         """
         UPDATE tempering_search_run
         SET status='completed', combos_done=?, elapsed_seconds=?,
-            best_se=?, finished_at=datetime('now')
+            best_se=?, finished_at=NOW()
         WHERE id = ?
         """,
         (combos_done, elapsed, best_se, run_id),
@@ -532,7 +532,7 @@ def _mark_completed(conn, run_id: int, combos_done: int, elapsed: float,
 def _mark_failed(conn, run_id: int, message: str) -> None:
     conn.execute(
         "UPDATE tempering_search_run SET status='failed', error_message=?, "
-        "finished_at=datetime('now') WHERE id = ?",
+        "finished_at=NOW() WHERE id = ?",
         (message, run_id),
     )
     conn.commit()

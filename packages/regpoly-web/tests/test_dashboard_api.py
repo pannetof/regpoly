@@ -79,16 +79,16 @@ def test_summary_active_row_rate_and_eta_are_not_always_none(client) -> None:
     summary endpoint surfaces a non-None `rate` (computed from the
     run's elapsed_seconds + tries_done, or the per-run RollingRate
     snapshot)."""
-    import sqlite3
+    import psycopg
     import json
-    db_path = client.app.state.settings.db_path
-    conn = sqlite3.connect(db_path)
+    db_path = client.app.state.settings.db_url
+    conn = psycopg.connect(db_path, autocommit=False)
     try:
         conn.execute(
             "INSERT INTO primitive_search_run "
             "(family, L, k, structural_params, fixed_params, status, "
             "tries_done, found_count, elapsed_seconds, started_at) "
-            "VALUES (?,?,?,?,?,?,?,?,?, datetime('now'))",
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s, NOW())",
             ("MTGen", 64, 32, json.dumps({"w": 32}), json.dumps({}),
              "running", 1000, 5, 10.0),
         )
@@ -98,7 +98,7 @@ def test_summary_active_row_rate_and_eta_are_not_always_none(client) -> None:
         conn.execute(
             "INSERT INTO search_progress "
             "(search_type, search_run_id, tries_done, found_count, "
-            " current_info) VALUES ('primitive', ?, 1000, 5, ?)",
+            " current_info) VALUES ('primitive', %s, 1000, 5, %s)",
             (run_id, json.dumps({"rate": 100.0})),
         )
         conn.commit()
@@ -120,16 +120,16 @@ def test_summary_active_row_rate_and_eta_are_not_always_none(client) -> None:
 def test_summary_sparkline_uses_tries_done_not_found_count(client) -> None:
     """For primitive runs the sparkline metric must be `tries_done` —
     `found_count` is near-zero and useless as a progress indicator."""
-    import sqlite3
+    import psycopg
     import json
-    db_path = client.app.state.settings.db_path
-    conn = sqlite3.connect(db_path)
+    db_path = client.app.state.settings.db_url
+    conn = psycopg.connect(db_path, autocommit=False)
     try:
         conn.execute(
             "INSERT INTO primitive_search_run "
             "(family, L, k, structural_params, fixed_params, status, "
             "tries_done, found_count, elapsed_seconds) "
-            "VALUES (?,?,?,?,?,'running',?,?,?)",
+            "VALUES (%s,%s,%s,%s,%s,'running',%s,%s,%s)",
             ("MTGen", 64, 32, json.dumps({}), json.dumps({}), 0, 0, 0.0),
         )
         run_id = conn.execute(
@@ -140,7 +140,7 @@ def test_summary_sparkline_uses_tries_done_not_found_count(client) -> None:
             conn.execute(
                 "INSERT INTO search_progress "
                 "(search_type, search_run_id, tries_done, found_count) "
-                "VALUES ('primitive', ?, ?, 0)",
+                "VALUES ('primitive', %s, %s, 0)",
                 (run_id, (i + 1) * 1000),
             )
         conn.commit()

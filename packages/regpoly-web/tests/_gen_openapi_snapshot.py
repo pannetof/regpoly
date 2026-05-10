@@ -28,7 +28,7 @@ def main() -> None:
     fixture = here / "fixtures" / "openapi.v2.json"
     fixture.parent.mkdir(parents=True, exist_ok=True)
 
-    settings = Settings(db_path=":memory:", reload=False, pool_size=1)
+    settings = Settings(db_url="postgresql://test", reload=False, pool_size=1)
     app = create_app(settings)
     with TestClient(app) as c:
         spec = c.get("/openapi.json").json()

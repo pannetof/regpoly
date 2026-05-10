@@ -132,7 +132,8 @@ async def create_primitive_search(
     request: Request, body: PrimitiveSearchCreate
 ) -> dict:
     db = request.app.state.db
-    pool = request.app.state.pool
+    pool = request.app.state.pool  # legacy TaskPool reference
+    dbpool = request.app.state.dbpool
 
     family_raw = body.family
     family = resolve_family(family_raw, body.structural_params)
@@ -364,7 +365,8 @@ async def pause_primitive_search(request: Request, run_id: int) -> dict:
 @router.post("/primitive-searches/{run_id}/resume")
 async def resume_primitive_search(request: Request, run_id: int) -> dict:
     db = request.app.state.db
-    pool = request.app.state.pool
+    pool = request.app.state.pool  # legacy TaskPool reference
+    dbpool = request.app.state.dbpool
     status = await _current_status(db, run_id)
     if status is None:
         raise HTTPException(404, f"Search {run_id} not found")
@@ -384,7 +386,8 @@ async def resume_primitive_search(request: Request, run_id: int) -> dict:
 async def restart_primitive_search(request: Request, run_id: int) -> dict:
     """Create a NEW primitive search run with the same config as {run_id}."""
     db = request.app.state.db
-    pool = request.app.state.pool
+    pool = request.app.state.pool  # legacy TaskPool reference
+    dbpool = request.app.state.dbpool
     async with db.execute(
         "SELECT family, L, k, structural_params, fixed_params, "
         "max_tries, max_seconds, max_cost, search_mode, enum_total, enum_axes "
@@ -486,8 +489,10 @@ async def primitive_search_progress_sse(
     request: Request, run_id: int
 ) -> StreamingResponse:
     settings = request.app.state.settings
-    db_path = settings.db_path
+    db_url = settings.db_url
     poll = settings.progress_poll_seconds
+    pool = request.app.state.pool  # legacy TaskPool reference
+    dbpool = request.app.state.dbpool
 
     # P6 — SSE versioning. Without ?v=2 the stream is byte-for-byte
     # identical to pre-redesign (only unnamed `data:` blocks plus the
@@ -499,7 +504,6 @@ async def primitive_search_progress_sse(
 
     async def event_stream():
         import time as _time
-        import aiosqlite
         from regpoly_web.tasks._progress_rate import RollingRate
         # Per-stream rolling-rate accumulator (the SSE handler is the
         # only place we have a wall-clock + tries pair we can sample
@@ -511,69 +515,71 @@ async def primitive_search_progress_sse(
         # routers) that would otherwise tear them down at ~60s.
         KEEPALIVE_SEC = 20.0
         last_emit_ts = _time.time()
-        async with aiosqlite.connect(db_path) as conn:
-            conn.row_factory = aiosqlite.Row
-            last_id = 0
-            while True:
-                if await request.is_disconnected():
-                    break
+        last_id = 0
+        while True:
+            if await request.is_disconnected():
+                break
 
-                async with conn.execute(
-                    "SELECT * FROM search_progress "
-                    "WHERE search_type='primitive' AND search_run_id=? "
-                    "AND id > ? ORDER BY id ASC",
-                    (run_id, last_id),
-                ) as cur:
+            async with dbpool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        "SELECT * FROM search_progress "
+                        "WHERE search_type='primitive' AND search_run_id=%s "
+                        "AND id > %s ORDER BY id ASC",
+                        (run_id, last_id),
+                    )
                     rows = await cur.fetchall()
 
-                if rows:
-                    last_emit_ts = _time.time()
-                elif _time.time() - last_emit_ts > KEEPALIVE_SEC:
-                    yield ": keepalive\n\n"
-                    last_emit_ts = _time.time()
+            if rows:
+                last_emit_ts = _time.time()
+            elif _time.time() - last_emit_ts > KEEPALIVE_SEC:
+                yield ": keepalive\n\n"
+                last_emit_ts = _time.time()
 
-                for row in rows:
-                    info = json_loads(row["current_info"]) or {}
-                    now = _time.time()
-                    rr.observe(t=now, tries=int(row["tries_done"] or 0))
-                    rr_value = rr.rate(now=now)
-                    # v1 payload — instantaneous `rate` preserved.
-                    payload = {
-                        "tries_done": row["tries_done"],
-                        "found_count": row["found_count"],
-                        "current_info": info,
-                        "message": row["message"],
-                        "updated_at": row["updated_at"],
+            for row in rows:
+                info = json_loads(row["current_info"]) or {}
+                now = _time.time()
+                rr.observe(t=now, tries=int(row["tries_done"] or 0))
+                rr_value = rr.rate(now=now)
+                # v1 payload — instantaneous `rate` preserved.
+                payload = {
+                    "tries_done": row["tries_done"],
+                    "found_count": row["found_count"],
+                    "current_info": info,
+                    "message": row["message"],
+                    "updated_at": row["updated_at"],
+                }
+                yield f"data: {json.dumps(payload)}\n\n"
+
+                if v2_enabled:
+                    # v2 named `progress` channel — adds rolling rate +
+                    # cum_finds + t (seconds since stream opened).
+                    v2_payload = dict(payload)
+                    v2_payload["current_info"] = {
+                        **info,
+                        "rate_rolling_5s": rr_value,
+                        "cum_finds": int(row["found_count"] or 0),
+                        "t": now - stream_start,
                     }
-                    yield f"data: {json.dumps(payload)}\n\n"
+                    yield (
+                        "event: progress\n"
+                        f"data: {json.dumps(v2_payload)}\n\n"
+                    )
+                last_id = row["id"]
 
-                    if v2_enabled:
-                        # v2 named `progress` channel — adds rolling rate +
-                        # cum_finds + t (seconds since stream opened).
-                        v2_payload = dict(payload)
-                        v2_payload["current_info"] = {
-                            **info,
-                            "rate_rolling_5s": rr_value,
-                            "cum_finds": int(row["found_count"] or 0),
-                            "t": now - stream_start,
-                        }
-                        yield (
-                            "event: progress\n"
-                            f"data: {json.dumps(v2_payload)}\n\n"
-                        )
-                    last_id = row["id"]
-
-                # Emit terminal event if the run has finished
-                async with conn.execute(
-                    "SELECT status FROM primitive_search_run WHERE id = ?",
-                    (run_id,),
-                ) as cur:
+            # Emit terminal event if the run has finished
+            async with dbpool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        "SELECT status FROM primitive_search_run WHERE id = %s",
+                        (run_id,),
+                    )
                     r = await cur.fetchone()
-                if r and r["status"] in ("completed", "cancelled", "failed"):
-                    yield f"event: end\ndata: {json.dumps({'status': r['status']})}\n\n"
-                    break
+            if r and r["status"] in ("completed", "cancelled", "failed"):
+                yield f"event: end\ndata: {json.dumps({'status': r['status']})}\n\n"
+                break
 
-                await asyncio.sleep(poll)
+            await asyncio.sleep(poll)
 
     return StreamingResponse(
         event_stream(),

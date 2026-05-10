@@ -7,12 +7,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import os
+import logging
 import sys
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from regpoly.library import Catalog
@@ -24,10 +23,11 @@ from regpoly_web.config import (
     find_library_dir,
     find_papers_dir,
 )
-from regpoly_web.database import init_sync, open_async
+from regpoly_web.database import AsyncPoolDB, open_pool, reap_orphans
 from regpoly_web.routes import (
     families,
     generators,
+    health,
     import_export,
     library,
     pages,
@@ -38,6 +38,8 @@ from regpoly_web.routes import (
 from regpoly_web.routes.v2 import router as v2_router
 from regpoly_web.tasks.analysis import analyze_generator
 from regpoly_web.tasks.pool import TaskPool
+
+logger = logging.getLogger(__name__)
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
@@ -73,55 +75,88 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if settings is None:
         settings = Settings.from_env()
 
-    init_sync(settings.db_path)
+    # NOTE: `init_db` is async and runs in the `init` compose container
+    # (or once before web serves traffic). We do not call it from
+    # module-import-time; doing so would break the `app = create_app()`
+    # pattern at line 206 (no event loop yet) AND would mean every
+    # restart of the web container reapplied migrations races with the
+    # init container. The schema authority lives in the init container.
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.settings = settings
-        app.state.db = await open_async(settings.db_path)
         app.state.templates = templates
         app.state.library = _library_catalog
-        app.state.pool = TaskPool(
-            db_path=settings.db_path, max_workers=settings.pool_size
+        # asyncpg-style pool of psycopg connections — exposed in two
+        # shapes:
+        #   - app.state.dbpool is the raw psycopg_pool.AsyncConnectionPool
+        #     (used by /healthz and the new worker-side schedulers).
+        #   - app.state.db is an aiosqlite-shaped shim on top of the
+        #     pool so the ~54 pre-cutover route sites keep their
+        #     `async with db.execute(...)` shape; only the SQL
+        #     placeholders (`?` → `%s`) and JSON column casts need
+        #     updating.
+        # NOTE: `app.state.pool` continues to mean the legacy TaskPool
+        # (ProcessPoolExecutor wrapper) so existing routes' .submit()
+        # calls keep working in dev mode without modification.
+        app.state.dbpool = await open_pool(
+            settings.db_url,
+            min_size=settings.db_pool_min_size,
+            max_size=settings.db_pool_max_size,
         )
-        # Analysis runs in its own pool so a backlog of per-generator
-        # PIS jobs never blocks user-driven primitive/tempering/library
-        # submissions. Default size = max(1, pool_size // 2); override
-        # with REGPOLY_ANALYSIS_POOL_SIZE.
-        analysis_pool_size = int(os.environ.get(
-            "REGPOLY_ANALYSIS_POOL_SIZE",
-            max(1, settings.pool_size // 2),
-        ))
-        app.state.analysis_pool = TaskPool(
-            db_path=settings.db_path, max_workers=analysis_pool_size,
-        )
-        # In-memory registry for "Run test" jobs kicked off from the
-        # library detail page.  Each entry is keyed by a uuid and tracks
-        # status ('running' | 'completed' | 'failed') plus the result
-        # payload once available.  Cleared on server restart — clients
-        # that poll a missing job_id are told the job is unknown.
-        app.state.run_test_jobs = {}
-        analysis_task = asyncio.create_task(
-            _analysis_scheduler(app, settings.db_path)
-        )
+        app.state.db = AsyncPoolDB(app.state.dbpool)
+
+        # Production (compose-driven) mode: web container owns NO
+        # ProcessPoolExecutor and runs NO analysis scheduler. The
+        # worker container handles all dispatch. Routes that legacy-
+        # called `app.state.pool.submit(...)` should null-check first.
+        analysis_task = None
+        if settings.disable_internal_pool:
+            app.state.pool = None
+            app.state.analysis_pool = None
+        else:
+            # Single-process dev mode: spin up the in-process pools so
+            # `uv run regpoly-web` against a dev PG keeps working
+            # without needing a separate worker process.
+            app.state.pool = TaskPool(
+                db_url=settings.db_url, max_workers=settings.pool_size,
+            )
+            app.state.analysis_pool = TaskPool(
+                db_url=settings.db_url, max_workers=settings.analysis_pool_size,
+            )
+            # Reap any orphaned 'running' rows from a previous dev
+            # session (the init container does this in production).
+            try:
+                n = await reap_orphans(settings.db_url, stale_seconds=0)
+                if n:
+                    logger.info("dev-mode startup reaped %d orphan rows", n)
+            except Exception:
+                logger.warning("dev-mode reap_orphans failed", exc_info=True)
+            analysis_task = asyncio.create_task(
+                _analysis_scheduler(app, settings.db_url)
+            )
         try:
             yield
         finally:
-            analysis_task.cancel()
-            # Cancel every still-running search so workers exit cleanly
-            # on the next cancellation poll (instead of being orphaned).
-            await app.state.db.execute(
-                "UPDATE primitive_search_run SET status='cancelled' "
-                "WHERE status IN ('pending', 'running')"
-            )
-            await app.state.db.execute(
-                "UPDATE tempering_search_run SET status='cancelled' "
-                "WHERE status IN ('pending', 'running')"
-            )
-            await app.state.db.commit()
-            app.state.pool.shutdown()
-            app.state.analysis_pool.shutdown()
-            await app.state.db.close()
+            if analysis_task is not None:
+                analysis_task.cancel()
+            if not settings.disable_internal_pool:
+                # Cancel running rows so dev-mode workers exit cleanly.
+                async with app.state.dbpool.connection() as conn:
+                    async with conn.cursor() as cur:
+                        await cur.execute(
+                            "UPDATE primitive_search_run SET status='cancelled' "
+                            "WHERE status IN ('pending', 'running')"
+                        )
+                        await cur.execute(
+                            "UPDATE tempering_search_run SET status='cancelled' "
+                            "WHERE status IN ('pending', 'running')"
+                        )
+                if app.state.pool is not None:
+                    app.state.pool.shutdown()
+                if app.state.analysis_pool is not None:
+                    app.state.analysis_pool.shutdown()
+            await app.state.dbpool.close()
 
     app = FastAPI(
         title="regpoly web",
@@ -158,6 +193,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(tempering_search.router, prefix="/api")
     app.include_router(tested_generators.router, prefix="/api")
     app.include_router(import_export.router, prefix="/api")
+    # Unauthenticated probe; intentionally not under /api so the Caddy
+    # basic-auth exemption is one exact path, not a glob.
+    app.include_router(health.router)
 
     # v2 namespace — every contract change in the redesign mounts
     # under /api/v2/. v1 (existing /api/) remains unchanged.
@@ -167,37 +205,40 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     return app
 
 
-async def _analysis_scheduler(app: FastAPI, db_path: str) -> None:
+async def _analysis_scheduler(app: FastAPI, db_url: str) -> None:
     """Poll primitive_generator for rows needing analysis and dispatch
-    them to the worker pool, one at a time."""
-    import aiosqlite
+    them to the worker pool, one at a time.
+
+    Used only in single-process dev mode; in production the worker
+    container's own scheduler (regpoly_web.worker) handles dispatch.
+    """
     in_flight: set[int] = set()
     try:
-        async with aiosqlite.connect(db_path) as conn:
-            conn.row_factory = aiosqlite.Row
-            while True:
-                try:
-                    async with conn.execute(
-                        "SELECT id FROM primitive_generator "
-                        "WHERE pis_computed_at IS NULL "
-                        "ORDER BY id ASC LIMIT 50"
-                    ) as cur:
+        while True:
+            try:
+                async with app.state.dbpool.connection() as conn:
+                    async with conn.cursor() as cur:
+                        await cur.execute(
+                            "SELECT id FROM primitive_generator "
+                            "WHERE pis_computed_at IS NULL "
+                            "ORDER BY id ASC LIMIT 50"
+                        )
                         rows = await cur.fetchall()
-                    for r in rows:
-                        gid = r["id"]
-                        if gid in in_flight:
-                            continue
-                        in_flight.add(gid)
-                        fut = app.state.analysis_pool.submit(
-                            "analysis", gid, analyze_generator
-                        )
-                        fut.add_done_callback(
-                            lambda _f, g=gid: in_flight.discard(g)
-                        )
-                except Exception:
-                    # Never let scheduler errors kill the loop.
-                    pass
-                await asyncio.sleep(2.0)
+                for r in rows:
+                    gid = r["id"]
+                    if gid in in_flight:
+                        continue
+                    in_flight.add(gid)
+                    fut = app.state.analysis_pool.submit(
+                        "analysis", gid, analyze_generator
+                    )
+                    fut.add_done_callback(
+                        lambda _f, g=gid: in_flight.discard(g)
+                    )
+            except Exception:
+                # Never let scheduler errors kill the loop.
+                pass
+            await asyncio.sleep(2.0)
     except asyncio.CancelledError:
         pass
 
@@ -210,7 +251,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="regpoly web UI")
     parser.add_argument("--host", default=None)
     parser.add_argument("--port", type=int, default=None)
-    parser.add_argument("--db", default=None, help="SQLite database path")
+    parser.add_argument(
+        "--db-url", default=None,
+        help="PostgreSQL DSN (default: $REGPOLY_DB_URL)",
+    )
     parser.add_argument("--reload", action="store_true")
     args = parser.parse_args()
 
@@ -219,8 +263,8 @@ def main() -> None:
         settings.host = args.host
     if args.port:
         settings.port = args.port
-    if args.db:
-        settings.db_path = args.db
+    if args.db_url:
+        settings.db_url = args.db_url
     if args.reload:
         settings.reload = True
 

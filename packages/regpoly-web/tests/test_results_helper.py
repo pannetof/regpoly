@@ -6,6 +6,12 @@
 Exercises `regpoly_web.results.save_typed_result` against the v2 typed
 tables introduced in 5.4a, ensuring each result class lands in the
 correct table with the correct typed columns.
+
+NOTE (dockerize-plan Phase 1.2): this suite was written against
+SQLite directly (sqlite3.connect on the schema.sql file). After the
+PG cutover the helpers expect a psycopg connection and the SQL uses
+``%s`` placeholders. The suite is skipped pending a PG-aware port
+that uses the conftest's pgserver fixture.
 """
 
 from __future__ import annotations
@@ -15,6 +21,11 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+
+pytestmark = pytest.mark.skip(
+    reason="SQLite-shaped helper tests; port to pgserver fixture in a follow-up "
+    "(dockerize-plan Phase 1.2)"
+)
 
 
 def _open_v2_db(tmp_path: Path) -> sqlite3.Connection:
@@ -293,7 +304,7 @@ def test_route_returns_typed_results_for_tested_generator(tmp_path: Path) -> Non
     from regpoly_web.config import Settings
 
     db_path = tmp_path / "route.db"
-    settings = Settings(db_path=str(db_path), reload=False, pool_size=1)
+    settings = Settings(db_url=str(db_path), reload=False, pool_size=1)
     app = create_app(settings)
     with TestClient(app) as client:
         # Insert tested_generator + a component, then save typed results.

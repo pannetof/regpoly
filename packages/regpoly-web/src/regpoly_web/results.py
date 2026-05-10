@@ -141,6 +141,17 @@ def _insert_tuplets(
     return int(cur.lastrowid)
 
 
+def _safe_json(v):
+    """Tolerant decoder: PG JSONB columns return ``dict``/``list``
+    natively via psycopg3, but legacy SQLite-text payloads round-trip
+    as strings. Accept both shapes."""
+    if v is None or v == "":
+        return None
+    if isinstance(v, (dict, list)):
+        return v
+    return json.loads(v)
+
+
 def now_seconds() -> float:
     """Tiny wrapper so callers can record `elapsed = now() - t0` without
     importing time themselves."""
@@ -170,37 +181,48 @@ def now_seconds() -> float:
 
 _EQUID_SELECT = (
     "SELECT 'equidistribution' AS kind, id, tested_gen_id, test_config, "
-    "       kg, L, Lmax, ecart_json, NULL AS ecart_cf_json, "
-    "       se, NULL AS secf, verified, "
-    "       NULL AS tupd, NULL AS testtype, NULL AS threshold, "
-    "       NULL AS tuph_json, NULL AS gap_json, NULL AS DELTA_json, "
-    "       NULL AS pourcentage_json, NULL AS firstpart_max, "
-    "       NULL AS firstpart_sum, NULL AS secondpart_max, "
-    "       NULL AS secondpart_sum, "
+    "       kg, L, Lmax, ecart_json, NULL::jsonb AS ecart_cf_json, "
+    "       se, NULL::integer AS secf, verified, "
+    "       NULL::integer AS tupd, NULL::integer AS testtype, "
+    "       NULL::double precision AS threshold, "
+    "       NULL::jsonb AS tuph_json, NULL::jsonb AS gap_json, "
+    "       NULL::jsonb AS delta_json, "
+    "       NULL::jsonb AS pourcentage_json, "
+    "       NULL::double precision AS firstpart_max, "
+    "       NULL::double precision AS firstpart_sum, "
+    "       NULL::double precision AS secondpart_max, "
+    "       NULL::double precision AS secondpart_sum, "
     "       elapsed_seconds, created_at "
-    "FROM equidistribution_result WHERE tested_gen_id = ?"
+    "FROM equidistribution_result WHERE tested_gen_id = %s"
 )
 _CF_SELECT = (
     "SELECT 'collision_free' AS kind, id, tested_gen_id, test_config, "
-    "       kg, L, NULL AS Lmax, NULL AS ecart_json, ecart_cf_json, "
-    "       NULL AS se, secf, verified, "
-    "       NULL AS tupd, NULL AS testtype, NULL AS threshold, "
-    "       NULL AS tuph_json, NULL AS gap_json, NULL AS DELTA_json, "
-    "       NULL AS pourcentage_json, NULL AS firstpart_max, "
-    "       NULL AS firstpart_sum, NULL AS secondpart_max, "
-    "       NULL AS secondpart_sum, "
+    "       kg, L, NULL::integer AS Lmax, NULL::jsonb AS ecart_json, "
+    "       ecart_cf_json, "
+    "       NULL::integer AS se, secf, verified, "
+    "       NULL::integer AS tupd, NULL::integer AS testtype, "
+    "       NULL::double precision AS threshold, "
+    "       NULL::jsonb AS tuph_json, NULL::jsonb AS gap_json, "
+    "       NULL::jsonb AS delta_json, "
+    "       NULL::jsonb AS pourcentage_json, "
+    "       NULL::double precision AS firstpart_max, "
+    "       NULL::double precision AS firstpart_sum, "
+    "       NULL::double precision AS secondpart_max, "
+    "       NULL::double precision AS secondpart_sum, "
     "       elapsed_seconds, created_at "
-    "FROM collision_free_result WHERE tested_gen_id = ?"
+    "FROM collision_free_result WHERE tested_gen_id = %s"
 )
 _TUPLETS_SELECT = (
     "SELECT 'tuplets' AS kind, id, tested_gen_id, test_config, "
-    "       kg, L, NULL AS Lmax, NULL AS ecart_json, NULL AS ecart_cf_json, "
-    "       NULL AS se, NULL AS secf, NULL AS verified, "
+    "       kg, L, NULL::integer AS Lmax, NULL::jsonb AS ecart_json, "
+    "       NULL::jsonb AS ecart_cf_json, "
+    "       NULL::integer AS se, NULL::integer AS secf, "
+    "       NULL::boolean AS verified, "
     "       tupd, testtype, threshold, "
-    "       tuph_json, gap_json, DELTA_json, pourcentage_json, "
+    "       tuph_json, gap_json, delta_json, pourcentage_json, "
     "       firstpart_max, firstpart_sum, secondpart_max, secondpart_sum, "
     "       elapsed_seconds, created_at "
-    "FROM tuplets_result WHERE tested_gen_id = ?"
+    "FROM tuplets_result WHERE tested_gen_id = %s"
 )
 
 _UNION_SELECT = (
@@ -220,7 +242,7 @@ def _row_to_legacy_dict(row: Any) -> dict[str, Any]:
     kind = row["kind"]
     test_config = row["test_config"]
     try:
-        test_config = json.loads(test_config) if test_config else None
+        test_config = _safe_json(test_config) if test_config else None
     except (TypeError, json.JSONDecodeError):
         pass
     base: dict[str, Any] = {
@@ -236,7 +258,7 @@ def _row_to_legacy_dict(row: Any) -> dict[str, Any]:
         "created_at": row["created_at"],
     }
     if kind == "equidistribution":
-        ecart_arr = json.loads(row["ecart_json"]) if row["ecart_json"] else []
+        ecart_arr = _safe_json(row["ecart_json"]) if row["ecart_json"] else []
         sparse = {
             str(i): int(v)
             for i, v in enumerate(ecart_arr)
@@ -249,7 +271,7 @@ def _row_to_legacy_dict(row: Any) -> dict[str, Any]:
         if row["se"] is not None:
             base["score"] = float(row["se"])
     elif kind == "collision_free":
-        ecart_cf_arr = json.loads(row["ecart_cf_json"]) if row["ecart_cf_json"] else []
+        ecart_cf_arr = _safe_json(row["ecart_cf_json"]) if row["ecart_cf_json"] else []
         sparse = {
             str(i): int(v)
             for i, v in enumerate(ecart_cf_arr)
@@ -262,12 +284,12 @@ def _row_to_legacy_dict(row: Any) -> dict[str, Any]:
         if row["secf"] is not None:
             base["score"] = float(row["secf"])
     elif kind == "tuplets":
-        gap = json.loads(row["gap_json"]) if row["gap_json"] else []
-        DELTA = json.loads(row["DELTA_json"]) if row["DELTA_json"] else []
-        pourcentage = json.loads(row["pourcentage_json"]) if row["pourcentage_json"] else []
+        gap = _safe_json(row["gap_json"]) if row["gap_json"] else []
+        DELTA = _safe_json(row["DELTA_json"]) if row["DELTA_json"] else []
+        pourcentage = _safe_json(row["pourcentage_json"]) if row["pourcentage_json"] else []
         base["detail"] = {
             "tupd": row["tupd"],
-            "tuph": json.loads(row["tuph_json"]) if row["tuph_json"] else [],
+            "tuph": _safe_json(row["tuph_json"]) if row["tuph_json"] else [],
             "gap": gap,
             "DELTA": DELTA,
             "pourcentage": pourcentage,
@@ -329,7 +351,7 @@ def find_existing_typed_result(
     if table is None:
         return None
     _, select_sql = table
-    sql = f"{select_sql} AND test_config = ? ORDER BY id DESC LIMIT 1"
+    sql = f"{select_sql} AND test_config = %s ORDER BY id DESC LIMIT 1"
     row = conn.execute(sql, (tested_gen_id, test_config_json)).fetchone()
     if row is None:
         return None

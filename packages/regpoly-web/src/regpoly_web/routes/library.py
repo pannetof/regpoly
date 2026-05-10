@@ -299,7 +299,7 @@ async def instantiate(request: Request, gen_id: str) -> dict:
     if not g.valid:
         raise HTTPException(
             400, {"code": "invalid_entry", "errors": g.errors})
-    db_path = request.app.state.settings.db_path
+    db_path = request.app.state.settings.db_url
     tested_id, created = await asyncio.to_thread(
         _instantiate_sync, db_path, g)
     return {"library_id": g.id,
@@ -364,7 +364,7 @@ async def run_test(request: Request, gen_id: str) -> dict:
                             "Pick the recommended method instead."},
             )
 
-    db_path = request.app.state.settings.db_path
+    db_path = request.app.state.settings.db_url
     jobs: dict = request.app.state.run_test_jobs
     job_id = uuid.uuid4().hex
     jobs[job_id] = {

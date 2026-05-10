@@ -3,9 +3,9 @@
 
 """ProcessPoolExecutor wrapper for running long searches in worker processes.
 
-Each search task receives the SQLite path and its search_run_id.  It opens
-its own connection, runs the work, and writes results + progress back to
-the shared database.
+Each search task receives the PG DSN and its search_run_id. It opens
+its own psycopg connection, runs the work, and writes results +
+progress back to the shared database.
 
 Cancellation is cooperative: the API sets `status='cancelled'` on the
 run row; the worker checks periodically and exits cleanly.
@@ -23,8 +23,13 @@ logger = logging.getLogger(__name__)
 class TaskPool:
     """Thin wrapper over ProcessPoolExecutor tracking live futures."""
 
-    def __init__(self, db_path: str, max_workers: int = 4) -> None:
-        self.db_path = db_path
+    def __init__(self, db_url: str, max_workers: int = 4) -> None:
+        # Parameter renamed from db_path → db_url with the SQLite → PG
+        # cutover (dockerize-plan Phase 1.2). The wrapped function
+        # signature (db_url, run_id, *args, **kwargs) is unchanged
+        # because workers always receive the connection target as the
+        # first positional argument.
+        self.db_url = db_url
         self.executor = ProcessPoolExecutor(max_workers=max_workers)
         self._futures: dict[tuple[str, int], Future] = {}
 
@@ -41,7 +46,7 @@ class TaskPool:
         `kind` is a free-form label ("primitive", "tempering") used only
         for bookkeeping.
         """
-        fut = self.executor.submit(func, self.db_path, run_id, *args, **kwargs)
+        fut = self.executor.submit(func, self.db_url, run_id, *args, **kwargs)
         key = (kind, run_id)
         self._futures[key] = fut
 

@@ -338,7 +338,7 @@ def _mark_running(conn, run_id: int) -> None:
     conn.execute(
         """
         UPDATE primitive_search_run
-        SET status='running', started_at=datetime('now')
+        SET status='running', started_at=NOW()
         WHERE id = ?
         """,
         (run_id,),
@@ -353,7 +353,7 @@ def _mark_cancelled(conn, run_id: int, tries: int, found: int,
             """
             UPDATE primitive_search_run
             SET status='cancelled', tries_done=?, found_count=?,
-                elapsed_seconds=?, finished_at=datetime('now')
+                elapsed_seconds=?, finished_at=NOW()
             WHERE id = ?
             """,
             (tries, found, elapsed, run_id),
@@ -364,7 +364,7 @@ def _mark_cancelled(conn, run_id: int, tries: int, found: int,
             UPDATE primitive_search_run
             SET status='cancelled', tries_done=?, found_count=?,
                 elapsed_seconds=?, enum_index=?,
-                finished_at=datetime('now')
+                finished_at=NOW()
             WHERE id = ?
             """,
             (tries, found, elapsed, enum_index, run_id),
@@ -378,7 +378,7 @@ def _mark_completed(conn, run_id: int, tries: int, found: int,
         """
         UPDATE primitive_search_run
         SET status='completed', tries_done=?, found_count=?,
-            elapsed_seconds=?, finished_at=datetime('now')
+            elapsed_seconds=?, finished_at=NOW()
         WHERE id = ?
         """,
         (tries, found, elapsed, run_id),
@@ -390,7 +390,7 @@ def _mark_failed(conn, run_id: int, message: str) -> None:
     conn.execute(
         """
         UPDATE primitive_search_run
-        SET status='failed', error_message=?, finished_at=datetime('now')
+        SET status='failed', error_message=?, finished_at=NOW()
         WHERE id = ?
         """,
         (message, run_id),

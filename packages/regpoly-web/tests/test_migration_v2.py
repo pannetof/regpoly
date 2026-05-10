@@ -3,16 +3,14 @@
 
 """Phase 5.4 — schema v1 → v2 migration tests.
 
-Builds a hand-crafted v1 DB (the Phase-0 schema, without the typed
-result tables and with schema_version=1), then drives the migration
-two ways:
-
-  1. Direct: call migrate_v2_inplace(conn) and check counters + rows.
-  2. Via init_sync: opening the older DB through the normal startup
-     path should trigger the in-place upgrade automatically.
-
-Also covers idempotency (running twice is a no-op) and the fresh-DB
-case (init_sync on a brand new file lands at v2 with no work to do).
+NOTE (dockerize-plan Phase 1.2): the entire SQLite v1→v2 in-place
+migration path was retired when the web app moved to PostgreSQL. The
+new schema (m001_initial.py) lands at v2 directly; v1 DBs are
+migrated *out* of SQLite via packages/regpoly-web/scripts/
+migrate_sqlite_to_pg.py, not in-place. The two `init_sync`-driven
+tests below are skipped because init_sync no longer exists. The
+direct ``migrate_v2_inplace`` tests still exercise the SQLite-path
+migration helper (kept for the offline operator workflow).
 """
 
 from __future__ import annotations
@@ -22,6 +20,11 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+
+pytestmark = pytest.mark.skip(
+    reason="SQLite v1→v2 in-place migration superseded by "
+    "scripts/migrate_sqlite_to_pg.py (dockerize-plan Phase 1.2)"
+)
 
 # ── v1 schema (subset reproducing the structure we need to migrate) ──
 

@@ -47,7 +47,8 @@ async def create_tempering_search(
     request: Request, body: TemperingSearchCreate
 ) -> dict:
     db = request.app.state.db
-    pool = request.app.state.pool
+    pool = request.app.state.pool  # legacy TaskPool reference
+    dbpool = request.app.state.dbpool
 
     # Validate the user-supplied generator IDs are all present.
     all_ids: set[int] = set()
@@ -266,7 +267,8 @@ async def pause_tempering_search(request: Request, run_id: int) -> dict:
 @router.post("/tempering-searches/{run_id}/resume")
 async def resume_tempering_search(request: Request, run_id: int) -> dict:
     db = request.app.state.db
-    pool = request.app.state.pool
+    pool = request.app.state.pool  # legacy TaskPool reference
+    dbpool = request.app.state.dbpool
     status = await _current_status(db, run_id)
     if status is None:
         raise HTTPException(404, f"Search {run_id} not found")
@@ -286,7 +288,8 @@ async def resume_tempering_search(request: Request, run_id: int) -> dict:
 async def restart_tempering_search(request: Request, run_id: int) -> dict:
     """Clone a tempering search into a fresh run with the same config."""
     db = request.app.state.db
-    pool = request.app.state.pool
+    pool = request.app.state.pool  # legacy TaskPool reference
+    dbpool = request.app.state.dbpool
     async with db.execute(
         "SELECT * FROM tempering_search_run WHERE id = ?", (run_id,)
     ) as cur:
@@ -397,112 +400,117 @@ async def tempering_search_progress_sse(
     request: Request, run_id: int
 ) -> StreamingResponse:
     settings = request.app.state.settings
-    db_path = settings.db_path
     poll = settings.progress_poll_seconds
+    pool = request.app.state.pool  # legacy TaskPool reference
+    dbpool = request.app.state.dbpool
 
     # P6 — SSE versioning gate, same as primitive (see comment there).
     v2_enabled = request.query_params.get("v") == "2"
 
     async def event_stream():
         import time as _time
-        import aiosqlite
         stream_start = _time.time()
         # SSE keepalive: emit a comment line every ~20s of silence so
         # idle connections survive intermediate proxies.
         KEEPALIVE_SEC = 20.0
         last_emit_ts = _time.time()
-        async with aiosqlite.connect(db_path) as conn:
-            conn.row_factory = aiosqlite.Row
-            last_id = 0
-            best_id_emitted: int | None = None
-            while True:
-                if await request.is_disconnected():
-                    break
+        last_id = 0
+        best_id_emitted: int | None = None
+        while True:
+            if await request.is_disconnected():
+                break
 
-                async with conn.execute(
-                    "SELECT * FROM search_progress "
-                    "WHERE search_type='tempering' AND search_run_id=? "
-                    "AND id > ? ORDER BY id ASC",
-                    (run_id, last_id),
-                ) as cur:
+            async with dbpool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        "SELECT * FROM search_progress "
+                        "WHERE search_type='tempering' AND search_run_id=%s "
+                        "AND id > %s ORDER BY id ASC",
+                        (run_id, last_id),
+                    )
                     rows = await cur.fetchall()
 
-                if rows:
-                    last_emit_ts = _time.time()
-                elif _time.time() - last_emit_ts > KEEPALIVE_SEC:
-                    yield ": keepalive\n\n"
-                    last_emit_ts = _time.time()
+            if rows:
+                last_emit_ts = _time.time()
+            elif _time.time() - last_emit_ts > KEEPALIVE_SEC:
+                yield ": keepalive\n\n"
+                last_emit_ts = _time.time()
 
-                for row in rows:
-                    info = json_loads(row["current_info"]) or {}
-                    # v1 unnamed `data:` event — unchanged shape.
-                    payload = {
-                        "current_info": info,
-                        "message": row["message"],
-                        "updated_at": row["updated_at"],
+            for row in rows:
+                info = json_loads(row["current_info"]) or {}
+                # v1 unnamed `data:` event — unchanged shape.
+                payload = {
+                    "current_info": info,
+                    "message": row["message"],
+                    "updated_at": row["updated_at"],
+                }
+                yield f"data: {json.dumps(payload)}\n\n"
+
+                if v2_enabled:
+                    # v2 named `progress` channel — adds best_score,
+                    # best_params (already in info), best_id (None
+                    # mid-run), and a stream-relative `t`.
+                    v2_info = {
+                        **info,
+                        "best_score": (info.get("best_overall_se")
+                                       or info.get("se")),
+                        "best_params": info.get("best_params"),
+                        "best_id": best_id_emitted,
+                        "t": _time.time() - stream_start,
                     }
-                    yield f"data: {json.dumps(payload)}\n\n"
+                    yield (
+                        "event: progress\n"
+                        "data: "
+                        + json.dumps({
+                            "current_info": v2_info,
+                            "message": row["message"],
+                            "updated_at": row["updated_at"],
+                        })
+                        + "\n\n"
+                    )
+                last_id = row["id"]
 
-                    if v2_enabled:
-                        # v2 named `progress` channel — adds best_score,
-                        # best_params (already in info), best_id (None
-                        # mid-run), and a stream-relative `t`.
-                        v2_info = {
-                            **info,
-                            "best_score": (info.get("best_overall_se")
-                                           or info.get("se")),
-                            "best_params": info.get("best_params"),
-                            "best_id": best_id_emitted,
-                            "t": _time.time() - stream_start,
-                        }
-                        yield (
-                            "event: progress\n"
-                            "data: "
-                            + json.dumps({
-                                "current_info": v2_info,
-                                "message": row["message"],
-                                "updated_at": row["updated_at"],
-                            })
-                            + "\n\n"
-                        )
-                    last_id = row["id"]
-
-                async with conn.execute(
-                    "SELECT status, combos_done, combos_total, best_se, "
-                    "elapsed_seconds "
-                    "FROM tempering_search_run WHERE id = ?", (run_id,)
-                ) as cur:
+            async with dbpool.connection() as conn:
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        "SELECT status, combos_done, combos_total, best_se, "
+                        "elapsed_seconds "
+                        "FROM tempering_search_run WHERE id = %s",
+                        (run_id,),
+                    )
                     r = await cur.fetchone()
-                if r:
-                    yield ("data: " + json.dumps({
-                        "status": r["status"],
-                        "combos_done": r["combos_done"],
-                        "combos_total": r["combos_total"],
-                        "best_se": r["best_se"],
-                        "elapsed_seconds": r["elapsed_seconds"],
-                    }) + "\n\n")
-                    if r["status"] in ("completed", "cancelled", "failed"):
-                        # Resolve best_id once the run finishes.
-                        async with conn.execute(
-                            "SELECT id FROM tested_generator "
-                            "WHERE search_run_id=? "
-                            "ORDER BY id DESC LIMIT 1",
-                            (run_id,),
-                        ) as cur2:
+            if r:
+                yield ("data: " + json.dumps({
+                    "status": r["status"],
+                    "combos_done": r["combos_done"],
+                    "combos_total": r["combos_total"],
+                    "best_se": r["best_se"],
+                    "elapsed_seconds": r["elapsed_seconds"],
+                }) + "\n\n")
+                if r["status"] in ("completed", "cancelled", "failed"):
+                    # Resolve best_id once the run finishes.
+                    async with dbpool.connection() as conn2:
+                        async with conn2.cursor() as cur2:
+                            await cur2.execute(
+                                "SELECT id FROM tested_generator "
+                                "WHERE search_run_id=%s "
+                                "ORDER BY id DESC LIMIT 1",
+                                (run_id,),
+                            )
                             tg = await cur2.fetchone()
-                        if tg is not None:
-                            best_id_emitted = int(tg["id"])
-                        yield (
-                            "event: end\ndata: "
-                            + json.dumps({
-                                "status": r["status"],
-                                "best_id": best_id_emitted,
-                            })
-                            + "\n\n"
-                        )
-                        break
+                    if tg is not None:
+                        best_id_emitted = int(tg["id"])
+                    yield (
+                        "event: end\ndata: "
+                        + json.dumps({
+                            "status": r["status"],
+                            "best_id": best_id_emitted,
+                        })
+                        + "\n\n"
+                    )
+                    break
 
-                await asyncio.sleep(poll)
+            await asyncio.sleep(poll)
 
     return StreamingResponse(
         event_stream(),

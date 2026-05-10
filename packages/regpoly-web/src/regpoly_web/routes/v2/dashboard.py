@@ -149,7 +149,7 @@ async def dashboard_summary(request: Request) -> DashboardSummary:
         tempering_total = (await cur.fetchone())[0]
     async with db.execute(
         "SELECT COUNT(*) FROM primitive_generator "
-        "WHERE created_at >= datetime('now', '-1 day')"
+        "WHERE created_at >= NOW() - INTERVAL '1 day'"
     ) as cur:
         finds_24h = (await cur.fetchone())[0]
 

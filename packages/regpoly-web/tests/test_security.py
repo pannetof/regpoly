@@ -32,15 +32,15 @@ def test_csv_export_escapes_formula_injection(seeded_client, tmp_path) -> None:
     prefixed with `'` so Excel/LibreOffice don't execute the formula.
     Test by inserting a generator with a malicious-looking param value
     and exporting via /api/v2/generators/export."""
-    import sqlite3
+    import psycopg
     import json
-    db_path = seeded_client.app.state.settings.db_path
-    conn = sqlite3.connect(db_path)
+    db_url = seeded_client.app.state.settings.db_url
+    conn = psycopg.connect(db_url)
     try:
         conn.execute(
             "INSERT INTO primitive_generator "
-            "(family, L, k, structural_params, search_params, "
-            " all_params) VALUES (?, ?, ?, ?, ?, ?)",
+            "(family, l, k, structural_params, search_params, "
+            " all_params) VALUES (%s, %s, %s, %s, %s, %s)",
             ("MTGen", 64, 32,
              json.dumps({"w": 32}),
              json.dumps({"a": "=cmd|' /C calc'!A1"}),
@@ -75,16 +75,16 @@ def test_csv_export_escapes_formula_injection(seeded_client, tmp_path) -> None:
 
 def test_csv_export_escapes_plus_minus_at(seeded_client) -> None:
     """The same rule applies to leading `+`, `-`, `@`."""
-    import sqlite3
+    import psycopg
     import json
-    db_path = seeded_client.app.state.settings.db_path
-    conn = sqlite3.connect(db_path)
+    db_url = seeded_client.app.state.settings.db_url
+    conn = psycopg.connect(db_url)
     try:
         for prefix in ("+evil", "-evil", "@evil"):
             conn.execute(
                 "INSERT INTO primitive_generator "
-                "(family, L, k, structural_params, search_params, all_params) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
+                "(family, l, k, structural_params, search_params, all_params) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
                 ("MTGen", 64, 32,
                  json.dumps({"w": 32}),
                  json.dumps({"a": prefix}),

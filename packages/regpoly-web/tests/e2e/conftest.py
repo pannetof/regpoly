@@ -50,7 +50,7 @@ def live_server_url(seeded_db: str) -> Iterator[str]:
     from regpoly_web.app import create_app
     from regpoly_web.config import Settings
 
-    settings = Settings(db_path=seeded_db, reload=False, pool_size=1)
+    settings = Settings(db_url=seeded_db, reload=False, pool_size=1)
     app = create_app(settings)
     port = _find_free_port()
     config = uvicorn.Config(

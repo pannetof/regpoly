@@ -46,19 +46,21 @@ def _create_tsr(client) -> int:
     # If the v1 endpoint requires components we can't synthesize a real
     # combo here; fall back to a direct DB insert. This is a contract
     # test against the lifecycle endpoints, not a real run.
-    import sqlite3
-    db_path = client.app.state.settings.db_path
-    conn = sqlite3.connect(db_path)
+    import psycopg
+    db_path = client.app.state.settings.db_url
+    conn = psycopg.connect(db_path, autocommit=False)
     try:
         cur = conn.execute(
             "INSERT INTO tempering_search_run "
-            "(test_type, test_config, Lmax, nb_tries, status, "
+            "(test_type, test_config, lmax, nb_tries, status, "
             "combos_done, started_at, finished_at) "
-            "VALUES (?, ?, ?, ?, 'pending', 0, NULL, NULL)",
+            "VALUES (%s, %s, %s, %s, 'pending', 0, NULL, NULL) "
+            "RETURNING id",
             ("equidistribution", json.dumps({"L": 32}), 32, 1),
         )
+        new_id = cur.fetchone()[0]
         conn.commit()
-        return cur.lastrowid
+        return new_id
     finally:
         conn.close()
 
