@@ -11,6 +11,8 @@ schema lists the endpoint; the actual response is `application/octet-stream`.
 
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 
@@ -42,9 +44,12 @@ async def v2_generator_transition_matrix_coords(
     from regpoly.core.generator import Generator
 
     params = json_loads(row["all_params"]) or {}
+
+    def _build():
+        return Generator.create(  # ok-sync (caller wraps in asyncio.to_thread)
+            row["family"], row["L"], **params).transition_matrix()
     try:
-        gen = Generator.create(row["family"], row["L"], **params)
-        mat = gen.transition_matrix()
+        mat = await asyncio.to_thread(_build)
     except Exception as exc:
         raise HTTPException(422, f"Could not build matrix: {exc}")
 

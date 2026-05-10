@@ -16,7 +16,6 @@ from regpoly.core.parametric import NotEnumerable, build_gen_enumerator
 
 from regpoly_web.database import json_dumps, json_loads
 from regpoly_web.models import PrimitiveSearchCreate
-from regpoly_web.tasks.primitive import run_primitive_search
 
 HUGE_SPACE_THRESHOLD = 10 ** 12
 
@@ -76,7 +75,7 @@ def _probe_k(body: PrimitiveSearchCreate, fixed: dict) -> int:
     """
     probe_L = body.L if body.L and body.L > 0 else 65536
     try:
-        probe = Generator.create(body.family, probe_L, **fixed)
+        probe = Generator.create(body.family, probe_L, **fixed)  # ok-sync
         return probe.k
     except Exception as exc:
         raise HTTPException(400, f"Invalid parameters: {exc}")
@@ -113,7 +112,7 @@ def _build_enumerator_or_400(body: PrimitiveSearchCreate, L: int):
         })
     resolved = _resolved_for_enum(body)
     try:
-        enumerator = build_gen_enumerator(body.family, L, resolved)
+        enumerator = build_gen_enumerator(body.family, L, resolved)  # ok-sync
     except NotEnumerable as exc:
         raise HTTPException(400, detail={
             "code": exc.reason,
@@ -132,7 +131,6 @@ async def create_primitive_search(
     request: Request, body: PrimitiveSearchCreate
 ) -> dict:
     db = request.app.state.db
-    pool = request.app.state.pool  # legacy TaskPool reference
     dbpool = request.app.state.dbpool
 
     family_raw = body.family
@@ -237,7 +235,6 @@ async def create_primitive_search(
     await db.commit()
     run_id = cur.lastrowid
 
-    pool.submit("primitive", run_id, run_primitive_search)
 
     return {
         "id": run_id, "status": "pending", "k": k, "L": effective_L,
@@ -365,7 +362,6 @@ async def pause_primitive_search(request: Request, run_id: int) -> dict:
 @router.post("/primitive-searches/{run_id}/resume")
 async def resume_primitive_search(request: Request, run_id: int) -> dict:
     db = request.app.state.db
-    pool = request.app.state.pool  # legacy TaskPool reference
     dbpool = request.app.state.dbpool
     status = await _current_status(db, run_id)
     if status is None:
@@ -378,7 +374,6 @@ async def resume_primitive_search(request: Request, run_id: int) -> dict:
         (run_id,),
     )
     await db.commit()
-    pool.submit("primitive", run_id, run_primitive_search)
     return {"id": run_id, "status": "pending"}
 
 
@@ -386,7 +381,6 @@ async def resume_primitive_search(request: Request, run_id: int) -> dict:
 async def restart_primitive_search(request: Request, run_id: int) -> dict:
     """Create a NEW primitive search run with the same config as {run_id}."""
     db = request.app.state.db
-    pool = request.app.state.pool  # legacy TaskPool reference
     dbpool = request.app.state.dbpool
     async with db.execute(
         "SELECT family, L, k, structural_params, fixed_params, "
@@ -415,7 +409,6 @@ async def restart_primitive_search(request: Request, run_id: int) -> dict:
     )
     await db.commit()
     new_id = cur.lastrowid
-    pool.submit("primitive", new_id, run_primitive_search)
     return {"id": new_id, "status": "pending", "cloned_from": run_id}
 
 
@@ -491,7 +484,6 @@ async def primitive_search_progress_sse(
     settings = request.app.state.settings
     db_url = settings.db_url
     poll = settings.progress_poll_seconds
-    pool = request.app.state.pool  # legacy TaskPool reference
     dbpool = request.app.state.dbpool
 
     # P6 — SSE versioning. Without ?v=2 the stream is byte-for-byte

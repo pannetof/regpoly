@@ -43,6 +43,26 @@ jobs:
       - name: ruff check
         run: uv run ruff check .
 
+      - name: routes must not call pool.submit (Phase 2 worker split)
+        # Routes write `pending` rows only; the worker scheduler
+        # claims them via FOR UPDATE SKIP LOCKED. Direct pool.submit
+        # in a route would re-introduce the web/worker coupling the
+        # dockerize plan removed.
+        run: |
+          if grep -rnE 'app\.state\.(analysis_)?pool\.(submit|executor)' packages/regpoly-web/src/regpoly_web/routes/; then
+            echo "::error::Found app.state.pool reference in routes after worker split"; exit 1
+          fi
+
+      - name: sync C++ probes in routes must use asyncio.to_thread
+        # Heuristic: any Generator.create(/build_gen_enumerator( in a
+        # route handler must have an `asyncio.to_thread` neighbour
+        # (or an explicit `# ok-sync` escape).
+        run: |
+          if grep -rnE '\b(Generator\.create|build_gen_enumerator)\(' packages/regpoly-web/src/regpoly_web/routes/ \
+              | grep -vE 'asyncio\.to_thread|# ok-sync'; then
+            echo "::error::Sync C++ probe in route handler — wrap in asyncio.to_thread"; exit 1
+          fi
+
       # ruff format --check is intentionally not run during the v2.0 redesign:
       # the existing research codebase predates ruff format and reformatting
       # would create churn that obscures the C++/Python migration diffs.

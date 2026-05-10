@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from regpoly_web.database import json_loads
@@ -301,8 +303,11 @@ async def generator_transition_matrix_coords(
 
     from regpoly_web.database import json_loads as _jl
     params = _jl(row["all_params"]) or {}
-    gen = Generator.create(row["family"], row["L"], **params)
-    mat = gen.transition_matrix()
+
+    def _build():
+        return Generator.create(  # ok-sync (caller wraps in asyncio.to_thread)
+            row["family"], row["L"], **params).transition_matrix()
+    mat = await asyncio.to_thread(_build)
 
     blob = _matrix_coords_blob(mat, k)
 

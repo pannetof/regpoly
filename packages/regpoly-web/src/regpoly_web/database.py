@@ -369,6 +369,37 @@ class _ShimCursorProxy:
             pass
 
 
+class _SyncCursorProxy:
+    """Wrapper exposing ``.lastrowid`` on a synchronous psycopg cursor.
+
+    sqlite3 cursors expose ``.lastrowid`` after an ``INSERT``; psycopg
+    does not. To keep the worker code (which calls ``cur.lastrowid``)
+    unchanged, :meth:`SyncConnShim.execute` auto-appends ``RETURNING id``
+    to bare ``INSERT`` statements and stashes the id here.
+    """
+
+    def __init__(self, cur, lastrowid: int | None) -> None:
+        self._cur = cur
+        self._lastrowid = lastrowid
+
+    def __getattr__(self, name):
+        return getattr(self._cur, name)
+
+    def fetchone(self):
+        return self._cur.fetchone()
+
+    def fetchall(self):
+        return self._cur.fetchall()
+
+    @property
+    def rowcount(self) -> int:
+        return self._cur.rowcount
+
+    @property
+    def lastrowid(self) -> int | None:
+        return self._lastrowid
+
+
 class SyncConnShim:
     """Sync-connection wrapper used by worker child processes.
 
@@ -381,6 +412,7 @@ class SyncConnShim:
     - ``INSERT OR IGNORE`` → ``INSERT ... ON CONFLICT DO NOTHING``.
     - ``conn.total_changes`` (sqlite3) → ``rowcount`` from the last
       executed cursor.
+    - ``cur.lastrowid`` after a bare ``INSERT`` (auto-``RETURNING id``).
     """
 
     def __init__(self, conn: psycopg.Connection) -> None:
@@ -389,9 +421,26 @@ class SyncConnShim:
 
     def execute(self, sql: str, params: Sequence | None = None):
         sql = _qmark_to_pyformat(_translate_sqliteisms(sql))
-        cur = self._conn.execute(sql, _wrap_jsonb(params))
+        # Auto-append RETURNING id for bare INSERTs so cursor.lastrowid
+        # works the way sqlite3 consumers expect.
+        sql_upper = sql.lstrip().upper()
+        wants_returning = (
+            sql_upper.startswith("INSERT")
+            and " RETURNING " not in sql_upper
+            and "ON CONFLICT" not in sql_upper
+        )
+        run_sql = sql.rstrip().rstrip(";") + " RETURNING id" if wants_returning else sql
+        cur = self._conn.execute(run_sql, _wrap_jsonb(params))
+        lastrowid: int | None = None
+        if wants_returning:
+            try:
+                row = cur.fetchone()
+                if row is not None:
+                    lastrowid = int(row[0])
+            except psycopg.ProgrammingError:
+                lastrowid = None
         self._last_rowcount = cur.rowcount
-        return cur
+        return _SyncCursorProxy(cur, lastrowid)
 
     def cursor(self):
         return self._conn.cursor()

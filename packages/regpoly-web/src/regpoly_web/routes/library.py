@@ -6,20 +6,18 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
-import uuid
-from concurrent.futures import Future
 
 from fastapi import APIRouter, HTTPException, Request
 from regpoly.library import Catalog, Generator, Paper
 
-from regpoly_web.database import json_dumps, sync_connect
+from regpoly_web.database import json_dumps, json_loads, sync_connect
 from regpoly_web.param_format import (
     format_gen_params,
     format_tempering_list,
 )
 from regpoly_web.routes.families import _KNOWN_TESTS, _markdown_to_html
-from regpoly_web.tasks.library_test import run_library_test
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -364,48 +362,27 @@ async def run_test(request: Request, gen_id: str) -> dict:
                             "Pick the recommended method instead."},
             )
 
-    db_path = request.app.state.settings.db_url
-    jobs: dict = request.app.state.run_test_jobs
-    job_id = uuid.uuid4().hex
-    jobs[job_id] = {
-        "status": "running",
-        "library_id": g.id,
-        "test_type": test_config.get("type"),
-        "method": test_config.get("method"),
-    }
-
-    fut: Future = request.app.state.pool.executor.submit(
-        run_library_test, db_path, g.id, test_config
+    # Insert a pending library_test_run row; the worker scheduler
+    # picks it up via FOR UPDATE SKIP LOCKED. Returns the row id as
+    # job_id (opaque to the front-end).
+    db = request.app.state.db
+    cur = await db.execute(
+        """
+        INSERT INTO library_test_run
+            (library_id, test_type, method, test_config, status)
+        VALUES (?, ?, ?, ?::jsonb, 'pending')
+        """,
+        (
+            g.id,
+            test_config.get("type"),
+            test_config.get("method"),
+            json.dumps(test_config),
+        ),
     )
-
-    def _on_done(f: Future, jid: str = job_id,
-                 method: str = test_config.get("method", ""),
-                 ttype: str = test_config.get("type", "")) -> None:
-        entry = jobs.get(jid)
-        if entry is None:
-            return
-        exc = f.exception()
-        if exc is not None:
-            entry["status"] = "failed"
-            entry["error"] = {
-                "code": "test_failed",
-                "method": method,
-                "message": str(exc),
-            }
-            return
-        result = f.result() or {}
-        entry["status"] = "completed"
-        entry["result"] = {
-            **result,
-            "test_type": ttype,
-            "method": method,
-        }
-
-    fut.add_done_callback(_on_done)
-
+    job_id = cur.lastrowid
     return {
-        "job_id": job_id,
-        "status": "running",
+        "job_id": str(job_id),
+        "status": "pending",
         "library_id": g.id,
         "test_type": test_config.get("type"),
         "method": test_config.get("method"),
@@ -414,19 +391,29 @@ async def run_test(request: Request, gen_id: str) -> dict:
 
 @router.get("/library/run-test-jobs/{job_id}")
 async def run_test_status(request: Request, job_id: str) -> dict:
-    jobs: dict = request.app.state.run_test_jobs
-    entry = jobs.get(job_id)
-    if entry is None:
+    db = request.app.state.db
+    try:
+        row_id = int(job_id)
+    except ValueError:
         raise HTTPException(404, f"Unknown job id: {job_id}")
-    if entry["status"] == "failed":
-        # Surface the same shape the synchronous endpoint used to raise
-        # via HTTPException(400, …) so the front-end's existing error
-        # handling keeps working.
-        raise HTTPException(400, entry.get("error") or {
-            "code": "test_failed", "message": "unknown failure"})
-    payload = {"job_id": job_id, "status": entry["status"]}
-    if entry["status"] == "completed":
-        payload.update(entry.get("result") or {})
+    async with db.execute(
+        "SELECT status, result, error_code, error_message "
+        "FROM library_test_run WHERE id = ?",
+        (row_id,),
+    ) as cur:
+        row = await cur.fetchone()
+    if row is None:
+        raise HTTPException(404, f"Unknown job id: {job_id}")
+    status = row["status"]
+    if status == "failed":
+        raise HTTPException(400, {
+            "code": row["error_code"] or "test_failed",
+            "message": row["error_message"] or "unknown failure",
+        })
+    payload: dict = {"job_id": job_id, "status": status}
+    if status == "completed":
+        result = json_loads(row["result"]) or {}
+        payload.update(result)
     return payload
 
 

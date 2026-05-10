@@ -36,7 +36,7 @@ from regpoly_web.routes import (
     tested_generators,
 )
 from regpoly_web.routes.v2 import router as v2_router
-from regpoly_web.tasks.analysis import analyze_generator
+from regpoly_web.scheduler import analysis_scheduler, search_scheduler
 from regpoly_web.tasks.pool import TaskPool
 
 logger = logging.getLogger(__name__)
@@ -107,39 +107,46 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.db = AsyncPoolDB(app.state.dbpool)
 
         # Production (compose-driven) mode: web container owns NO
-        # ProcessPoolExecutor and runs NO analysis scheduler. The
-        # worker container handles all dispatch. Routes that legacy-
-        # called `app.state.pool.submit(...)` should null-check first.
-        analysis_task = None
+        # ProcessPoolExecutor and runs NO scheduler. The worker
+        # container handles all dispatch. Routes only ever insert
+        # `pending` rows; the worker scheduler picks them up.
+        bg_tasks: list[asyncio.Task] = []
         if settings.disable_internal_pool:
             app.state.pool = None
             app.state.analysis_pool = None
         else:
-            # Single-process dev mode: spin up the in-process pools so
-            # `uv run regpoly-web` against a dev PG keeps working
-            # without needing a separate worker process.
+            # Single-process dev mode: spin up the in-process pools and
+            # run the same dispatch schedulers the worker container
+            # runs in production. `uv run regpoly-web` against a dev
+            # PG then keeps working without a separate worker process.
             app.state.pool = TaskPool(
                 db_url=settings.db_url, max_workers=settings.pool_size,
             )
             app.state.analysis_pool = TaskPool(
                 db_url=settings.db_url, max_workers=settings.analysis_pool_size,
             )
-            # Reap any orphaned 'running' rows from a previous dev
-            # session (the init container does this in production).
             try:
                 n = await reap_orphans(settings.db_url, stale_seconds=0)
                 if n:
                     logger.info("dev-mode startup reaped %d orphan rows", n)
             except Exception:
                 logger.warning("dev-mode reap_orphans failed", exc_info=True)
-            analysis_task = asyncio.create_task(
-                _analysis_scheduler(app, settings.db_url)
-            )
+            bg_tasks.append(asyncio.create_task(
+                search_scheduler(
+                    app.state.dbpool, app.state.pool, settings.db_url,
+                    poll_seconds=settings.worker_poll_seconds,
+                )
+            ))
+            bg_tasks.append(asyncio.create_task(
+                analysis_scheduler(
+                    app.state.dbpool, app.state.analysis_pool, settings.db_url,
+                )
+            ))
         try:
             yield
         finally:
-            if analysis_task is not None:
-                analysis_task.cancel()
+            for t in bg_tasks:
+                t.cancel()
             if not settings.disable_internal_pool:
                 # Cancel running rows so dev-mode workers exit cleanly.
                 async with app.state.dbpool.connection() as conn:
@@ -203,44 +210,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.v2_router_registered = True
 
     return app
-
-
-async def _analysis_scheduler(app: FastAPI, db_url: str) -> None:
-    """Poll primitive_generator for rows needing analysis and dispatch
-    them to the worker pool, one at a time.
-
-    Used only in single-process dev mode; in production the worker
-    container's own scheduler (regpoly_web.worker) handles dispatch.
-    """
-    in_flight: set[int] = set()
-    try:
-        while True:
-            try:
-                async with app.state.dbpool.connection() as conn:
-                    async with conn.cursor() as cur:
-                        await cur.execute(
-                            "SELECT id FROM primitive_generator "
-                            "WHERE pis_computed_at IS NULL "
-                            "ORDER BY id ASC LIMIT 50"
-                        )
-                        rows = await cur.fetchall()
-                for r in rows:
-                    gid = r["id"]
-                    if gid in in_flight:
-                        continue
-                    in_flight.add(gid)
-                    fut = app.state.analysis_pool.submit(
-                        "analysis", gid, analyze_generator
-                    )
-                    fut.add_done_callback(
-                        lambda _f, g=gid: in_flight.discard(g)
-                    )
-            except Exception:
-                # Never let scheduler errors kill the loop.
-                pass
-            await asyncio.sleep(2.0)
-    except asyncio.CancelledError:
-        pass
 
 
 # Exported for uvicorn/gunicorn factory-style loading

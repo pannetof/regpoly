@@ -17,7 +17,6 @@ from regpoly_web.param_format import (
     format_gen_params,
     format_tempering_list,
 )
-from regpoly_web.tasks.tempering import run_tempering_search
 
 router = APIRouter()
 
@@ -47,7 +46,6 @@ async def create_tempering_search(
     request: Request, body: TemperingSearchCreate
 ) -> dict:
     db = request.app.state.db
-    pool = request.app.state.pool  # legacy TaskPool reference
     dbpool = request.app.state.dbpool
 
     # Validate the user-supplied generator IDs are all present.
@@ -108,7 +106,6 @@ async def create_tempering_search(
 
     await db.commit()
 
-    pool.submit("tempering", run_id, run_tempering_search)
 
     return {"id": run_id, "status": "pending"}
 
@@ -267,7 +264,6 @@ async def pause_tempering_search(request: Request, run_id: int) -> dict:
 @router.post("/tempering-searches/{run_id}/resume")
 async def resume_tempering_search(request: Request, run_id: int) -> dict:
     db = request.app.state.db
-    pool = request.app.state.pool  # legacy TaskPool reference
     dbpool = request.app.state.dbpool
     status = await _current_status(db, run_id)
     if status is None:
@@ -280,7 +276,6 @@ async def resume_tempering_search(request: Request, run_id: int) -> dict:
         (run_id,),
     )
     await db.commit()
-    pool.submit("tempering", run_id, run_tempering_search)
     return {"id": run_id, "status": "pending"}
 
 
@@ -288,7 +283,6 @@ async def resume_tempering_search(request: Request, run_id: int) -> dict:
 async def restart_tempering_search(request: Request, run_id: int) -> dict:
     """Clone a tempering search into a fresh run with the same config."""
     db = request.app.state.db
-    pool = request.app.state.pool  # legacy TaskPool reference
     dbpool = request.app.state.dbpool
     async with db.execute(
         "SELECT * FROM tempering_search_run WHERE id = ?", (run_id,)
@@ -339,7 +333,6 @@ async def restart_tempering_search(request: Request, run_id: int) -> dict:
                 )
     await db.commit()
 
-    pool.submit("tempering", new_id, run_tempering_search)
     return {"id": new_id, "status": "pending", "cloned_from": run_id}
 
 
@@ -401,7 +394,6 @@ async def tempering_search_progress_sse(
 ) -> StreamingResponse:
     settings = request.app.state.settings
     poll = settings.progress_poll_seconds
-    pool = request.app.state.pool  # legacy TaskPool reference
     dbpool = request.app.state.dbpool
 
     # P6 — SSE versioning gate, same as primitive (see comment there).

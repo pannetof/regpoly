@@ -3,37 +3,45 @@
 
 """Background worker for "Run test" actions on library generators.
 
-The web request handler returns a job_id immediately; the actual test
-is computed inside a ProcessPoolExecutor worker so the HTTP response
-never blocks on the C++ equidistribution computation.
-
-The worker is fully self-contained: it re-loads the YAML library
-catalog from disk (so the parent's in-memory catalog does not need to
-be pickled across processes), looks up the generator by id, then runs
-the same instantiate-then-test logic that previously lived inline in
-``routes/library.py``.
+The web request handler INSERTs a ``library_test_run`` row with
+``status='pending'`` and returns its id immediately; the worker
+scheduler picks it up via ``FOR UPDATE SKIP LOCKED`` and dispatches
+this function in a child process. The actual computation never
+blocks the HTTP request thread.
 """
 
 from __future__ import annotations
 
+import json
 import time
 
-from regpoly_web.database import json_dumps, sync_connect
+from regpoly_web.database import json_dumps, json_loads, sync_connect
 from regpoly_web.results import find_existing_typed_result, save_typed_result
 
 
-def run_library_test(
-    db_path: str,
-    library_id: str,
-    test_config: dict,
-) -> dict:
+def run_library_test(db_url: str, run_id: int) -> None:
     """Top-level worker function (must be picklable for the pool).
 
-    Returns a result dict with keys ``library_id``,
-    ``tested_generator_id``, ``test_result_id``, ``se``, ``is_me``,
-    ``instantiated``.  Raises on hard failures so the caller sees the
-    original exception via ``Future.exception()``.
+    Reads ``library_id`` + ``test_config`` from the
+    ``library_test_run`` row; on success writes
+    ``status='completed'`` + ``result`` (JSONB); on failure writes
+    ``status='failed'`` + ``error_code``/``error_message``.
     """
+    job = _fetch_job(db_url, run_id)
+    if job is None:
+        return  # row deleted between dispatch and start; nothing to do
+
+    library_id = job["library_id"]
+    test_config = job["test_config"]
+
+    try:
+        result = _execute(db_url, library_id, test_config)
+        _mark_completed(db_url, run_id, result)
+    except Exception as exc:
+        _mark_failed(db_url, run_id, "test_failed", str(exc))
+
+
+def _execute(db_url: str, library_id: str, test_config: dict) -> dict:
     from regpoly.library import Catalog
 
     from regpoly_web.config import find_library_dir
@@ -51,12 +59,13 @@ def run_library_test(
     if not g.valid:
         raise RuntimeError(f"Library entry has validation errors: {g.errors}")
 
-    tested_id, created = _instantiate_sync(db_path, g)
+    tested_id, created = _instantiate_sync(db_url, g)
 
     test_type = test_config.get("type", "equidistribution")
+    method = test_config.get("method")
     config_json = json_dumps(test_config)
 
-    with sync_connect(db_path) as conn:
+    with sync_connect(db_url) as conn:
         prior = find_existing_typed_result(conn, tested_id, test_type, config_json)
         if prior is not None:
             return {
@@ -66,6 +75,8 @@ def run_library_test(
                 "se": int(prior["se"]) if prior["se"] is not None else None,
                 "is_me": bool(prior["is_me"]),
                 "instantiated": created,
+                "test_type": test_type,
+                "method": method,
             }
 
     from regpoly.core.combination import Combination
@@ -85,7 +96,7 @@ def run_library_test(
     se = getattr(result, "se", None)
     is_me = bool(_is_me(result)) if se is not None else False
 
-    with sync_connect(db_path) as conn:
+    with sync_connect(db_url) as conn:
         rid = save_typed_result(
             conn, tested_id, test_config, result,
             kg=comb.k_g, L=comb.Lmax, elapsed_seconds=elapsed,
@@ -98,7 +109,61 @@ def run_library_test(
             "se": int(se) if se is not None else None,
             "is_me": is_me,
             "instantiated": created,
+            "test_type": test_type,
+            "method": method,
         }
+
+
+# ── library_test_run row helpers ───────────────────────────────────
+
+def _fetch_job(db_url: str, run_id: int) -> dict | None:
+    with sync_connect(db_url) as conn:
+        conn.autocommit = True
+        row = conn.execute(
+            "SELECT library_id, test_type, method, test_config "
+            "FROM library_test_run WHERE id = ?",
+            (run_id,),
+        ).fetchone()
+    if row is None:
+        return None
+    return {
+        "library_id": row["library_id"],
+        "test_type": row["test_type"],
+        "method": row["method"],
+        "test_config": json_loads(row["test_config"]) or {},
+    }
+
+
+def _mark_completed(db_url: str, run_id: int, result: dict) -> None:
+    with sync_connect(db_url) as conn:
+        conn.execute(
+            """
+            UPDATE library_test_run
+               SET status='completed',
+                   result=?::jsonb,
+                   updated_at=NOW(),
+                   finished_at=NOW()
+             WHERE id = ?
+            """,
+            (json.dumps(result), run_id),
+        )
+        conn.commit()
+
+
+def _mark_failed(db_url: str, run_id: int, code: str, message: str) -> None:
+    with sync_connect(db_url) as conn:
+        conn.execute(
+            """
+            UPDATE library_test_run
+               SET status='failed',
+                   error_code=?, error_message=?,
+                   updated_at=NOW(),
+                   finished_at=NOW()
+             WHERE id = ?
+            """,
+            (code, message, run_id),
+        )
+        conn.commit()
 
 
 def _instantiate_sync(db_path, g) -> tuple[int, bool]:
