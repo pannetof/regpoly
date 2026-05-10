@@ -70,9 +70,45 @@ jobs:
       - name: Smoke-test C++ extension import
         run: docker run --rm regpoly:smoke python -c "import regpoly._regpoly_cpp; print('OK')"
 
-      # PG-backed smoke test (test_disable_internal_pool.py) is added
-      # once the Phase 1.2 cutover lands — until then there's no PG-
-      # using test to run inside the image.
+      - name: Smoke-test prod-mode boot against ephemeral PG
+        # Spin up a throw-away postgres on a docker network, run the
+        # init module inside the image to apply migrations, then start
+        # uvicorn with REGPOLY_WEB_DISABLE_INTERNAL_POOL=1 and curl
+        # /healthz. Proves the published artifact actually boots in
+        # the production shape (no in-process worker pool, real PG).
+        run: |
+          set -eux
+          docker network create regpoly-smoke
+          docker run -d --rm --name pg --network regpoly-smoke \
+            -e POSTGRES_USER=regpoly \
+            -e POSTGRES_PASSWORD=devpw \
+            -e POSTGRES_DB=regpoly \
+            postgres:16.6-alpine
+          for i in $(seq 1 30); do
+            docker exec pg pg_isready -U regpoly && break
+            sleep 1
+          done
+          # Apply migrations.
+          docker run --rm --network regpoly-smoke \
+            -e REGPOLY_DB_URL=postgresql://regpoly:devpw@pg:5432/regpoly \
+            regpoly:smoke python -m regpoly_web.init --reap-orphans
+          # Boot uvicorn in the prod shape and curl /healthz.
+          docker run -d --rm --name web --network regpoly-smoke \
+            -e REGPOLY_DB_URL=postgresql://regpoly:devpw@pg:5432/regpoly \
+            -e REGPOLY_WEB_DISABLE_INTERNAL_POOL=1 \
+            regpoly:smoke \
+            uvicorn regpoly_web.app:app --host 0.0.0.0 --port 8000
+          for i in $(seq 1 30); do
+            if docker run --rm --network regpoly-smoke curlimages/curl:8.10.1 \
+                -fsS http://web:8000/healthz | grep -q '"db":"up"'; then
+              echo "/healthz reports db=up"
+              break
+            fi
+            sleep 1
+          done
+          docker stop web || true
+          docker stop pg || true
+          docker network rm regpoly-smoke || true
 
       - name: Push (with computed tags)
         uses: docker/build-push-action@v6
