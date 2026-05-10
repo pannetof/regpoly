@@ -1,0 +1,38 @@
+# Files excluded from `docker build` context. Keeps the build payload
+# small (faster transfers, smaller cache invalidation) and prevents
+# host-side artifacts from leaking into the image.
+
+# Git internals + project memory
+.git
+.claude
+
+# Python / virtualenv artifacts
+.venv
+**/__pycache__
+**/*.pyc
+**/*.so
+**/*.egg-info
+
+# Build artifacts (top-level + nested per-package)
+build/
+**/build/
+**/_skbuild/
+
+# Test caches
+.pytest_cache
+.ruff_cache
+
+# Vendored binaries / fixtures we don't need at build time
+third_party/MTToolBox/sample
+third_party/MTToolBox/test
+
+# Notebooks (executed at docs-build time, not runtime)
+notebooks/
+docs/notebooks/
+
+# MkDocs site output
+site/
+
+# User data — never in an image
+**/regpoly.db*
+**/var/

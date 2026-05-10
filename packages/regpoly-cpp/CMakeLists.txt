@@ -123,7 +123,24 @@ target_link_libraries(regpoly_core PUBLIC ntl pthread)
 # from yaml-cpp in directly, so consumers see no missing symbols.)
 target_link_libraries(regpoly_core PRIVATE
     $<BUILD_INTERFACE:yaml-cpp::yaml-cpp>)
-target_compile_options(regpoly_core PRIVATE -O3 -march=native)
+
+# CPU tuning (dockerize-plan Phase 3). Default ON preserves legacy
+# `-march=native` for dev builds. The Docker build passes
+# -DREGPOLY_NATIVE_ARCH=OFF -DREGPOLY_TUNE_ARCH=neoverse-n1 to produce a
+# binary tuned for the Hetzner CAX21's Ampere Altra CPU. Without
+# REGPOLY_TUNE_ARCH (and with REGPOLY_NATIVE_ARCH=OFF), only -O3 is set
+# — portable but slower.
+option(REGPOLY_NATIVE_ARCH "Compile with -march=native (dev builds)" ON)
+set(REGPOLY_TUNE_ARCH "" CACHE STRING
+    "ARM -mcpu / x86 -march override when REGPOLY_NATIVE_ARCH=OFF")
+if(REGPOLY_NATIVE_ARCH)
+    set(_REGPOLY_ARCH_FLAGS -O3 -march=native)
+elseif(REGPOLY_TUNE_ARCH)
+    set(_REGPOLY_ARCH_FLAGS -O3 -mcpu=${REGPOLY_TUNE_ARCH})
+else()
+    set(_REGPOLY_ARCH_FLAGS -O3)
+endif()
+target_compile_options(regpoly_core PRIVATE ${_REGPOLY_ARCH_FLAGS})
 add_library(regpoly::regpoly ALIAS regpoly_core)
 
 # ── Python extension: _regpoly_cpp ─────────────────────────────────────
@@ -135,7 +152,7 @@ pybind11_add_module(_regpoly_cpp
     src/bindings/factory_bindings.cpp)
 target_include_directories(_regpoly_cpp PRIVATE ${REGPOLY_CPP_INCLUDE_DIRS})
 target_link_libraries(_regpoly_cpp PRIVATE regpoly_core)
-target_compile_options(_regpoly_cpp PRIVATE -O3 -march=native)
+target_compile_options(_regpoly_cpp PRIVATE ${_REGPOLY_ARCH_FLAGS})
 
 install(TARGETS _regpoly_cpp DESTINATION regpoly_cpp)
 
