@@ -105,11 +105,13 @@ The `tests/_mttoolbox_build.md` doc inside the regpoly package describes how to 
 - `docs/theory/equidistribution-spec.md` — **the design of record** for matricial equidistribution computation on F_2-linear generators that are not assumed full-period (Berlekamp–Massey → factor χ_f → invariant subspace → matricial DE core → guard → verify). Read whenever working on equidistribution where the characteristic polynomial may not be primitive.
 - `docs/theory/antithetic-check.md` — algorithm for testing local antitheticity of a linear RNG point set.
 
-## Active redesign — v2.0 plan
+## Past redesign — v2.0 plan (COMPLETE)
 
-A 9-phase migration is in progress (started 2026-05-03). Plan file: `~/.claude/plans/i-want-to-have-rippling-starlight.md`. Goal: push all algorithmic logic to C++; Python becomes a thin wrapper; the web app uses only Python; a C++-only user has full feature parity with a Python user. Per-phase commit + push to `origin/master` is authorized **for the duration of this plan only** (overrides the general "no auto commit/push" rule).
+The 9-phase v2.0 redesign is **COMPLETE**. Tagged `v2.0.0` at commit `47c24e6` on 2026-05-04. Plan file: `~/.claude/plans/i-want-to-have-rippling-starlight.md` (preserved for reference). Final architecture: all algorithmic logic in C++; Python is a thin wrapper; the web app uses only Python (no `_cpp` imports); C++-only users have full feature parity via `regpoly-cli`.
 
-Current phase: **Phase 0 (scaffolding)**.
+## Active plan — Dockerize and deploy to Hetzner CAX21
+
+Plan file: `~/.claude/plans/i-want-to-dockerize-twinkly-rocket.md`. Goal: deploy the web app at `https://regpoly.frpanneton.ca` on a Hetzner CAX21 (ARM64), 3-container architecture (web + worker + db on PostgreSQL 16), Caddy + Cloudflare DNS-only TLS, GHCR images, NAS-pull SSH backups, UptimeRobot monitoring. Per-phase commit + push to `origin/master` is authorized **for the duration of this plan only** (overrides the general "no auto commit/push" rule).
 
 ## History (for context — don't act on it)
 
