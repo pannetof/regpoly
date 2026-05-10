@@ -1,0 +1,87 @@
+name: docker
+
+# Tag-driven Pattern B release model:
+#   - every push to master   → push :sha-<short> only
+#   - every v* tag           → also push :latest + :vX.Y.Z
+#   - workflow_dispatch      → manual rebuild
+#
+# Repo is public, so ubuntu-24.04-arm runners are free.
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive  # third_party/yaml-cpp
+
+      - name: uv lock check
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - run: uv lock --check
+
+      # NOTE: CI grep gates (no app.state.pool refs in routes; sync
+      # C++ probes wrapped in asyncio.to_thread) live in ci.yml so
+      # they run on every PR/push, not just docker workflow triggers.
+      # They will be added once the Phase 2 worker-split cutover lands
+      # — running them today would fail the build because routes still
+      # carry the legacy pool refs.
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/pannetof/regpoly
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=ref,event=tag
+
+      # Build to a local tag first so we can smoke-test before pushing.
+      - name: Build (load locally)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          platforms: linux/arm64
+          push: false
+          load: true
+          tags: regpoly:smoke
+          cache-from: type=registry,ref=ghcr.io/pannetof/regpoly:cache
+          cache-to: type=registry,ref=ghcr.io/pannetof/regpoly:cache,mode=min
+
+      - name: Smoke-test C++ extension import
+        run: docker run --rm regpoly:smoke python -c "import regpoly._regpoly_cpp; print('OK')"
+
+      # PG-backed smoke test (test_disable_internal_pool.py) is added
+      # once the Phase 1.2 cutover lands — until then there's no PG-
+      # using test to run inside the image.
+
+      - name: Push (with computed tags)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=ghcr.io/pannetof/regpoly:cache
+          cache-to: type=registry,ref=ghcr.io/pannetof/regpoly:cache,mode=min
