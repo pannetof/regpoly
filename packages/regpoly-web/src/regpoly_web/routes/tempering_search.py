@@ -407,6 +407,10 @@ async def tempering_search_progress_sse(
         import time as _time
         import aiosqlite
         stream_start = _time.time()
+        # SSE keepalive: emit a comment line every ~20s of silence so
+        # idle connections survive intermediate proxies.
+        KEEPALIVE_SEC = 20.0
+        last_emit_ts = _time.time()
         async with aiosqlite.connect(db_path) as conn:
             conn.row_factory = aiosqlite.Row
             last_id = 0
@@ -422,6 +426,12 @@ async def tempering_search_progress_sse(
                     (run_id, last_id),
                 ) as cur:
                     rows = await cur.fetchall()
+
+                if rows:
+                    last_emit_ts = _time.time()
+                elif _time.time() - last_emit_ts > KEEPALIVE_SEC:
+                    yield ": keepalive\n\n"
+                    last_emit_ts = _time.time()
 
                 for row in rows:
                     info = json_loads(row["current_info"]) or {}

@@ -191,7 +191,9 @@ async def create_primitive_search(
 
     # L is not user-facing; it is derived automatically (L=64 for
     # Tausworthe, L=w for WELL, L=k otherwise — see _effective_L).
-    k = _probe_k(body, fixed)
+    # `_probe_k` calls into C++ (Generator.create); off-load to a thread
+    # so a slow probe doesn't stall the uvicorn event loop.
+    k = await asyncio.to_thread(_probe_k, body, fixed)
     effective_L = _effective_L(body, k)
 
     # Exhaustive-mode pre-flight: build the enumerator up front to fail
@@ -199,7 +201,10 @@ async def create_primitive_search(
     enum_total_str: str | None = None
     enum_axes_json: str | None = None
     if body.search_mode == "exhaustive":
-        enumerator = _build_enumerator_or_400(body, effective_L)
+        # build_gen_enumerator is sync C++ work; off-load to a thread.
+        enumerator = await asyncio.to_thread(
+            _build_enumerator_or_400, body, effective_L
+        )
         total = enumerator.total
         if total > HUGE_SPACE_THRESHOLD and not body.confirm_huge:
             raise HTTPException(400, detail={
@@ -247,13 +252,16 @@ async def estimate_primitive_search(body: PrimitiveSearchCreate) -> dict:
     response for random mode (with total=null)."""
     if body.search_mode != "exhaustive":
         return {"search_mode": body.search_mode, "total": None, "axes": []}
-    # Probe for k so the enumerator sees a self-consistent L.
+    # Probe for k so the enumerator sees a self-consistent L. C++ work
+    # in the request path; off-load to a thread.
     fixed = dict(body.structural_params)
     for key, val in body.fixed_params.items():
         if val is not None:
             fixed[key] = val
-    k = _probe_k(body, fixed)
-    enumerator = _build_enumerator_or_400(body, _effective_L(body, k))
+    k = await asyncio.to_thread(_probe_k, body, fixed)
+    enumerator = await asyncio.to_thread(
+        _build_enumerator_or_400, body, _effective_L(body, k)
+    )
     return {
         "search_mode": "exhaustive",
         "total": str(enumerator.total),
@@ -498,6 +506,11 @@ async def primitive_search_progress_sse(
         # for the v2 rate_rolling_5s field).
         rr = RollingRate(window_sec=5.0)
         stream_start = _time.time()
+        # SSE keepalive: emit a comment line every ~20s of silence so
+        # idle connections survive intermediate proxies (Caddy, home
+        # routers) that would otherwise tear them down at ~60s.
+        KEEPALIVE_SEC = 20.0
+        last_emit_ts = _time.time()
         async with aiosqlite.connect(db_path) as conn:
             conn.row_factory = aiosqlite.Row
             last_id = 0
@@ -512,6 +525,12 @@ async def primitive_search_progress_sse(
                     (run_id, last_id),
                 ) as cur:
                     rows = await cur.fetchall()
+
+                if rows:
+                    last_emit_ts = _time.time()
+                elif _time.time() - last_emit_ts > KEEPALIVE_SEC:
+                    yield ": keepalive\n\n"
+                    last_emit_ts = _time.time()
 
                 for row in rows:
                     info = json_loads(row["current_info"]) or {}

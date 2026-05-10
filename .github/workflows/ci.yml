@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive  # third_party/yaml-cpp (dockerize-plan 0b)
 
       - name: Install system dependencies
         run: |

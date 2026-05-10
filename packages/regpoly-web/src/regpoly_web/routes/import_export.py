@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from pathlib import Path
 
@@ -185,8 +186,12 @@ async def _import_one_generators_file(
             L = merged.get("w", 32)
 
         # Probe to get k; if creation fails, skip row with an error note.
+        # Generator.create is sync C++ work; off-load to a thread so a
+        # large multi-row import doesn't stall the event loop.
         try:
-            gen = Generator.create(family_raw, L, **merged)
+            gen = await asyncio.to_thread(
+                Generator.create, family_raw, L, **merged
+            )
         except Exception as exc:
             # WELL `matrices` shape errors are user-visible 400s, not
             # silent per-entry failures, so the operator gets a clear
