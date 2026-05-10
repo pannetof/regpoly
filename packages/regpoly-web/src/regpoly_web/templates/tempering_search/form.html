@@ -921,6 +921,12 @@ function temperingSearchForm() {
             // /generators page).
             const comp = this.components[ci];
             const qs = new URLSearchParams();
+            // The tempering worker rebuilds each generator from its
+            // stored `all_params`; it doesn't read `char_poly` or
+            // `pis_gaps`. Don't gate the candidate pool on whether the
+            // background analyzer has caught up — show every primitive
+            // hit attributed to the run.
+            qs.set('available_only', 'false');
             if (comp.filter.family) qs.set('family', comp.filter.family);
             if (includeKey !== 'k' && comp.filter.k !== '')
                 qs.set('k', comp.filter.k);

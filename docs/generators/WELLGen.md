@@ -1,14 +1,16 @@
-# WELLRNG
+# WELL
 
-**C++ class:** `WELLRNG`
-**Name in code:** `"Carry Generator"`
-**Legacy aliases:** `carry`, `Carry2Gen`
+**C++ class:** `WELLGen`
+**Name in code:** `"Carry Generator"` (historical; returned by
+`Generator::name()`)
+**Aliases accepted by the factory:** `WELLRNG`
 
-Well Equidistributed Long-period Linear (WELL) generators. The state
-is r words of w bits stored in a circular buffer. The recurrence uses
-8 algorithm slots T0..T7. Each slot is filled with a transformation
-class Mi (i=0..6) from Table I of Panneton et al. (2006); the M-class
-table further down lists each class's formula.
+Well Equidistributed Long-period Linear (WELL) generators of Panneton,
+L'Ecuyer, & Matsumoto (2006). The state is `r` words of `w` bits
+stored in a circular buffer. The recurrence uses 8 algorithm slots
+T0..T7. Each slot is filled with a transformation class Mi (i=0..6)
+from Table I of the paper; the M-class table further down lists each
+class's formula and computational cost.
 
 ## Mathematical recurrence
 
@@ -84,7 +86,7 @@ the sum over its 8 algorithm slots, repeating Mi costs as needed.
 | `m1`       | `int`        | search     | `range` (1 to r-1) | Offset to first tap word |
 | `m2`       | `int`        | search     | `range` (1 to r-1) | Offset to second tap word |
 | `m3`       | `int`        | search     | `range` (1 to r-1) | Offset to third tap word |
-| `matrices` | `struct_map` | search     | `none` (must be provided) | Map keyed by `T0..T7`; each value is a dict with `M` plus that class's named args |
+| `matrices` | `struct_map` | search     | `none` — pin every slot, **or** drive the search with a cost cap (see [Cost-bounded search](#cost-bounded-search)) | Map keyed by `T0..T7`; each value is a dict with `M` plus that class's named args |
 
 ### `matrices` shape
 
@@ -207,10 +209,22 @@ fixed_params:
     T7: {M: 1}
 ```
 
-### Minimal-cost WELL1024 search shape (synthetic)
+## Cost-bounded search
 
-This is not a published generator; it shows the parameter shape for a
-search that explores only the cheap M-classes (M0, M1, M2, M3).
+The full-period search has two modes for WELL families:
+
+1. **Pinned matrices** — every slot's `M`-class (and per-class args)
+   is fixed in `fixed_params.matrices`; the search only varies the
+   integer offsets (`m1`, `m2`, `m3`).
+2. **Cost-bounded** — the user sets a `max_cost` budget; the search
+   *samples* a fresh `matrices` map under the cap on every iteration,
+   alongside the offsets. This is the default workflow on the web UI.
+
+Pinning `matrices` and setting `max_cost` are **mutually exclusive**:
+pinning fixes the cost, and `max_cost` only does something when the
+search varies matrices. The driver rejects the combination at start.
+
+### YAML example
 
 ```yaml
 search:
@@ -218,6 +232,7 @@ search:
   L: 32
   limit:
     max_tries: 100000
+    max_cost: 12          # 0 < max_cost ≤ 64
 
 structural_params:
   w: 32
@@ -225,19 +240,35 @@ structural_params:
   p: 0
 
 fixed_params:
-  m1:                # randomized
-  m2:                # randomized
-  m3:                # randomized
-  matrices:
-    T0: {M: 3, t: 16}
-    T1: {M: 1}
-    T2: {M: 2, t: 15}
-    T3: {M: 2, t: 11}
-    T4: {M: 3, t: 19}
-    T5: {M: 1}
-    T6: {M: 3, t:  4}
-    T7: {M: 0}
+  m1:                     # randomized
+  m2:                     # randomized
+  m3:                     # randomized
+  # `matrices` MUST be omitted under a cost cap.
 ```
+
+### Sampling algorithm
+
+The C++ helper `WELLGen::random_matrices(w, max_cost, rng)` (also
+exposed to Python as `regpoly.well.random_matrices(w, max_cost, seed)`)
+draws an admissible `matrices` map:
+
+1. Up to 64 attempts of pure rejection sampling — 8 i.i.d. uniform Mi
+   draws from `{M0..M6}`; accept if total cost ≤ `max_cost`.
+2. On rejection, fall back to a greedy-budgeted draw: shuffle slot
+   indices, then for each slot pick `Mi` uniformly from
+   `{Mi : cost(Mi) ≤ remaining_budget}`. This always succeeds because
+   `cost(M0) = 0`.
+
+Per-class arg sampling uses the paper's stated ranges (with degenerate
+values that collapse the class excluded — e.g. `t = 0` is excluded from
+M2/M3/M5).
+
+### Web UI
+
+The `/primitive-search?family=WELLGen` form is **max_cost-only** for
+WELL: the `matrices` editor is hidden and a required `max_cost` field
+gates submission. To pin matrices, use the YAML/CLI path or POST
+directly to `/api/primitive-searches`.
 
 ---
 

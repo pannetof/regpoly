@@ -36,6 +36,23 @@ def test_max_cost_persists_round_trip(client) -> None:
     assert r.json()["max_cost"] == 12
 
 
+def test_well_search_pins_L_to_w(client) -> None:
+    """WELL outputs one full w-bit word per step, so the search must
+    always run at L=w regardless of the (sometimes huge) state size k.
+    Previously the route defaulted to L=k for non-Tausworthe families."""
+    body = _well_body(max_cost=12)
+    body["L"] = 0   # no explicit override → server picks
+    r = client.post("/api/primitive-searches", json=body)
+    assert r.status_code == 200, r.text
+    run_id = r.json()["id"]
+
+    detail = client.get(f"/api/primitive-searches/{run_id}").json()
+    assert detail["L"] == 32, detail   # body.structural_params['w'] == 32
+    # k for (w=32, r=16, p=0) is 32*16 = 512; L must NOT be k anymore.
+    assert detail["k"] == 512, detail
+    assert detail["L"] != detail["k"]
+
+
 def test_max_cost_out_of_range_rejected(client) -> None:
     r = client.post("/api/primitive-searches", json=_well_body(max_cost=99))
     assert r.status_code == 400

@@ -85,7 +85,8 @@ def _probe_k(body: PrimitiveSearchCreate, fixed: dict) -> int:
 def _effective_L(body: PrimitiveSearchCreate, k: int) -> int:
     """Output resolution L to use for the actual search.
 
-    Tausworthe-family generators always run at L=64 (fixed convention);
+    Tausworthe-family generators always run at L=64 and WELL generators
+    always run at L=w (each output word is exactly one state word);
     all other families use L=k unless the caller supplied a positive
     explicit L.
     """
@@ -94,6 +95,8 @@ def _effective_L(body: PrimitiveSearchCreate, k: int) -> int:
     family = resolve_family(body.family, body.structural_params)
     if family == "TauswortheGen":
         return 64
+    if family == "WELLGen":
+        return int(body.structural_params.get("w", 32))
     return k
 
 
@@ -187,7 +190,7 @@ async def create_primitive_search(
         fixed["matrices"] = {f"T{i}": {"M": 0} for i in range(8)}
 
     # L is not user-facing; it is derived automatically (L=64 for
-    # Tausworthe, L=k otherwise — see _effective_L).
+    # Tausworthe, L=w for WELL, L=k otherwise — see _effective_L).
     k = _probe_k(body, fixed)
     effective_L = _effective_L(body, k)
 

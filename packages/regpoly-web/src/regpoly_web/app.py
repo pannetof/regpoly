@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 from contextlib import asynccontextmanager
 
@@ -83,6 +84,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.pool = TaskPool(
             db_path=settings.db_path, max_workers=settings.pool_size
         )
+        # Analysis runs in its own pool so a backlog of per-generator
+        # PIS jobs never blocks user-driven primitive/tempering/library
+        # submissions. Default size = max(1, pool_size // 2); override
+        # with REGPOLY_ANALYSIS_POOL_SIZE.
+        analysis_pool_size = int(os.environ.get(
+            "REGPOLY_ANALYSIS_POOL_SIZE",
+            max(1, settings.pool_size // 2),
+        ))
+        app.state.analysis_pool = TaskPool(
+            db_path=settings.db_path, max_workers=analysis_pool_size,
+        )
         # In-memory registry for "Run test" jobs kicked off from the
         # library detail page.  Each entry is keyed by a uuid and tracks
         # status ('running' | 'completed' | 'failed') plus the result
@@ -108,6 +120,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             await app.state.db.commit()
             app.state.pool.shutdown()
+            app.state.analysis_pool.shutdown()
             await app.state.db.close()
 
     app = FastAPI(
@@ -175,7 +188,7 @@ async def _analysis_scheduler(app: FastAPI, db_path: str) -> None:
                         if gid in in_flight:
                             continue
                         in_flight.add(gid)
-                        fut = app.state.pool.submit(
+                        fut = app.state.analysis_pool.submit(
                             "analysis", gid, analyze_generator
                         )
                         fut.add_done_callback(

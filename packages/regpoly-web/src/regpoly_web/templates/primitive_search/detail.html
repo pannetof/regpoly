@@ -38,6 +38,12 @@
       <button type="button" class="btn btn-sm btn-outline-primary"
               data-duplicate
               @click="duplicate()">Duplicate</button>
+      <button type="button" class="btn btn-sm btn-outline-danger"
+              @click="del()"
+              :disabled="busyDelete">
+        <span x-show="!busyDelete">Delete</span>
+        <span x-show="busyDelete">Deleting…</span>
+      </button>
     </div>
   </div>
 
@@ -177,37 +183,95 @@
   </div>
 
   <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">
+    <div class="card-header d-flex flex-wrap align-items-center gap-2">
+      <h3 class="card-title mb-0">
         Generators found
-        (<span x-text="generators.length"></span>)
+        (<span x-text="totalGenerators"></span>)
       </h3>
+      <div class="ms-auto d-flex align-items-center gap-2"
+           x-show="totalGenerators > 0">
+        <span class="text-secondary small"
+              x-text="paginationLabel()"></span>
+        <ul class="pagination pagination-sm mb-0"
+            x-show="lastPage() > 1">
+          <li class="page-item" :class="{disabled: page <= 1}">
+            <a class="page-link" href="#" @click.prevent="goToPage(page - 1)"
+               aria-label="Previous">&laquo;</a>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link"
+                  x-text="page + ' / ' + lastPage()"></span>
+          </li>
+          <li class="page-item" :class="{disabled: page >= lastPage()}">
+            <a class="page-link" href="#" @click.prevent="goToPage(page + 1)"
+               aria-label="Next">&raquo;</a>
+          </li>
+        </ul>
+      </div>
     </div>
-    <div class="table-responsive">
-      <table class="table table-vcenter table-hover card-table">
-        <thead>
-          <tr>
-            <th>ID</th><th>k</th><th>Try</th><th>Search params</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template x-for="g in generators" :key="g.id">
+    <!-- WELL: per-slot columnar layout (m-offsets + T0..T7 as columns). -->
+    <template x-if="isWellRun()">
+      <div class="table-responsive">
+        <table class="table table-sm table-vcenter table-hover card-table mono small">
+          <thead>
             <tr>
-              <td><a :href="'/generators/' + g.id" x-text="g.id"></a></td>
-              <td x-text="g.k"></td>
-              <td x-text="g.found_at_try"></td>
-              <td class="mono"
-                  x-text="JSON.stringify(g.search_params)"></td>
+              <th>ID</th><th>k</th>
+              <th>m1</th><th>m2</th><th>m3</th>
+              <template x-for="slot in WELL_SLOTS" :key="slot">
+                <th x-text="slot"></th>
+              </template>
             </tr>
-          </template>
-          <template x-if="generators.length === 0">
-            <tr><td colspan="4" class="text-center text-secondary py-4">
-              No generators found yet.
-            </td></tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            <template x-for="g in generators" :key="g.id">
+              <tr>
+                <td><a :href="'/generators/' + g.id" x-text="g.id"></a></td>
+                <td x-text="g.k"></td>
+                <td x-text="g.search_params.m1"></td>
+                <td x-text="g.search_params.m2"></td>
+                <td x-text="g.search_params.m3"></td>
+                <template x-for="slot in WELL_SLOTS" :key="slot">
+                  <td x-text="formatWellSlot(g.search_params.matrices?.[slot])"></td>
+                </template>
+              </tr>
+            </template>
+            <template x-if="generators.length === 0">
+              <tr><td colspan="13" class="text-center text-secondary py-4">
+                No generators found yet.
+              </td></tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </template>
+
+    <!-- Non-WELL fallback: keep the freeform-dict cell. -->
+    <template x-if="!isWellRun()">
+      <div class="table-responsive">
+        <table class="table table-vcenter table-hover card-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>k</th><th>Search params</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="g in generators" :key="g.id">
+              <tr>
+                <td><a :href="'/generators/' + g.id" x-text="g.id"></a></td>
+                <td x-text="g.k"></td>
+                <td class="mono"
+                    x-text="JSON.stringify(g.search_params)"></td>
+              </tr>
+            </template>
+            <template x-if="generators.length === 0">
+              <tr><td colspan="3" class="text-center text-secondary py-4">
+                No generators found yet.
+              </td></tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </template>
   </div>
 </div>
 
@@ -221,14 +285,23 @@ function primitiveSearchDetail(id) {
     cancelled: "bg-orange-lt", failed: "bg-danger-lt",
   };
 
+  // Generators-per-page on the detail view. The server caps per_page
+  // at 500 — we keep it at 200 so the page stays scannable.
+  const PER_PAGE = 200;
   return {
     run: null,
     progress: null,
     generators: [],
+    totalGenerators: 0,
+    page: 1,
     recentEvents: [],
     history: [],          // sparkline samples (tries_done over time)
     sse: null,
     logCollapsed: false,
+    busyDelete: false,
+    // WELL `matrices` slot order, in paper order. Used as table
+    // column headers for WELL searches.
+    WELL_SLOTS: ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7"],
 
     async init() {
       await this.loadRun();
@@ -326,12 +399,77 @@ function primitiveSearchDetail(id) {
       if (r.ok) this.run = await r.json();
     },
     async loadGenerators() {
+      // Fetch only the current page (200 items). The server sorts
+      // DESC by id, so page 1 is always the most recent hits.
       const r = await fetch(
-        "/api/primitive-searches/" + id + "/generators?per_page=200");
-      if (r.ok) {
-        const data = await r.json();
-        this.generators = data.items;
+        "/api/primitive-searches/" + id + "/generators"
+        + "?per_page=" + PER_PAGE + "&page=" + this.page);
+      if (!r.ok) return;
+      const data = await r.json();
+      this.generators = Array.isArray(data.items) ? data.items : [];
+      this.totalGenerators = Number(data.total) || 0;
+      // If a delete or refresh shrank the result set below the
+      // current page, snap back to the last valid page.
+      const last = this.lastPage();
+      if (this.page > last) {
+        this.page = last;
+        await this.loadGenerators();
       }
+    },
+
+    lastPage() {
+      const t = this.totalGenerators || 0;
+      if (t <= 0) return 1;
+      return Math.ceil(t / PER_PAGE);
+    },
+
+    async goToPage(p) {
+      const next = Math.max(1, Math.min(this.lastPage(), Number(p) || 1));
+      if (next === this.page) return;
+      this.page = next;
+      await this.loadGenerators();
+    },
+
+    paginationLabel() {
+      const t = this.totalGenerators || 0;
+      if (t === 0) return "";
+      const start = (this.page - 1) * PER_PAGE + 1;
+      const end = Math.min(this.page * PER_PAGE, t);
+      return start + "-" + end + " of " + t;
+    },
+
+    isWellRun() {
+      const f = this.run && this.run.family;
+      return f === "WELLGen" || f === "WELLRNG";
+    },
+
+    formatWellSlot(entry) {
+      // Render one matrices slot as compact M-class notation, e.g.
+      //   "M3(t=-25)", "M5(t=-5,b=0xda442d24)", "M0", "M6(q=9,t=14,s=5,a=0xb729fcec)"
+      // Falls back to "—" if the slot is missing.
+      if (!entry || entry.M == null) return "—";
+      const M = Number(entry.M);
+      const argOrder = {
+        0: [], 1: [],
+        2: ["t"], 3: ["t"],
+        4: ["a"],
+        5: ["t", "b"],
+        6: ["q", "t", "s", "a"],
+      }[M] || Object.keys(entry).filter(k => k !== "M");
+      if (argOrder.length === 0) return "M" + M;
+      const parts = argOrder.map(k => {
+        const v = entry[k];
+        if (v == null) return k + "=?";
+        if (k === "a" || k === "b") {
+          // Render uint32 masks in hex; fall through to decimal otherwise.
+          const n = Number(v);
+          if (Number.isFinite(n) && n >= 0) {
+            return k + "=0x" + n.toString(16);
+          }
+        }
+        return k + "=" + v;
+      });
+      return "M" + M + "(" + parts.join(",") + ")";
     },
 
     openSSE() {
@@ -356,7 +494,7 @@ function primitiveSearchDetail(id) {
             current_info: this.progress.current_info,
           });
           if (this.recentEvents.length > 30) this.recentEvents.length = 30;
-          if (this.progress.found_count > this.generators.length) {
+          if (this.progress.found_count > this.totalGenerators) {
             this.loadGenerators();
           }
         } catch (_) {}
@@ -373,6 +511,29 @@ function primitiveSearchDetail(id) {
         "/api/primitive-searches/" + id + "/" + action,
         { method: "POST" });
       if (r.ok) await this.loadRun();
+    },
+
+    async del() {
+      const n = (this.run && this.run.found_count) || 0;
+      const msg = n > 0
+        ? `Delete this search and its ${n} found generator${n === 1 ? "" : "s"}? This cannot be undone.`
+        : "Delete this search? This cannot be undone.";
+      if (!window.confirm(msg)) return;
+      this.busyDelete = true;
+      try {
+        const r = await fetch(
+          "/api/primitive-searches/" + id + "/generators",
+          { method: "DELETE" });
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          alert("Delete failed: " + (body.detail || r.statusText));
+          return;
+        }
+        if (this.sse) this.sse.close();
+        location.href = "/searches";
+      } finally {
+        this.busyDelete = false;
+      }
     },
 
     async duplicate() {

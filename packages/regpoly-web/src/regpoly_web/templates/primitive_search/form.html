@@ -152,6 +152,10 @@
                            @input="onInputChange()"
                            :disabled="isParamDisabled(p)">
                   </template>
+                  <!-- Generic struct_map fallback. WELL `matrices` is
+                       always sampled by the server under the cost cap
+                       (see visibleNonStructural — it never reaches
+                       this template for WELL families). -->
                   <template x-if="p.type === 'struct_map'">
                     <div>
                       <textarea
@@ -163,9 +167,7 @@
                           :disabled="isParamDisabled(p)"
                           :placeholder="structMapPlaceholder(p.name)"></textarea>
                       <small class="form-hint">
-                        Structured map (JSON object). For WELL
-                        <span class="mono">matrices</span>, see
-                        <a href="/docs/generators/WELLGen.md">docs/generators/WELLGen.md</a>.
+                        Structured map (JSON object).
                       </small>
                     </div>
                   </template>
@@ -203,13 +205,15 @@
                        x-model.number="max_seconds" min="1" step="any">
                 <small class="form-hint">Blank = unlimited.</small>
               </div>
-              <template x-if="family === 'WELLGen' || family === 'WELLRNG'">
+              <template x-if="isWellFamily()">
                 <div class="col-md-6">
                   <label class="form-label">Max cost</label>
                   <input type="number" class="form-control mono"
-                         x-model.number="max_cost" min="1" max="64" step="1">
+                         x-model.number="max_cost" min="1" max="64" step="1"
+                         required>
                   <small class="form-hint">
-                    Sum of T0..T7 slot costs. Blank = unlimited; range 1..64.
+                    Required. Sum of T0..T7 slot costs (paper Table I).
+                    Range 1..64; the server samples matrices under this cap.
                   </small>
                 </div>
               </template>
@@ -464,8 +468,28 @@ function primitiveSearchForm() {
                 if (p.structural) return false;
                 if (this.mode === 'exhaustive'
                     && ENUMERATED_RAND_TYPES.has(p.rand_type)) return false;
+                // WELL `matrices` is always sampled by the server
+                // under the cost cap. The form does not let the user
+                // pin it — max_cost is the only WELL search lever.
+                if (p.name === 'matrices' && this.isWellFamily())
+                    return false;
                 return true;
             });
+        },
+
+        // ── WELL helpers ───────────────────────────────────────────
+        isWellFamily() {
+            return this.family === 'WELLGen' || this.family === 'WELLRNG';
+        },
+
+        wellMaxCostIsValid() {
+            // WELL search is max-cost-only: the server samples
+            // `matrices` per iteration under the cap, and the form
+            // does not accept pinned matrices. So max_cost must be
+            // present and positive (1..64).
+            if (this.max_cost == null || this.max_cost === '') return false;
+            const n = Number(this.max_cost);
+            return Number.isFinite(n) && n >= 1 && n <= 64;
         },
 
         isParamDisabled(p) {
@@ -489,6 +513,11 @@ function primitiveSearchForm() {
                 if (!this.estimate) return false;
                 if (this.estimate.huge && !this.confirmHuge) return false;
             }
+            // WELL searches are max-cost-only: matrices is sampled
+            // by the server, so the user MUST set max_cost.
+            if (this.isWellFamily()
+                && this.mode === 'random'
+                && !this.wellMaxCostIsValid()) return false;
             return true;
         },
 
@@ -538,6 +567,12 @@ function primitiveSearchForm() {
                 if (this.mode === 'random' && !p.structural
                     && p.rand_type && p.rand_type !== 'none'
                     && this.paramRandom[p.name]) continue;
+                // WELL `matrices` is never user-pinned in the UI: the
+                // server samples it per iteration under max_cost.
+                // visibleNonStructural() filters it out so it never
+                // reaches `inputs`, but skip defensively in case the
+                // schema or filter changes.
+                if (p.name === 'matrices' && this.isWellFamily()) continue;
 
                 const v = this._readValue(p);
                 if (v === undefined) continue;

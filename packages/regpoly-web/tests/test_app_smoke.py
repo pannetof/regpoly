@@ -81,3 +81,41 @@ def test_tests_index(client) -> None:
     body = r.json()
     names = {t["name"] for t in body}
     assert {"equidistribution", "collision_free", "tuplets"} == names
+
+
+def test_primitive_search_detail_has_delete_button(client) -> None:
+    """The detail page exposes a Delete button that calls the existing
+    DELETE /api/primitive-searches/{id}/generators endpoint (which
+    drops every found generator + the run row, then redirects to
+    /searches). Render-only check; the API endpoint already has its
+    own coverage."""
+    r = client.get("/primitive-search/1")
+    assert r.status_code == 200
+    html = r.text
+    assert "del()" in html
+    assert "busyDelete" in html
+    assert "btn-outline-danger" in html
+
+
+def test_primitive_search_form_well_is_max_cost_only(client) -> None:
+    """For WELL families the form exposes only the `max_cost` lever:
+    the matrices editor is absent (server samples per iteration),
+    paper presets are not advertised, and the max_cost input renders
+    with a `required` attribute."""
+    r = client.get("/primitive-search?family=WELLGen")
+    assert r.status_code == 200
+    html = r.text
+
+    # max_cost is the (required) WELL search lever.
+    assert "max_cost" in html
+    assert "wellMaxCostIsValid" in html
+    assert ">Max cost</label>" in html
+
+    # The old per-slot editor and preset machinery are gone.
+    assert "matricesSlots" not in html
+    assert "applyPreset" not in html
+    assert "materializeMatrices" not in html
+    # Paper preset names must not leak into the rendered form.
+    assert "WELL512a" not in html
+    assert "WELL19937a" not in html
+    assert "WELL44497a" not in html

@@ -1405,13 +1405,28 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
 
     using namespace regpoly_catalog;
 
-    // ParamValue → native Python value (int / str / bool / list[int]).
+    // ParamValue → native Python value (int / str / bool / list[int]
+    // / nested dict-of-dicts for StructMap-shaped fields like WELL
+    // `matrices`). Without the StructMap case, Python sees `matrices:
+    // None` and any downstream Generator.create call rejects the
+    // entry — see docs/generators/WELLGen.md.
     auto pv_to_py = [](const ParamValue& v) -> py::object {
         switch (v.kind) {
             case ParamKind::Int:    return py::int_(v.int_val);
             case ParamKind::String: return py::str(v.string_val);
             case ParamKind::Bool:   return py::bool_(v.bool_val);
             case ParamKind::IntList: return py::cast(v.int_list_val);
+            case ParamKind::StructMap: {
+                py::dict outer;
+                for (const auto& slot : v.struct_map_val) {
+                    py::dict inner;
+                    for (const auto& arg : slot.second) {
+                        inner[py::str(arg.first)] = scalar_to_py(arg.second);
+                    }
+                    outer[py::str(slot.first)] = inner;
+                }
+                return std::move(outer);
+            }
         }
         return py::none();
     };
