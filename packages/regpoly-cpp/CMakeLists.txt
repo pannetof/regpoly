@@ -13,22 +13,20 @@ option(REGPOLY_BUILD_CLI
 
 find_package(pybind11 CONFIG REQUIRED)
 
-# ── yaml-cpp (Phase 3): vendored via FetchContent ─────────────────────
+# ── yaml-cpp (Phase 3 / dockerize-plan 0b): vendored as a git submodule
+# at third_party/yaml-cpp (was FetchContent until commit ${this}). Local
+# path eliminates the build-time GitHub dependency for offline / CI /
+# air-gapped builds.
 # Used by the C++ Catalog and YAML config parsers. Tests are off; we
-# don't need yaml-cpp's own test suite. Built static so it can be
-# linked into regpoly_core without an extra runtime dependency.
-include(FetchContent)
+# don't need yaml-cpp's own test suite. Built static so it can be linked
+# into regpoly_core without an extra runtime dependency.
 set(YAML_CPP_BUILD_TESTS  OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_BUILD_TOOLS  OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
 set(YAML_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_INSTALL OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(
-    yaml-cpp
-    GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-    GIT_TAG        0.8.0
-)
-FetchContent_MakeAvailable(yaml-cpp)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/yaml-cpp
+                 ${CMAKE_BINARY_DIR}/yaml-cpp EXCLUDE_FROM_ALL)
 
 # All C++ source files except factory.cpp (which carries pybind11
 # bindings registration). regpoly_core is the pure-C++ static library
