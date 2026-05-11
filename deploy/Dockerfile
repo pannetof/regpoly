@@ -63,10 +63,12 @@ COPY docs/papers docs/papers
 # 6. Build the workspace. Cache uv's download cache and scikit-build's
 #    intermediate build dir between builds for fast iteration on
 #    BuildKit-enabled hosts.
+#    `--no-editable` installs workspace members fully into .venv so the
+#    runtime image only needs /app/.venv (no source dirs).
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/app/packages/regpoly-cpp/_skbuild \
     CMAKE_ARGS="-DREGPOLY_NATIVE_ARCH=OFF -DREGPOLY_TUNE_ARCH=neoverse-n1" \
-    uv sync --no-dev --frozen --python /usr/bin/python3.11
+    uv sync --no-dev --frozen --no-editable --python /usr/bin/python3.11
 
 # ─── Runtime stage ──────────────────────────────────────────────────
 FROM debian:12-slim AS runtime
@@ -102,14 +104,16 @@ WORKDIR /app
 # land as root:root and the runtime user (10001) can't write any
 # adjacent state. The .venv contents are read by uid 10001; package
 # data + catalog files likewise.
+# With `--no-editable` the workspace members (regpoly_cpp, regpoly,
+# regpoly_web) are fully installed under /app/.venv/lib/.../site-packages,
+# so we no longer COPY the source tree at runtime.
 COPY --from=builder --chown=10001:10001 /app/.venv                       /app/.venv
-COPY --from=builder --chown=10001:10001 /app/packages/regpoly-web/src    /app/packages/regpoly-web/src
 COPY --from=builder --chown=10001:10001 /app/packages/regpoly-web/scripts /app/packages/regpoly-web/scripts
 COPY --from=builder --chown=10001:10001 /app/docs/library                /app/share/regpoly/library
 COPY --from=builder --chown=10001:10001 /app/docs/papers                 /app/share/regpoly/papers
 COPY --from=builder --chown=10001:10001 /app/shared                      /app/share/regpoly/shared
 
-# Strip dev-only shell launcher (compose passes its own command).
+# Strip dev-only shell launchers (compose passes its own command).
 RUN rm -f /app/packages/regpoly-web/scripts/wipe-db.sh \
        && rm -f /app/packages/regpoly-web/scripts/regpoly-web.sh
 
