@@ -275,25 +275,25 @@
         const supports = opts.supports || [];
         return {
             chips: [],
-            density: "compact",
+            density: "comfortable",
             quickFilter: "",
             init() {
                 const params = new URLSearchParams(location.search);
                 this.chips = supports
                     .filter(k => params.get(k))
                     .map(k => ({ key: k, value: params.get(k) }));
-                // Default to compact; only switch to cozy when the URL
-                // or saved preference says so explicitly.
+                // Default is comfortable; switch to compact only when
+                // the URL or saved preference says so explicitly.
                 let stored = null;
                 try { stored = localStorage.getItem("regpoly.density"); }
                 catch (e) {}
                 if (params.has("density")) {
-                    this.density = params.get("density") === "comfortable"
-                        ? "comfortable" : "compact";
-                } else if (stored === "comfortable") {
-                    this.density = "comfortable";
-                } else {
+                    this.density = params.get("density") === "compact"
+                        ? "compact" : "comfortable";
+                } else if (stored === "compact") {
                     this.density = "compact";
+                } else {
+                    this.density = "comfortable";
                 }
                 window.addEventListener("popstate", () => this.init());
                 window.addEventListener(

@@ -5,7 +5,7 @@
    shows the current-page title — repeating it in the trail just
    doubles the same words on every page. #}
 
-{% set _trail = crumbs[:-1] if crumbs else [] %}
+{% set _trail = crumbs[:-1] if crumbs and crumbs|length > 1 else crumbs %}
 {% if _trail %}
 <ol class="breadcrumb breadcrumb-arrows" aria-label="breadcrumbs">
   {% for c in _trail %}

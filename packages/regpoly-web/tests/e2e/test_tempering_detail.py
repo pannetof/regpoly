@@ -49,7 +49,7 @@ def seeded_tempering_run(seeded_db) -> int:
 
 def test_pause_and_resume_buttons_present(page, base_url, seeded_tempering_run) -> None:
     page.goto(f"{base_url}/tempering-search/{seeded_tempering_run}",
-              wait_until="networkidle")
+              wait_until="domcontentloaded")
     # Buttons may be `<button>` or `<a>` with data-action attributes.
     pause = page.locator(
         "[data-action='pause'], button:has-text('Pause')"
@@ -65,10 +65,12 @@ def test_metric_cards_show_combos_rate_best_eta(
     page, base_url, seeded_tempering_run,
 ) -> None:
     page.goto(f"{base_url}/tempering-search/{seeded_tempering_run}",
-              wait_until="networkidle")
+              wait_until="domcontentloaded")
     cards = page.locator(".card-sm, .metric-card")
-    text = " ".join(c.inner_text() for c in cards.element_handles())
-    for label in ("Combos", "Rate", "Best", "ETA"):
+    # CSS text-transform: uppercase is applied to metric labels, so
+    # compare case-insensitively against the rendered text.
+    text = " ".join(c.inner_text() for c in cards.element_handles()).lower()
+    for label in ("combos", "rate", "best", "eta"):
         assert label in text, (
             f"tempering detail missing metric card '{label}'"
         )
@@ -78,7 +80,7 @@ def test_no_pico_vocabulary(page, base_url, seeded_tempering_run) -> None:
     """Pico CSS holdovers (<hgroup>, <article>, .status-pill, table.compact)
     must be gone after the rewrite."""
     page.goto(f"{base_url}/tempering-search/{seeded_tempering_run}",
-              wait_until="networkidle")
+              wait_until="domcontentloaded")
     pico_count = page.evaluate(
         "() => document.querySelectorAll("
         "  'hgroup, article, .status-pill, table.compact'"

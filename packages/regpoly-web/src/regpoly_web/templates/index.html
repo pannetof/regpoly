@@ -81,7 +81,9 @@
                                         data-pin-active
                                         @click="togglePin(row)"
                                         :aria-label="isPinned(row) ? 'unpin' : 'pin'">
-                                    <span x-text="isPinned(row) ? '★' : '☆'"></span>
+                                    <svg width="16" height="16" aria-hidden="true">
+                                        <use :href="isPinned(row) ? '#tabler-star-filled' : '#tabler-star'"/>
+                                    </svg>
                                 </button>
                             </td>
                             <td>

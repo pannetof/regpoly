@@ -45,8 +45,9 @@
     <div class="card-body py-2">
       <div class="row g-2 align-items-end">
         <div class="col-md-4">
-          <label class="form-label form-label-sm mb-1">Family</label>
-          <select class="form-select form-select-sm"
+          <label class="form-label form-label-sm mb-1" for="gens-filter-family">Family</label>
+          <select id="gens-filter-family"
+                  class="form-select form-select-sm"
                   x-model="filters.family"
                   @change="applyFilters()">
             <option value="">All families</option>
@@ -57,16 +58,16 @@
           </select>
         </div>
         <div class="col-md-2">
-          <label class="form-label form-label-sm mb-1">k</label>
-          <input type="number" min="1"
+          <label class="form-label form-label-sm mb-1" for="gens-filter-k">k</label>
+          <input id="gens-filter-k" type="number" min="1"
                  class="form-control form-control-sm"
                  placeholder="any"
                  x-model="filters.k"
                  @change="applyFilters()"/>
         </div>
         <div class="col-md-3">
-          <label class="form-label form-label-sm mb-1">Search id</label>
-          <input type="number" min="1"
+          <label class="form-label form-label-sm mb-1" for="gens-filter-search">Search id</label>
+          <input id="gens-filter-search" type="number" min="1"
                  class="form-control form-control-sm"
                  placeholder="any"
                  x-model="filters.search_run_id"
@@ -125,7 +126,9 @@
                         @click="togglePin(row.id)"
                         :aria-label="isPinned(row.id) ? 'unpin' : 'pin'"
                         :title="isPinned(row.id) ? 'Unpin' : 'Pin to top'">
-                  <span x-text="isPinned(row.id) ? '★' : '☆'"></span>
+                  <svg width="16" height="16" aria-hidden="true">
+                    <use :href="isPinned(row.id) ? '#tabler-star-filled' : '#tabler-star'"/>
+                  </svg>
                 </button>
               </td>
               <template x-for="col in visibleColumns" :key="col.key">

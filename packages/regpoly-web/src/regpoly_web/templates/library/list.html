@@ -8,8 +8,9 @@
 <div x-data="libraryPage()" x-init="init()" data-library-page>
 
   <ul class="nav nav-tabs mb-3" role="tablist" data-library-tabs>
-    <li class="nav-item">
-      <a class="nav-link"
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" role="tab"
+         :aria-selected="tab === 'configurations' ? 'true' : 'false'"
          :class="tab === 'configurations' ? 'active' : ''"
          href="#"
          @click.prevent="setTab('configurations')"
@@ -18,8 +19,9 @@
                              x-text="'(' + gens.length + ')'"></span>
       </a>
     </li>
-    <li class="nav-item">
-      <a class="nav-link"
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" role="tab"
+         :aria-selected="tab === 'papers' ? 'true' : 'false'"
          :class="tab === 'papers' ? 'active' : ''"
          href="#"
          @click.prevent="setTab('papers')"
@@ -41,8 +43,9 @@
       <div class="card-body py-2">
         <div class="row g-2 align-items-end">
           <div class="col-md-4">
-            <label class="form-label form-label-sm mb-1">Family</label>
-            <select class="form-select form-select-sm"
+            <label class="form-label form-label-sm mb-1" for="lib-filter-family">Family</label>
+            <select id="lib-filter-family"
+                    class="form-select form-select-sm"
                     x-model="filters.family"
                     @change="applyFilters()">
               <option value="">All families</option>
@@ -53,16 +56,17 @@
             </select>
           </div>
           <div class="col-md-2">
-            <label class="form-label form-label-sm mb-1">k</label>
-            <input type="number" min="1"
+            <label class="form-label form-label-sm mb-1" for="lib-filter-k">k</label>
+            <input id="lib-filter-k" type="number" min="1"
                    class="form-control form-control-sm"
                    placeholder="any"
                    x-model="filters.k"
                    @change="applyFilters()"/>
           </div>
           <div class="col-md-3">
-            <label class="form-label form-label-sm mb-1">Paper</label>
-            <select class="form-select form-select-sm"
+            <label class="form-label form-label-sm mb-1" for="lib-filter-paper">Paper</label>
+            <select id="lib-filter-paper"
+                    class="form-select form-select-sm"
                     x-model="filters.paper_id"
                     @change="applyFilters()">
               <option value="">All papers</option>

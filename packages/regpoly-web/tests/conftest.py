@@ -209,17 +209,22 @@ def seeded_db(seeded_db_url: str) -> str:
             )
             psr_id = cur.fetchone()[0]
 
+            # A 32-entry gap profile seeded so the /generators/{id}
+            # detail page's equidist_chart has data to render in tests.
+            pis_gaps = [0] * 32
+            pis_gaps[5] = 1
+            pis_gaps[12] = 2
             cur.execute(
                 'INSERT INTO primitive_generator'
                 '(search_run_id, family, l, k, structural_params, '
                 ' search_params, all_params, found_at_try, char_poly, '
-                ' hamming_weight, pis_se, pis_computed_at) '
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
+                ' hamming_weight, pis_se, pis_gaps, pis_computed_at) '
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
                 (psr_id, "MTGen", 19937, 32,
                  json.dumps({"L": 19937}),
                  json.dumps({"a": "0x9908b0df"}),
                  json.dumps({"L": 19937, "a": "0x9908b0df"}),
-                 1, "0xdeadbeef", 135, 0),
+                 1, "0xdeadbeef", 135, 0, json.dumps(pis_gaps)),
             )
 
             cur.execute(
