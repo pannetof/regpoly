@@ -30,10 +30,10 @@ Run with:
 from __future__ import annotations
 
 import json
-import sqlite3
 from pathlib import Path
 
 import httpx
+import psycopg
 import pytest
 
 pytestmark = pytest.mark.e2e
@@ -97,20 +97,24 @@ def test_primitive_search_list_shows_seeded_run(
 
 def _insert_running_tempering_run(seeded_db: str) -> int:
     """Insert a fresh 'running' tempering_search_run AFTER the live
-    server is up — `create_app->init_sync` runs an orphan-reap that
-    would flip any pre-seeded 'running' row to 'cancelled'."""
-    conn = sqlite3.connect(seeded_db)
+    server is up.
+
+    Dev-mode shutdown in app.py reaps pending+running rows to
+    'cancelled' at session teardown, so any pre-seeded 'running' row
+    would be cancelled before tests run. Inserting from within the
+    test sidesteps that by happening AFTER the lifespan opens.
+    """
+    conn = psycopg.connect(seeded_db, autocommit=True)
     try:
         cur = conn.execute(
-            "INSERT INTO tempering_search_run"
-            "(test_type, test_config, Lmax, nb_tries, status, "
+            "INSERT INTO tempering_search_run "
+            "(test_type, test_config, lmax, nb_tries, status, "
             " combos_total, combos_done) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
             ("equidistribution", json.dumps({"type": "equidistribution"}),
              32, 10, "running", 5, 2),
         )
-        conn.commit()
-        return int(cur.lastrowid)
+        return int(cur.fetchone()[0])
     finally:
         conn.close()
 
@@ -128,13 +132,13 @@ def test_tempering_search_cancel_flips_status(
     )
     assert r.status_code in (200, 204), r.text
 
-    conn = sqlite3.connect(seeded_db)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg.connect(seeded_db, autocommit=True)
     try:
-        status = conn.execute(
-            "SELECT status FROM tempering_search_run WHERE id = ?",
+        row = conn.execute(
+            "SELECT status FROM tempering_search_run WHERE id = %s",
             (run_id,),
-        ).fetchone()["status"]
+        ).fetchone()
+        status = row[0]
     finally:
         conn.close()
     assert status in ("cancelled", "cancelling")
@@ -152,13 +156,12 @@ def test_tempering_search_cancel_flips_status(
 def test_published_tested_generator_renders_library_id(
     page, live_server_url: str, seeded_db: str
 ) -> None:
-    conn = sqlite3.connect(seeded_db)
+    conn = psycopg.connect(seeded_db, autocommit=True)
     try:
         conn.execute(
-            "UPDATE tested_generator SET library_id = ? WHERE id = ?",
+            "UPDATE tested_generator SET library_id = %s WHERE id = %s",
             ("e2e-test-mt19937", 4242),
         )
-        conn.commit()
     finally:
         conn.close()
 
@@ -173,13 +176,12 @@ def test_published_tested_generator_renders_library_id(
 def test_unpublished_tested_generator_renders_no_library_id(
     page, live_server_url: str, seeded_db: str
 ) -> None:
-    conn = sqlite3.connect(seeded_db)
+    conn = psycopg.connect(seeded_db, autocommit=True)
     try:
         conn.execute(
-            "UPDATE tested_generator SET library_id = NULL WHERE id = ?",
+            "UPDATE tested_generator SET library_id = NULL WHERE id = %s",
             (4242,),
         )
-        conn.commit()
     finally:
         conn.close()
 
@@ -229,16 +231,15 @@ def test_sse_progress_emits_at_least_one_event(
     one search_progress row to ensure there's something to emit, then
     confirm at least one chunk arrives within a short timeout."""
     run_id = _insert_running_tempering_run(seeded_db)
-    conn = sqlite3.connect(seeded_db)
+    conn = psycopg.connect(seeded_db, autocommit=True)
     try:
         conn.execute(
-            "INSERT INTO search_progress"
+            "INSERT INTO search_progress "
             "(search_type, search_run_id, tries_done, "
             " found_count, current_info, message) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            "VALUES (%s, %s, %s, %s, %s, %s)",
             ("tempering", run_id, 1, 0, "", "e2e test event"),
         )
-        conn.commit()
     finally:
         conn.close()
 

@@ -30,6 +30,10 @@ test = [
     # migration). pgserver vendors the PG binaries so the test suite
     # runs without requiring a system PG install or docker.
     "pgserver>=0.0.20",
+    # Per-test timeout so a wedged subprocess test reports rather than
+    # hangs the entire CI run (caught the ci-slow lane wedging without
+    # this).
+    "pytest-timeout>=2.3",
 ]
 e2e = [
     "playwright>=1.45",
@@ -62,7 +66,7 @@ testpaths = [
     "packages/regpoly/tests",
     "packages/regpoly-web/tests",
 ]
-addopts = "-m 'not slow and not e2e' --import-mode=importlib"
+addopts = "-m 'not slow and not e2e' --import-mode=importlib --timeout=120 --timeout-method=thread"
 
 [tool.importlinter]
 root_packages = ["regpoly_cpp", "regpoly", "regpoly_web"]

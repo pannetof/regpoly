@@ -523,6 +523,18 @@ def _discover_migrations() -> list[tuple[int, Any]]:
     return out
 
 
+def init_db_sync(db_url: str) -> None:
+    """Synchronous variant of :func:`init_db`.
+
+    Used by test fixtures running in a context where
+    :func:`asyncio.run` is not safe (pytest-asyncio has already
+    started a loop). The async wrapper just delegates so the
+    on-disk semantics are identical.
+    """
+    with sync_connect(db_url) as conn:
+        _apply_migrations(conn)
+
+
 async def init_db(db_url: str) -> None:
     """Apply any unapplied migrations to ``db_url``. Idempotent.
 
@@ -530,32 +542,36 @@ async def init_db(db_url: str) -> None:
     ``mNNN_*.py`` module's ``apply(conn)`` in version order; INSERTs
     each on success.
     """
-    # Use a sync connection for migrations — psycopg's autocommit
-    # semantics make DDL + setval simpler than wrestling with the
-    # async pool's transaction boundaries.
-    with sync_connect(db_url) as conn:
-        conn.autocommit = True
-        # Bootstrap: ensure schema_version exists before we read it
-        # (m001 itself creates this table; chicken-and-egg avoided by
-        # tolerating "table missing" on the first read).
-        try:
-            with conn.cursor() as cur:
-                cur.execute("SELECT COALESCE(MAX(version), 0) FROM schema_version")
-                row = cur.fetchone()
-                current = (row.get("coalesce") if row else 0) or 0
-        except psycopg.errors.UndefinedTable:
-            conn.rollback()
-            current = 0
+    # The implementation is sync (psycopg's autocommit semantics make
+    # DDL + setval simpler than wrestling with the async pool's
+    # transaction boundaries); the async wrapper exists for
+    # `regpoly_web.init`'s asyncio.run entry point.
+    init_db_sync(db_url)
 
-        for version, module in _discover_migrations():
-            if version <= current:
-                continue
-            module.apply(conn)
-            with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO schema_version (version) VALUES (%s)",
-                    (version,),
-                )
+
+def _apply_migrations(conn) -> None:
+    conn.autocommit = True
+    # Bootstrap: ensure schema_version exists before we read it
+    # (m001 itself creates this table; chicken-and-egg avoided by
+    # tolerating "table missing" on the first read).
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COALESCE(MAX(version), 0) FROM schema_version")
+            row = cur.fetchone()
+            current = (row.get("coalesce") if row else 0) or 0
+    except psycopg.errors.UndefinedTable:
+        conn.rollback()
+        current = 0
+
+    for version, module in _discover_migrations():
+        if version <= current:
+            continue
+        module.apply(conn)
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO schema_version (version) VALUES (%s)",
+                (version,),
+            )
 
 
 async def reap_orphans(db_url: str, stale_seconds: int = 60) -> int:
@@ -594,6 +610,13 @@ def json_dumps(obj: Any) -> str:
 
 
 def _json_default(o: Any) -> Any:
+    # PG TIMESTAMPTZ comes back as timezone-aware datetime. The SQLite
+    # path used ISO strings, so SSE payloads / JSON columns historically
+    # serialised cleanly. After the PG cutover, isoformat() restores
+    # that shape.
+    import datetime as _dt
+    if isinstance(o, (_dt.datetime, _dt.date, _dt.time)):
+        return o.isoformat()
     if hasattr(o, "__int__"):
         return int(o)
     raise TypeError(f"not JSON-serializable: {type(o).__name__}")

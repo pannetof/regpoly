@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -436,7 +435,7 @@ async def tempering_search_progress_sse(
                     "message": row["message"],
                     "updated_at": row["updated_at"],
                 }
-                yield f"data: {json.dumps(payload)}\n\n"
+                yield f"data: {json_dumps(payload)}\n\n"
 
                 if v2_enabled:
                     # v2 named `progress` channel — adds best_score,
@@ -453,7 +452,7 @@ async def tempering_search_progress_sse(
                     yield (
                         "event: progress\n"
                         "data: "
-                        + json.dumps({
+                        + json_dumps({
                             "current_info": v2_info,
                             "message": row["message"],
                             "updated_at": row["updated_at"],
@@ -472,7 +471,7 @@ async def tempering_search_progress_sse(
                     )
                     r = await cur.fetchone()
             if r:
-                yield ("data: " + json.dumps({
+                yield ("data: " + json_dumps({
                     "status": r["status"],
                     "combos_done": r["combos_done"],
                     "combos_total": r["combos_total"],
@@ -494,7 +493,7 @@ async def tempering_search_progress_sse(
                         best_id_emitted = int(tg["id"])
                     yield (
                         "event: end\ndata: "
-                        + json.dumps({
+                        + json_dumps({
                             "status": r["status"],
                             "best_id": best_id_emitted,
                         })

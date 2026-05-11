@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
@@ -542,7 +541,7 @@ async def primitive_search_progress_sse(
                     "message": row["message"],
                     "updated_at": row["updated_at"],
                 }
-                yield f"data: {json.dumps(payload)}\n\n"
+                yield f"data: {json_dumps(payload)}\n\n"
 
                 if v2_enabled:
                     # v2 named `progress` channel — adds rolling rate +
@@ -556,7 +555,7 @@ async def primitive_search_progress_sse(
                     }
                     yield (
                         "event: progress\n"
-                        f"data: {json.dumps(v2_payload)}\n\n"
+                        f"data: {json_dumps(v2_payload)}\n\n"
                     )
                 last_id = row["id"]
 
@@ -569,7 +568,7 @@ async def primitive_search_progress_sse(
                     )
                     r = await cur.fetchone()
             if r and r["status"] in ("completed", "cancelled", "failed"):
-                yield f"event: end\ndata: {json.dumps({'status': r['status']})}\n\n"
+                yield f"event: end\ndata: {json_dumps({'status': r['status']})}\n\n"
                 break
 
             await asyncio.sleep(poll)

@@ -13,8 +13,8 @@ After P6 the page must:
 from __future__ import annotations
 
 import json
-import sqlite3
 
+import psycopg
 import pytest
 
 pytestmark = pytest.mark.e2e
@@ -24,25 +24,24 @@ pytestmark = pytest.mark.e2e
 def seeded_tempering_run(seeded_db) -> int:
     """Seed a tempering_search_run we can navigate to for the detail
     page. Returns the run id."""
-    conn = sqlite3.connect(seeded_db)
+    conn = psycopg.connect(seeded_db, autocommit=True)
     try:
         cur = conn.execute(
             "INSERT INTO tempering_search_run "
-            "(test_type, test_config, Lmax, nb_tries, status, "
+            "(test_type, test_config, lmax, nb_tries, status, "
             " combos_total, combos_done, best_se, elapsed_seconds) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             ("equidistribution", json.dumps({"L": 32}), 32, 1,
              "running", 50, 12, 7, 30.0),
         )
-        run_id = cur.lastrowid
+        run_id = int(cur.fetchone()[0])
         # one component
         conn.execute(
             "INSERT INTO tempering_search_component "
             "(search_run_id, component_index, tempering_config) "
-            "VALUES (?, 0, ?)",
+            "VALUES (%s, 0, %s)",
             (run_id, json.dumps([])),
         )
-        conn.commit()
         return run_id
     finally:
         conn.close()

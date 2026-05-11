@@ -42,5 +42,12 @@ jobs:
       - name: Run ctest
         run: ctest --test-dir build --output-on-failure
 
-      - name: Run pytest (default + slow + e2e)
-        run: uv run pytest -m "slow or e2e or (not slow and not e2e)"
+      # Two invocations: e2e's session-scoped uvicorn fixture leaves
+      # event-loop / pgserver state that confuses pytest-asyncio's
+      # default-lane coroutine wrapping when both run in one process.
+      # Each invocation gets a fresh interpreter.
+      - name: Run pytest (default + slow)
+        run: uv run pytest -m "slow or (not slow and not e2e)"
+
+      - name: Run pytest (e2e)
+        run: uv run pytest -m e2e

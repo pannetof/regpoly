@@ -24,7 +24,6 @@ for tests that haven't been ported yet.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import threading
 import uuid
@@ -113,13 +112,13 @@ def _drop_db(admin_dsn: str, dbname: str) -> None:
 def tmp_db_url(_pg_uri: str) -> Iterator[str]:
     """A fresh PG database for one test. Created + migrated, dropped
     at teardown."""
-    from regpoly_web.database import init_db
+    from regpoly_web.database import init_db_sync
 
     admin_dsn = _admin_dsn(_pg_uri)
     dbname = f"test_{uuid.uuid4().hex[:12]}"
     _create_db(admin_dsn, dbname)
     url = _make_url(admin_dsn, dbname)
-    asyncio.run(init_db(url))
+    init_db_sync(url)
     try:
         yield url
     finally:
@@ -166,14 +165,14 @@ def seeded_db_url(_pg_uri: str) -> Iterator[str]:
     """One PG database shared across the seeded session. Rows seeded
     by the ``seeded_db`` fixture below.
     """
-    from regpoly_web.database import init_db
+    from regpoly_web.database import init_db_sync
 
     admin_dsn = _admin_dsn(_pg_uri)
     dbname = "test_seeded"
     _drop_db(admin_dsn, dbname)
     _create_db(admin_dsn, dbname)
     url = _make_url(admin_dsn, dbname)
-    asyncio.run(init_db(url))
+    init_db_sync(url)
     try:
         yield url
     finally:
