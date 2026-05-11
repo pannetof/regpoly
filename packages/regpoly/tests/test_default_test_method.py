@@ -14,7 +14,6 @@ verifies that:
 """
 
 import pytest
-
 from regpoly import BitVect, Generator
 from regpoly._regpoly_cpp import CombinedGenerator as _CppCombined
 from regpoly.analyses.equidistribution_test import (
@@ -24,7 +23,6 @@ from regpoly.analyses.equidistribution_test import (
     METHOD_SIMD_NOTPRIMITIVE,
     EquidistributionTest,
 )
-
 
 # ── Binding round-trip ──────────────────────────────────────────────────
 

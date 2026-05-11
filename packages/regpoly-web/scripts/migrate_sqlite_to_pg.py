@@ -377,7 +377,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 3
 
-    print(f"=== sqlite → pg migration ===")
+    print("=== sqlite → pg migration ===")
     print(f"source: {args.db_path}")
     print(f"target: {args.target_url}")
     print(f"mode:   {'dry-run' if args.dry_run else 'live'}")

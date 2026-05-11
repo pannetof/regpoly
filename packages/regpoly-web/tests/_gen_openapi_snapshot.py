@@ -18,7 +18,6 @@ import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-
 from regpoly_web.app import create_app
 from regpoly_web.config import Settings
 

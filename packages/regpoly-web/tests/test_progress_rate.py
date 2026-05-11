@@ -37,7 +37,7 @@ def test_rolling_rate_drops_old_samples() -> None:
 
 
 def test_rolling_rate_keyed_by_run_id_no_cross_contamination() -> None:
-    from regpoly_web.tasks._progress_rate import for_run, drop_run
+    from regpoly_web.tasks._progress_rate import drop_run, for_run
 
     a = for_run(101, window_sec=5.0)
     b = for_run(102, window_sec=5.0)

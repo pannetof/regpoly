@@ -24,7 +24,6 @@ from pathlib import Path
 
 import psycopg
 import pytest
-
 from regpoly_web.database import open_pool
 from regpoly_web.tasks.pool import TaskPool
 

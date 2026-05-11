@@ -16,6 +16,8 @@ from typing import Mapping
 
 from regpoly_cpp._regpoly_cpp import (
     well_random_matrices as _random_matrices,
+)
+from regpoly_cpp._regpoly_cpp import (
     well_total_cost as _total_cost,
 )
 

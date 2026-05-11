@@ -496,6 +496,7 @@ async def primitive_search_progress_sse(
 
     async def event_stream():
         import time as _time
+
         from regpoly_web.tasks._progress_rate import RollingRate
         # Per-stream rolling-rate accumulator (the SSE handler is the
         # only place we have a wall-clock + tries pair we can sample

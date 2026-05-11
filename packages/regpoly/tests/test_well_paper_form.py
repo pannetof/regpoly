@@ -23,10 +23,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from regpoly.core.generator import Generator
 from regpoly_cpp._regpoly_cpp import BitVect
-
 
 FIXTURE = (
     Path(__file__).resolve().parents[2]

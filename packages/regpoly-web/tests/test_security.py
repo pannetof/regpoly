@@ -32,8 +32,9 @@ def test_csv_export_escapes_formula_injection(seeded_client, tmp_path) -> None:
     prefixed with `'` so Excel/LibreOffice don't execute the formula.
     Test by inserting a generator with a malicious-looking param value
     and exporting via /api/v2/generators/export."""
-    import psycopg
     import json
+
+    import psycopg
     db_url = seeded_client.app.state.settings.db_url
     conn = psycopg.connect(db_url)
     try:
@@ -75,8 +76,9 @@ def test_csv_export_escapes_formula_injection(seeded_client, tmp_path) -> None:
 
 def test_csv_export_escapes_plus_minus_at(seeded_client) -> None:
     """The same rule applies to leading `+`, `-`, `@`."""
-    import psycopg
     import json
+
+    import psycopg
     db_url = seeded_client.app.state.settings.db_url
     conn = psycopg.connect(db_url)
     try:

@@ -44,8 +44,8 @@ def test_v2_openapi_matches_committed_snapshot(client) -> None:
     """The committed fixture at tests/fixtures/openapi.v2.json is the
     contract for v2 paths. Drift fails CI; intentional updates require
     `pytest --update-snapshots`."""
-    from pathlib import Path
     import json
+    from pathlib import Path
 
     fixture = Path(__file__).parent / "fixtures" / "openapi.v2.json"
     assert fixture.exists(), (

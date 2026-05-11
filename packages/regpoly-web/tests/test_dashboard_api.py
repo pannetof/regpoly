@@ -79,8 +79,9 @@ def test_summary_active_row_rate_and_eta_are_not_always_none(client) -> None:
     summary endpoint surfaces a non-None `rate` (computed from the
     run's elapsed_seconds + tries_done, or the per-run RollingRate
     snapshot)."""
-    import psycopg
     import json
+
+    import psycopg
     db_path = client.app.state.settings.db_url
     conn = psycopg.connect(db_path, autocommit=False)
     try:
@@ -120,8 +121,9 @@ def test_summary_active_row_rate_and_eta_are_not_always_none(client) -> None:
 def test_summary_sparkline_uses_tries_done_not_found_count(client) -> None:
     """For primitive runs the sparkline metric must be `tries_done` —
     `found_count` is near-zero and useless as a progress indicator."""
-    import psycopg
     import json
+
+    import psycopg
     db_path = client.app.state.settings.db_url
     conn = psycopg.connect(db_path, autocommit=False)
     try:

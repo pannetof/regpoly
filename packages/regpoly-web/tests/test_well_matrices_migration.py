@@ -11,7 +11,6 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-
 from regpoly_web.config import SCHEMA_PATH
 from regpoly_web.migrations.well_matrices import (
     NEW_MARKER,

@@ -30,7 +30,6 @@ from pathlib import Path
 
 import psycopg
 import pytest
-
 from regpoly_web.config import SCHEMA_PATH
 
 

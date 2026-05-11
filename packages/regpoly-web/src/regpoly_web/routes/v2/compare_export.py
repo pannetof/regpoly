@@ -15,7 +15,7 @@ import io
 import json
 
 from fastapi import APIRouter, Query, Request
-from fastapi.responses import PlainTextResponse, JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from regpoly_web.database import json_loads
 

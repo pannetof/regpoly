@@ -29,7 +29,7 @@ from regpoly.analyses.tuplets_results import TupletsResults
 
 
 def save_typed_result(
-    conn: sqlite3.Connection,
+    conn,
     tested_gen_id: int,
     test_config: dict[str, Any],
     result: Any,
@@ -62,7 +62,7 @@ def save_typed_result(
 
 
 def _insert_equid(
-    conn: sqlite3.Connection,
+    conn,
     tested_gen_id: int,
     test_config_json: str,
     result: EquidistributionResults,
@@ -87,7 +87,7 @@ def _insert_equid(
 
 
 def _insert_cf(
-    conn: sqlite3.Connection,
+    conn,
     tested_gen_id: int,
     test_config_json: str,
     result: CollisionFreeResults,
@@ -111,7 +111,7 @@ def _insert_cf(
 
 
 def _insert_tuplets(
-    conn: sqlite3.Connection,
+    conn,
     tested_gen_id: int,
     test_config_json: str,
     result: TupletsResults,
@@ -331,7 +331,7 @@ def read_typed_results_sync(
 
 
 def find_existing_typed_result(
-    conn: sqlite3.Connection,
+    conn,
     tested_gen_id: int,
     test_type: str,
     test_config_json: str,

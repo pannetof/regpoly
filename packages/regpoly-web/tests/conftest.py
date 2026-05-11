@@ -35,7 +35,6 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
-
 # ─── Session-wide pgserver instance ─────────────────────────────────
 
 _pg_lock = threading.Lock()

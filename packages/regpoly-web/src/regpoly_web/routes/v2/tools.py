@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
-from fastapi import APIRouter, HTTPException, Request, UploadFile, File
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
 router = APIRouter()
