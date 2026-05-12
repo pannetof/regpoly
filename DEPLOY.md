@@ -17,6 +17,27 @@ Open `http://localhost:8000` on the host. Done.
 
 To update: `docker compose -f deploy/compose.yml pull && docker compose -f deploy/compose.yml up -d`.
 
+> 🛈 **If `docker compose up` fails with `ghcr.io/pannetof/regpoly:latest: not found`**, GHCR doesn't have a published `:latest` image yet (it only moves on a `v*` git tag push). Either build locally (next section) or pin to a CI-published `:sha-<short>` tag via `REGPOLY_TAG` in `deploy/.env`.
+
+## Building the image locally
+
+When you don't want to wait for CI, or GHCR hasn't been populated yet, build the image on the host:
+
+```sh
+# Make sure the yaml-cpp submodule is present (cold-clone misses it).
+git submodule update --init --recursive
+
+# Cold build is ~5–10 min — the C++ extension's compile is the bottleneck.
+# Subsequent rebuilds are seconds thanks to BuildKit's layer cache.
+docker build -t ghcr.io/pannetof/regpoly:latest -f deploy/Dockerfile .
+
+docker compose -f deploy/compose.yml up -d
+```
+
+The image lives only in your local Docker daemon — `docker compose up` finds it before trying the registry, so the pull-from-GHCR step is skipped entirely. Push it to GHCR (via a `v*` git tag → CI) when you want other hosts to use the same image.
+
+> 🛈 The local build is **single-architecture** (the host's). For multi-arch publication, let `.github/workflows/docker.yml` do it — it uses QEMU to build `linux/amd64` and `linux/arm64` together.
+
 ---
 
 ## What runs
