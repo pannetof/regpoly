@@ -49,13 +49,7 @@ jobs:
       - name: Run pytest (default + slow)
         run: uv run pytest -m "slow or (not slow and not e2e)"
 
-      # Three e2e invocations: shell_smoke parametrizes 11 routes and
-      # cumulatively wedges pytest-playwright's session greenlet in
-      # selector.poll when interleaved with the rest of the suite.
-      # Running it in its own interpreter (and ignoring it from the
-      # other lane) keeps each invocation under the deadlock threshold.
-      - name: Run pytest (e2e, shell_smoke)
-        run: uv run pytest -m e2e packages/regpoly-web/tests/e2e/test_shell_smoke.py
-
-      - name: Run pytest (e2e, rest)
-        run: uv run pytest -m e2e --ignore=packages/regpoly-web/tests/e2e/test_shell_smoke.py
+      - name: Run pytest (e2e)
+        # --timeout=0 disables per-test pytest-timeout — see the
+        # watchdog rationale in packages/regpoly-web/tests/e2e/conftest.py.
+        run: uv run pytest -m e2e --timeout=0
