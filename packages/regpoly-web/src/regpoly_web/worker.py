@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 from regpoly_web.config import Settings
-from regpoly_web.database import open_pool
+from regpoly_web.database import open_pool, reap_orphans
 from regpoly_web.scheduler import analysis_scheduler, search_scheduler
 from regpoly_web.tasks.pool import TaskPool
 
@@ -87,6 +87,16 @@ async def _amain() -> int:
         min_size=settings.db_pool_min_size,
         max_size=settings.db_pool_max_size,
     )
+
+    # Single-worker invariant: at startup, no other worker exists, so
+    # any 'running' row is owned by a dead predecessor (SIGKILL, OOM,
+    # or grace-period exceeded). The shutdown-time _cancel_running
+    # covers graceful exits; this covers the rest. stale_seconds=0 is
+    # safe by construction.
+    n_reaped = await reap_orphans(settings.db_url, stale_seconds=0)
+    if n_reaped:
+        logger.info("startup reap cancelled %d orphan rows", n_reaped)
+
     search_pool = TaskPool(
         db_url=settings.db_url, max_workers=settings.pool_size,
     )

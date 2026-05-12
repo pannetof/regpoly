@@ -544,8 +544,8 @@ async def init_db(db_url: str) -> None:
     """
     # The implementation is sync (psycopg's autocommit semantics make
     # DDL + setval simpler than wrestling with the async pool's
-    # transaction boundaries); the async wrapper exists for
-    # `regpoly_web.init`'s asyncio.run entry point.
+    # transaction boundaries); the async wrapper exists so the FastAPI
+    # lifespan can `await` it.
     init_db_sync(db_url)
 
 

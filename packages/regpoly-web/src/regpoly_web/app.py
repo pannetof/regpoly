@@ -23,7 +23,7 @@ from regpoly_web.config import (
     find_library_dir,
     find_papers_dir,
 )
-from regpoly_web.database import AsyncPoolDB, open_pool, reap_orphans
+from regpoly_web.database import AsyncPoolDB, init_db, open_pool, reap_orphans
 from regpoly_web.routes import (
     families,
     generators,
@@ -75,18 +75,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     if settings is None:
         settings = Settings.from_env()
 
-    # NOTE: `init_db` is async and runs in the `init` compose container
-    # (or once before web serves traffic). We do not call it from
-    # module-import-time; doing so would break the `app = create_app()`
-    # pattern at line 206 (no event loop yet) AND would mean every
-    # restart of the web container reapplied migrations races with the
-    # init container. The schema authority lives in the init container.
-
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.settings = settings
         app.state.templates = templates
         app.state.library = _library_catalog
+        # Apply any pending schema migrations before serving traffic.
+        # Idempotent: reads MAX(version) from schema_version and only
+        # applies modules with a higher VERSION. /healthz only flips
+        # to 200 after this returns, which is what gates the worker.
+        await init_db(settings.db_url)
         # asyncpg-style pool of psycopg connections — exposed in two
         # shapes:
         #   - app.state.dbpool is the raw psycopg_pool.AsyncConnectionPool

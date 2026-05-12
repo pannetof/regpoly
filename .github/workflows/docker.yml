@@ -1,11 +1,15 @@
 name: docker
 
-# Tag-driven Pattern B release model:
+# Tag-driven release model:
 #   - every push to master   → push :sha-<short> only
 #   - every v* tag           → also push :latest + :vX.Y.Z
 #   - workflow_dispatch      → manual rebuild
 #
-# Repo is public, so ubuntu-24.04-arm runners are free.
+# Multi-arch image (linux/amd64 + linux/arm64) via QEMU on the
+# standard ubuntu-24.04 runner. The arm64 leg runs the C++ compile
+# under emulation; expect ~15 min cold, ~5 min cached. If CI time
+# becomes painful, split into a matrix (amd64 native + arm64 native
+# on ubuntu-24.04-arm) and merge manifests with `buildx imagetools`.
 
 on:
   push:
@@ -15,7 +19,7 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -30,12 +34,9 @@ jobs:
           enable-cache: true
       - run: uv lock --check
 
-      # NOTE: CI grep gates (no app.state.pool refs in routes; sync
-      # C++ probes wrapped in asyncio.to_thread) live in ci.yml so
-      # they run on every PR/push, not just docker workflow triggers.
-      # They will be added once the Phase 2 worker-split cutover lands
-      # — running them today would fail the build because routes still
-      # carry the legacy pool refs.
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm64
 
       - uses: docker/setup-buildx-action@v3
 
@@ -54,28 +55,40 @@ jobs:
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             type=ref,event=tag
 
-      # Build to a local tag first so we can smoke-test before pushing.
-      - name: Build (load locally)
+      # Smoke build: amd64 only, loaded into the local Docker daemon
+      # so we can `docker run` it. buildx can't load multi-arch
+      # locally — we only need one arch to validate the artifact, and
+      # amd64 runs natively on the runner (fast). The multi-arch push
+      # below builds for both platforms from the cache.
+      - name: Build for smoke (amd64, load)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: deploy/Dockerfile
-          platforms: linux/arm64
+          platforms: linux/amd64
           push: false
           load: true
           tags: regpoly:smoke
           cache-from: type=registry,ref=ghcr.io/pannetof/regpoly:cache
           cache-to: type=registry,ref=ghcr.io/pannetof/regpoly:cache,mode=min
 
-      - name: Smoke-test C++ extension import
-        run: docker run --rm regpoly:smoke python -c "import regpoly._regpoly_cpp; print('OK')"
+      - name: Image smoke — imports
+        # Proves the C++ extension loads, the migration entry point
+        # imports, and the FastAPI factory imports against the image's
+        # baked-in Python env. Cheap; runs in ~2s.
+        run: |
+          docker run --rm regpoly:smoke python -c "
+          import regpoly._regpoly_cpp
+          from regpoly_web.database import init_db
+          from regpoly_web.app import create_app
+          print('OK')
+          "
 
-      - name: Smoke-test prod-mode boot against ephemeral PG
-        # Spin up a throw-away postgres on a docker network, run the
-        # init module inside the image to apply migrations, then start
-        # uvicorn with REGPOLY_WEB_DISABLE_INTERNAL_POOL=1 and curl
-        # /healthz. Proves the published artifact actually boots in
-        # the production shape (no in-process worker pool, real PG).
+      - name: Image smoke — prod-shape boot against ephemeral PG
+        # Spin up a throw-away postgres + web on a docker network and
+        # curl /healthz. The web container's FastAPI lifespan applies
+        # migrations on its own — proves the no-init-container path
+        # end-to-end.
         run: |
           set -eux
           docker network create regpoly-smoke
@@ -88,11 +101,6 @@ jobs:
             docker exec pg pg_isready -U regpoly && break
             sleep 1
           done
-          # Apply migrations.
-          docker run --rm --network regpoly-smoke \
-            -e REGPOLY_DB_URL=postgresql://regpoly:devpw@pg:5432/regpoly \
-            regpoly:smoke python -m regpoly_web.init --reap-orphans
-          # Boot uvicorn in the prod shape and curl /healthz.
           docker run -d --rm --name web --network regpoly-smoke \
             -e REGPOLY_DB_URL=postgresql://regpoly:devpw@pg:5432/regpoly \
             -e REGPOLY_WEB_DISABLE_INTERNAL_POOL=1 \
@@ -110,12 +118,12 @@ jobs:
           docker stop pg || true
           docker network rm regpoly-smoke || true
 
-      - name: Push (with computed tags)
+      - name: Build & push (multi-arch)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: deploy/Dockerfile
-          platforms: linux/arm64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

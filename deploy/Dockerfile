@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1.7
 #
-# regpoly_monorepo Docker image (dockerize-plan Phase 3).
+# regpoly_monorepo Docker image.
 #
-# Single image, four roles. The same `ghcr.io/pannetof/regpoly:<tag>`
-# runs as the `init`, `web`, or `worker` service per the compose
-# command (the official `postgres:16-alpine` and `caddy:2-alpine` cover
-# the remaining two services).
+# Single image, two roles. The same `ghcr.io/pannetof/regpoly:<tag>`
+# runs as the `web` or `worker` service per the compose command (the
+# official `postgres:16-alpine` covers the third service).
 #
-# Built ARM64-native on `ubuntu-24.04-arm` GHA runners; tuned for
-# Hetzner CAX21's Ampere Altra (Neoverse-N1) via -mcpu=neoverse-n1.
+# Built portably (no -march/-mcpu) so the same image can be published
+# as linux/amd64 + linux/arm64 and run on whatever Docker host the
+# operator points it at.
 
 # ─── Builder stage ───────────────────────────────────────────────────
 FROM debian:12-slim AS builder
@@ -67,7 +67,7 @@ COPY docs/papers docs/papers
 #    runtime image only needs /app/.venv (no source dirs).
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/app/packages/regpoly-cpp/_skbuild \
-    CMAKE_ARGS="-DREGPOLY_NATIVE_ARCH=OFF -DREGPOLY_TUNE_ARCH=neoverse-n1" \
+    CMAKE_ARGS="-DREGPOLY_NATIVE_ARCH=OFF" \
     uv sync --no-dev --frozen --no-editable --python /usr/bin/python3.11
 
 # ─── Runtime stage ──────────────────────────────────────────────────

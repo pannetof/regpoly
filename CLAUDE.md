@@ -109,9 +109,9 @@ The `tests/_mttoolbox_build.md` doc inside the regpoly package describes how to 
 
 The 9-phase v2.0 redesign is **COMPLETE**. Tagged `v2.0.0` at commit `47c24e6` on 2026-05-04. Plan file: `~/.claude/plans/i-want-to-have-rippling-starlight.md` (preserved for reference). Final architecture: all algorithmic logic in C++; Python is a thin wrapper; the web app uses only Python (no `_cpp` imports); C++-only users have full feature parity via `regpoly-cli`.
 
-## Active plan — Dockerize and deploy to Hetzner CAX21
+## Active plan — Simplify to three containers
 
-Plan file: `~/.claude/plans/i-want-to-dockerize-twinkly-rocket.md`. Goal: deploy the web app at `https://regpoly.frpanneton.ca` on a Hetzner CAX21 (ARM64), 3-container architecture (web + worker + db on PostgreSQL 16), Caddy + Cloudflare DNS-only TLS, GHCR images, NAS-pull SSH backups, UptimeRobot monitoring. Per-phase commit + push to `origin/master` is authorized **for the duration of this plan only** (overrides the general "no auto commit/push" rule).
+Plan file: `~/.claude/plans/the-architecture-of-the-streamed-lollipop.md`. Goal: three-service compose stack (`db`, `web`, `worker`) deployable with `docker compose up -d`. No init container (migrations run in the FastAPI lifespan), no Caddy (no public exposure baked in — external access is handled out of stack by whatever fronts it, e.g. cloudflared on a NAS), no in-stack backups (named `pgdata` volume snapshotted externally), no host scripts. Image is multi-arch (`linux/amd64` + `linux/arm64`) so it runs on any common Docker host. Per-phase commit + push to `origin/master` is authorized **for the duration of this plan only** (overrides the general "no auto commit/push" rule).
 
 ## History (for context — don't act on it)
 
