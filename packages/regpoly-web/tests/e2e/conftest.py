@@ -29,7 +29,6 @@ import httpx
 import pytest
 import uvicorn
 
-
 # ── Upstream bug patch: PipeTransport.request_stop deadlock ──────────
 #
 # playwright._impl._transport.PipeTransport.request_stop() only closes
