@@ -47,6 +47,10 @@ class PrimitiveSearchCreate(BaseModel):
     # Cost cap for WELL families. Sum of T0..T7 slot costs (paper Table I);
     # 8 × M6 = 64 is the ceiling. None or 0 → uncapped.
     max_cost: int | None = None
+    # Equidistribution post-filter: when set, full-period candidates are
+    # kept only if their sum-of-gaps SE ≤ max_se. Upper bound matches
+    # the INTEGER column on primitive_search_run.
+    max_se: int | None = Field(default=None, ge=0, le=2_000_000_000)
     search_mode: Literal["random", "exhaustive"] = "random"
     # Required when an exhaustive run's total exceeds the huge-space
     # threshold (10**12).  Ignored for random runs.
@@ -63,6 +67,8 @@ class PrimitiveSearchRun(BaseModel):
     max_tries: int | None
     max_seconds: float | None
     max_cost: int | None = None
+    max_se: int | None = None
+    rejected_count: int = 0
     status: str
     tries_done: int
     found_count: int

@@ -88,6 +88,19 @@
         </div>
       </div>
     </div>
+    <template x-if="run && run.max_se != null">
+      <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm">
+          <div class="card-body">
+            <div class="font-weight-medium">
+              Rejected (SE &gt; <span x-text="run.max_se"></span>)
+            </div>
+            <div class="text-secondary"
+                 x-text="(run && run.rejected_count) || 0"></div>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 
   {# Live tries-done sparkline — only shown while the run is active.
@@ -141,6 +154,12 @@
             <dd class="col-sm-8" x-text="(run && run.max_tries) || '∞'"></dd>
             <dt class="col-sm-4">Max seconds</dt>
             <dd class="col-sm-8" x-text="(run && run.max_seconds) || '∞'"></dd>
+            <template x-if="run && run.max_se != null">
+              <dt class="col-sm-4">Max SE</dt>
+            </template>
+            <template x-if="run && run.max_se != null">
+              <dd class="col-sm-8" x-text="run.max_se"></dd>
+            </template>
           </dl>
         </div>
       </div>
@@ -485,6 +504,10 @@ function primitiveSearchDetail(id) {
           if (this.run) {
             this.run.tries_done = this.progress.tries_done;
             this.run.found_count = this.progress.found_count;
+            const ci = this.progress.current_info;
+            if (ci && ci.rejected_count != null) {
+              this.run.rejected_count = ci.rejected_count;
+            }
           }
           this.history.push(Number(this.progress.tries_done) || 0);
           if (this.history.length > 200) this.history.shift();

@@ -47,6 +47,7 @@ def run_primitive_search(db_path: str, run_id: int) -> None:
 def _run_random(conn, run_id: int, job: dict) -> None:
     tries = int(job["tries_done"] or 0)
     found = int(job["found_count"] or 0)
+    rejected = int(job.get("rejected_count") or 0)
     resume = tries > 0
 
     family_raw = job["family"]
@@ -57,6 +58,18 @@ def _run_random(conn, run_id: int, job: dict) -> None:
     max_tries = job["max_tries"]
     max_seconds = job["max_seconds"]
     max_cost = job.get("max_cost") or 0
+    max_se = job.get("max_se")
+
+    # SE post-filter: when active, every full-period hit gets a PIS
+    # equidistribution analysis; rows below max_se are kept with
+    # pis_* columns populated. Lazy import so off-filter searches
+    # don't pull in the analyses module.
+    analyze_single_generator = None
+    if max_se is not None:
+        from regpoly.analyses.pis import (
+            analyze_single_generator as _asg,
+        )
+        analyze_single_generator = _asg
 
     try:
         specs = _introspection.get_gen_param_specs(family)
@@ -98,10 +111,12 @@ def _run_random(conn, run_id: int, job: dict) -> None:
             status = _read_status(conn, run_id)
             elapsed = prior_elapsed + (time.time() - t_start)
             if status == "cancelled":
-                _mark_cancelled(conn, run_id, tries, found, elapsed)
+                _mark_cancelled(conn, run_id, tries, found, elapsed,
+                                rejected=rejected)
                 return
             if status == "paused":
-                _update_run_stats(conn, run_id, tries, found, elapsed)
+                _update_run_stats(conn, run_id, tries, found, elapsed,
+                                  rejected=rejected)
                 return
 
         tries += 1
@@ -124,8 +139,24 @@ def _run_random(conn, run_id: int, job: dict) -> None:
         params = gen.params
 
         if gen.is_full_period():
-            found += _insert_found(conn, run_id, family, L, gen,
-                                    params, structural, tries)
+            if max_se is None:
+                found += _insert_found(conn, run_id, family, L, gen,
+                                        params, structural, tries)
+            else:
+                analysis = _analyze_for_filter(
+                    analyze_single_generator, gen,
+                    conn, run_id, tries, found, rejected,
+                )
+                if analysis is None:
+                    rejected += 1
+                elif analysis["se"] > max_se:
+                    rejected += 1
+                else:
+                    found += _insert_found(
+                        conn, run_id, family, L, gen,
+                        params, structural, tries,
+                        analysis=analysis,
+                    )
 
         now = time.time()
         due_by_tries = tries % _PROGRESS_EVERY == 0
@@ -133,22 +164,26 @@ def _run_random(conn, run_id: int, job: dict) -> None:
         due_by_found = found != last_reported_found
         if due_by_tries or due_by_time or due_by_found:
             elapsed = prior_elapsed + (now - t_start)
-            _update_run_stats(conn, run_id, tries, found, elapsed)
+            _update_run_stats(conn, run_id, tries, found, elapsed,
+                              rejected=rejected)
             _write_progress(
                 conn, run_id, tries, found,
                 current_info={
                     "k": _safe_k(gen),
                     "rate": tries / max(elapsed, 1e-9),
+                    "rejected_count": rejected,
                 },
             )
             t_last_progress = now
             last_reported_found = found
 
     elapsed = prior_elapsed + (time.time() - t_start)
-    _mark_completed(conn, run_id, tries, found, elapsed)
+    _mark_completed(conn, run_id, tries, found, elapsed,
+                    rejected=rejected)
     _write_progress(conn, run_id, tries, found,
                     message="completed",
-                    current_info={"rate": tries / max(elapsed, 1e-9)})
+                    current_info={"rate": tries / max(elapsed, 1e-9),
+                                  "rejected_count": rejected})
 
 
 # ── Exhaustive mode ──────────────────────────────────────────────────────
@@ -161,6 +196,15 @@ def _run_exhaustive(conn, run_id: int, job: dict) -> None:
     fixed_user = job["fixed_params"]
     max_tries = job["max_tries"]
     max_seconds = job["max_seconds"]
+    max_se = job.get("max_se")
+
+    # SE post-filter (see `_run_random` for the contract).
+    analyze_single_generator = None
+    if max_se is not None:
+        from regpoly.analyses.pis import (
+            analyze_single_generator as _asg,
+        )
+        analyze_single_generator = _asg
 
     # `poly` is the enumerated output; exclude any lingering value.
     resolved = dict(structural)
@@ -177,6 +221,7 @@ def _run_exhaustive(conn, run_id: int, job: dict) -> None:
 
     tries = int(job["tries_done"] or 0)
     found = int(job["found_count"] or 0)
+    rejected = int(job.get("rejected_count") or 0)
     idx = int(job["enum_index"] or 0)
     resume = idx > 0
 
@@ -205,11 +250,11 @@ def _run_exhaustive(conn, run_id: int, job: dict) -> None:
             elapsed = prior_elapsed + (time.time() - t_start)
             if status == "cancelled":
                 _mark_cancelled(conn, run_id, tries, found, elapsed,
-                                enum_index=idx)
+                                enum_index=idx, rejected=rejected)
                 return
             if status == "paused":
                 _update_run_stats(conn, run_id, tries, found, elapsed,
-                                  enum_index=idx)
+                                  enum_index=idx, rejected=rejected)
                 return
 
         try:
@@ -222,8 +267,24 @@ def _run_exhaustive(conn, run_id: int, job: dict) -> None:
             continue
 
         if gen.is_full_period():
-            found += _insert_found(conn, run_id, family, L, gen,
-                                    params, structural, tries)
+            if max_se is None:
+                found += _insert_found(conn, run_id, family, L, gen,
+                                        params, structural, tries)
+            else:
+                analysis = _analyze_for_filter(
+                    analyze_single_generator, gen,
+                    conn, run_id, tries, found, rejected,
+                )
+                if analysis is None:
+                    rejected += 1
+                elif analysis["se"] > max_se:
+                    rejected += 1
+                else:
+                    found += _insert_found(
+                        conn, run_id, family, L, gen,
+                        params, structural, tries,
+                        analysis=analysis,
+                    )
 
         idx += 1
         tries += 1
@@ -235,54 +296,93 @@ def _run_exhaustive(conn, run_id: int, job: dict) -> None:
         if due_by_tries or due_by_time or due_by_found:
             elapsed = prior_elapsed + (now - t_start)
             _update_run_stats(conn, run_id, tries, found, elapsed,
-                              enum_index=idx)
+                              enum_index=idx, rejected=rejected)
             _write_progress(
                 conn, run_id, tries, found,
                 current_info={
                     "enum_index": idx,
                     "enum_total": str(total),
                     "rate": tries / max(elapsed, 1e-9),
+                    "rejected_count": rejected,
                 },
             )
             t_last_progress = now
             last_reported_found = found
 
     elapsed = prior_elapsed + (time.time() - t_start)
-    _update_run_stats(conn, run_id, tries, found, elapsed, enum_index=idx)
-    _mark_completed(conn, run_id, tries, found, elapsed)
+    _update_run_stats(conn, run_id, tries, found, elapsed,
+                      enum_index=idx, rejected=rejected)
+    _mark_completed(conn, run_id, tries, found, elapsed,
+                    rejected=rejected)
     _write_progress(conn, run_id, tries, found,
                     message="completed",
                     current_info={"enum_index": idx,
                                   "enum_total": str(total),
-                                  "rate": tries / max(elapsed, 1e-9)})
+                                  "rate": tries / max(elapsed, 1e-9),
+                                  "rejected_count": rejected})
 
 
 def _insert_found(conn, run_id: int, family: str, L: int, gen,
-                   params: dict, structural: dict, tries: int) -> int:
+                   params: dict, structural: dict, tries: int,
+                   *, analysis: dict | None = None) -> int:
     """Insert a found full-period generator.  Returns 1 on fresh insert,
-    0 on duplicate."""
+    0 on duplicate.
+
+    When ``analysis`` is provided (the SE post-filter path), the row is
+    inserted with ``char_poly``, ``hamming_weight``, ``pis_gaps``,
+    ``pis_se``, ``pis_elapsed``, and ``pis_computed_at = NOW()`` already
+    populated. The async analysis worker
+    (``regpoly_web.tasks.analysis``) gates on ``pis_computed_at IS NULL``
+    and will skip these rows.
+    """
     search_only = {
         n: _py_int(v) for n, v in params.items()
         if n not in structural
     }
     all_params = {**structural, **search_only}
     try:
-        conn.execute(
-            """
-            INSERT OR IGNORE INTO primitive_generator
-                (search_run_id, family, L, k,
-                 structural_params, search_params,
-                 all_params, found_at_try)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                run_id, family, L, gen.k,
-                json_dumps(structural),
-                json_dumps(search_only),
-                json_dumps(all_params),
-                tries,
-            ),
-        )
+        if analysis is None:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO primitive_generator
+                    (search_run_id, family, L, k,
+                     structural_params, search_params,
+                     all_params, found_at_try)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    run_id, family, L, gen.k,
+                    json_dumps(structural),
+                    json_dumps(search_only),
+                    json_dumps(all_params),
+                    tries,
+                ),
+            )
+        else:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO primitive_generator
+                    (search_run_id, family, L, k,
+                     structural_params, search_params,
+                     all_params, found_at_try,
+                     char_poly, hamming_weight,
+                     pis_gaps, pis_se, pis_elapsed, pis_computed_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, NOW())
+                """,
+                (
+                    run_id, family, L, gen.k,
+                    json_dumps(structural),
+                    json_dumps(search_only),
+                    json_dumps(all_params),
+                    tries,
+                    hex(analysis["char_poly_int"]),
+                    int(analysis["hamming_weight"]),
+                    json_dumps(analysis["gaps"]),
+                    int(analysis["se"]),
+                    float(analysis["elapsed"]),
+                ),
+            )
         inserted = 1 if conn.total_changes else 0
         conn.commit()
         return inserted
@@ -292,6 +392,27 @@ def _insert_found(conn, run_id: int, family: str, L: int, gen,
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
+
+def _analyze_for_filter(analyze_fn, gen, conn, run_id: int,
+                        tries: int, found: int, rejected: int) -> dict | None:
+    """Run ``analyze_single_generator`` for the SE post-filter.
+
+    Returns the analysis dict on success or ``None`` if computation
+    failed. Failure is anomalous (the generator already passed
+    ``is_full_period``), so it is surfaced as a progress message but
+    treated like a reject so the worker keeps searching.
+    """
+    try:
+        return analyze_fn(gen)
+    except Exception as exc:
+        _write_progress(
+            conn, run_id, tries, found,
+            message=f"analysis_failed: {exc.__class__.__name__}",
+            current_info={"rejected_count": rejected + 1,
+                          "analysis_error": str(exc)[:200]},
+        )
+        return None
+
 
 def _fetch_job(conn, run_id: int) -> dict | None:
     row = conn.execute(
@@ -315,6 +436,8 @@ def _fetch_job(conn, run_id: int) -> dict | None:
         "search_mode": _row_get(row, "search_mode", "random"),
         "enum_index":  _row_get(row, "enum_index", 0) or 0,
         "enum_total":  _row_get(row, "enum_total"),
+        "max_se":        _row_get(row, "max_se"),
+        "rejected_count": _row_get(row, "rejected_count", 0) or 0,
     }
 
 
@@ -347,41 +470,42 @@ def _mark_running(conn, run_id: int) -> None:
 
 
 def _mark_cancelled(conn, run_id: int, tries: int, found: int,
-                    elapsed: float, enum_index: int | None = None) -> None:
+                    elapsed: float, enum_index: int | None = None,
+                    rejected: int = 0) -> None:
     if enum_index is None:
         conn.execute(
             """
             UPDATE primitive_search_run
             SET status='cancelled', tries_done=?, found_count=?,
-                elapsed_seconds=?, finished_at=NOW()
+                rejected_count=?, elapsed_seconds=?, finished_at=NOW()
             WHERE id = ?
             """,
-            (tries, found, elapsed, run_id),
+            (tries, found, rejected, elapsed, run_id),
         )
     else:
         conn.execute(
             """
             UPDATE primitive_search_run
             SET status='cancelled', tries_done=?, found_count=?,
-                elapsed_seconds=?, enum_index=?,
+                rejected_count=?, elapsed_seconds=?, enum_index=?,
                 finished_at=NOW()
             WHERE id = ?
             """,
-            (tries, found, elapsed, enum_index, run_id),
+            (tries, found, rejected, elapsed, enum_index, run_id),
         )
     conn.commit()
 
 
 def _mark_completed(conn, run_id: int, tries: int, found: int,
-                    elapsed: float) -> None:
+                    elapsed: float, rejected: int = 0) -> None:
     conn.execute(
         """
         UPDATE primitive_search_run
         SET status='completed', tries_done=?, found_count=?,
-            elapsed_seconds=?, finished_at=NOW()
+            rejected_count=?, elapsed_seconds=?, finished_at=NOW()
         WHERE id = ?
         """,
-        (tries, found, elapsed, run_id),
+        (tries, found, rejected, elapsed, run_id),
     )
     conn.commit()
 
@@ -400,25 +524,27 @@ def _mark_failed(conn, run_id: int, message: str) -> None:
 
 def _update_run_stats(conn, run_id: int, tries: int, found: int,
                       elapsed: float,
-                      enum_index: int | None = None) -> None:
+                      enum_index: int | None = None,
+                      rejected: int = 0) -> None:
     if enum_index is None:
         conn.execute(
             """
             UPDATE primitive_search_run
-            SET tries_done=?, found_count=?, elapsed_seconds=?
+            SET tries_done=?, found_count=?, rejected_count=?,
+                elapsed_seconds=?
             WHERE id = ?
             """,
-            (tries, found, elapsed, run_id),
+            (tries, found, rejected, elapsed, run_id),
         )
     else:
         conn.execute(
             """
             UPDATE primitive_search_run
-            SET tries_done=?, found_count=?, elapsed_seconds=?,
-                enum_index=?
+            SET tries_done=?, found_count=?, rejected_count=?,
+                elapsed_seconds=?, enum_index=?
             WHERE id = ?
             """,
-            (tries, found, elapsed, enum_index, run_id),
+            (tries, found, rejected, elapsed, enum_index, run_id),
         )
     conn.commit()
 

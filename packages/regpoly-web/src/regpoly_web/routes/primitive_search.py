@@ -41,6 +41,8 @@ def _row_to_run(row) -> dict:
         "max_tries": row["max_tries"],
         "max_seconds": row["max_seconds"],
         "max_cost": _row_field(row, "max_cost"),
+        "max_se": _row_field(row, "max_se"),
+        "rejected_count": _row_field(row, "rejected_count", 0) or 0,
         "status": row["status"],
         "tries_done": row["tries_done"],
         "found_count": row["found_count"],
@@ -219,15 +221,15 @@ async def create_primitive_search(
         """
         INSERT INTO primitive_search_run
             (family, L, k, structural_params, fixed_params,
-             max_tries, max_seconds, max_cost, status,
+             max_tries, max_seconds, max_cost, max_se, status,
              search_mode, enum_index, enum_total, enum_axes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?)
         """,
         (
             family, effective_L, k,
             json_dumps(body.structural_params),
             json_dumps(body.fixed_params),
-            body.max_tries, body.max_seconds, body.max_cost,
+            body.max_tries, body.max_seconds, body.max_cost, body.max_se,
             body.search_mode, enum_total_str, enum_axes_json,
         ),
     )
@@ -383,7 +385,8 @@ async def restart_primitive_search(request: Request, run_id: int) -> dict:
     dbpool = request.app.state.dbpool
     async with db.execute(
         "SELECT family, L, k, structural_params, fixed_params, "
-        "max_tries, max_seconds, max_cost, search_mode, enum_total, enum_axes "
+        "max_tries, max_seconds, max_cost, max_se, search_mode, "
+        "enum_total, enum_axes "
         "FROM primitive_search_run WHERE id = ?",
         (run_id,),
     ) as cur:
@@ -394,14 +397,15 @@ async def restart_primitive_search(request: Request, run_id: int) -> dict:
         """
         INSERT INTO primitive_search_run
             (family, L, k, structural_params, fixed_params,
-             max_tries, max_seconds, max_cost, status,
+             max_tries, max_seconds, max_cost, max_se, status,
              search_mode, enum_index, enum_total, enum_axes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?)
         """,
         (row["family"], row["L"], row["k"],
          row["structural_params"], row["fixed_params"],
          row["max_tries"], row["max_seconds"],
          _row_field(row, "max_cost"),
+         _row_field(row, "max_se"),
          _row_field(row, "search_mode", "random"),
          _row_field(row, "enum_total"),
          _row_field(row, "enum_axes")),

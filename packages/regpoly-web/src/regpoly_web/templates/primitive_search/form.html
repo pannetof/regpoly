@@ -221,6 +221,40 @@
           </div>
         </div>
       </template>
+
+      <!-- Equidistribution post-filter (applies in both modes) -->
+      <template x-if="family">
+        <div class="card form-section-card">
+          <div class="card-header">
+            <h3 class="card-title mb-0">Equidistribution post-filter</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     id="seFilterEnabled"
+                     x-model="se_filter_enabled">
+              <label class="form-check-label" for="seFilterEnabled">
+                Filter by sum of gaps (SE)
+              </label>
+            </div>
+            <small class="form-hint">
+              For every full-period candidate, runs the PIS
+              equidistribution analysis. Candidates with SE &gt; Max SE
+              are discarded. SE = 0 means maximally equidistributed.
+              <strong>Slow:</strong> adds a full per-generator analysis
+              to every full-period hit.
+            </small>
+            <template x-if="se_filter_enabled">
+              <div class="mt-2" style="max-width: 14rem;">
+                <label class="form-label">Max SE</label>
+                <input type="number" class="form-control mono"
+                       x-model.number="max_se"
+                       min="0" step="1" required>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- ──────────────── Right rail (4) ──────────────── -->
@@ -336,6 +370,8 @@ function primitiveSearchForm() {
         max_tries: 10000,
         max_seconds: null,
         max_cost: null,
+        se_filter_enabled: false,
+        max_se: 0,
         busy: false,
         error: '',
         // Estimate panel state
@@ -371,6 +407,10 @@ function primitiveSearchForm() {
                 }
                 if (qs.has('max_cost')) {
                     this.max_cost = qs.get('max_cost');
+                }
+                if (qs.has('max_se')) {
+                    this.max_se = Number(qs.get('max_se'));
+                    this.se_filter_enabled = true;
                 }
                 if (qs.has('mode')) {
                     this.mode = qs.get('mode');
@@ -518,6 +558,13 @@ function primitiveSearchForm() {
             if (this.isWellFamily()
                 && this.mode === 'random'
                 && !this.wellMaxCostIsValid()) return false;
+            // SE post-filter: when enabled, require a non-negative
+            // integer threshold.
+            if (this.se_filter_enabled) {
+                if (this.max_se == null || this.max_se === '') return false;
+                const n = Number(this.max_se);
+                if (!Number.isFinite(n) || n < 0) return false;
+            }
             return true;
         },
 
@@ -590,6 +637,9 @@ function primitiveSearchForm() {
                 // server treats 0 as "disabled" identically to null, but
                 // we forward the user's intent verbatim.
                 max_cost:    in_exhaustive ? null : (this.max_cost ?? null),
+                // SE post-filter applies in both random and exhaustive
+                // modes — it's a quality filter, not a budget limit.
+                max_se: this.se_filter_enabled ? Number(this.max_se) : null,
                 search_mode: this.mode,
                 confirm_huge: this.confirmHuge,
             };
