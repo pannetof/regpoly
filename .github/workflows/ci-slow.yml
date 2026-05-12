@@ -50,7 +50,4 @@ jobs:
         run: uv run pytest -m "slow or (not slow and not e2e)"
 
       - name: Run pytest (e2e)
-        # `--timeout=0` disables pytest-timeout for this invocation —
-        # see packages/regpoly-web/tests/e2e/conftest.py for the
-        # session-level no-progress watchdog that replaces it.
-        run: uv run pytest -m e2e --timeout=0
+        run: uv run pytest -m e2e

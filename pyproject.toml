@@ -67,13 +67,6 @@ testpaths = [
     "packages/regpoly-web/tests",
 ]
 addopts = "-m 'not slow and not e2e' --import-mode=importlib --timeout=120 --timeout-method=thread"
-# The pytest-timeout addopts above apply to default-lane and slow-lane
-# invocations. The e2e lane intentionally disables it (see
-# packages/regpoly-web/tests/e2e/conftest.py): pytest-timeout's thread
-# method `os._exit(1)`s when a test thread is stuck inside Playwright's
-# C extension, wiping the real test verdict. The e2e conftest installs
-# a session-level no-progress watchdog instead, which exits with the
-# actual ``testsfailed`` count.
 
 [tool.importlinter]
 root_packages = ["regpoly_cpp", "regpoly", "regpoly_web"]

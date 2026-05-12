@@ -20,7 +20,6 @@ To run:
 
 from __future__ import annotations
 
-import os
 import socket
 import threading
 import time
@@ -30,69 +29,24 @@ import httpx
 import pytest
 import uvicorn
 
-# ── Progress watchdog ─────────────────────────────────────────────────
+
+# ── Function-scoped browser ──────────────────────────────────────────
 #
-# Per-test pytest-timeout fires with os._exit(1) when a test thread is
-# stuck inside a C extension (Playwright's driver greenlet) — that
-# wipes the real test verdict and reports the whole session as failed.
-# Replace it with a session-level watchdog that tracks last-test-end
-# time and force-exits with the *actual* testsfailed count.
+# pytest-playwright's default `browser` fixture is session-scoped. With
+# our background uvicorn + pgserver in the same process, the session
+# greenlet that owns the playwright driver connection deadlocks during
+# teardown (selector.poll on a fd that never becomes ready). Function-
+# scoping shifts browser.close() into between-test cleanup where it
+# completes cleanly, and the session-end pw.stop() runs against an
+# already-empty browser list.
+#
+# Cost: ~500 ms extra per test for the chromium launch.
 
-_LAST_PROGRESS = [time.monotonic()]
-_SESSION_REF: list[pytest.Session] = []
-_NO_PROGRESS_BUDGET_S = 180.0  # generous: any single test taking 3 min is a hang
-
-
-def _watchdog_loop() -> None:
-    import sys
-    while True:
-        time.sleep(15)
-        idle = time.monotonic() - _LAST_PROGRESS[0]
-        if idle > _NO_PROGRESS_BUDGET_S:
-            session = _SESSION_REF[0] if _SESSION_REF else None
-            failed = getattr(session, "testsfailed", 1) if session else 1
-            sys.stderr.write(
-                f"\n[watchdog] no test progress for >{_NO_PROGRESS_BUDGET_S}s "
-                f"(idle={idle:.0f}s); force-exiting with testsfailed={failed}\n"
-            )
-            sys.stderr.flush()
-            os._exit(1 if failed else 0)
-
-
-# Start the watchdog at conftest import time. pytest_sessionstart in a
-# subdir conftest fires *after* the actual session has started (subdir
-# conftests are loaded during collection), so a hook-based start would
-# never run. Module import happens during collection too but at least
-# before any test body runs.
-threading.Thread(target=_watchdog_loop, daemon=True).start()
-
-
-def pytest_sessionstart(session: pytest.Session) -> None:
-    _SESSION_REF.append(session)
-    _LAST_PROGRESS[0] = time.monotonic()
-
-
-def pytest_runtest_logreport(report: pytest.TestReport) -> None:
-    # Bump on every phase boundary so a hanging teardown still trips
-    # the watchdog, not just a hanging test body.
-    _LAST_PROGRESS[0] = time.monotonic()
-
-
-def pytest_collection_finish(session: pytest.Session) -> None:
-    # Capture session reference here too — collection finishes after
-    # all conftests load, so this fires reliably even though
-    # pytest_sessionstart from a subdir conftest does not.
-    _SESSION_REF.append(session)
-    _LAST_PROGRESS[0] = time.monotonic()
-
-
-def pytest_sessionfinish(session, exitstatus):
-    """Fast-path exit when session finalization completes cleanly.
-
-    Pairs with the watchdog above: if every fixture tears down cleanly
-    we land here and skip whatever's left in the interpreter.
-    """
-    os._exit(int(exitstatus))
+@pytest.fixture
+def browser(launch_browser):  # noqa: ANN001 (matches pytest-playwright signature)
+    b = launch_browser()
+    yield b
+    b.close()
 
 
 def _find_free_port() -> int:
@@ -110,7 +64,7 @@ def _find_free_port() -> int:
 
 
 @pytest.fixture(scope="session")
-def live_server_url(seeded_db: str, request: pytest.FixtureRequest) -> Iterator[str]:
+def live_server_url(seeded_db: str) -> Iterator[str]:
     """Run uvicorn in a daemon thread on a free port; yield the base URL."""
     from regpoly_web.app import create_app
     from regpoly_web.config import Settings
@@ -141,25 +95,11 @@ def live_server_url(seeded_db: str, request: pytest.FixtureRequest) -> Iterator[
     try:
         yield base_url
     finally:
-        # `should_exit` waits for connections to close gracefully; with
-        # idle keep-alives or in-flight SSE streams that can stall the
-        # session teardown indefinitely. `force_exit` skips the drain.
+        # `force_exit` skips connection drain so idle SSE keepalives
+        # don't stall teardown indefinitely.
         server.should_exit = True
         server.force_exit = True
         thread.join(timeout=2)
-        # pytest-playwright's session-scoped sync greenlet sometimes
-        # wedges in its own finalizer (selector.poll inside the driver
-        # connection) after every test has already passed. We tear
-        # down before that finalizer runs (LIFO order on session
-        # fixtures), so launch a daemon watchdog: if the process is
-        # still alive 20s later, force exit with the recorded test
-        # status. CI gets the real verdict instead of pytest-timeout
-        # firing on the hung greenlet.
-        def _watchdog() -> None:
-            time.sleep(20)
-            failed = getattr(request.session, "testsfailed", 0) or 0
-            os._exit(1 if failed else 0)
-        threading.Thread(target=_watchdog, daemon=True).start()
 
 
 # pytest-playwright already provides `page`, `browser`, `context`
