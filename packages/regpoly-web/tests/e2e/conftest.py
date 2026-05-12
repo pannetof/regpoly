@@ -30,13 +30,53 @@ import httpx
 import pytest
 import uvicorn
 
+# ── Progress watchdog ─────────────────────────────────────────────────
+#
+# Per-test pytest-timeout fires with os._exit(1) when a test thread is
+# stuck inside a C extension (Playwright's driver greenlet) — that
+# wipes the real test verdict and reports the whole session as failed.
+# Replace it with a session-level watchdog that tracks last-test-end
+# time and force-exits with the *actual* testsfailed count.
+
+_LAST_PROGRESS = [time.monotonic()]
+_WATCHDOG_STARTED = [False]
+_SESSION_REF: list[pytest.Session] = []
+_NO_PROGRESS_BUDGET_S = 180.0  # generous: any single test taking 3 min is a hang
+
+
+def _watchdog_loop() -> None:
+    while True:
+        time.sleep(15)
+        if time.monotonic() - _LAST_PROGRESS[0] > _NO_PROGRESS_BUDGET_S:
+            session = _SESSION_REF[0] if _SESSION_REF else None
+            failed = getattr(session, "testsfailed", 1) if session else 1
+            sys_stderr_write = __import__("sys").stderr.write
+            sys_stderr_write(
+                f"\n[watchdog] no test progress for >{_NO_PROGRESS_BUDGET_S}s; "
+                f"force-exiting with testsfailed={failed}\n"
+            )
+            os._exit(1 if failed else 0)
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    _SESSION_REF.append(session)
+    _LAST_PROGRESS[0] = time.monotonic()
+    if not _WATCHDOG_STARTED[0]:
+        threading.Thread(target=_watchdog_loop, daemon=True).start()
+        _WATCHDOG_STARTED[0] = True
+
+
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    # Bump on every phase boundary so a hanging teardown still trips
+    # the watchdog, not just a hanging test body.
+    _LAST_PROGRESS[0] = time.monotonic()
+
 
 def pytest_sessionfinish(session, exitstatus):
     """Fast-path exit when session finalization completes cleanly.
 
-    Pairs with the watchdog in ``live_server_url``'s teardown: if
-    pytest-playwright's greenlet *did* tear down cleanly we exit here
-    immediately rather than waiting for the watchdog timer.
+    Pairs with the watchdog above: if every fixture tears down cleanly
+    we land here and skip whatever's left in the interpreter.
     """
     os._exit(int(exitstatus))
 
