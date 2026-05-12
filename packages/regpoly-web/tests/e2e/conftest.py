@@ -30,25 +30,6 @@ import pytest
 import uvicorn
 
 
-# ── Function-scoped browser ──────────────────────────────────────────
-#
-# pytest-playwright's default `browser` fixture is session-scoped. With
-# our background uvicorn + pgserver in the same process, the session
-# greenlet that owns the playwright driver connection deadlocks during
-# teardown (selector.poll on a fd that never becomes ready). Function-
-# scoping shifts browser.close() into between-test cleanup where it
-# completes cleanly, and the session-end pw.stop() runs against an
-# already-empty browser list.
-#
-# Cost: ~500 ms extra per test for the chromium launch.
-
-@pytest.fixture
-def browser(launch_browser):  # noqa: ANN001 (matches pytest-playwright signature)
-    b = launch_browser()
-    yield b
-    b.close()
-
-
 def _find_free_port() -> int:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(("127.0.0.1", 0))
