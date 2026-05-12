@@ -20,6 +20,7 @@ To run:
 
 from __future__ import annotations
 
+import os
 import socket
 import threading
 import time
@@ -28,6 +29,16 @@ from collections.abc import Iterator
 import httpx
 import pytest
 import uvicorn
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Fast-path exit when session finalization completes cleanly.
+
+    Pairs with the watchdog in ``live_server_url``'s teardown: if
+    pytest-playwright's greenlet *did* tear down cleanly we exit here
+    immediately rather than waiting for the watchdog timer.
+    """
+    os._exit(int(exitstatus))
 
 
 def _find_free_port() -> int:
@@ -45,7 +56,7 @@ def _find_free_port() -> int:
 
 
 @pytest.fixture(scope="session")
-def live_server_url(seeded_db: str) -> Iterator[str]:
+def live_server_url(seeded_db: str, request: pytest.FixtureRequest) -> Iterator[str]:
     """Run uvicorn in a daemon thread on a free port; yield the base URL."""
     from regpoly_web.app import create_app
     from regpoly_web.config import Settings
@@ -76,8 +87,25 @@ def live_server_url(seeded_db: str) -> Iterator[str]:
     try:
         yield base_url
     finally:
+        # `should_exit` waits for connections to close gracefully; with
+        # idle keep-alives or in-flight SSE streams that can stall the
+        # session teardown indefinitely. `force_exit` skips the drain.
         server.should_exit = True
-        thread.join(timeout=5)
+        server.force_exit = True
+        thread.join(timeout=2)
+        # pytest-playwright's session-scoped sync greenlet sometimes
+        # wedges in its own finalizer (selector.poll inside the driver
+        # connection) after every test has already passed. We tear
+        # down before that finalizer runs (LIFO order on session
+        # fixtures), so launch a daemon watchdog: if the process is
+        # still alive 20s later, force exit with the recorded test
+        # status. CI gets the real verdict instead of pytest-timeout
+        # firing on the hung greenlet.
+        def _watchdog() -> None:
+            time.sleep(20)
+            failed = getattr(request.session, "testsfailed", 0) or 0
+            os._exit(1 if failed else 0)
+        threading.Thread(target=_watchdog, daemon=True).start()
 
 
 # pytest-playwright already provides `page`, `browser`, `context`
