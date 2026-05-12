@@ -39,36 +39,50 @@ import uvicorn
 # time and force-exits with the *actual* testsfailed count.
 
 _LAST_PROGRESS = [time.monotonic()]
-_WATCHDOG_STARTED = [False]
 _SESSION_REF: list[pytest.Session] = []
 _NO_PROGRESS_BUDGET_S = 180.0  # generous: any single test taking 3 min is a hang
 
 
 def _watchdog_loop() -> None:
+    import sys
     while True:
         time.sleep(15)
-        if time.monotonic() - _LAST_PROGRESS[0] > _NO_PROGRESS_BUDGET_S:
+        idle = time.monotonic() - _LAST_PROGRESS[0]
+        if idle > _NO_PROGRESS_BUDGET_S:
             session = _SESSION_REF[0] if _SESSION_REF else None
             failed = getattr(session, "testsfailed", 1) if session else 1
-            sys_stderr_write = __import__("sys").stderr.write
-            sys_stderr_write(
-                f"\n[watchdog] no test progress for >{_NO_PROGRESS_BUDGET_S}s; "
-                f"force-exiting with testsfailed={failed}\n"
+            sys.stderr.write(
+                f"\n[watchdog] no test progress for >{_NO_PROGRESS_BUDGET_S}s "
+                f"(idle={idle:.0f}s); force-exiting with testsfailed={failed}\n"
             )
+            sys.stderr.flush()
             os._exit(1 if failed else 0)
+
+
+# Start the watchdog at conftest import time. pytest_sessionstart in a
+# subdir conftest fires *after* the actual session has started (subdir
+# conftests are loaded during collection), so a hook-based start would
+# never run. Module import happens during collection too but at least
+# before any test body runs.
+threading.Thread(target=_watchdog_loop, daemon=True).start()
 
 
 def pytest_sessionstart(session: pytest.Session) -> None:
     _SESSION_REF.append(session)
     _LAST_PROGRESS[0] = time.monotonic()
-    if not _WATCHDOG_STARTED[0]:
-        threading.Thread(target=_watchdog_loop, daemon=True).start()
-        _WATCHDOG_STARTED[0] = True
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     # Bump on every phase boundary so a hanging teardown still trips
     # the watchdog, not just a hanging test body.
+    _LAST_PROGRESS[0] = time.monotonic()
+
+
+def pytest_collection_finish(session: pytest.Session) -> None:
+    # Capture session reference here too — collection finishes after
+    # all conftests load, so this fires reliably even though
+    # pytest_sessionstart from a subdir conftest does not.
+    _SESSION_REF.append(session)
     _LAST_PROGRESS[0] = time.monotonic()
 
 
