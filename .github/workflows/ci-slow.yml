@@ -50,6 +50,4 @@ jobs:
         run: uv run pytest -m "slow or (not slow and not e2e)"
 
       - name: Run pytest (e2e)
-        # --timeout=0 disables per-test pytest-timeout — see the
-        # watchdog rationale in packages/regpoly-web/tests/e2e/conftest.py.
-        run: uv run pytest -m e2e --timeout=0
+        run: uv run pytest -m e2e
