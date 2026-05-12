@@ -56,7 +56,13 @@ def _install_pipe_transport_kill_patch() -> None:
     import os
     import signal
 
-    from playwright._impl._transport import PipeTransport
+    try:
+        from playwright._impl._transport import PipeTransport
+    except ImportError:
+        # The non-e2e CI lane syncs only the `test` group and still
+        # discovers this conftest during collection. Skip the patch —
+        # if playwright isn't installed, no e2e test will actually run.
+        return
 
     if getattr(PipeTransport, "_regpoly_kill_patched", False):
         return
