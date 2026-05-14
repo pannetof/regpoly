@@ -43,6 +43,26 @@ def analyze_generator(db_path: str, gen_id: int) -> None:
         k = row["k"]
         all_params = json_loads(row["all_params"]) or {}
 
+        # Poison-pill guard: pre-stamp the row as failed BEFORE running
+        # the (possibly hanging) C++ analysis. On success we overwrite
+        # this with the real results + pis_error=NULL. If the worker is
+        # killed mid-analysis (SIGKILL after a watchdog timeout, OOM,
+        # segfault, ...), the row stays marked so the scheduler's
+        # ``WHERE pis_computed_at IS NULL`` skips it next tick instead
+        # of dispatching it again into the same trap. To retry, clear
+        # pis_computed_at + pis_error manually.
+        conn.execute(
+            """
+            UPDATE primitive_generator
+            SET pis_error = ?, pis_computed_at = NOW()
+            WHERE id = ?
+            """,
+            ("analysis dispatched; worker did not finish "
+             "(crash / watchdog / hang). Clear pis_computed_at to retry.",
+             gen_id),
+        )
+        conn.commit()
+
         try:
             gen = Generator.create(family, L, **all_params)
             res = analyze_single_generator(gen)

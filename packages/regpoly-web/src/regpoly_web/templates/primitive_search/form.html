@@ -77,13 +77,35 @@
           </div>
           <div class="card-body">
             <div class="row g-3">
-              <template x-for="p in params.filter(p => p.structural)" :key="p.name">
+              <template x-for="p in params.filter(p => p.structural &&
+                                                       !isParamHidden(p))"
+                        :key="p.name">
                 <div class="col-md-6">
                   <label class="form-label d-flex align-items-center gap-2">
                     <span class="mono" x-text="p.name"></span>
                     <span class="badge bg-secondary-lt" x-text="p.type"></span>
                   </label>
-                  <template x-if="p.type === 'bool'">
+                  <template x-if="p.name === 'nb_terms'">
+                    <select class="form-select mono"
+                            x-model="inputs[p.name]"
+                            @change="onInputChange()">
+                      <option value="2">2 (no q term: P(z) = z^r + b_{r-t}·z^t + b_r)</option>
+                      <option value="3">3 (full form: P(z) = z^r + b_{r-t}·z^t + b_{r-q}·z^q + b_r)</option>
+                    </select>
+                  </template>
+                  <template x-if="p.name === 'type' && isMarsaXorshiftFamily()">
+                    <select class="form-select mono"
+                            x-model="inputs[p.name]"
+                            @change="onMarsaTypeChange()">
+                      <option value="">Choose a type…</option>
+                      <option value="1">1 — Type I: single word, 3 xorshifts</option>
+                      <option value="2">2 — Type II: two-component (Panneton-L'Ecuyer Table III)</option>
+                      <option value="3">3 — Marsaglia legacy multi-tap (cross-word read)</option>
+                      <option value="4">4 — Brent four-xorshift two-component</option>
+                      <option value="100">100 — General multi-tap (Panneton-L'Ecuyer Table IV)</option>
+                    </select>
+                  </template>
+                  <template x-if="p.type === 'bool' && p.name !== 'nb_terms'">
                     <label class="form-check form-switch mb-0">
                       <input class="form-check-input" type="checkbox"
                              x-model="inputs[p.name]"
@@ -92,7 +114,22 @@
                             x-text="inputs[p.name] ? 'true' : 'false'"></span>
                     </label>
                   </template>
-                  <template x-if="p.type !== 'bool'">
+                  <template x-if="p.type === 'int_vec' && intVecLength_(p) !== null">
+                    <div class="d-flex gap-1 flex-wrap">
+                      <template x-for="i in intVecLength_(p)" :key="i">
+                        <input type="text"
+                               class="form-control mono"
+                               style="max-width: 5rem;"
+                               :placeholder="(i - 1).toString()"
+                               x-model="inputs[p.name][i - 1]"
+                               @input="onInputChange()">
+                      </template>
+                    </div>
+                  </template>
+                  <template x-if="p.type !== 'bool'
+                                  && p.name !== 'nb_terms'
+                                  && !(p.name === 'type' && isMarsaXorshiftFamily())
+                                  && !(p.type === 'int_vec' && intVecLength_(p) !== null)">
                     <input type="text"
                            class="form-control mono"
                            x-model="inputs[p.name]"
@@ -145,7 +182,21 @@
                             x-text="inputs[p.name] ? 'true' : 'false'"></span>
                     </label>
                   </template>
-                  <template x-if="p.type !== 'bool' && p.type !== 'struct_map'">
+                  <template x-if="p.type === 'int_vec' && intVecLength_(p) !== null">
+                    <div class="d-flex gap-1 flex-wrap">
+                      <template x-for="i in intVecLength_(p)" :key="i">
+                        <input type="text"
+                               class="form-control mono"
+                               style="max-width: 5rem;"
+                               :placeholder="(i - 1).toString()"
+                               x-model="inputs[p.name][i - 1]"
+                               @input="onInputChange()"
+                               :disabled="isParamDisabled(p)">
+                      </template>
+                    </div>
+                  </template>
+                  <template x-if="p.type !== 'bool' && p.type !== 'struct_map'
+                                  && !(p.type === 'int_vec' && intVecLength_(p) !== null)">
                     <input type="text"
                            class="form-control mono"
                            x-model="inputs[p.name]"
@@ -177,6 +228,10 @@
                       <span class="mono" x-text="p.rand_type"></span>(<span
                             class="mono" x-text="p.rand_args"></span>)
                     </small>
+                  </template>
+                  <template x-if="paramDisabledReason(p)">
+                    <small class="form-hint text-secondary"
+                           x-text="paramDisabledReason(p)"></small>
                   </template>
                 </div>
               </template>
@@ -358,6 +413,34 @@ function primitiveSearchForm() {
     const ENUMERATED_RAND_TYPES = new Set([
         'tausworthe_poly', 'poly_exponents', 'bitmask_vec',
     ]);
+    // MarsaXorshift: which params each runtime `type` actually consumes.
+    // Anything in `params` but not in this set for the current `type`
+    // is grayed out and skipped by buildBody().  See
+    // packages/regpoly-cpp/src/generators/marsaxorshift.cpp::next().
+    const MARSA_TYPE_RELEVANT = {
+        '1':   new Set(['type', 'w', 'shifts']),
+        '2':   new Set(['type', 'w', 'r', 'm', 'p', 'q']),
+        '3':   new Set(['type', 'w', 'r', 'tap_positions', 'tap_shifts']),
+        '4':   new Set(['type', 'w', 'r', 'm', 'p', 'q']),
+        '100': new Set(['type', 'w', 'r', 'mi_positions', 'mi_shifts',
+                        'mi_counts', 'nb_taps', 'shifts_per_tap']),
+    };
+    // Subset of MARSA_TYPE_RELEVANT[type] that the enumerator OWNS in
+    // exhaustive mode — these are the per-iteration outputs of
+    // MarsaXorshiftEnumerator::at(idx), not user inputs.  Hidden from
+    // the non-structural card when mode === 'exhaustive' (mirrors how
+    // ENUMERATED_RAND_TYPES handles Tausworthe `poly`).
+    //
+    // Type 100 deliberately excludes `nb_taps` and `shifts_per_tap`:
+    // those are user-pinnable enumerator inputs (they bound the
+    // search space) and must remain editable in exhaustive mode.
+    const MARSA_TYPE_ENUMERATED = {
+        '1':   new Set(['shifts']),
+        '2':   new Set(['p', 'q']),
+        '3':   new Set(['tap_positions', 'tap_shifts']),
+        '4':   new Set(['p', 'q']),
+        '100': new Set(['mi_positions', 'mi_counts', 'mi_shifts']),
+    };
     return {
         families: [],
         family: '',
@@ -436,6 +519,13 @@ function primitiveSearchForm() {
             for (const p of this.params) {
                 if (p.type === 'bool') {
                     inputs[p.name] = p.has_default ? Boolean(p.default) : false;
+                } else if (p.has_default && p.default != null
+                           && p.default !== 0) {
+                    // Pre-fill non-bool structural defaults so the user
+                    // doesn't have to retype obvious values like m=3,
+                    // step=1. Skip 0 defaults that just mean "unset"
+                    // (e.g. has_default=true placeholders).
+                    inputs[p.name] = String(p.default);
                 } else {
                     inputs[p.name] = '';
                 }
@@ -447,6 +537,9 @@ function primitiveSearchForm() {
             }
             this.inputs = inputs;
             this.paramRandom = paramRandom;
+            // Convert int_vec slots that have a known length into
+            // arrays of empty cells so the per-element inputs render.
+            this.syncIntVecLengths_();
         },
 
         onModeChange() {
@@ -460,6 +553,10 @@ function primitiveSearchForm() {
         },
 
         onInputChange() {
+            // nb_taps and shifts_per_tap drive other int_vec lengths
+            // (mi_positions, mi_counts, mi_shifts), so resync after
+            // every edit.  No-op for params without a known length.
+            this.syncIntVecLengths_();
             if (this.mode === 'exhaustive') this.scheduleEstimate();
         },
 
@@ -480,8 +577,16 @@ function primitiveSearchForm() {
                 });
                 const data = await res.json();
                 if (!res.ok) {
-                    const d = data.detail || data;
-                    this.estimateError = (d && d.message) || 'Not enumerable.';
+                    // FastAPI renders HTTPException(detail=...) as
+                    // {detail: ...}; detail may be a dict (preferred,
+                    // with `message` and `code`) or a bare string.
+                    // Surface whichever is present so users see the
+                    // real cause rather than a meaningless fallback.
+                    const d = data.detail ?? data;
+                    let msg;
+                    if (typeof d === 'string') msg = d;
+                    else if (d && typeof d === 'object') msg = d.message;
+                    this.estimateError = msg || 'Not enumerable.';
                     this.estimate = null;
                     return;
                 }
@@ -508,10 +613,20 @@ function primitiveSearchForm() {
                 if (p.structural) return false;
                 if (this.mode === 'exhaustive'
                     && ENUMERATED_RAND_TYPES.has(p.rand_type)) return false;
+                // MarsaXorshift: hide params that the selected
+                // `type` doesn't consume (e.g. `shifts` for type 2)
+                // and, in exhaustive mode, also hide enumerator-owned
+                // params (e.g. `tap_positions` for type 3).
+                if (this.isParamHidden(p)) return false;
                 // WELL `matrices` is always sampled by the server
                 // under the cost cap. The form does not let the user
                 // pin it — max_cost is the only WELL search lever.
                 if (p.name === 'matrices' && this.isWellFamily())
+                    return false;
+                // F2w `nocoeff` is derived inside from_params from
+                // {m, t, q} — the user enters the paper notation, not
+                // the raw tap vector.
+                if (p.name === 'nocoeff' && this.isF2wFamily())
                     return false;
                 return true;
             });
@@ -520,6 +635,125 @@ function primitiveSearchForm() {
         // ── WELL helpers ───────────────────────────────────────────
         isWellFamily() {
             return this.family === 'WELLGen' || this.family === 'WELLRNG';
+        },
+
+        // ── MarsaXorshift helpers ──────────────────────────────────
+        isMarsaXorshiftFamily() {
+            return this.family === 'MarsaXorshiftGen';
+        },
+
+        // Triggered when the user picks a `type` from the dropdown.
+        // Type 1 forces r=1 (the recurrence is a single-word xorshift)
+        // — pre-fill so the user doesn't have to and so canSubmit()
+        // doesn't block on a now-hidden field.  Also re-sync the
+        // per-element int_vec arrays since their lengths depend on
+        // the chosen type.
+        onMarsaTypeChange() {
+            if (String(this.inputs.type) === '1') {
+                this.inputs.r = '1';
+            }
+            this.syncIntVecLengths_();
+            this.onInputChange();
+        },
+
+        // True when `p` is irrelevant to the currently-selected
+        // MarsaXorshift type.  Returns false for every other family.
+        marsaParamIrrelevant_(p) {
+            if (!this.isMarsaXorshiftFamily()) return false;
+            if (p.name === 'type') return false;     // dropdown itself
+            if (p.name === 'w')    return false;     // always meaningful
+            const t = String(this.inputs.type || '');
+            const relevant = MARSA_TYPE_RELEVANT[t];
+            // No type chosen yet: gray out everything except w.
+            if (!relevant) return true;
+            return !relevant.has(p.name);
+        },
+
+        // True when `p` is enumerator-owned for the current
+        // MarsaXorshift type AND the user picked exhaustive mode.
+        // Such params are produced by MarsaXorshiftEnumerator::at(idx)
+        // per iteration; the form must not let the user pin them.
+        marsaParamEnumerated_(p) {
+            if (!this.isMarsaXorshiftFamily()) return false;
+            if (this.mode !== 'exhaustive') return false;
+            const t = String(this.inputs.type || '');
+            const enumerated = MARSA_TYPE_ENUMERATED[t];
+            return !!(enumerated && enumerated.has(p.name));
+        },
+
+        // True when `p` should be removed from the rendered form
+        // entirely (not just disabled).  Type-irrelevant and
+        // enumerator-owned MarsaXorshift params fall into this bucket;
+        // non-MarsaXorshift families are unaffected.
+        isParamHidden(p) {
+            if (this.marsaParamIrrelevant_(p)) return true;
+            if (this.marsaParamEnumerated_(p)) return true;
+            return false;
+        },
+
+        // Expected length of an int_vec param, or null when the form
+        // can't compute it ahead of time (in which case we fall back
+        // to the legacy single-text-box editor with JSON parsing).
+        // The lengths are derived from the runtime semantics of each
+        // MarsaXorshift variant — see marsaxorshift.cpp.
+        intVecLength_(p) {
+            if (p.type !== 'int_vec') return null;
+            if (this.isMarsaXorshiftFamily()) {
+                const t = String(this.inputs.type || '');
+                switch (p.name) {
+                    case 'shifts':         return 3;            // type 1
+                    case 'p':
+                    case 'q':              return t === '4' ? 2 : 3;
+                    case 'tap_positions':
+                    case 'tap_shifts':     return 3;            // type 3
+                    case 'mi_positions':
+                    case 'mi_counts':
+                    case 'shifts_per_tap':
+                        return Number(this.inputs.nb_taps) || 3;
+                    case 'mi_shifts': {
+                        // Σ shifts_per_tap[j].  Read whatever the user
+                        // already entered; fall back to nb_taps × 1.
+                        const counts = this.inputs.shifts_per_tap;
+                        if (Array.isArray(counts)) {
+                            const n = counts.reduce(
+                                (a, b) => a + (Number(b) || 0), 0);
+                            if (n > 0) return n;
+                        }
+                        return Number(this.inputs.nb_taps) || 3;
+                    }
+                }
+            }
+            return null;
+        },
+
+        // Ensure every per-element int_vec input is backed by an
+        // array of the right length.  Called after any change that
+        // could affect the length (family, type, nb_taps,
+        // shifts_per_tap).  Existing cells are preserved on grow;
+        // tail cells are dropped on shrink.
+        syncIntVecLengths_() {
+            for (const p of this.params) {
+                const len = this.intVecLength_(p);
+                if (len === null) continue;
+                const cur = this.inputs[p.name];
+                if (!Array.isArray(cur)) {
+                    this.inputs[p.name] = new Array(len).fill('');
+                    continue;
+                }
+                if (cur.length < len) {
+                    while (cur.length < len) cur.push('');
+                } else if (cur.length > len) {
+                    cur.splice(len);
+                }
+            }
+        },
+
+        // ── F2w helpers ────────────────────────────────────────────
+        // F2w paper-notation entry: user fixes {w, r, m} (and optionally
+        // t/q); the server randomizes {t, q, modM, coeff} per iteration.
+        isF2wFamily() {
+            return this.family === 'F2wLFSRGen'
+                || this.family === 'F2wPolyLCGGen';
         },
 
         wellMaxCostIsValid() {
@@ -533,10 +767,30 @@ function primitiveSearchForm() {
         },
 
         isParamDisabled(p) {
+            // MarsaXorshift type-irrelevant / enumerator-owned params
+            // are HIDDEN now (see isParamHidden), not disabled, so
+            // they never reach this function.
             if (p.structural) return false;
+            // F2w: q is meaningless when the polynomial is 2-term.
+            // Grey it out so the user can't enter a stale value, in
+            // both random and exhaustive mode.
+            if (p.name === 'q' && this.isF2wFamily()
+                && this.inputs.nb_terms === '2') return true;
             if (this.mode !== 'random') return false;
             if (!p.rand_type || p.rand_type === 'none') return false;
             return !!this.paramRandom[p.name];
+        },
+
+        // Short explanatory string shown under a disabled field, or
+        // empty when nothing meaningful to say.  Used by the F2w
+        // q-when-2-term case; the random-mode "wants random" disable
+        // already has its own checkbox UI and doesn't need a hint.
+        paramDisabledReason(p) {
+            if (p.name === 'q' && this.isF2wFamily()
+                && this.inputs.nb_terms === '2') {
+                return 'Not used when nb_terms = 2.';
+            }
+            return '';
         },
 
         canSubmit() {
@@ -544,6 +798,13 @@ function primitiveSearchForm() {
             for (const p of this.params) {
                 if (!p.structural) continue;
                 if (p.type === 'bool') continue;
+                // Hidden or disabled structural fields don't reach the
+                // server (buildBody() skips them too).  MarsaXorshift
+                // hides `m` for type-1/3/100 and `r` for type-1; the
+                // form already pre-filled or excluded them, so requiring
+                // a value here would block Launch forever.
+                if (this.isParamHidden(p)) continue;
+                if (this.isParamDisabled(p)) continue;
                 const v = this.inputs[p.name];
                 if (v === '' || v == null) return false;
             }
@@ -601,6 +862,19 @@ function primitiveSearchForm() {
                 if (raw == null || raw === '') return undefined;
                 return Boolean(raw);
             }
+            // Per-element int_vec editor: cells are stored as strings;
+            // empty cells become 0 (which is the runtime "skip this
+            // factor" sentinel for MarsaXorshift type-2 p/q, and a
+            // benign placeholder elsewhere — the server validates).
+            if (Array.isArray(raw)) {
+                return raw.map(cell => {
+                    const t = String(cell ?? '').trim();
+                    if (t === '') return 0;
+                    if (/^-?\d+$/.test(t)) return parseInt(t, 10);
+                    if (/^0x[0-9a-fA-F]+$/.test(t)) return parseInt(t, 16);
+                    return cell;
+                });
+            }
             return this.parseValue(raw);
         },
 
@@ -608,6 +882,19 @@ function primitiveSearchForm() {
             const structural = {};
             const fixed = {};
             for (const p of this.params) {
+                // MarsaXorshift: drop params that the selected `type`
+                // doesn't consume.  Without this skip, a stale value
+                // left over from a different type (e.g. p=[…] from
+                // type 2 when the user switches to type 1) would land
+                // in the payload and either confuse the runtime or
+                // appear in the search results metadata.
+                // Hidden params (MarsaXorshift type-irrelevance and
+                // exhaustive-mode enumerator-owned slots) must never
+                // reach the server: they hold either no value at all
+                // or a stale value left over from a previous `type`.
+                // canSubmit() applies the same skip on the structural
+                // side so Launch isn't blocked on a hidden field.
+                if (this.isParamHidden(p)) continue;
                 if (this.mode === 'exhaustive'
                     && !p.structural
                     && ENUMERATED_RAND_TYPES.has(p.rand_type)) continue;
@@ -620,6 +907,18 @@ function primitiveSearchForm() {
                 // reaches `inputs`, but skip defensively in case the
                 // schema or filter changes.
                 if (p.name === 'matrices' && this.isWellFamily()) continue;
+                // F2w `nocoeff` is server-derived from {nb_terms, t, q}
+                // — do not emit it from the form. Mirrors the
+                // visibleNonStructural() filter.
+                if (p.name === 'nocoeff' && this.isF2wFamily()) continue;
+                // F2w `q` only matters when nb_terms === '3'; drop it
+                // from the payload when nb_terms is 2 to avoid carrying
+                // a stale value from a prior 3-term session into the
+                // search (the C++ side would ignore it, but the search
+                // loop would still evaluate q's `range "1,t-1"` sampler
+                // and could raise on a degenerate range).
+                if (p.name === 'q' && this.isF2wFamily()
+                    && this.inputs.nb_terms === '2') continue;
 
                 const v = this._readValue(p);
                 if (v === undefined) continue;

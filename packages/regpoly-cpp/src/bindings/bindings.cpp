@@ -28,7 +28,9 @@
 #include "legacy_reader.h"
 #include "temper_optimizer.h"
 #include "tempering_optimizer.h"
+#include "random_samplers.h"
 #include "tausworthe.h"
+#include "param_spec.h"
 #include "tuplets_runner.h"
 #include "well.h"
 
@@ -304,7 +306,15 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
         .def("get_output", &Generator::get_output)
         .def("copy", [](const Generator& g) { return g.copy(); })
         .def("state", [](const Generator& g) -> BitVect { return g.state().copy(); })
-        .def("default_test_method", &Generator::default_test_method, py::arg("test_type"));
+        // Releases the GIL: the call can take several seconds for
+        // non-Mersenne K (Pollard's rho on the cofactor of 2^K-1).
+        // Without the release the whole FastAPI event loop stalls
+        // for the duration — the library detail page would render
+        // as "nothing at all" because every other request queues
+        // behind this one.
+        .def("default_test_method", &Generator::default_test_method,
+             py::arg("test_type"),
+             py::call_guard<py::gil_scoped_release>());
 
     // Backwards-compat: legacy French class name still resolves to the same type.
     m.attr("Generateur") = m.attr("Generator");
@@ -877,9 +887,41 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
             r = TauswortheGen::generate_random(
                 rand_type, rand_args, p, L);
         } else {
-            throw std::invalid_argument(
-                "random_param: unsupported rand_type '"
-                + rand_type + "'");
+            // Fall back to the generic sampler (handles bitmask, range,
+            // poly_exponents, bitmask_vec, irreducible_gf2 — anything
+            // listed in random_samplers.cpp's `sample_generic_into`).
+            // The Python `parametric.generate_random` shadow-implements
+            // the older subset for speed and reaches this binding for
+            // anything it doesn't recognise locally.
+            ParamSpec spec;
+            spec.name = "__random_param_tmp";
+            spec.rand_type = rand_type;
+            spec.rand_args = rand_args;
+            if (!regpoly_random::sample_generic_into(spec, p))
+                throw std::invalid_argument(
+                    "random_param: unsupported rand_type '"
+                    + rand_type + "'");
+            // Pull the sampled value back out of the temporary slot.
+            auto iv_it = p.int_vecs().find(spec.name);
+            auto uv_it = p.uint_vecs().find(spec.name);
+            auto i_it = p.ints().find(spec.name);
+            if (iv_it != p.int_vecs().end()) {
+                r.is_vec = true;
+                r.vec_val.assign(iv_it->second.begin(),
+                                 iv_it->second.end());
+            } else if (uv_it != p.uint_vecs().end()) {
+                r.is_vec = true;
+                r.vec_val.reserve(uv_it->second.size());
+                for (uint64_t v : uv_it->second)
+                    r.vec_val.push_back(static_cast<int64_t>(v));
+            } else if (i_it != p.ints().end()) {
+                r.is_vec = false;
+                r.int_val = i_it->second;
+            } else {
+                throw std::runtime_error(
+                    "random_param: sampler returned no value for '"
+                    + rand_type + "'");
+            }
         }
         py::object value = r.is_vec
             ? py::cast(r.vec_val)

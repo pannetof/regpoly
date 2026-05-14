@@ -244,37 +244,32 @@ MeLatResult test_me_notprimitive(
 {
     CombinedView view_proto(gens, trans, kg, L);
 
-    // Stage 1 — recover χ_f.  Strategy: try polychar_comb (= product
-    // of each component's gen.char_poly()) first.  For generators with
-    // analytical char_poly() overrides (MT, MELGGen, TauswortheGen, …) this
-    // gives the EXACT χ_f; select_phi then identifies the largest
-    // Mersenne primitive factor and the fast path triggers.
+    // Stage 1 — recover χ_f via Krylov BM on the combined state.
     //
-    // For generators with no analytical char_poly() (SFMTGen defaults to
-    // BM on bit 0), polychar_comb's result may be missing factors.  In
-    // that case fall back to a state-coordinate Krylov BM via
-    // recover_char_poly(): this captures factors that bit-0 BM misses
-    // (e.g. SFMTGen-607's φ_607 lives in lanes other than u[0] bit 31).
+    // The previous implementation also tried polychar_comb (product
+    // of each gen->char_poly()) as a fast path, then LCM'd with this
+    // BM result. That LCM dance is unsound for combinations whose
+    // components are TauswortheGen: TauswortheGen::char_poly()
+    // returns the *raw recurrence trinomial* (poly of T), but the
+    // combined generator's state actually evolves under T^s (the
+    // Tausworthe takes s internal LFSR steps per output), so
+    // polychar_comb's factors don't match the actual transition
+    // matrices. LCM'ing brought *both* sets of irreducibles into χ;
+    // select_phi could then pick a spurious one, and χ_ψ = χ/φ kept
+    // every component's real min poly — projecting every component
+    // to zero ("every component projects to zero in V (check χ
+    // recovery)") on every realistic combined-Tausworthe input
+    // (LFSR258, LFSR113, …).
     //
-    // The two are then LCM'd so we keep the union of factor information.
-    NTL::GF2X chi;
-    {
-        BitVect chi_bv = polychar_comb(gens);
-        NTL::SetCoeff(chi, kg);
-        for (int j = 0; j < kg; j++)
-            if (chi_bv.get_bit(j)) NTL::SetCoeff(chi, j);
-    }
+    // recover_char_poly observes the actual state evolution at every
+    // coordinate it samples, so its factors are the real per-
+    // component min polys regardless of how the underlying generator
+    // family represents char_poly() internally. SFMTGen-style cases
+    // (bit-0 BM misses factors in other lanes) are handled inside
+    // recover_char_poly itself by iterating through state
+    // coordinates until χ reaches degree kg.
+    NTL::GF2X chi = recover_char_poly(view_proto, kg);
     PhiPick pick = select_phi(chi);
-
-    // If polychar_comb didn't yield a "good" φ (low degree relative to
-    // kg, or no Mersenne primitive certified), try state-coord BM and
-    // LCM.  This catches SFMTGen-style cases where the analytical char
-    // poly path is incomplete.
-    if (pick.p < kg / 2) {
-        NTL::GF2X chi_bm = recover_char_poly(view_proto, kg);
-        chi = gf2x_lcm(chi, chi_bm);
-        pick = select_phi(chi);
-    }
     int p = pick.p;
 
     if (p == kg) {

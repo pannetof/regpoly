@@ -398,11 +398,36 @@ struct PISCache::Impl {
             basis[i] = snap[i].deep_copy();
     }
 
-    // PIS reduction at a single resolution
+    // PIS reduction at a single resolution.
+    //
+    // Safety cap: the inner loop terminates when either the working
+    // vector zeroes out or its pivot leaves [0, bit_len). For a full-
+    // period generator with primitive characteristic polynomial of
+    // degree exactly kg, that happens in O(kg) iterations. But rank-
+    // deficient generators (one of the failure modes the equidist-spec
+    // calls out for non-full-period inputs) keep producing fresh next
+    // states without ever satisfying either exit condition — the loop
+    // runs forever and pins a worker at 100% CPU.
+    //
+    // Cap at a generous multiple of kg + L and raise on overflow.
+    // analyze_generator catches the exception and writes pis_error,
+    // so a poison-pill row marks itself failed instead of blocking the
+    // analysis queue indefinitely.
     int reduce_at(int bit_len) {
         int pivot_index = calc_1pos(basis[bit_len].next);
+        const long max_iters = 16L * (kg + L + 1);
+        long iters = 0;
         while (!basis[bit_len].zero) {
             if (pivot_index == -1 || pivot_index >= bit_len) break;
+            if (++iters > max_iters) {
+                throw std::runtime_error(
+                    "PISCache::reduce_at did not converge after "
+                    + std::to_string(max_iters) + " iterations at "
+                    "bit_len=" + std::to_string(bit_len) + " (kg="
+                    + std::to_string(kg) + ", L=" + std::to_string(L)
+                    + "); generator is likely rank-deficient / "
+                    "non-full-period");
+            }
             if (basis[bit_len].count > basis[pivot_index].count)
                 std::swap(basis[bit_len], basis[pivot_index]);
             basis[bit_len].add(basis[pivot_index]);

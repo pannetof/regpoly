@@ -60,27 +60,47 @@ class Parametric:
         Params with has_default=True are left for C++ to fill.
 
         Returns a complete parameter dict.
+
+        Retries the whole parameter-fill pass when a sampler raises
+        (e.g. F2w's `q` range "1,t-1" landing on an empty range when
+        the just-sampled t==1).  Per-iteration failures of this kind
+        are recoverable — re-rolling all unfixed params yields a
+        different combo.  The retry budget is bounded; we surface the
+        underlying exception once exhausted so genuinely-misconfigured
+        searches still fail fast.
         """
-        full = dict(user_params)
-        for spec in specs:
-            name = spec["name"]
-            if name in full:
-                continue
-            if spec["has_default"]:
-                continue
-            if spec["structural"]:
-                raise ValueError(
-                    f"Structural parameter '{name}' is required "
-                    f"(it cannot be randomized)"
-                )
-            rt = spec["rand_type"]
-            if not rt or rt == "none":
-                raise ValueError(
-                    f"Parameter '{name}' must be provided "
-                    f"(no random generation available)"
-                )
-            full[name] = generate_random(spec, full)
-        return full
+        MAX_TRIES = 64
+        last_exc: Exception | None = None
+        for _ in range(MAX_TRIES):
+            try:
+                full = dict(user_params)
+                for spec in specs:
+                    name = spec["name"]
+                    if name in full:
+                        continue
+                    if spec["has_default"]:
+                        continue
+                    if spec["structural"]:
+                        raise ValueError(
+                            f"Structural parameter '{name}' is required "
+                            f"(it cannot be randomized)"
+                        )
+                    rt = spec["rand_type"]
+                    if not rt or rt == "none":
+                        raise ValueError(
+                            f"Parameter '{name}' must be provided "
+                            f"(no random generation available)"
+                        )
+                    full[name] = generate_random(spec, full)
+                return full
+            except ValueError as exc:
+                # Sampler-driven failures (degenerate range, bad
+                # constraint chain) — retry with a fresh roll.
+                # Structural-required misconfigurations re-raise after
+                # MAX_TRIES.
+                last_exc = exc
+        assert last_exc is not None
+        raise last_exc
 
     # -- Instance properties ------------------------------------------------
 
@@ -171,6 +191,14 @@ def generate_random(spec: dict, params: dict) -> object:
         lo_expr, hi_expr = ra.split(",", 1)
         lo = eval_expr(lo_expr, params)
         hi = eval_expr(hi_expr, params)
+        if hi < lo:
+            # Degenerate range — the caller's outer retry loop
+            # (fill_params) will re-roll the chain that produced this
+            # (e.g. F2w q's "1,t-1" when t==1).
+            raise ValueError(
+                f"range sampler '{ra}' resolved to empty interval "
+                f"[{lo}, {hi}]"
+            )
         return _random.randint(lo, hi)
 
     if rt == "poly_exponents":
@@ -181,7 +209,16 @@ def generate_random(spec: dict, params: dict) -> object:
     if rt == "bitmask_vec":
         bits_param, length_param = ra.split(",", 1)
         bits = eval_expr(bits_param, params)
-        length = len(params[length_param.strip()])
+        len_key = length_param.strip()
+        # Length resolution: prefer a vector param's .size(); fall back
+        # to a scalar expression. Mirrors C++ `sample_generic_into`
+        # (random_samplers.cpp) — paper-notation F2w specs use `m`
+        # (scalar) for `coeff`'s length.
+        len_val = params.get(len_key)
+        if isinstance(len_val, (list, tuple)):
+            length = len(len_val)
+        else:
+            length = eval_expr(len_key, params)
         return [_random.getrandbits(bits) for _ in range(length)]
 
     # Anything else is a family-specific rand_type — the matching

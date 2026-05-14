@@ -3,6 +3,7 @@
 
 #include "random_samplers.h"
 
+#include "primitivity.h"
 #include "tausworthe.h"
 
 #include <algorithm>
@@ -147,6 +148,32 @@ bool sample_generic_into(const ParamSpec& spec, Params& params) {
         return true;
     }
 
+    if (rt == "irreducible_gf2") {
+        // Sample a degree-w polynomial over F_2 by picking the lower w
+        // bits uniformly and asserting `z^w + lower` is irreducible.
+        // For w = 32 the density of irreducibles is ~1/w, so ~32 draws
+        // expected per success.
+        int64_t w_bits = eval_param_expr(ra, params);
+        if (w_bits <= 0 || w_bits > 63)
+            throw std::invalid_argument(
+                "irreducible_gf2 sampler: w must be in [1, 63] (got "
+                + std::to_string(w_bits) + ")");
+        // Bounded retry budget to surface bugs in misuse rather than
+        // hang forever; 64 * w typically suffices by a wide margin.
+        const int max_tries = 64 * static_cast<int>(w_bits);
+        for (int i = 0; i < max_tries; ++i) {
+            uint64_t cand = random_bits(static_cast<int>(w_bits));
+            if (is_irreducible_gf2w_modM(cand, static_cast<int>(w_bits))) {
+                params.set_int(spec.name, static_cast<int64_t>(cand));
+                return true;
+            }
+        }
+        throw std::runtime_error(
+            "irreducible_gf2 sampler: failed to draw an irreducible "
+            "polynomial in " + std::to_string(max_tries)
+            + " tries (w=" + std::to_string(w_bits) + ")");
+    }
+
     if (rt == "bitmask_vec") {
         size_t comma = ra.find(',');
         if (comma == std::string::npos)
@@ -155,19 +182,34 @@ bool sample_generic_into(const ParamSpec& spec, Params& params) {
                 "'bits_param,length_param' (got '" + ra + "')");
         int64_t bits = eval_param_expr(ra.substr(0, comma), params);
         std::string len_param = strip(ra.substr(comma + 1));
-        // Length is the .size() of the existing vector parameter named
-        // `len_param`. Mirrors Python's `len(params[length_param])`.
+        // Length resolution: try as a vector-param name first (size of
+        // the existing int_vec/uint_vec). If that fails, fall back to
+        // a scalar expression (parameter or literal). This lets paper-
+        // notation specs use `coeff` with rand_args="w,m" — where `m`
+        // is the scalar polynomial-term-count (2 or 3).
         size_t length = 0;
         auto it_iv = params.int_vecs().find(len_param);
         auto it_uv = params.uint_vecs().find(len_param);
-        if (it_iv != params.int_vecs().end())
+        if (it_iv != params.int_vecs().end()) {
             length = it_iv->second.size();
-        else if (it_uv != params.uint_vecs().end())
+        } else if (it_uv != params.uint_vecs().end()) {
             length = it_uv->second.size();
-        else
-            throw std::invalid_argument(
-                "bitmask_vec sampler: length-source parameter '"
-                + len_param + "' not found in params");
+        } else {
+            // Fall back to scalar expression resolution.
+            try {
+                int64_t n = eval_param_expr(len_param, params);
+                if (n < 0)
+                    throw std::invalid_argument(
+                        "bitmask_vec sampler: scalar length '"
+                        + len_param + "' resolved to negative value");
+                length = static_cast<size_t>(n);
+            } catch (const std::invalid_argument&) {
+                throw std::invalid_argument(
+                    "bitmask_vec sampler: length-source '"
+                    + len_param
+                    + "' is neither a vector nor a resolvable scalar");
+            }
+        }
 
         std::vector<uint64_t> out;
         out.reserve(length);

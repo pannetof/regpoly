@@ -33,11 +33,12 @@ arithmetic.
 The feedback polynomial (characteristic polynomial) has the form:
 
 ```
-P(z) = z^r + coeff[0]*z^{r - nocoeff[0]} + ... + coeff[t-1]*z^{r - nocoeff[t-1]}
+P(z) = z^r + coeff[0]*z^{nocoeff[0]} + ... + coeff[t-1]*z^{nocoeff[t-1]}
 ```
 
 where each `coeff[j]` is an element of GF(2^w) and the `nocoeff[j]`
-identify which state positions are tapped.
+identify which state positions are tapped (and equivalently which
+polynomial exponents are non-zero in `P(z)`).
 
 The generator has maximal period 2^k - 1 when P(z) is primitive over
 GF(2^w).
@@ -142,3 +143,61 @@ structural_params:
 fixed_params:
   coeff:               # randomized: three 8-bit coefficients
 ```
+
+## Paper-published instances
+
+The 42 paper rows in [Panneton & L'Ecuyer (2004), "Random Number
+Generators Based on Linear Recurrences in F_{2^w}"](../papers/f2w.pdf),
+Tables 1 and 2, are reproduced byte-for-byte in
+[`panneton-lecuyer-2004-f2w.yaml`](../library/panneton-lecuyer-2004-f2w.yaml)
+and surface in the web UI under **Library → Panneton & L'Ecuyer, 2004**.
+Each paper row appears as both an `F2wLFSRGen` and an `F2wPolyLCGGen`
+entry — the paper notes (§1) that the two variants share characteristic
+polynomial and equidistribution when `L = w` and `B = (B̃ 0)` (both
+Table 1 with truncation output and Table 2 with the Matsumoto-Kurita
+mask satisfy this).
+
+Paper-to-catalog parameter mapping:
+
+| Paper symbol | YAML field | Notes |
+|---|---|---|
+| `r` | `r` | order of the recurrence |
+| `t`, `q` | `nocoeff` | `nocoeff = [t, q, 0]` (3-term) or `[t, 0]` (2-term, when `b_{r-q} = 0`) |
+| `b_{r-t}, b_{r-q}, b_r` | `coeff` | parallel to `nocoeff`: `[b_{r-t}, b_{r-q}, b_r]` |
+| `a` (bit-vector for `M(z)`) | `modM` | `modM = a` (the paper's hex bit-vector verbatim, LSB-first within `w` bits — bit `i` = coefficient of `z^i` for `0 ≤ i < w`; the leading `z^w` bit is implicit in the F2w reduction loop, so do **not** OR `(1 << w)` in). |
+| `b, c` (Table 2 only) | `tempering[0].b / .c` | `type: tempMK`, `eta = s1 = 7`, `mu = s2 = 15` |
+
+## Searching new F2w generators
+
+The primitive-search form accepts paper-notation entry for this family:
+fix `w`, `r`, and `nb_terms` (∈ {2, 3} — number of non-leading terms in
+`P(z)`), optionally fix `t` and `q`, and the server samples `t`, `q`,
+`modM`, and `coeff` per iteration. The new `irreducible_gf2` rand-type
+rejection-samples a degree-`w` irreducible polynomial for `modM`; `t` and
+`q` use the existing `range` rand-type with constraints `1 ≤ q < t ≤
+r − 1`. `nocoeff` is server-derived from `{nb_terms, t, q}` and never
+appears in the form. When `nb_terms = 2` the `q` input is disabled in
+the form and dropped from the submitted payload.
+
+```yaml
+# Equivalent search YAML (CLI / notebook use):
+search:
+  family: F2wLFSRGen
+  L: 32
+
+structural_params:
+  w: 32
+  r: 8
+  nb_terms: 3
+
+# Leave t, q, modM, coeff blank to randomize per iteration; pin any
+# of them in fixed_params to constrain the search.
+fixed_params: {}
+
+limit:
+  max_tries: 10000
+```
+
+The catalog path (Phase 1) still accepts explicit `nocoeff` + `coeff`
++ `modM` — `from_params` short-circuits past `nb_terms / t / q` when `nocoeff`
+is supplied, so every existing catalog entry keeps working.

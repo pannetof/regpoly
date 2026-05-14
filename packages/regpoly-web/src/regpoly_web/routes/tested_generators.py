@@ -112,11 +112,14 @@ async def list_tested_generators(
                 where.append("tr.secf <= ?")
                 params.append(max_se)
         if is_me is not None and join_table == "equidistribution_result":
-            # is_me ⇔ verified=1 AND se=0 (mirrors EquidistributionResults.is_me()).
+            # is_me ⇔ verified=TRUE AND se=0 (mirrors EquidistributionResults.is_me()).
+            # `tr.verified` is a PG BOOLEAN column; compare to TRUE/FALSE,
+            # not 0/1 (psycopg sends ints as smallint and PG refuses the
+            # implicit cast).
             if is_me:
-                where.append("tr.verified = 1 AND tr.se = 0")
+                where.append("tr.verified IS TRUE AND tr.se = 0")
             else:
-                where.append("(tr.verified = 0 OR tr.se != 0)")
+                where.append("(tr.verified IS NOT TRUE OR tr.se != 0)")
     if min_k_g is not None:
         where.append("tg.k_g >= ?")
         params.append(min_k_g)

@@ -14,7 +14,9 @@ run row; the worker checks periodically and exits cleanly.
 from __future__ import annotations
 
 import logging
+import time
 from concurrent.futures import Future, ProcessPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from typing import Callable
 
 logger = logging.getLogger(__name__)
@@ -32,6 +34,10 @@ class TaskPool:
         self.db_url = db_url
         self.executor = ProcessPoolExecutor(max_workers=max_workers)
         self._futures: dict[tuple[str, int], Future] = {}
+        # Wall-clock submit time per future so the Workers UI can show
+        # "this analysis has been running for 200 s" — distinguishes
+        # legitimately-slow analyses from genuinely-stuck workers.
+        self._submitted_at: dict[tuple[str, int], float] = {}
 
     def submit(
         self,
@@ -49,13 +55,33 @@ class TaskPool:
         fut = self.executor.submit(func, self.db_url, run_id, *args, **kwargs)
         key = (kind, run_id)
         self._futures[key] = fut
+        self._submitted_at[key] = time.monotonic()
 
         def _cleanup(_f: Future, key=key) -> None:
             self._futures.pop(key, None)
-            if _f.exception() is not None:
-                logger.exception(
-                    "Task %s/%d failed", key[0], key[1], exc_info=_f.exception()
-                )
+            self._submitted_at.pop(key, None)
+            # Future.exception() raises CancelledError on a cancelled
+            # future and InvalidStateError on one that's not done; both
+            # arise during app shutdown (pool gets torn down while tasks
+            # are mid-flight). Guard explicitly so Ctrl-C doesn't spew
+            # a wall of "exception calling callback" tracebacks.
+            if _f.cancelled():
+                return
+            try:
+                exc = _f.exception()
+            except Exception:
+                return
+            if exc is None:
+                return
+            # Standard shutdown signal when the executor is torn down
+            # with queued futures (Ctrl-C, container stop): every
+            # pending task surfaces as BrokenProcessPool. Not a real
+            # failure — skip the noisy traceback.
+            if isinstance(exc, BrokenProcessPool):
+                return
+            logger.exception(
+                "Task %s/%d failed", key[0], key[1], exc_info=exc,
+            )
 
         fut.add_done_callback(_cleanup)
         return fut

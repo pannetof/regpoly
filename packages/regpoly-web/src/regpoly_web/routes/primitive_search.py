@@ -68,18 +68,40 @@ def _resolved_for_enum(body: PrimitiveSearchCreate) -> dict:
     return resolved
 
 
+def _probe_L(body: PrimitiveSearchCreate) -> int:
+    """The 'large probe L' chosen so quicktaus-style `k <= L` constraints
+    always hold during probing."""
+    return body.L if body.L and body.L > 0 else 65536
+
+
+def _probe_k_from_dict(family: str, probe_L: int, params: dict) -> int:
+    """Build a generator from a fully-populated ``params`` dict and
+    return its ``k``.  Surfaces ctor failures as HTTPException(400)
+    with a dict-shaped detail so the frontend's `d.message` fallback
+    finds something to render."""
+    try:
+        probe = Generator.create(family, probe_L, **params)
+        return probe.k
+    except Exception as exc:
+        raise HTTPException(400, detail={
+            "code": "invalid_params",
+            "message": f"Invalid parameters: {exc}",
+        })
+
+
 def _probe_k(body: PrimitiveSearchCreate, fixed: dict) -> int:
     """Instantiate the generator with a large probe L to compute k.
 
     Raises HTTPException(400) on invalid inputs.  The chosen probe L
     is large enough that quicktaus-style k<=L constraints always hold.
+
+    Only safe when ``fixed`` already contains every Params field the
+    runtime ctor requires.  In exhaustive mode some required fields
+    are owned by the enumerator (e.g. type-3 ``tap_positions``) and
+    are absent from ``fixed``; use ``_probe_k_from_dict`` against
+    ``enumerator.at(0)`` instead.
     """
-    probe_L = body.L if body.L and body.L > 0 else 65536
-    try:
-        probe = Generator.create(body.family, probe_L, **fixed)  # ok-sync
-        return probe.k
-    except Exception as exc:
-        raise HTTPException(400, f"Invalid parameters: {exc}")
+    return _probe_k_from_dict(body.family, _probe_L(body), fixed)
 
 
 def _effective_L(body: PrimitiveSearchCreate, k: int) -> int:
@@ -87,8 +109,9 @@ def _effective_L(body: PrimitiveSearchCreate, k: int) -> int:
 
     Tausworthe-family generators always run at L=64 and WELL generators
     always run at L=w (each output word is exactly one state word);
-    all other families use L=k unless the caller supplied a positive
-    explicit L.
+    F2w-family generators cap L at 32 (the paper's L=w=32 convention,
+    matching every Phase-1 catalog entry); all other families use L=k
+    unless the caller supplied a positive explicit L.
     """
     if body.L and body.L > 0:
         return body.L
@@ -97,6 +120,12 @@ def _effective_L(body: PrimitiveSearchCreate, k: int) -> int:
         return 64
     if family == "WELLGen":
         return int(body.structural_params.get("w", 32))
+    if family in ("F2wLFSRGen", "F2wPolyLCGGen"):
+        # Paper convention: L = w = 32 for every published F2w
+        # generator (Panneton & L'Ecuyer 2004 Tables 1 & 2). For
+        # small k (e.g. w=8, r=3 ⇒ k=24) cap at k so the output
+        # bit-vector fits the state.
+        return min(k, 32)
     return k
 
 
@@ -191,19 +220,17 @@ async def create_primitive_search(
 
     # L is not user-facing; it is derived automatically (L=64 for
     # Tausworthe, L=w for WELL, L=k otherwise — see _effective_L).
-    # `_probe_k` calls into C++ (Generator.create); off-load to a thread
-    # so a slow probe doesn't stall the uvicorn event loop.
-    k = await asyncio.to_thread(_probe_k, body, fixed)
-    effective_L = _effective_L(body, k)
-
-    # Exhaustive-mode pre-flight: build the enumerator up front to fail
-    # fast, compute the space size, and store axes metadata on the row.
+    # In exhaustive mode some required Params are owned by the
+    # enumerator (e.g. type-3 `tap_positions`); the user's `fixed`
+    # bag is necessarily incomplete and probing it directly would
+    # trip the ctor invariant.  Build the enumerator first under a
+    # generous probe L, then probe k from at(0) — a guaranteed-valid
+    # Params bag.  C++ work; off-load to a thread.
     enum_total_str: str | None = None
     enum_axes_json: str | None = None
     if body.search_mode == "exhaustive":
-        # build_gen_enumerator is sync C++ work; off-load to a thread.
         enumerator = await asyncio.to_thread(
-            _build_enumerator_or_400, body, effective_L
+            _build_enumerator_or_400, body, _probe_L(body)
         )
         total = enumerator.total
         if total > HUGE_SPACE_THRESHOLD and not body.confirm_huge:
@@ -214,8 +241,16 @@ async def create_primitive_search(
                             f"confirm_huge=true to proceed."),
                 "total": str(total),
             })
+        sample = enumerator.at(0)
+        k = await asyncio.to_thread(
+            _probe_k_from_dict, family, _probe_L(body), sample
+        )
         enum_total_str = str(total)
         enum_axes_json = json_dumps(enumerator.axes)
+    else:
+        k = await asyncio.to_thread(_probe_k, body, fixed)
+
+    effective_L = _effective_L(body, k)
 
     cur = await db.execute(
         """
@@ -251,15 +286,15 @@ async def estimate_primitive_search(body: PrimitiveSearchCreate) -> dict:
     response for random mode (with total=null)."""
     if body.search_mode != "exhaustive":
         return {"search_mode": body.search_mode, "total": None, "axes": []}
-    # Probe for k so the enumerator sees a self-consistent L. C++ work
-    # in the request path; off-load to a thread.
-    fixed = dict(body.structural_params)
-    for key, val in body.fixed_params.items():
-        if val is not None:
-            fixed[key] = val
-    k = await asyncio.to_thread(_probe_k, body, fixed)
+    # Don't probe for k here — the response doesn't include it, and
+    # in exhaustive mode the enumerator owns some Params required by
+    # the runtime ctor (e.g. type-3 `tap_positions`); the user's
+    # bag is necessarily incomplete and probing it would fail.  The
+    # accurate effective_L is computed in create_primitive_search,
+    # not here.  Build the enumerator with a generous probe L so any
+    # quicktaus-style `k <= L` guard inside make_enumerator passes.
     enumerator = await asyncio.to_thread(
-        _build_enumerator_or_400, body, _effective_L(body, k)
+        _build_enumerator_or_400, body, _probe_L(body)
     )
     return {
         "search_mode": "exhaustive",
@@ -449,14 +484,47 @@ async def delete_primitive_search_generators(
     }
 
 
+# Sort-key allow-list for /primitive-searches/{id}/generators.
+# Keys are the values the frontend sends as `sort_by`; values are the
+# matching SQL ORDER BY expressions. JSON-path keys use PG's `->>`
+# operator with an explicit numeric cast so sorts are numeric, not
+# lexicographic (e.g. "10" doesn't sort before "9"). Anything not in
+# this table is rejected at the route boundary — no user input ever
+# reaches the SQL string.
+_GENERATOR_SORT_COLUMNS: dict[str, str] = {
+    "id": "id",
+    "k": "k",
+    "pis_se": "pis_se",
+    # WELL structural taps — exposed as columns in the detail-page
+    # table but stored as JSON inside structural_params.
+    "m1": "(structural_params->>'m1')::int",
+    "m2": "(structural_params->>'m2')::int",
+    "m3": "(structural_params->>'m3')::int",
+}
+
+
 @router.get("/primitive-searches/{run_id}/generators")
 async def primitive_search_generators(
     request: Request, run_id: int,
     page: int = Query(1, ge=1),
     per_page: int = Query(50, ge=1, le=500),
+    sort_by: str = Query("id"),
+    sort_dir: str = Query("desc"),
 ) -> dict:
     from regpoly_web.routes.generators import _row_to_generator
     db = request.app.state.db
+
+    sort_col = _GENERATOR_SORT_COLUMNS.get(sort_by)
+    if sort_col is None:
+        raise HTTPException(
+            400, f"sort_by must be one of "
+                 f"{sorted(_GENERATOR_SORT_COLUMNS)}, got '{sort_by}'")
+    if sort_dir not in ("asc", "desc"):
+        raise HTTPException(
+            400, f"sort_dir must be 'asc' or 'desc', got '{sort_dir}'")
+    # NULLS LAST for both directions: an unfiltered run's pis_se is all
+    # NULL, and we want non-NULL hits to surface before the NULL tail.
+    order_clause = f"{sort_col} {sort_dir.upper()} NULLS LAST, id DESC"
 
     async with db.execute(
         "SELECT COUNT(*) FROM primitive_generator WHERE search_run_id = ?",
@@ -466,8 +534,8 @@ async def primitive_search_generators(
 
     offset = (page - 1) * per_page
     async with db.execute(
-        "SELECT * FROM primitive_generator WHERE search_run_id = ? "
-        "ORDER BY id DESC LIMIT ? OFFSET ?",
+        f"SELECT * FROM primitive_generator WHERE search_run_id = ? "
+        f"ORDER BY {order_clause} LIMIT ? OFFSET ?",
         (run_id, per_page, offset),
     ) as cur:
         rows = await cur.fetchall()

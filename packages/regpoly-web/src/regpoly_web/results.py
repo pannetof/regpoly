@@ -80,7 +80,7 @@ def _insert_equid(
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (tested_gen_id, test_config_json, int(kg), int(L), int(Lmax),
          json.dumps(ecart_arr), int(result.se),
-         1 if getattr(result, "_verified", False) else 0,
+         bool(getattr(result, "_verified", False)),
          elapsed),
     )
     return int(cur.lastrowid)
@@ -104,7 +104,7 @@ def _insert_cf(
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (tested_gen_id, test_config_json, int(kg), int(L),
          json.dumps(ecart_cf_arr), int(result.secf),
-         1 if getattr(result, "_verified", False) else 0,
+         bool(getattr(result, "_verified", False)),
          elapsed),
     )
     return int(cur.lastrowid)

@@ -77,7 +77,33 @@ std::unique_ptr<Generator> F2wLFSRGen::from_params(const Params& params, int L) 
     uint64_t modM = (uint64_t)params.get_int("modM");
     bool normal_basis = params.get_bool("normal_basis", false);
     int step_count = (int)params.get_int("step", 1);
-    auto nocoeff_vals = params.get_int_vec("nocoeff");
+
+    // Mirror F2wPolyLCGGen::from_params: accept either an explicit
+    // nocoeff vector (catalog / direct C++ path) or derive it from
+    // {nb_terms, t, q} (web paper-notation search form path).
+    std::vector<int> nocoeff_vals;
+    if (params.has("nocoeff") && !params.get_int_vec("nocoeff").empty()) {
+        nocoeff_vals = params.get_int_vec("nocoeff");
+    } else {
+        int nb_terms = (int)params.get_int("nb_terms", 3);
+        if (nb_terms != 2 && nb_terms != 3)
+            throw std::invalid_argument(
+                "F2w from_params: nb_terms must be 2 or 3 (got "
+                + std::to_string(nb_terms) + ")");
+        int t = (int)params.get_int("t");
+        if (t < 1 || t > r - 1)
+            throw std::invalid_argument(
+                "F2w from_params: t must be in [1, r-1]");
+        if (nb_terms == 3) {
+            int q = (int)params.get_int("q");
+            if (q < 1 || q >= t)
+                throw std::invalid_argument(
+                    "F2w from_params: q must be in [1, t-1]");
+            nocoeff_vals = {t, q, 0};
+        } else {
+            nocoeff_vals = {t, 0};
+        }
+    }
     auto coeff_vals = params.get_uint_vec("coeff");
     int nbcoeff = (int)nocoeff_vals.size();
     return std::make_unique<F2wLFSRGen>(

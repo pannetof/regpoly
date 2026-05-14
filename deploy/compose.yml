@@ -27,6 +27,15 @@ services:
       - log_min_duration_statement=1000
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # Publish 5432 to the host so a developer running `uv run regpoly-web`
+    # against this stack can hit the DB directly (the web container reaches
+    # it over the compose-internal bridge — this publish is solely for host
+    # tooling and ad-hoc psql). Defaults to 127.0.0.1 to keep the DB off
+    # the LAN; set DB_BIND_ADDR=0.0.0.0 in deploy/.env to expose it more
+    # widely, but only do that on trusted networks since the stack never
+    # adds TLS or pg_hba lockdown.
+    ports:
+      - "${DB_BIND_ADDR:-127.0.0.1}:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U regpoly -d regpoly"]
       interval: 10s

@@ -159,47 +159,49 @@
                             <template x-if="gen.pis_se === 0">
                                 <span class="badge bg-success-lt ms-2">ME</span>
                             </template>
+                            <button type="button" class="btn btn-sm btn-link ms-2"
+                                    @click="navigator.clipboard.writeText(JSON.stringify(gen.pis_gaps))"
+                                    data-copy-equidist>
+                              <svg width="14" height="14"><use href="#tabler-external-link"/></svg>
+                              Copy as JSON
+                            </button>
                         </p>
-                        <div class="card equidist-chart-card">
-                          <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                              <span class="text-secondary small">
-                                Dimension-gap profile —
-                                <span x-text="(gen.pis_gaps || []).filter(g => g > 0).length"></span>
-                                non-zero of <span x-text="gen.pis_gaps.length"></span>
-                              </span>
-                              <button type="button" class="btn btn-sm btn-link"
-                                      @click="$el.dataset.copied='1';
-                                              navigator.clipboard.writeText(JSON.stringify(gen.pis_gaps))"
-                                      data-copy-equidist>
-                                <svg width="14" height="14"><use href="#tabler-external-link"/></svg>
-                                Copy as JSON
-                              </button>
-                            </div>
-                            <svg class="equidist-chart"
-                                 data-equidist-chart
-                                 :viewBox="`0 0 ${((gen.pis_gaps || []).length * 6) + 20} 180`"
-                                 preserveAspectRatio="none"
-                                 role="img"
-                                 :aria-label="`Equidistribution profile, length ${(gen.pis_gaps || []).length}`"
-                                 style="width: 100%; height: 180px;">
-                              <template x-for="(g, i) in (gen.pis_gaps || [])" :key="i">
-                                <rect :class="g === 0 ? 'equidist-cell-ok'
-                                              : g <= 2 ? 'equidist-cell-warn'
-                                                       : 'equidist-cell-bad'"
-                                      :x="i * 6 + 10"
-                                      :y="equidBarY(g)"
-                                      width="5"
-                                      :height="equidBarH(g)"
-                                      :data-l="i + 1"
-                                      :data-delta="g"
-                                      tabindex="0">
-                                  <title x-text="`ℓ=${i + 1}, δ=${g}`"></title>
-                                </rect>
-                              </template>
-                            </svg>
+                        <details class="mt-3" open>
+                          <summary>Dimension-gap table
+                            (<span x-text="(gen.pis_gaps || []).filter(g => g > 0).length"></span>
+                            non-zero of <span x-text="gen.pis_gaps.length"></span>)
+                          </summary>
+                          <div class="table-responsive mt-2">
+                            <template x-for="stripe in equidStripes(gen.pis_gaps)"
+                                      :key="stripe.start">
+                              <table class="table table-sm table-bordered mono mb-2 equidist-grid">
+                                <thead>
+                                  <tr>
+                                    <th class="text-secondary"
+                                        style="white-space: nowrap;">ℓ</th>
+                                    <template x-for="cell in stripe.cells" :key="cell.l">
+                                      <th class="text-center text-secondary"
+                                          x-text="cell.l"></th>
+                                    </template>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <th class="text-secondary"
+                                        style="white-space: nowrap;">δ</th>
+                                    <template x-for="cell in stripe.cells" :key="cell.l">
+                                      <td class="text-center"
+                                          :class="cell.gap === 0 ? 'equidist-cell-ok'
+                                                  : cell.gap <= 2 ? 'equidist-cell-warn'
+                                                                  : 'equidist-cell-bad'"
+                                          x-text="cell.gap === 0 ? '' : cell.gap"></td>
+                                    </template>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </template>
                           </div>
-                        </div>
+                        </details>
                         <p x-show="gen.pis_elapsed" class="mt-2">
                             <small class="text-secondary">Computed in
                                 <span x-text="gen.pis_elapsed.toFixed(2)"></span>s
@@ -666,31 +668,6 @@ function generatorDetail(id) {
                 out.push({ start: i + 1, cells });
             }
             return out;
-        },
-
-        // D_max — the largest non-zero gap on the equidistribution
-        // profile. The pis_gaps array (when present) carries one
-        // entry per dimension v from 1 upward; D_max is the maximum.
-        dmaxValue() {
-            const arr = this.gen && this.gen.pis_gaps;
-            if (!arr || !arr.length) return null;
-            let m = 0;
-            for (const v of arr) if (v > m) m = v;
-            return m;
-        },
-
-        // Bar geometry helpers for the equidist SVG chart. Returning
-        // finite numbers under every state (including the brief render
-        // window before pis_gaps loads) keeps Alpine from writing empty
-        // y/height attributes that break the SVG parser.
-        equidBarH(g) {
-            const v = Number(g);
-            if (!Number.isFinite(v) || v <= 0) return 0;
-            const m = this.dmaxValue() || 1;
-            return Math.max(2, (v / m) * 162);
-        },
-        equidBarY(g) {
-            return 162 - this.equidBarH(g);
         },
 
         async doDelete() {

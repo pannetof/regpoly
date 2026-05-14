@@ -34,6 +34,7 @@ from regpoly_web.routes import (
     primitive_search,
     tempering_search,
     tested_generators,
+    workers,
 )
 from regpoly_web.routes.v2 import router as v2_router
 from regpoly_web.scheduler import analysis_scheduler, search_scheduler
@@ -146,17 +147,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             for t in bg_tasks:
                 t.cancel()
             if not settings.disable_internal_pool:
-                # Cancel pending+running rows so dev-mode workers exit
-                # cleanly. Covers the same three tables the worker
-                # container's reap path does.
+                # Flip running rows back to pending so a web restart
+                # picks them up where they left off (the search/
+                # tempering/library_test workers all read tries_done
+                # from the row and resume). Previously we cancelled
+                # them — that nuked in-flight searches across a clean
+                # shutdown and forced users to manually re-queue.
+                # 'pending' rows stay pending: the scheduler will
+                # claim them again on the next tick.
                 async with app.state.dbpool.connection() as conn:
                     async with conn.cursor() as cur:
                         for table in ("primitive_search_run",
                                       "tempering_search_run",
                                       "library_test_run"):
                             await cur.execute(
-                                f"UPDATE {table} SET status='cancelled' "
-                                f"WHERE status IN ('pending', 'running')"
+                                f"UPDATE {table} SET status='pending' "
+                                f"WHERE status = 'running'"
                             )
                 if app.state.pool is not None:
                     app.state.pool.shutdown()
@@ -199,6 +205,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(tempering_search.router, prefix="/api")
     app.include_router(tested_generators.router, prefix="/api")
     app.include_router(import_export.router, prefix="/api")
+    app.include_router(workers.router, prefix="/api")
     # Unauthenticated probe; intentionally not under /api so the Caddy
     # basic-auth exemption is one exact path, not a glob.
     app.include_router(health.router)

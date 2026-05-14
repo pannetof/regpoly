@@ -292,7 +292,11 @@ function searchesPage() {
           ? Object.entries(s.structural_params)
               .map(([k, v]) => `${k}=${v}`).join(", ")
           : "";
-        return `${fam} ${sp}`.trim();
+        // Surface the equidistribution post-filter when active: it
+        // changes what "found" means (only generators with sum-of-gaps
+        // SE ≤ max_se are kept). Hidden otherwise to keep the row tight.
+        const se = (s.max_se != null) ? ` · SE ≤ ${s.max_se}` : "";
+        return `${fam} ${sp}${se}`.trim();
       }
       const opt = s.optimizer_config ? " +opt" : "";
       return `${s.test_type} · Lmax=${s.Lmax} · tries=${s.nb_tries}${opt}`;

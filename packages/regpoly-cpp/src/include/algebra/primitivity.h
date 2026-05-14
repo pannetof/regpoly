@@ -43,6 +43,13 @@ bool is_full_period(const Generator& gen);
 // degree.
 bool is_full_period(const BitVect& char_poly, int k);
 
+// Tests whether `z^w + lower_w_bits` is irreducible over GF(2), where
+// `lower_w_bits = modM_value & ((1<<w) - 1)`. Used by the
+// `irreducible_gf2` random-parameter sampler to validate a candidate
+// `modM` for the F2w generator family (which packs `modM` LSB-first
+// in its lower `w` bits, with the leading `z^w` term implicit).
+bool is_irreducible_gf2w_modM(uint64_t modM_value, int w);
+
 // Internal data-access functions (used by the implementation; exposed
 // for the GoogleTest fixtures).
 namespace regpoly_internal {

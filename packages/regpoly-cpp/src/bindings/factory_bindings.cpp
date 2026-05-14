@@ -33,7 +33,6 @@
 #include "tgfsr.h"
 #include "tinymt32.h"
 #include "well.h"
-#include "xorshift128.h"
 
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
@@ -79,7 +78,6 @@ void register_generator_types(py::module_& m) {
     bind_gen<SFMTGen>         (m, "SFMTGen");
     bind_gen<DSFMTGen>        (m, "DSFMTGen");
     bind_gen<MTGPGen>         (m, "MTGPGen");
-    bind_gen<XorShift128Gen>  (m, "XorShift128Gen");
     bind_gen<TinyMT32Gen>     (m, "TinyMT32Gen");
     bind_gen<RMT64Gen>        (m, "RMT64Gen");
 

@@ -21,7 +21,6 @@
 #include "tgfsr.h"
 #include "tinymt32.h"
 #include "well.h"
-#include "xorshift128.h"
 
 #include "lag_mask.h"
 #include "permutation.h"
@@ -79,7 +78,9 @@ void register_all_generators() {
                 &MatsumotoGen::from_params, &MatsumotoGen::param_specs);
 
         GR::reg("MarsaXorshiftGen",
-                &MarsaXorshiftGen::from_params, &MarsaXorshiftGen::param_specs);
+                &MarsaXorshiftGen::from_params, &MarsaXorshiftGen::param_specs,
+                /*bind=*/{},
+                &MarsaXorshiftGen::make_enumerator);
 
         GR::reg("AC1DGen",
                 &AC1DGen::from_params, &AC1DGen::param_specs);
@@ -103,10 +104,6 @@ void register_all_generators() {
         GR::reg("MTGPGen",
                 &MTGPGen::from_params, &MTGPGen::param_specs);
         GR::reg_alias("MTGP", "MTGPGen");
-
-        GR::reg("XorShift128Gen",
-                &XorShift128Gen::from_params, &XorShift128Gen::param_specs);
-        GR::reg_alias("XorShift128", "XorShift128Gen");
 
         GR::reg("TinyMT32Gen",
                 &TinyMT32Gen::from_params, &TinyMT32Gen::param_specs);

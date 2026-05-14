@@ -432,19 +432,6 @@ std::vector<int> TauswortheGen::random_poly(
 
 namespace {
 
-// C(n, k) as NTL::ZZ.  Returns 0 for invalid (k < 0 || k > n).
-NTL::ZZ binomial_zz(int n, int k) {
-    if (k < 0 || k > n) return NTL::ZZ(0);
-    if (k == 0 || k == n) return NTL::ZZ(1);
-    if (k > n - k) k = n - k;
-    NTL::ZZ num(1), den(1);
-    for (int i = 0; i < k; ++i) {
-        num *= (n - i);
-        den *= (i + 1);
-    }
-    return num / den;
-}
-
 // Admissible decimation values: s in [1, s_max] with gcd(s, 2^k-1) = 1.
 std::vector<int> admissible_s_values_(int k, bool quicktaus,
                                       int t_interior) {
@@ -510,21 +497,13 @@ public:
         total_ = total;
     }
 
-    std::string size_dec() const override {
-        std::ostringstream os;
-        os << total_;
-        return os.str();
-    }
+    std::string size_dec() const override { return zz_to_dec(total_); }
 
     std::vector<Axis> axes() const override {
         std::vector<Axis> out;
         Axis s_ax;
         s_ax.name = "s";
-        {
-            std::ostringstream os;
-            os << s_values_.size();
-            s_ax.size_dec = os.str();
-        }
+        s_ax.size_dec = zz_to_dec(NTL::ZZ((long)s_values_.size()));
         if (s_values_.empty()) {
             s_ax.describe = "admissible decimation steps";
         } else if (s_values_.size() == 1) {
@@ -548,11 +527,7 @@ public:
         if (!s_values_.empty()) {
             poly_size = total_ / NTL::ZZ((long)s_values_.size());
         }
-        {
-            std::ostringstream os;
-            os << poly_size;
-            poly_ax.size_dec = os.str();
-        }
+        poly_ax.size_dec = zz_to_dec(poly_size);
         {
             std::ostringstream d;
             d << "admissible polynomials with k=" << k_
@@ -565,11 +540,7 @@ public:
     }
 
     Params at(const std::string& idx_dec) const override {
-        NTL::ZZ idx;
-        {
-            std::istringstream is(idx_dec);
-            is >> idx;
-        }
+        NTL::ZZ idx = parse_zz(idx_dec);
         if (idx < 0 || idx >= total_)
             throw std::out_of_range("TauswortheGen enumerator: idx out of range");
 

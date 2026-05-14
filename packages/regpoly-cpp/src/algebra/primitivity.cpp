@@ -149,3 +149,15 @@ bool is_full_period(const Generator& gen) {
     BitVect cp = gen.char_poly();
     return is_full_period(cp, gen.k());
 }
+
+bool is_irreducible_gf2w_modM(uint64_t modM_value, int w) {
+    if (w <= 0 || w > 63) return false;
+    NTL::GF2X f;
+    NTL::SetCoeff(f, w);
+    uint64_t lower = modM_value & ((uint64_t(1) << w) - 1);
+    for (int j = 0; j < w; ++j) {
+        if ((lower >> j) & 1ULL)
+            NTL::SetCoeff(f, j);
+    }
+    return ntl_is_irreducible(f);
+}

@@ -89,6 +89,7 @@ int64_t run_primitive_search(
         // Merge structural + fixed + sampled-where-needed.
         merge_into(p, cfg.structural_params);
         merge_into(p, cfg.fixed_params);
+        bool sample_failed = false;
         for (const auto& spec : specs) {
             if (p.has(spec.name)) continue;
             if (spec.has_default) continue;
@@ -102,11 +103,22 @@ int64_t run_primitive_search(
                     "PrimitiveSearch: parameter '" + spec.name +
                     "' has no default and no random sampler — fixed_params "
                     "must pin it");
-            if (!regpoly_random::sample_param_into(spec, p, cfg.L))
-                throw std::invalid_argument(
-                    "PrimitiveSearch: no sampler registered for rand_type '"
-                    + rt + "' (parameter '" + spec.name + "')");
+            try {
+                if (!regpoly_random::sample_param_into(spec, p, cfg.L))
+                    throw std::invalid_argument(
+                        "PrimitiveSearch: no sampler registered for rand_type '"
+                        + rt + "' (parameter '" + spec.name + "')");
+            } catch (const std::invalid_argument&) {
+                // A sampler can fail when its rand_args reference another
+                // just-sampled param whose value makes the range
+                // degenerate (e.g. q's "1,t-1" when t==1). Abandon this
+                // candidate and start over rather than propagating the
+                // exception out of the search loop.
+                sample_failed = true;
+                break;
+            }
         }
+        if (sample_failed) continue;
 
         std::unique_ptr<Generator> gen;
         try {

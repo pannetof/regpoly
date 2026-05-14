@@ -183,6 +183,27 @@ void BitVect::zero() {
         w = 0;
 }
 
+BitVect BitVect::get_slice(int start_bit, int n_bits) const {
+    BitVect out(n_bits);
+    if (n_bits <= 0) return out;
+    // Bit-by-bit copy: simple, correct for any (start_bit, n_bits)
+    // including non-word-aligned starts.  This is on the slow-path
+    // for MarsaXorshift w > 64; the inner shift loop dwarfs it.
+    for (int i = 0; i < n_bits; ++i) {
+        if (start_bit + i >= nbits_) break;
+        out.set_bit(i, get_bit(start_bit + i));
+    }
+    return out;
+}
+
+void BitVect::set_slice(int start_bit, const BitVect& slice) {
+    const int n = slice.nbits();
+    for (int i = 0; i < n; ++i) {
+        if (start_bit + i >= nbits_) break;
+        set_bit(start_bit + i, slice.get_bit(i));
+    }
+}
+
 void BitVect::set_from_words(const uint64_t* data, int nwords) {
     int n = std::min(nwords, (int)words_.size());
     for (int i = 0; i < n; i++)

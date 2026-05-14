@@ -93,21 +93,6 @@ g++ $CXXFLAGS $INCLUDE -o mt1 mt1.cpp $LIBS
 No CLI args. Output: `k(NN):NNNN  d(NN):NNNN` (note `:` instead of `=`,
 and tightly-packed) per v=1..32.
 
-### XORSHIFT128 — `samples/XORSHIFT/xorshift-{2,5}`
-
-Each binary has its (a,b,c) hardcoded:
-- `xorshift-2`: (5, 14, 1)
-- `xorshift-5`: (20, 11, 7)
-
-```bash
-cd MTToolBox/samples/XORSHIFT
-for n in 2 5; do
-  g++ $CXXFLAGS $INCLUDE -o xorshift-$n xorshift-$n.cpp $LIBS
-done
-```
-
-No CLI args. Output: `k(NN):NNN  d(NN):NNN` per v=1..32.
-
 ## Verification
 
 After building, smoke-test each binary against a known parameter

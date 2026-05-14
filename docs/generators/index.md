@@ -28,7 +28,6 @@ REGPOLY implements 18 F₂-linear generator families plus a `CombinedGenerator` 
 
 ## Xorshift family
 
-- [XorShift128](XorShift128Gen.md)
 - [Marsaglia XORShift](MarsaXorshiftGen.md)
 
 ## Other

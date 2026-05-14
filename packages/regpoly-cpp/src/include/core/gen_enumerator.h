@@ -68,3 +68,12 @@ std::vector<int> unrank_combination(int n, int k, const NTL::ZZ& idx);
 // outer digit).
 std::vector<NTL::ZZ> mixed_radix_decode(
     const std::vector<NTL::ZZ>& sizes, const NTL::ZZ& idx);
+
+// C(n, k) as NTL::ZZ; returns 0 when k < 0 or k > n.  Used by
+// enumerators that mix combinatorial subsets with mixed-radix axes.
+NTL::ZZ binomial_zz(int n, int k);
+
+// Decimal string <-> NTL::ZZ helpers — kept tiny because every
+// concrete enumerator otherwise reimplements the istream/ostream dance.
+NTL::ZZ      parse_zz(const std::string& dec);
+std::string  zz_to_dec(const NTL::ZZ& z);

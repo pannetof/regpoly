@@ -372,6 +372,12 @@ body.embed footer { display: none !important; }
 .equidist-cell-ok   { background: #d3f9d8; }
 .equidist-cell-warn { background: #fff3bf; }
 .equidist-cell-bad  { background: #ffc9c9; }
+/* SVG <rect> doesn't honor `background` — it needs `fill`. Same palette
+ * used by the bar chart on /generators/{id}. Without these rules the
+ * chart card shows just the title and an empty box. */
+rect.equidist-cell-ok   { fill: #d3f9d8; }
+rect.equidist-cell-warn { fill: #fff3bf; }
+rect.equidist-cell-bad  { fill: #ffc9c9; }
 
 /* --- Theme toggle button ------------------------------------------- */
 [data-theme-toggle] {

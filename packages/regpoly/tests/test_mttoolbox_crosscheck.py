@@ -60,7 +60,6 @@ def _family_for_create(family: str) -> str:
     """Map yaml `family` field to the string Generator.create() accepts."""
     aliases = {
         "MersenneTwister": "MT",
-        "XORSHIFT128": "xorshift",
         "TinyMT32": "tinymt",
         "RMT64": "rmt",
         "dSFMT": "dsfmt",
@@ -140,16 +139,16 @@ def test_regpoly_matches_mttoolbox_d5(case: dict) -> None:
         )
 
     family_alias = _family_for_create(case["family"])
-    L = 32  # 32-bit accuracy matches calc_equidist for SFMT/MT/XORSHIFT
+    L = 32  # 32-bit accuracy matches calc_equidist for SFMT/MT
     if case["family"] == "dSFMT":
         L = 52
     elif case["family"] == "RMT64":
         L = 64
     # Pass `mexp` from the entry top-level into params (most generators
-    # take it as a structural parameter; xorshift doesn't care).
+    # take it as a structural parameter).
     full_params = dict(case["regpoly_params"])
     if case["mexp"] is not None and "mexp" not in full_params and \
-       case["family"] not in ("XORSHIFT128", "TinyMT32"):
+       case["family"] != "TinyMT32":
         full_params["mexp"] = case["mexp"]
     gen = Generator.create(family_alias, L=L, **full_params)
     # Build any tempering chain declared in the catalog (e.g. MT19937's

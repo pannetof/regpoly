@@ -41,7 +41,6 @@ KNOWN_FAMILIES: list[str] = [
     "MTGPGen",
     "TinyMT32Gen",
     "RMT64Gen",
-    "XorShift128Gen",
 ]
 
 # Transformation types exposed by the factory.

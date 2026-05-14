@@ -135,3 +135,34 @@ structural_params:
 fixed_params:
   coeff:               # randomized: three 8-bit coefficients
 ```
+
+## Paper-published instances
+
+The 42 paper rows in [Panneton & L'Ecuyer (2004), "Random Number
+Generators Based on Linear Recurrences in F_{2^w}"](../papers/f2w.pdf),
+Tables 1 and 2, are reproduced byte-for-byte in
+[`panneton-lecuyer-2004-f2w.yaml`](../library/panneton-lecuyer-2004-f2w.yaml)
+and surface in the web UI under **Library → Panneton & L'Ecuyer, 2004**.
+Each paper row appears as both an `F2wLFSRGen` and an `F2wPolyLCGGen`
+entry — the paper notes (§1) that the two variants share characteristic
+polynomial and equidistribution when `L = w` and `B = (B̃ 0)` (both
+Table 1 with truncation output and Table 2 with the Matsumoto-Kurita
+mask satisfy this).
+
+Paper-to-catalog parameter mapping is documented in
+[`F2wLFSRGen.md`](F2wLFSRGen.md) — both families share the same
+parameter layout.
+
+## Searching new F2w generators
+
+This family shares its `ParamSpec` list with `F2wLFSRGen`, so the
+primitive-search form accepts the same paper-notation entry: fix
+`w`, `r`, `nb_terms` (∈ {2, 3}), optionally fix `t` and `q`, and the server
+randomizes `t`, `q`, `modM`, and `coeff` per iteration. See
+[`F2wLFSRGen.md` § Searching new F2w generators](F2wLFSRGen.md#searching-new-f2w-generators)
+for details and a search-YAML example. Submitting through the form
+with `family=F2wPolyLCGGen` produces the polynomial-LCG variant
+(state `q_n`); under the paper's §1 precondition (`L = w`,
+`B = (B̃ 0)`) the LFSR and PolyLCG variants share characteristic
+polynomial and equidistribution, so a search hit found via one
+transposes to a hit in the other.

@@ -3,18 +3,14 @@
 
 #include "gen_enumerator.h"
 
+#include <sstream>
 #include <stdexcept>
 
 #include <NTL/ZZ.h>
 
-namespace {
-
-// C(n, k) with NTL::ZZ to avoid overflow at large k.  Returns 0 when
-// k < 0 or k > n.
-NTL::ZZ binomial(int n, int k) {
+NTL::ZZ binomial_zz(int n, int k) {
     if (k < 0 || k > n) return NTL::ZZ(0);
     if (k == 0 || k == n) return NTL::ZZ(1);
-    // Choose the smaller half for speed.
     if (k > n - k) k = n - k;
     NTL::ZZ num(1);
     NTL::ZZ den(1);
@@ -25,7 +21,20 @@ NTL::ZZ binomial(int n, int k) {
     return num / den;
 }
 
-} // anonymous namespace
+NTL::ZZ parse_zz(const std::string& dec) {
+    NTL::ZZ z;
+    std::istringstream in(dec);
+    in >> z;
+    if (in.fail())
+        throw std::invalid_argument("parse_zz: not a decimal integer");
+    return z;
+}
+
+std::string zz_to_dec(const NTL::ZZ& z) {
+    std::ostringstream os;
+    os << z;
+    return os.str();
+}
 
 std::vector<int> unrank_combination(int n, int k, const NTL::ZZ& idx) {
     // Lexicographic unranking via the combinatorial number system.
@@ -34,7 +43,7 @@ std::vector<int> unrank_combination(int n, int k, const NTL::ZZ& idx) {
     // itertools.combinations ordering.
     if (k < 0 || k > n)
         throw std::invalid_argument("unrank_combination: invalid k");
-    NTL::ZZ total = binomial(n, k);
+    NTL::ZZ total = binomial_zz(n, k);
     if (idx < 0 || idx >= total)
         throw std::out_of_range("unrank_combination: idx out of range");
 
@@ -47,7 +56,7 @@ std::vector<int> unrank_combination(int n, int k, const NTL::ZZ& idx) {
         // Number of subsets we still need to pick.
         int remaining_k = k - chosen - 1;
         for (int candidate = start; candidate <= n - remaining_k - 1; ++candidate) {
-            NTL::ZZ below = binomial(n - candidate - 1, remaining_k);
+            NTL::ZZ below = binomial_zz(n - candidate - 1, remaining_k);
             if (remaining < below) {
                 out.push_back(candidate);
                 start = candidate + 1;

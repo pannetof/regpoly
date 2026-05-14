@@ -25,7 +25,12 @@ v ^= ShiftR(v, b)
 v ^= ShiftR(v, c)
 ```
 
-### Type 2x (subtypes 21-25) -- two-component
+### Type 2 -- two-component
+
+(Historical note: legacy `.dat` files tag this recurrence with sub-codes
+21..25 to drive sibling-variant expansion in the parser; the runtime
+collapses all five back to `type: 2`. See
+`packages/regpoly-cpp/src/io/legacy_reader.cpp::read_marsaxorshift`.)
 
 State: r words in a circular buffer. Two words are selected (x from
 position r-1 and y from position m-1) and combined:
@@ -58,7 +63,7 @@ V[0] = t
 
 ### Type 4 -- two-component, 2 shifts each
 
-State: r words in a circular buffer. Like type 2x but with exactly
+State: r words in a circular buffer. Like type 2 but with exactly
 2 shifts per component:
 
 ```
@@ -92,26 +97,28 @@ V[0] = t
 
 | Name             | Type      | Role       | Rand type | Description |
 |------------------|-----------|------------|-----------|-------------|
-| `type`           | `int`     | structural | --        | Generator type: 1, 21-25, 3, 4, or 100 |
-| `w`              | `int`     | structural | --        | Word size in bits. Default: `32`. |
+| `type`           | `int`     | structural | --        | Runtime generator type: 1, 2, 3, 4, or 100. (Legacy `.dat` files may write 21..25 to denote sibling-variant rows; the parser normalises those to `type: 2`.) |
+| `w`              | `int`     | structural | --        | Word size in bits, ≥ 2. Default: `32`. The runtime uses a fast `uint64_t` kernel for `w ≤ 64`; widths past 64 transparently route through a BitVect-backed wide path (slower but unbounded). Type 3's cross-word read is a w=32-only Marsaglia C artifact; for any other w the tap collapses to a regular one-shift xorshift. |
 | `r`              | `int`     | structural | --        | Number of state words. Default: `1`. |
-| `m`              | `int`     | structural | --        | Secondary tap position (types 2x, 4). Default: `0`. |
+| `m`              | `int`     | structural | --        | Secondary tap position (types 2 and 4). Default: `0`. |
 | `shifts`         | `int_vec` | search     | `none`    | Type 1 only: three shift values [a, b, c] |
-| `p`              | `int_vec` | search     | `none`    | Types 2x, 4: shift values for the first component |
-| `q`              | `int_vec` | search     | `none`    | Types 2x, 4: shift values for the second component |
+| `p`              | `int_vec` | search     | `none`    | Types 2, 4: shift values for the first component |
+| `q`              | `int_vec` | search     | `none`    | Types 2, 4: shift values for the second component |
 | `tap_positions`  | `int_vec` | search     | `none`    | Type 3: positions of taps (1-indexed) |
 | `tap_shifts`     | `int_vec` | search     | `none`    | Type 3: shift value for each tap |
 | `mi_positions`   | `int_vec` | search     | `none`    | Type 100: positions of components (1-indexed) |
 | `mi_shifts`      | `int_vec` | search     | `none`    | Type 100: all shift values, concatenated across components |
 | `mi_counts`      | `int_vec` | search     | `none`    | Type 100: number of shifts per component |
+| `nb_taps`        | `int`     | enumerator | `none`    | Type 100 search only: number of taps to enumerate. Default: `3`. Ignored at instantiation. |
+| `shifts_per_tap` | `int_vec` | enumerator | `none`    | Type 100 search only: per-tap shift count (length must equal `nb_taps`). Default: a vector of 1s. Ignored at instantiation. |
 
 ### Type-specific parameter usage
 
 - **Type 1:** uses `shifts` only
-- **Types 21-25:** uses `p` (3 values, padded with 0), `q` (3 values, padded with 0)
-- **Type 3:** uses `tap_positions`, `tap_shifts` (parallel arrays, same length)
+- **Type 2:** uses `p` (3 values, padded with 0), `q` (3 values, padded with 0). Zero entries skip the corresponding `(I + S^k)` factor.
+- **Type 3:** uses `tap_positions`, `tap_shifts` (parallel arrays, same length). Note: a tap at position `r` falls back to a non-cross-word read at runtime (the `idx + 1 < r` guard in `next()`).
 - **Type 4:** uses `p` (2 values), `q` (2 values)
-- **Type 100:** uses `mi_positions`, `mi_shifts`, `mi_counts`
+- **Type 100:** uses `mi_positions`, `mi_shifts`, `mi_counts`. Search-time tuning via `nb_taps` and `shifts_per_tap` (see above).
 
 **Note:** Random generation is not supported for any type-specific
 parameters (`rand_type=none` for all). All parameters must be provided

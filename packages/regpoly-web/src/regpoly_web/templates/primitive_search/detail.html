@@ -53,9 +53,9 @@
         <div class="card-body">
           <div class="font-weight-medium">Tries</div>
           <div class="text-secondary">
-            <span x-text="(run && run.tries_done) || 0"></span>
-            <template x-if="run && run.max_tries">
-              <span> / <span x-text="run.max_tries"></span></span>
+            <span x-text="triesDoneFmt"></span>
+            <template x-if="triesDenominatorFmt">
+              <span> / <span x-text="triesDenominatorFmt"></span></span>
             </template>
           </div>
         </div>
@@ -234,10 +234,28 @@
         <table class="table table-sm table-vcenter table-hover card-table mono small">
           <thead>
             <tr>
-              <th>ID</th><th>k</th>
-              <th>m1</th><th>m2</th><th>m3</th>
+              <th @click="toggleSort('id')" style="cursor:pointer; user-select:none;">
+                ID <span class="text-secondary" x-text="sortIndicator('id')"></span>
+              </th>
+              <th @click="toggleSort('k')" style="cursor:pointer; user-select:none;">
+                k <span class="text-secondary" x-text="sortIndicator('k')"></span>
+              </th>
+              <th @click="toggleSort('m1')" style="cursor:pointer; user-select:none;">
+                m1 <span class="text-secondary" x-text="sortIndicator('m1')"></span>
+              </th>
+              <th @click="toggleSort('m2')" style="cursor:pointer; user-select:none;">
+                m2 <span class="text-secondary" x-text="sortIndicator('m2')"></span>
+              </th>
+              <th @click="toggleSort('m3')" style="cursor:pointer; user-select:none;">
+                m3 <span class="text-secondary" x-text="sortIndicator('m3')"></span>
+              </th>
               <template x-for="slot in WELL_SLOTS" :key="slot">
                 <th x-text="slot"></th>
+              </template>
+              <template x-if="hasSeFilter()">
+                <th @click="toggleSort('pis_se')" style="cursor:pointer; user-select:none;">
+                  SE <span class="text-secondary" x-text="sortIndicator('pis_se')"></span>
+                </th>
               </template>
             </tr>
           </thead>
@@ -252,10 +270,14 @@
                 <template x-for="slot in WELL_SLOTS" :key="slot">
                   <td x-text="formatWellSlot(g.search_params.matrices?.[slot])"></td>
                 </template>
+                <template x-if="hasSeFilter()">
+                  <td x-text="formatSe(g)"></td>
+                </template>
               </tr>
             </template>
             <template x-if="generators.length === 0">
-              <tr><td colspan="13" class="text-center text-secondary py-4">
+              <tr><td :colspan="hasSeFilter() ? 14 : 13"
+                      class="text-center text-secondary py-4">
                 No generators found yet.
               </td></tr>
             </template>
@@ -270,7 +292,18 @@
         <table class="table table-vcenter table-hover card-table">
           <thead>
             <tr>
-              <th>ID</th><th>k</th><th>Search params</th>
+              <th @click="toggleSort('id')" style="cursor:pointer; user-select:none;">
+                ID <span class="text-secondary" x-text="sortIndicator('id')"></span>
+              </th>
+              <th @click="toggleSort('k')" style="cursor:pointer; user-select:none;">
+                k <span class="text-secondary" x-text="sortIndicator('k')"></span>
+              </th>
+              <th>Search params</th>
+              <template x-if="hasSeFilter()">
+                <th @click="toggleSort('pis_se')" style="cursor:pointer; user-select:none;">
+                  SE <span class="text-secondary" x-text="sortIndicator('pis_se')"></span>
+                </th>
+              </template>
             </tr>
           </thead>
           <tbody>
@@ -280,10 +313,14 @@
                 <td x-text="g.k"></td>
                 <td class="mono"
                     x-text="JSON.stringify(g.search_params)"></td>
+                <template x-if="hasSeFilter()">
+                  <td class="mono" x-text="formatSe(g)"></td>
+                </template>
               </tr>
             </template>
             <template x-if="generators.length === 0">
-              <tr><td colspan="3" class="text-center text-secondary py-4">
+              <tr><td :colspan="hasSeFilter() ? 4 : 3"
+                      class="text-center text-secondary py-4">
                 No generators found yet.
               </td></tr>
             </template>
@@ -313,6 +350,8 @@ function primitiveSearchDetail(id) {
     generators: [],
     totalGenerators: 0,
     page: 1,
+    sortBy: "id",     // matches the server's default
+    sortDir: "desc",  //   "
     recentEvents: [],
     history: [],          // sparkline samples (tries_done over time)
     sse: null,
@@ -339,6 +378,28 @@ function primitiveSearchDetail(id) {
         }
       } catch (e) { /* ignore */ }
       this.openSSE();
+      // Low-frequency status reconciler. SSE delivers tries_done/
+      // found_count, but never `status` — and on `end` we close the
+      // stream entirely. If the run gets externally re-queued (UPDATE
+      // pending, restart, watchdog reset, …) the UI would otherwise
+      // freeze on whichever terminal status it saw last. Poll
+      // /api/primitive-searches/{id} every 4s; if status flipped back
+      // to live, reopen the SSE so tries_done resumes flowing too.
+      this._statusPoll = setInterval(async () => {
+        const prev = this.run?.status;
+        await this.loadRun();
+        const next = this.run?.status;
+        const isLive = (s) =>
+          s === "running" || s === "pending" || s === "paused";
+        if (isLive(next) && (!this.sse || this.sse.readyState === 2)) {
+          this.openSSE();
+        }
+        if (prev !== next) {
+          // Force a generator refetch on status transitions so a
+          // restart→running flip shows the newly-found rows promptly.
+          this.loadGenerators();
+        }
+      }, 4000);
     },
 
     badgeFor(status) {
@@ -391,14 +452,52 @@ function primitiveSearchDetail(id) {
       const eta = ci.eta_seconds;
       if (eta == null) {
         // Compute fallback ETA from rate_rolling_5s + remaining tries.
+        // The denominator is enum_total in exhaustive mode (the search
+        // ends after iterating every combination) and max_tries in
+        // random mode.  Without this, exhaustive runs would always
+        // show "—" because max_tries is null.
         const r = ci.rate_rolling_5s ?? ci.rate;
-        const max = this.run?.max_tries;
+        const max = this._triesDenomNum();
         const done = this.run?.tries_done ?? 0;
         if (!r || !max || max <= done) return "—";
         const remaining = (max - done) / r;
         return _formatSec(remaining);
       }
       return _formatSec(eta);
+    },
+
+    // Denominator for the Tries card: enum_total in exhaustive mode
+    // (every combination is visited exactly once), max_tries in random
+    // mode, or null when neither bound applies.  Returned as a string
+    // so very large enum_total values (>2^53, e.g. type 2 / w=32 /
+    // r=2 ≈ 6.3e10 or type 100 with non-trivial shifts_per_tap) round-
+    // trip without precision loss.
+    get triesDenominator() {
+      if (!this.run) return null;
+      if (this.run.search_mode === "exhaustive") {
+        return this.run.enum_total ?? null;     // already a decimal string
+      }
+      return (this.run.max_tries != null) ? String(this.run.max_tries) : null;
+    },
+    // Same as triesDenominator but formatted (thousands separators or
+    // scientific notation past 12 digits) for display.  Mirrors the
+    // form's formatTotal so users see the same notation in both views.
+    get triesDenominatorFmt() {
+      const s = this.triesDenominator;
+      return s ? _formatBigDec(s) : null;
+    },
+    get triesDoneFmt() {
+      return _formatBigDec(String(this.run?.tries_done ?? 0));
+    },
+    // Numeric form of the denominator for arithmetic (ETA calc); fine
+    // for values up to ~9e15 (Number.MAX_SAFE_INTEGER), well above
+    // every enumerator total this codebase produces.  Returns null
+    // when no denominator is known.
+    _triesDenomNum() {
+      const s = this.triesDenominator;
+      if (!s) return null;
+      const n = Number(s);
+      return Number.isFinite(n) ? n : null;
     },
 
     get sparkPoints() {
@@ -419,10 +518,15 @@ function primitiveSearchDetail(id) {
     },
     async loadGenerators() {
       // Fetch only the current page (200 items). The server sorts
-      // DESC by id, so page 1 is always the most recent hits.
+      // by {sortBy, sortDir} (defaults: id DESC = newest hits first).
+      const qs = new URLSearchParams({
+        per_page: String(PER_PAGE),
+        page: String(this.page),
+        sort_by: this.sortBy,
+        sort_dir: this.sortDir,
+      });
       const r = await fetch(
-        "/api/primitive-searches/" + id + "/generators"
-        + "?per_page=" + PER_PAGE + "&page=" + this.page);
+        "/api/primitive-searches/" + id + "/generators?" + qs.toString());
       if (!r.ok) return;
       const data = await r.json();
       this.generators = Array.isArray(data.items) ? data.items : [];
@@ -460,6 +564,48 @@ function primitiveSearchDetail(id) {
     isWellRun() {
       const f = this.run && this.run.family;
       return f === "WELLGen" || f === "WELLRNG";
+    },
+
+    hasSeFilter() {
+      // True when the run enabled the equidistribution post-filter.
+      // The worker populates pis_se on every accepted generator only
+      // in this case; otherwise the column would be all-null noise.
+      return !!(this.run && this.run.max_se != null);
+    },
+
+    formatSe(g) {
+      // Generators that errored during PIS analysis carry pis_error;
+      // surface that compactly so a non-null SE column doesn't silently
+      // hide failures.
+      if (g && g.pis_error) return "err";
+      if (g && g.pis_se != null) return String(g.pis_se);
+      return "—";
+    },
+
+    async toggleSort(col) {
+      // Same column → flip direction. Different column → switch and
+      // start in the convention the user is most likely to want
+      // (id/k/pis_se descending; m1/m2/m3 ascending). Snap back to
+      // page 1 so the user isn't deep inside a sort that just changed
+      // under them.
+      if (this.sortBy === col) {
+        this.sortDir = this.sortDir === "asc" ? "desc" : "asc";
+      } else {
+        this.sortBy = col;
+        this.sortDir = ({"id": "desc", "k": "desc", "pis_se": "asc",
+                         "m1": "asc", "m2": "asc", "m3": "asc"})[col]
+                       || "desc";
+      }
+      this.page = 1;
+      await this.loadGenerators();
+    },
+
+    sortIndicator(col) {
+      // Compact arrow shown next to a column header. Only the active
+      // column shows a direction; inactive sortable columns show "↕"
+      // so the user can tell at a glance which headers are clickable.
+      if (this.sortBy !== col) return "↕";
+      return this.sortDir === "asc" ? "↑" : "↓";
     },
 
     formatWellSlot(entry) {
@@ -584,6 +730,23 @@ function _formatSec(s) {
   if (s < 60) return Math.round(s) + "s";
   if (s < 3600) return Math.round(s / 60) + "m";
   return (s / 3600).toFixed(1) + "h";
+}
+
+// Render a non-negative decimal-string integer for display.  Up to 12
+// digits we use locale-aware grouping (62,523,502,209); beyond that we
+// switch to scientific notation (6.25e10).  Mirrors the form's
+// formatTotal so the same number is rendered the same way in both
+// the search-creation preview and the detail page.
+function _formatBigDec(dec) {
+  if (dec == null) return "—";
+  const s = String(dec);
+  if (s.length <= 12) {
+    const n = Number(s);
+    return Number.isFinite(n) ? n.toLocaleString() : s;
+  }
+  const exp = s.length - 1;
+  const mantissa = s[0] + "." + s.substring(1, 3);
+  return `${mantissa}e${exp}`;
 }
 </script>
 {% endblock %}

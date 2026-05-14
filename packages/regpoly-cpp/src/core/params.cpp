@@ -27,12 +27,32 @@ std::string Params::get_string(const std::string& key, const std::string& def) c
 
 std::vector<int> Params::get_int_vec(const std::string& key) const {
     auto it = int_vecs_.find(key);
-    return it != int_vecs_.end() ? it->second : std::vector<int>{};
+    if (it != int_vecs_.end()) return it->second;
+    // Fall back to uint_vecs_ — the Python binding stores list params as
+    // int_vec or uint_vec based on a per-value heuristic that doesn't know
+    // the target type; allow callers to read either side regardless.
+    auto uit = uint_vecs_.find(key);
+    if (uit != uint_vecs_.end()) {
+        std::vector<int> out;
+        out.reserve(uit->second.size());
+        for (uint64_t v : uit->second) out.push_back(static_cast<int>(v));
+        return out;
+    }
+    return std::vector<int>{};
 }
 
 std::vector<uint64_t> Params::get_uint_vec(const std::string& key) const {
     auto it = uint_vecs_.find(key);
-    return it != uint_vecs_.end() ? it->second : std::vector<uint64_t>{};
+    if (it != uint_vecs_.end()) return it->second;
+    // Mirrored fallback: see get_int_vec().
+    auto iit = int_vecs_.find(key);
+    if (iit != int_vecs_.end()) {
+        std::vector<uint64_t> out;
+        out.reserve(iit->second.size());
+        for (int v : iit->second) out.push_back(static_cast<uint64_t>(v));
+        return out;
+    }
+    return std::vector<uint64_t>{};
 }
 
 const StructMap& Params::get_struct_map(const std::string& key) const {

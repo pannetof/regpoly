@@ -376,6 +376,11 @@ table.compact td, table.compact th {
 .equidist-cell-ok   { background: #d3f9d8; }
 .equidist-cell-warn { background: #fff3bf; }
 .equidist-cell-bad  { background: #ffc9c9; }
+/* SVG <rect> uses `fill`, not `background`. Same palette so the
+ * bar chart on /generators/{id} matches the table chrome. */
+rect.equidist-cell-ok   { fill: #d3f9d8; }
+rect.equidist-cell-warn { fill: #fff3bf; }
+rect.equidist-cell-bad  { fill: #ffc9c9; }
 
 /* Client-side table sort/filter controls (see app.js rngTable*). */
 th.sortable {

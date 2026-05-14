@@ -589,12 +589,17 @@ read_marsaxorshift(std::ifstream& f, int L, const std::string& filename) {
         p.set_int_vec("shifts", {a, b, c});
         dst.push_back({"MarsaXorshiftGen", std::move(p)});
     };
+    // The legacy `.dat` files tag two-component rows with a sub-code in
+    // {21, 22, 23, 24, 25}.  That sub-code only drives sibling-variant
+    // expansion in this reader (cf. Proposition 4.3 of Panneton &
+    // L'Ecuyer 2005); the runtime sees a single Type-II recurrence, so
+    // every variant is emitted with the runtime tag `type = 2`.
     auto push_t2x = [&](std::vector<LegacyGeneratorSpec>& dst,
-                        int gen_type, int m_val,
+                        int m_val,
                         const std::vector<int>& pv,
                         const std::vector<int>& qv) {
         Params p;
-        p.set_int("type", gen_type);
+        p.set_int("type", 2);
         p.set_int("w", w);
         p.set_int("r", r);
         p.set_int("m", m_val);
@@ -604,7 +609,11 @@ read_marsaxorshift(std::ifstream& f, int L, const std::string& filename) {
     };
 
     std::vector<LegacyGeneratorSpec> out;
-    out.reserve(nbgen * 4);   // crude upper bound
+    // Worst case per row: type 1 expands to 4 variants, sub-code 25
+    // expands to 4 variants.  Sub-codes 21/22 expand to 3; 23/24 to 2.
+    // Types 3/4/100 emit 1 each.  `nbgen * 4` is therefore a safe
+    // (often loose) upper bound.
+    out.reserve(nbgen * 4);
     for (int gi = 0; gi < nbgen; ++gi) {
         auto toks = tokenise_line(f, filename);
         size_t i = 0;
@@ -661,7 +670,7 @@ read_marsaxorshift(std::ifstream& f, int L, const std::string& filename) {
                 variants.push_back({{ op[0],  op[2],  op[1]}, oq});
             }
             for (auto& [pv, qv] : variants) {
-                push_t2x(out, gen_type, m_val, pv, qv);
+                push_t2x(out, m_val, pv, qv);
             }
 
         } else if (gen_type == 3) {

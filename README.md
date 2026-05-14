@@ -151,7 +151,6 @@ backwards-compat aliases in `factory.cpp` / `bindings.cpp`.
 - `MTGPGen` --- MT for Graphic Processors
 - `TinyMT32Gen` --- Tiny MT (127-bit state)
 - `RMT64Gen` --- Reducible MT (64-bit)
-- `XorShift128Gen` --- Marsaglia 128-bit Xor-shift
 
 ## Source Organization
 

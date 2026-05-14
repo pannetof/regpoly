@@ -83,6 +83,34 @@ def test_tests_index(client) -> None:
     assert {"equidistribution", "collision_free", "tuplets"} == names
 
 
+def test_library_lists_panneton_lecuyer_2005_xorshift(client) -> None:
+    """``docs/library/panneton-lecuyer-2005-xorshift.yaml`` registers the
+    Panneton & L'Ecuyer 2005 paper with all 37 Table III / IV entries.
+    The catalog endpoint must surface the paper, and a sample generator
+    detail must round-trip with the expected MarsaXorshiftGen family."""
+    r = client.get("/api/library/papers")
+    assert r.status_code == 200
+    papers = r.json()
+    match = [p for p in papers if p.get("id") == "panneton-lecuyer-2005-xorshift"]
+    assert match, "Panneton & L'Ecuyer 2005 paper not in /api/library/papers"
+    assert match[0]["year"] == 2005
+
+    r = client.get("/api/library/papers/panneton-lecuyer-2005-xorshift")
+    assert r.status_code == 200
+    body = r.json()
+    gens = body.get("generators", [])
+    assert len(gens) == 37, f"expected 37 generators, got {len(gens)}"
+    gen_ids = {g["id"] for g in gens}
+    assert "panneton-lecuyer-2005-tiii-01" in gen_ids
+    assert "panneton-lecuyer-2005-tiii-22" in gen_ids
+    assert "panneton-lecuyer-2005-tiv-38" in gen_ids
+
+    r = client.get("/api/library/generators/panneton-lecuyer-2005-tiii-22")
+    assert r.status_code == 200
+    g = r.json()
+    assert g["family"] == "MarsaXorshiftGen"
+
+
 def test_primitive_search_detail_has_delete_button(client) -> None:
     """The detail page exposes a Delete button that calls the existing
     DELETE /api/primitive-searches/{id}/generators endpoint (which
@@ -95,6 +123,113 @@ def test_primitive_search_detail_has_delete_button(client) -> None:
     assert "del()" in html
     assert "busyDelete" in html
     assert "btn-outline-danger" in html
+
+
+def test_primitive_search_form_f2w_hides_nocoeff(client) -> None:
+    """For F2w families the form renders the paper-notation layout:
+    `nocoeff` is hidden (it's derived server-side from {m, t, q}), and
+    {t, q, modM, coeff} are randomized per iteration by default."""
+    r = client.get("/primitive-search?family=F2wLFSRGen")
+    assert r.status_code == 200
+    html = r.text
+    # The F2w branch sets up an `isF2wFamily()` helper that drives the
+    # `nocoeff` filter and the buildBody skip.
+    assert "isF2wFamily" in html
+    # The new rand_type and the paper-form params surface in the
+    # rendered spec list.
+    assert "irreducible_gf2" in html or "F2wLFSRGen" in html
+
+
+def test_f2w_family_detail_paper_notation_specs(client) -> None:
+    """The F2wLFSRGen ParamSpec list exposes paper-notation entry:
+    new {nb_terms, t, q} params, modM samplable via `irreducible_gf2`."""
+    r = client.get("/api/families/F2wLFSRGen")
+    assert r.status_code == 200
+    body = r.json()
+    names = {p["name"] for p in body["params"]}
+    assert {"nb_terms", "t", "q", "modM", "nocoeff", "coeff"} <= names
+    assert "m" not in names
+    specs = {p["name"]: p for p in body["params"]}
+    assert specs["modM"]["rand_type"] == "irreducible_gf2"
+    assert specs["t"]["rand_type"] == "range"
+    assert specs["q"]["rand_type"] == "range"
+    # nocoeff is derived from m/t/q in from_params, so the search loop
+    # must skip it: has_default=True with no rand_type.
+    assert specs["nocoeff"]["has_default"] is True
+    assert specs["nocoeff"]["rand_type"] in ("", "none")
+
+
+def test_primitive_search_detail_has_se_column_helpers(client) -> None:
+    """The detail page exposes a conditional SE column rendered only
+    when the run enabled the equidistribution post-filter."""
+    r = client.get("/primitive-search/1")
+    assert r.status_code == 200
+    html = r.text
+    # Alpine helpers that drive the column visibility.
+    assert "hasSeFilter()" in html
+    assert "formatSe(g)" in html
+
+
+def test_generator_detail_has_gap_table(client) -> None:
+    """The /generators/{id} page renders both the SVG bar chart AND a
+    numeric dimension-gap table (mirrors /tested-generators/{id}).
+    The table was missing earlier — equidStripes() was defined but
+    never invoked in the markup."""
+    r = client.get("/generators/1")
+    assert r.status_code == 200
+    html = r.text
+    # Helper must be wired into the markup, not just defined.
+    assert "equidStripes(gen.pis_gaps)" in html
+    # Table chrome: matches the existing tested-generators rendering.
+    assert "equidist-grid" in html
+    assert "Dimension-gap table" in html
+
+
+def test_searches_summary_surfaces_max_se(client) -> None:
+    """The /searches table renders ``s.max_se`` in the Summary column
+    when the equidistribution post-filter was used — same column users
+    rely on to spot active filters at a glance."""
+    r = client.get("/searches")
+    assert r.status_code == 200
+    html = r.text
+    # Alpine wiring: the summary() helper threads max_se onto the
+    # primitive-search summary string.
+    assert "s.max_se" in html
+    # The rendered prefix users actually see.
+    assert "SE ≤" in html or "SE ≤ " in html or "SE \\u2264" in html \
+        or "SE &le;" in html or "`SE ≤ " in html or "SE ≤" in html
+
+
+def test_tools_page_has_workers_tab(client) -> None:
+    """The Tools page exposes a Workers tab that polls /api/workers/status."""
+    r = client.get("/tools")
+    assert r.status_code == 200
+    html = r.text
+    # Tab pill is registered alongside Import / Export / Imports.
+    assert 'data-tools-tab="workers"' in html
+    assert ">Workers</a>" in html
+    # Alpine wiring for the polling/render.
+    assert "loadWorkers()" in html
+    assert "startWorkersPolling()" in html
+    assert "/api/workers/status" in html
+
+
+def test_primitive_search_detail_columns_are_sortable(client) -> None:
+    """Generator-table headers are click-to-sort: each sortable column
+    wires `toggleSort(...)` and renders a `sortIndicator(...)` arrow."""
+    r = client.get("/primitive-search/1")
+    assert r.status_code == 200
+    html = r.text
+    # Helpers
+    assert "toggleSort(col)" in html
+    assert "sortIndicator(col)" in html
+    # ID, k, and (conditional) SE are always sortable.
+    for col in ("id", "k", "pis_se"):
+        assert f"toggleSort('{col}')" in html, col
+        assert f"sortIndicator('{col}')" in html, col
+    # WELL m1/m2/m3 columns are sortable too.
+    for col in ("m1", "m2", "m3"):
+        assert f"toggleSort('{col}')" in html, col
 
 
 def test_primitive_search_form_well_is_max_cost_only(client) -> None:

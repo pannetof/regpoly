@@ -14,31 +14,185 @@ starred: true
 tags: [xorshift, 128bit, Marsaglia]
 
 abstract: |
-  Marsaglia's 128-bit Xor-shift generator: four 32-bit words rotated
-  through a triple-shift recurrence (parametrised by a shift triple
-  ``(a, b, c)``) producing 32-bit output. The paper tabulates 81
-  triples that yield maximum-length sequences over the 128-bit state
-  space (period 2^{128} - 1).
+  Marsaglia's family of fast Xor-shift RNGs with periods 2ⁿ−1 for
+  n = 32, 64, 96, 128, 160, 192.  Each generator combines a small
+  number of `y ^ (y << a)` / `y ^ (y >> b)` operations on one or more
+  32-bit (or 64-bit) state words.  The paper tabulates 81 full-period
+  triples for the 32-bit single-word case, 275 for the 64-bit case,
+  and gives 4 / 4 / 4 / 3 explicit triples for the n = 64 / 96 / 128 /
+  160 promotion forms.  Marsaglia's named C functions `xor()`,
+  `xor64()`, `xor96`, `xor128()`, `xor160` are all registered below.
 
 notes: |
-  Cross-check fixture (with both the canonical xorshift-2 form and
-  the search-result xorshift-5 form): ``docs/library/xorshift_params.yaml``.
-  ``pattern=0`` selects the xorshift-2 recurrence; ``pattern=1`` the
-  xorshift-5 recurrence.
+  All named generators below are registered against MarsaXorshiftGen
+  (type 1 for the single-word forms, type 2 for the
+  `(I+R^b)(I+L^a) ⊕ (I+R^c)` promotion forms, and type 100 for the
+  4-xorshift n=128 alternative).
+
+  Panneton & L'Ecuyer (2005, ``panneton-lecuyer-2005-xorshift.yaml``)
+  analyse these generators in depth and find that the three-xorshift
+  forms all fail empirical tests in TestU01 — see that paper's Tables
+  III–IV for the search-result replacements.
 
 generators:
-  - id: marsaglia-5-14-1-xorshift2
-    display: Xorshift128 (5,14,1) — xorshift-2 form
-    family: XorShift128Gen
+  # ── Marsaglia 2003 named C functions (MarsaXorshiftGen form) ─────────
+  #
+  # xor(), xor64(), xor96(), xor128(), xor160() are the named generators
+  # in Marsaglia's paper.  Each is re-expressed here as a MarsaXorshiftGen
+  # parameter set so the runtime can analyse them under the same kernel
+  # as the rest of the family.  Shift sign convention: positive = right
+  # shift, negative = left shift; in-list order is application order.
+
+  - id: marsaglia-2003-xor
+    display: "xor() — Marsaglia 32-bit single-word, [a,b,c]=(13,17,5)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 1, w: 32, r: 1, shifts: [-13, 17, -5]}
+        tempering: []
+    notes: |
+      Marsaglia's named C function `xor()` (his "favorite" triple).
+      Body: `y^=(y<<13); y^=(y>>17); y^=(y<<5);`.  Period 2³²−1.
+
+  - id: marsaglia-2003-xor64
+    display: "xor64() — Marsaglia 64-bit single-word, [a,b,c]=(13,7,17)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    components:
+      - family: MarsaXorshiftGen
+        L: 64
+        params: {type: 1, w: 64, r: 1, shifts: [-13, 7, -17]}
+        tempering: []
+    notes: |
+      Marsaglia's named C function `xor64()`.
+      Body: `x^=(x<<13); x^=(x>>7); x^=(x<<17);`.  Period 2⁶⁴−1.
+
+  - id: marsaglia-2003-xor96
+    display: "xor96 — Marsaglia 96-bit triples form, [a,b,c]=(10,5,26)"
+    family: MarsaXorshiftGen
     target: tested_generator
     combined: false
     Lmax: 32
     components:
-      - family: XorShift128Gen
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 3, m: 1, p: [-10, 5, 0], q: [26, 0, 0]}
+        tempering: []
+    notes: |
+      Marsaglia's xor96 form (one of four full-period triples listed):
+      `t=(x^(x<<a)); x=y; y=z; return z=(z^(z>>c))^(t^(t>>b));`
+      with (a,b,c)=(10,5,26).  Period 2⁹⁶−1.  Other Marsaglia triples
+      for n=96: (13,19,3), (1,17,2), (10,1,26) — the last appears in
+      Panneton & L'Ecuyer (2005, §5) as the type-II example
+      `((I+R¹)(I+L¹⁰),(I+R²⁶),1)`.
+
+  - id: marsaglia-2003-xor128-named
+    display: "xor128() — Marsaglia named function, [a,b,c]=(11,8,19)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 4, m: 1, p: [-11, 8, 0], q: [19, 0, 0]}
+        tempering: []
+    notes: |
+      Marsaglia's named C function `xor128()` from the paper's Summary
+      section, used as his canonical 2¹²⁸−1 RNG (≈220 M/s on a
+      1800 MHz PC at publication).
+      Body: `t=(x^(x<<11)); x=y; y=z; z=w; w=(w^(w>>19))^(t^(t>>8));`.
+
+  - id: marsaglia-2003-xor128-4xor
+    display: "xor128 (4-xorshift form) — Marsaglia [a,b,c,d]=(20,11,27,6)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
         L: 32
         params:
-          a: 5
-          b: 14
-          c: 1
-          pattern: 0
+          type: 100
+          w: 32
+          r: 4
+          mi_positions: [4, 3, 2, 1]
+          mi_counts: [1, 1, 1, 1]
+          mi_shifts: [-20, 11, -27, 6]
         tempering: []
+    notes: |
+      Marsaglia's alternative 4-xorshift form for n=128 (paper §3.1):
+      `t=(x^(x<<20))^(y^(y>>11))^(z^(z<<27))^(w^(w>>6));
+       x=y; y=z; z=w; return(w=t);`
+      v_n = (I+L²⁰) v_{n−4} ⊕ (I+R¹¹) v_{n−3} ⊕ (I+L²⁷) v_{n−2}
+            ⊕ (I+R⁶) v_{n−1}.  Period 2¹²⁸−1.
+
+  - id: marsaglia-2003-xor160-a
+    display: "xor160 — Marsaglia 160-bit, [a,b,c]=(2,1,4)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 5, m: 1, p: [-2, 1, 0], q: [4, 0, 0]}
+        tempering: []
+    notes: |
+      Marsaglia's xor160 form (type-II promotion, r=5):
+      `t=(x^(x<<a)); x=y; y=z; z=w; w=v; return v=(v^(v>>c))^(t^(t>>b));`
+      with (a,b,c)=(2,1,4).  Period 2¹⁶⁰−1.  Panneton & L'Ecuyer (2005,
+      §5) reproduce this as the type-II generator
+      `((I+R¹)(I+L²),(I+R⁴),1)` with r=5.
+
+      **Paper typo note.** Marsaglia's printed pattern writes the first
+      shift as `(x^(x>>a))` (right shift), making the recurrence use
+      only right xorshifts — but Panneton & L'Ecuyer Proposition 4.1
+      proves that an all-right-shift generator cannot have irreducible
+      χ, hence cannot reach period 2¹⁶⁰−1.  The first shift must be a
+      LEFT shift to match the n=96 / n=128 promotion forms in the same
+      section.  We encode the corrected form: p=[-a, b, 0] gives one
+      left shift followed by one right shift, matching Panneton's
+      G = (I+R^b)(I+L^a).
+
+  - id: marsaglia-2003-xor160-b
+    display: "xor160 — Marsaglia 160-bit, [a,b,c]=(7,13,6)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 5, m: 1, p: [-7, 13, 0], q: [6, 0, 0]}
+        tempering: []
+    notes: |
+      Marsaglia's second xor160 triple (a,b,c)=(7,13,6).  Period 2¹⁶⁰−1.
+      Encoded with the corrected pattern (left shift `a`, right shift
+      `b`, right shift `c`) — see xor160-a notes for the typo
+      discussion.
+
+  - id: marsaglia-2003-xor160-c
+    display: "xor160 — Marsaglia 160-bit, [a,b,c]=(1,1,20)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 5, m: 1, p: [-1, 1, 0], q: [20, 0, 0]}
+        tempering: []
+    notes: |
+      Marsaglia's third xor160 triple (a,b,c)=(1,1,20).  Period 2¹⁶⁰−1.
+      Encoded with the corrected pattern (left shift `a`, right shift
+      `b`, right shift `c`) — see xor160-a notes for the typo
+      discussion.

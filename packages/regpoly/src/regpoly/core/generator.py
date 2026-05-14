@@ -35,8 +35,6 @@ _FAMILY_ALIASES: dict[str, str] = {
     "AC1D":          "AC1DGen",
     "carry":         "WELLGen",
     "Carry2Gen":     "WELLGen",
-    "xorshift":      "XorShift128Gen",
-    "XORSHIFT128":   "XorShift128Gen",
     "tinymt":        "TinyMT32Gen",
     "TinyMT":        "TinyMT32Gen",
     "rmt":           "RMT64Gen",
@@ -56,7 +54,6 @@ _FAMILY_ALIASES: dict[str, str] = {
     "SFMT":            "SFMTGen",
     "dSFMTGen":        "DSFMTGen",
     "MTGP":            "MTGPGen",
-    "XorShift128":     "XorShift128Gen",
     "TinyMT32":        "TinyMT32Gen",
     "RMT64":           "RMT64Gen",
 }

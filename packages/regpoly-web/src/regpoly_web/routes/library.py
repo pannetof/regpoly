@@ -62,6 +62,22 @@ def _default_test_methods_for(g: Generator) -> dict[str, str | None]:
     return {t: cpp_gen.default_test_method(t) for t in _KNOWN_TESTS}
 
 
+_DEFAULT_METHODS_TIMEOUT_SECONDS = float(
+    # is_full_period() on non-Mersenne-prime K values factors a
+    # 2^K-1 number by trial division up to 2^30; for K=800 that's
+    # tens of seconds to minutes. Bound the call so a single
+    # poison-pill entry can't hang the web event loop. On timeout
+    # we cache None to skip retries — the UI degrades to "pick a
+    # method yourself" instead of blocking forever.
+    # Env override exists for the rare case someone wants to wait
+    # out a legitimately slow factorisation.
+    # 10s gives ~3× headroom over the C++ wall-clock budget for
+    # ``factor_mersenne`` (≈3s after the Pollard's rho cutover) while
+    # still keeping the page interactive on a truly stuck call.
+    __import__("os").environ.get("REGPOLY_DEFAULT_METHODS_TIMEOUT", "10")
+)
+
+
 async def _default_test_methods_cached(
     request: Request, paper: Paper, g: Generator,
 ) -> dict[str, str | None]:
@@ -73,6 +89,15 @@ async def _default_test_methods_cached(
     automatically. The cache lives on app.state for the lifetime of
     the FastAPI process; entries from older mtimes become unreachable
     once any caller re-asks (memory grows by O(catalog size) at most).
+
+    Wrapped in ``asyncio.wait_for`` so the C++ primitivity check
+    (which trial-divides 2^K-1 for non-Mersenne K and can take
+    minutes) can't block the FastAPI event loop indefinitely. On
+    timeout we cache the "unknown" fallback so the same entry doesn't
+    re-spawn a doomed thread every refresh. Note: a timed-out thread
+    keeps running in the background until the C++ call returns — a
+    real fix needs an iteration cap in ``factor_mersenne``. This is
+    the safety net until then.
     """
     cache: dict[tuple[str, float], dict[str, str | None]] = (
         getattr(request.app.state, "_default_methods_cache", None)
@@ -81,7 +106,20 @@ async def _default_test_methods_cached(
     key = (g.id, float(getattr(paper, "source_mtime", 0.0)))
     if key in cache:
         return cache[key]
-    result = await asyncio.to_thread(_default_test_methods_for, g)
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(_default_test_methods_for, g),
+            timeout=_DEFAULT_METHODS_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        log.warning(
+            "default_test_method for %s exceeded %.1fs; caching "
+            "None fallback. Likely cause: is_full_period() trial-"
+            "divides 2^K-1 and K (=%d) is not a Mersenne-prime "
+            "exponent.", g.id, _DEFAULT_METHODS_TIMEOUT_SECONDS,
+            getattr(g, "Lmax", -1),
+        )
+        result = {t: None for t in _KNOWN_TESTS}
     cache[key] = result
     return result
 

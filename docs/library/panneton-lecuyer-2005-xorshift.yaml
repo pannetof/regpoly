@@ -1,0 +1,633 @@
+id: panneton-lecuyer-2005-xorshift
+authors:
+  - {family: Panneton, given: François}
+  - {family: "L'Ecuyer", given: Pierre}
+year: 2005
+title: "On the Xorshift Random Number Generators"
+venue: ACM Transactions on Modeling and Computer Simulation
+volume: "15"
+issue: "4"
+pages: "346–361"
+doi: https://doi.org/10.1145/1113316.1113319
+pdf: docs/papers/xorshift.pdf
+bibkey: PannetonLEcuyer2005Xorshift
+starred: true
+tags: [xorshift, F2-linear, equidistribution]
+
+abstract: |
+  Marsaglia (2003) introduced a class of very fast xorshift random
+  number generators whose implementation uses three xorshift
+  operations.  This paper studies these generators within the family
+  of F₂-linear recurrences (Tausworthe, LFSR, GFSR, Mersenne twister,
+  WELL, …) and shows that, even when the equidistribution criterion
+  Δ₁ is small, most three-xorshift generators fail simple empirical
+  tests in TestU01.  The authors search the type-II
+  (vi = G vi−m ⊕ H vi−r) and type-III (three-tap) classes for w=32
+  and tabulate the best generators found in Tables III and IV.  They
+  also propose a seven-xorshift generator (Fig. 1) with Δ₁ = 9 and a
+  thirteen-xorshift variant that pass the full Crush battery.
+
+notes: |
+  Reproductions: every Δ₁ value in Tables III and IV is reproduced
+  byte-for-byte by the test
+  `packages/regpoly-cpp/tests/python/test_panneton_lecuyer_xorshift_tables.py`,
+  which builds the (rw × rw) GF(2) transition matrix in strict
+  32-bit semantics and runs the existing matricial-DE kernel.
+
+  The C++ family is `MarsaXorshiftGen` (the same class that already
+  served Marsaglia 2003).  Table III generators use `type: 2`
+  (two-component recurrence with up to three xorshifts per side);
+  Table IV generators use `type: 100` (multi-tap with arbitrary
+  shifts per tap).  Shift sign convention: positive = right shift,
+  negative = left shift; the in-list order is the *application*
+  order, i.e. the rightmost matrix factor in the paper appears
+  first.
+
+  `MarsaXorshiftGen.next()` masks intermediate values to w bits
+  after every shift so the runtime semantics match the paper's
+  `unsigned int` arithmetic: each xorshift matrix acts on a single
+  w-bit word, never on more than w words.  The paper-faithful test
+  above and an end-to-end runtime smoke test both confirm that the
+  Δ₁ values reproduced here are the same whether obtained from the
+  abstract transition matrix or from `MarsaXorshiftGen.next()`.
+
+generators:
+  # ── Table III: type II (vi = G vi−m ⊕ H vi−r), w = 32 ────────────────
+
+  - id: panneton-lecuyer-2005-tiii-01
+    display: "Table III #1 (r=2, Δ₁=4)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 2, m: 1, p: [-11, 0, 0], q: [-19, 13, 0]}
+        tempering: []
+    notes: |
+      H = (I + L¹¹), G = (I + R¹³)(I + L¹⁹).  Paper Δ₁ = 4 — the
+      smallest in Table III.
+
+  - id: panneton-lecuyer-2005-tiii-02
+    display: "Table III #2 (r=2, Δ₁=7)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 2, m: 1, p: [-11, 0, 0], q: [13, -19, 0]}
+        tempering: []
+    notes: |
+      H = (I + L¹¹), G = (I + L¹⁹)(I + R¹³).
+
+  - id: panneton-lecuyer-2005-tiii-03
+    display: "Table III #3 (r=2, Δ₁=7)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 2, m: 1, p: [-9, 8, 0], q: [-22, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R⁸)(I + L⁹), G = (I + L²²).
+
+  - id: panneton-lecuyer-2005-tiii-04
+    display: "Table III #4 (r=2, Δ₁=7)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 2, m: 1, p: [9, -11, 0], q: [-17, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + L¹¹)(I + R⁹), G = (I + L¹⁷).
+
+  - id: panneton-lecuyer-2005-tiii-05
+    display: "Table III #5 (r=3, Δ₁=11)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 3, m: 1, p: [-23, 0, 0], q: [-13, 4, 0]}
+        tempering: []
+    notes: |
+      H = (I + L²³), G = (I + R⁴)(I + L¹³).
+
+  - id: panneton-lecuyer-2005-tiii-06
+    display: "Table III #6 (r=3, Δ₁=12)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 3, m: 1, p: [-23, 0, 0], q: [7, -11, 0]}
+        tempering: []
+    notes: |
+      H = (I + L²³), G = (I + L¹¹)(I + R⁷).
+
+  - id: panneton-lecuyer-2005-tiii-07
+    display: "Table III #7 (r=3, Δ₁=12)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 3, m: 1, p: [-23, 0, 0], q: [-11, 7, 0]}
+        tempering: []
+    notes: |
+      H = (I + L²³), G = (I + R⁷)(I + L¹¹).
+
+  - id: panneton-lecuyer-2005-tiii-08
+    display: "Table III #8 (r=3, Δ₁=13)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 3, m: 1, p: [-18, 0, 0], q: [-13, 5, 0]}
+        tempering: []
+    notes: |
+      H = (I + L¹⁸), G = (I + R⁵)(I + L¹³).
+
+  - id: panneton-lecuyer-2005-tiii-09
+    display: "Table III #9 (r=4, Δ₁=13)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 4, m: 1, p: [-11, 7, 0], q: [-20, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R⁷)(I + L¹¹), G = (I + L²⁰).
+
+  - id: panneton-lecuyer-2005-tiii-10
+    display: "Table III #10 (r=4, Δ₁=17)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 4, m: 1, p: [-11, 7, 0], q: [-19, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R⁷)(I + L¹¹), G = (I + L¹⁹).
+
+  - id: panneton-lecuyer-2005-tiii-11
+    display: "Table III #11 (r=4, Δ₁=17)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 4, m: 1, p: [-17, 0, 0], q: [-12, 5, 0]}
+        tempering: []
+    notes: |
+      H = (I + L¹⁷), G = (I + R⁵)(I + L¹²).
+
+  - id: panneton-lecuyer-2005-tiii-12
+    display: "Table III #12 (r=4, Δ₁=19)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 4, m: 1, p: [-19, 0, 0], q: [-7, 15, 0]}
+        tempering: []
+    notes: |
+      H = (I + L¹⁹), G = (I + R¹⁵)(I + L⁷).
+
+  - id: panneton-lecuyer-2005-tiii-13
+    display: "Table III #13 (r=4, Δ₁=19)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 4, m: 1, p: [7, -11, 0], q: [-19, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + L¹¹)(I + R⁷), G = (I + L¹⁹).
+
+  - id: panneton-lecuyer-2005-tiii-14
+    display: "Table III #14 (r=5, Δ₁=18)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 5, m: 1, p: [-11, 7, 0], q: [-20, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R⁷)(I + L¹¹), G = (I + L²⁰).
+
+  - id: panneton-lecuyer-2005-tiii-15
+    display: "Table III #15 (r=5, Δ₁=19)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 5, m: 1, p: [-11, 6, 0], q: [-20, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R⁶)(I + L¹¹), G = (I + L²⁰).
+
+  - id: panneton-lecuyer-2005-tiii-16
+    display: "Table III #16 (r=5, Δ₁=25)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 5, m: 3, p: [6, -9, 0], q: [-20, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + L⁹)(I + R⁶), G = (I + L²⁰).
+
+  - id: panneton-lecuyer-2005-tiii-17
+    display: "Table III #17 (r=5, Δ₁=25)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 5, m: 3, p: [-9, 6, 0], q: [-20, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R⁶)(I + L⁹), G = (I + L²⁰).
+
+  - id: panneton-lecuyer-2005-tiii-18
+    display: "Table III #18 (r=8, Δ₁=45)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 8, m: 3, p: [-19, 13, 0], q: [-8, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R¹³)(I + L¹⁹), G = (I + L⁸).
+
+  - id: panneton-lecuyer-2005-tiii-19
+    display: "Table III #19 (r=8, Δ₁=48)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 8, m: 3, p: [-17, 14, 0], q: [-8, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R¹⁴)(I + L¹⁷), G = (I + L⁸).
+
+  - id: panneton-lecuyer-2005-tiii-20
+    display: "Table III #20 (r=8, Δ₁=52)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 8, m: 1, p: [-15, 7, 0], q: [-10, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R⁷)(I + L¹⁵), G = (I + L¹⁰).
+
+  - id: panneton-lecuyer-2005-tiii-21
+    display: "Table III #21 (r=8, Δ₁=54)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 8, m: 1, p: [-8, 11, 0], q: [-21, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R¹¹)(I + L⁸), G = (I + L²¹).
+
+  - id: panneton-lecuyer-2005-tiii-22
+    display: "Table III #22 (r=12, Δ₁=74)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 12, m: 5, p: [11, -21, 0], q: [-6, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + L²¹)(I + R¹¹), G = (I + L⁶).  One of three Table III
+      entries that pass the full Crush battery (alongside #28, #29).
+
+  - id: panneton-lecuyer-2005-tiii-23
+    display: "Table III #23 (r=12, Δ₁=79)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 12, m: 5, p: [-7, 6, 0], q: [-22, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R⁶)(I + L⁷), G = (I + L²²).
+
+  - id: panneton-lecuyer-2005-tiii-24
+    display: "Table III #24 (r=12, Δ₁=84)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 12, m: 1, p: [-7, 8, 0], q: [-18, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R⁸)(I + L⁷), G = (I + L¹⁸).
+
+  - id: panneton-lecuyer-2005-tiii-25
+    display: "Table III #25 (r=12, Δ₁=90)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 12, m: 5, p: [6, -7, 0], q: [-22, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + L⁷)(I + R⁶), G = (I + L²²).
+
+  - id: panneton-lecuyer-2005-tiii-26
+    display: "Table III #26 (r=25, Δ₁=123)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 25, m: 9, p: [-11, 8, 0], q: [-18, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + R⁸)(I + L¹¹), G = (I + L¹⁸).  Period 2^{800} − 1;
+      better Δ₁ than TT800 (Δ₁ = 261).
+
+  - id: panneton-lecuyer-2005-tiii-27
+    display: "Table III #27 (r=25, Δ₁=137)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 25, m: 9, p: [8, -11, 0], q: [-18, 0, 0]}
+        tempering: []
+    notes: |
+      H = (I + L¹¹)(I + R⁸), G = (I + L¹⁸).
+
+  - id: panneton-lecuyer-2005-tiii-28
+    display: "Table III #28 (r=25, Δ₁=155)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 25, m: 7, p: [-20, 0, 0], q: [-5, 13, 0]}
+        tempering: []
+    notes: |
+      H = (I + L²⁰), G = (I + R¹³)(I + L⁵).  Passes SmallCrush and
+      Crush — but the paper recommends combining with another RNG
+      class before serious simulation use.
+
+  - id: panneton-lecuyer-2005-tiii-29
+    display: "Table III #29 (r=25, Δ₁=158)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params: {type: 2, w: 32, r: 25, m: 2, p: [-10, 0, 0], q: [-19, 13, 0]}
+        tempering: []
+    notes: |
+      H = (I + L¹⁰), G = (I + R¹³)(I + L¹⁹).  Passes the full Crush
+      battery.
+
+  # ── Table IV: type III (three-tap), w = 32 ────────────────────────────
+
+  - id: panneton-lecuyer-2005-tiv-31
+    display: "Table IV #31 (r=12, Δ₁=96)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params:
+          type: 100
+          w: 32
+          r: 12
+          mi_positions: [2, 3, 12]
+          mi_counts: [1, 1, 1]
+          mi_shifts: [-7, 11, -21]
+        tempering: []
+    notes: |
+      vₙ = (I+R¹¹) vₙ₋₃ + (I+L⁷) vₙ₋₂ + (I+L²¹) vₙ₋₁₂.
+
+  - id: panneton-lecuyer-2005-tiv-32
+    display: "Table IV #32 (r=12, Δ₁=100)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params:
+          type: 100
+          w: 32
+          r: 12
+          mi_positions: [5, 11, 12]
+          mi_counts: [1, 1, 1]
+          mi_shifts: [-5, -18, 11]
+        tempering: []
+    notes: |
+      vₙ = (I+L¹⁸) vₙ₋₁₁ + (I+L⁵) vₙ₋₅ + (I+R¹¹) vₙ₋₁₂.
+
+  - id: panneton-lecuyer-2005-tiv-33
+    display: "Table IV #33 (r=12, Δ₁=102)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params:
+          type: 100
+          w: 32
+          r: 12
+          mi_positions: [7, 9, 12]
+          mi_counts: [1, 1, 1]
+          mi_shifts: [-18, 11, -5]
+        tempering: []
+    notes: |
+      vₙ = (I+R¹¹) vₙ₋₉ + (I+L¹⁸) vₙ₋₇ + (I+L⁵) vₙ₋₁₂.
+
+  - id: panneton-lecuyer-2005-tiv-34
+    display: "Table IV #34 (r=12, Δ₁=103)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params:
+          type: 100
+          w: 32
+          r: 12
+          mi_positions: [5, 10, 12]
+          mi_counts: [1, 1, 1]
+          mi_shifts: [-5, -18, 11]
+        tempering: []
+    notes: |
+      vₙ = (I+L¹⁸) vₙ₋₁₀ + (I+L⁵) vₙ₋₅ + (I+R¹¹) vₙ₋₁₂.
+
+  - id: panneton-lecuyer-2005-tiv-35
+    display: "Table IV #35 (r=25, Δ₁=186)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params:
+          type: 100
+          w: 32
+          r: 25
+          mi_positions: [4, 10, 25]
+          mi_counts: [1, 1, 1]
+          mi_shifts: [-21, 11, -7]
+        tempering: []
+    notes: |
+      vₙ = (I+R¹¹) vₙ₋₁₀ + (I+L²¹) vₙ₋₄ + (I+L⁷) vₙ₋₂₅.
+
+  - id: panneton-lecuyer-2005-tiv-36
+    display: "Table IV #36 (r=25, Δ₁=188)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params:
+          type: 100
+          w: 32
+          r: 25
+          mi_positions: [5, 24, 25]
+          mi_counts: [1, 1, 1]
+          mi_shifts: [-5, 11, -18]
+        tempering: []
+    notes: |
+      vₙ = (I+R¹¹) vₙ₋₂₄ + (I+L⁵) vₙ₋₅ + (I+L¹⁸) vₙ₋₂₅.
+
+  - id: panneton-lecuyer-2005-tiv-37
+    display: "Table IV #37 (r=25, Δ₁=190)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params:
+          type: 100
+          w: 32
+          r: 25
+          mi_positions: [7, 24, 25]
+          mi_counts: [1, 1, 1]
+          mi_shifts: [-5, 11, -18]
+        tempering: []
+    notes: |
+      vₙ = (I+R¹¹) vₙ₋₂₄ + (I+L⁵) vₙ₋₇ + (I+L¹⁸) vₙ₋₂₅.
+
+  - id: panneton-lecuyer-2005-tiv-38
+    display: "Table IV #38 (r=25, Δ₁=219)"
+    family: MarsaXorshiftGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: MarsaXorshiftGen
+        L: 32
+        params:
+          type: 100
+          w: 32
+          r: 25
+          mi_positions: [5, 16, 25]
+          mi_counts: [1, 1, 1]
+          mi_shifts: [-19, 11, -5]
+        tempering: []
+    notes: |
+      vₙ = (I+R¹¹) vₙ₋₁₆ + (I+L¹⁹) vₙ₋₅ + (I+L⁵) vₙ₋₂₅.

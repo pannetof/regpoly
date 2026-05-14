@@ -49,6 +49,13 @@ public:
     BitVect copy() const;
     void copy_part_from(const BitVect& other, int l);
 
+    // ── Arbitrary-offset slice get/set (used by the MarsaXorshift
+    //     wide path when w > 64).  start_bit is bit-0-is-MSB.  The
+    //     slice get returns an n_bits-wide BitVect; set writes
+    //     slice.nbits() bits starting at start_bit. ───────────────────────
+    BitVect get_slice(int start_bit, int n_bits) const;
+    void    set_slice(int start_bit, const BitVect& slice);
+
     // ── Zero out ─────────────────────────────────────────────────────────
     void zero();
 

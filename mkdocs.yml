@@ -98,7 +98,6 @@ nav:
       - Matsumoto: generators/MatsumotoGen.md
       - Marsaglia XORShift: generators/MarsaXorshiftGen.md
       - AC1D: generators/AC1DGen.md
-      - XorShift128: generators/XorShift128Gen.md
       - MELG: generators/MELGGen.md
   - Library:
       - library/index.md
@@ -142,7 +141,6 @@ nav:
           - "Tausworthe":     notebooks/families/TauswortheGen.ipynb
           - "TinyMT32":       notebooks/families/TinyMT32Gen.ipynb
           - "WELL":           notebooks/families/WELLGen.ipynb
-          - "XorShift128":    notebooks/families/XorShift128Gen.ipynb
           - "Combination":    notebooks/families/CombinedGenerator.ipynb
   - Dev:
       - Architecture: dev/architecture.md

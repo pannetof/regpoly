@@ -27,6 +27,13 @@
          href="#" @click.prevent="setTab('imports')"
          data-tools-tab="imports">Imports</a>
     </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" role="tab"
+         :aria-selected="tab === 'workers' ? 'true' : 'false'"
+         :class="tab === 'workers' ? 'active' : ''"
+         href="#" @click.prevent="setTab('workers')"
+         data-tools-tab="workers">Workers</a>
+    </li>
   </ul>
 
   {# ─── Import tab ─── #}
@@ -228,6 +235,119 @@ Replace ?family= with the family you want.">
     </div>
   </div>
 
+  {# ─── Workers tab ─── #}
+  <div x-show="tab === 'workers'" data-tools-pane="workers">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <h3 class="card-title mb-0">Worker pools (this container)</h3>
+        <span class="text-secondary small ms-2"
+              x-show="workersLastRefresh"
+              x-text="'refreshed ' + workersLastRefresh"></span>
+        <div class="ms-auto">
+          <button type="button" class="btn btn-sm btn-outline-secondary"
+                  @click="loadWorkers()" :disabled="workersLoading">
+            <span x-show="!workersLoading">Refresh</span>
+            <span x-show="workersLoading">Refreshing…</span>
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <template x-if="workersError">
+          <div class="alert alert-danger mb-0" x-text="workersError"></div>
+        </template>
+        <table class="table table-sm table-vcenter card-table mono small"
+               x-show="!workersError">
+          <thead>
+            <tr>
+              <th>Pool</th><th>Slots</th>
+              <th title="Tasks being executed by a worker right now (≤ Slots).">Running</th>
+              <th title="Submitted to the pool but waiting for a free slot.">Queued</th>
+              <th>Tasks</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="p in workersData.pools" :key="p.name">
+              <tr>
+                <td x-text="p.name"></td>
+                <td x-text="p.max_workers == null ? '—' : p.max_workers"></td>
+                <td x-text="p.running == null ? '—' : p.running"></td>
+                <td x-text="p.queued == null ? '—' : p.queued"></td>
+                <td>
+                  <template x-if="p.note">
+                    <span class="text-secondary small" x-text="p.note"></span>
+                  </template>
+                  <template x-if="!p.note && (p.running_tasks || []).length === 0 && (p.queued_tasks || []).length === 0">
+                    <span class="text-secondary small">idle</span>
+                  </template>
+                  <template x-for="t in (p.running_tasks || [])" :key="'r-' + t.kind + '/' + t.run_id">
+                    <span class="badge bg-green-lt me-1"
+                          x-text="t.kind + ' #' + t.run_id + (t.elapsed_seconds != null ? ' (' + t.elapsed_seconds + 's)' : '')"
+                          title="Running"></span>
+                  </template>
+                  <template x-for="t in (p.queued_tasks || [])" :key="'q-' + t.kind + '/' + t.run_id">
+                    <span class="badge bg-secondary-lt me-1"
+                          x-text="t.kind + ' #' + t.run_id"
+                          title="Queued — waiting for a free slot"></span>
+                  </template>
+                </td>
+              </tr>
+            </template>
+            <template x-if="(workersData.pools || []).length === 0">
+              <tr><td colspan="5" class="text-center text-secondary py-3">
+                No pools registered.
+              </td></tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-header">
+        <h3 class="card-title mb-0">Active jobs (DB)</h3>
+        <span class="text-secondary small ms-2">
+          rows with status = running / paused across every task table
+        </span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Kind</th><th>Run ID</th><th>Status</th>
+              <th>Started at</th><th>Elapsed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="j in workersData.active_jobs"
+                      :key="j.kind + '/' + j.run_id">
+              <tr>
+                <td x-text="j.kind"></td>
+                <td>
+                  <a :href="jobUrl(j)" x-text="j.run_id"></a>
+                </td>
+                <td>
+                  <span class="badge"
+                        :class="j.status === 'running' ? 'bg-green-lt'
+                                                       : 'bg-yellow-lt'"
+                        x-text="j.status"></span>
+                </td>
+                <td><small x-text="j.started_at || '—'"></small></td>
+                <td x-text="j.elapsed_seconds == null
+                           ? '—'
+                           : (Math.round(j.elapsed_seconds) + ' s')"></td>
+              </tr>
+            </template>
+            <template x-if="(workersData.active_jobs || []).length === 0">
+              <tr><td colspan="5" class="text-center text-secondary py-3">
+                No active jobs.
+              </td></tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   {# ─── Imports tab (audit trail) ─── #}
   <div x-show="tab === 'imports'" data-tools-pane="imports">
     <div class="card">
@@ -290,6 +410,13 @@ function toolsPage() {
     tgIds: "",
     tgFmt: "csv",
 
+    // Workers tab
+    workersData: { active_jobs: [], pools: [] },
+    workersLoading: false,
+    workersError: "",
+    workersLastRefresh: "",
+    workersTimer: null,
+
     get genIdsList() { return _parseIdsCsv(this.genIds); },
     get tgIdsList()  { return _parseIdsCsv(this.tgIds); },
 
@@ -309,15 +436,20 @@ function toolsPage() {
     init() {
       this.applyURL();
       window.addEventListener("popstate", () => {
-        this.applyURL(); this.load();
+        this.applyURL();
+        this.load();
+        if (this.tab === "workers") this.startWorkersPolling();
+        else this.stopWorkersPolling();
       });
       this.load();
+      if (this.tab === "workers") this.startWorkersPolling();
     },
 
     applyURL() {
       const qs = new URLSearchParams(location.search);
       const t = qs.get("tab");
-      this.tab = (t === "export" || t === "imports") ? t : "import";
+      this.tab = (t === "export" || t === "imports" || t === "workers")
+                 ? t : "import";
     },
 
     setTab(t) {
@@ -328,6 +460,52 @@ function toolsPage() {
         (qs.toString() ? "?" + qs.toString() : "");
       history.pushState({}, "", url);
       if (t === "imports") this.load();
+      if (t === "workers") this.startWorkersPolling();
+      else this.stopWorkersPolling();
+    },
+
+    // ── Workers tab ──────────────────────────────────────────────
+    async loadWorkers() {
+      this.workersLoading = true;
+      try {
+        const r = await fetch("/api/workers/status");
+        if (!r.ok) {
+          this.workersError = "HTTP " + r.status;
+          return;
+        }
+        this.workersData = await r.json();
+        this.workersError = "";
+        const now = new Date();
+        this.workersLastRefresh = now.toLocaleTimeString();
+      } catch (e) {
+        this.workersError = String(e);
+      } finally {
+        this.workersLoading = false;
+      }
+    },
+
+    startWorkersPolling() {
+      this.loadWorkers();
+      if (this.workersTimer) clearInterval(this.workersTimer);
+      // 3 s cadence — busy enough to catch a job within a couple of
+      // ticks, quiet enough not to spam the DB. The endpoint is cheap
+      // (a few small queries + dict introspection).
+      this.workersTimer = setInterval(() => this.loadWorkers(), 3000);
+    },
+
+    stopWorkersPolling() {
+      if (this.workersTimer) {
+        clearInterval(this.workersTimer);
+        this.workersTimer = null;
+      }
+    },
+
+    jobUrl(j) {
+      // Deep-link to the detail page that matches each kind.
+      if (j.kind === "primitive")    return "/primitive-search/" + j.run_id;
+      if (j.kind === "tempering")    return "/tempering-search/" + j.run_id;
+      if (j.kind === "library_test") return "/library-test/"     + j.run_id;
+      return "#";
     },
 
     onFileChange(ev) {

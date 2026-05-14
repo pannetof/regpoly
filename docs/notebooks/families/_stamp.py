@@ -42,7 +42,6 @@ FAMILIES: dict[str, str | None] = {
     "MatsumotoGen":    None,
     "MarsaXorshiftGen": None,
     "AC1DGen":         None,
-    "XorShift128Gen":  None,
 }
 
 AUTO_MARKER = "# stamp:auto-generated"
