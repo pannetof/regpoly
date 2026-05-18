@@ -32,3 +32,30 @@ site/
 
 # Deployment secrets
 deploy/.env
+
+# Sphinx auto-generated paper stubs (from docs/library/*.yaml via conf.py hook)
+docs/papers/bhuvaneswari-bhattacharjee-2026-cellular-automata.md
+docs/papers/blackman-vigna-2022-scrambled.md
+docs/papers/harase-kimoto-2018.md
+docs/papers/lecuyer-1996.md
+docs/papers/lecuyer-1999.md
+docs/papers/marsaglia-2003-xorshift.md
+docs/papers/matsumoto-nishimura-1998.md
+docs/papers/mttoolbox-rmt.md
+docs/papers/nishimura-2000.md
+docs/papers/panneton-lecuyer-2004-f2w.md
+docs/papers/panneton-lecuyer-2005-xorshift.md
+docs/papers/panneton-lecuyer-matsumoto-2006.md
+docs/papers/saito-2009-dsfmt.md
+docs/papers/saito-matsumoto-2008.md
+docs/papers/saito-matsumoto-2011-tinymt.md
+docs/papers/saito-matsumoto-2013-mtgp.md
+docs/papers/_auto_catalog.md
+
+# Sphinx build outputs
+docs/_doxygen/
+.jupyter_cache/
+jupyter_execute/
+
+# Smoke test scratch directory (one-off; will be removed after Step 1 ships)
+docs-smoke/

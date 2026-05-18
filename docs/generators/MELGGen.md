@@ -41,7 +41,7 @@ defined by Harase & Kimoto.
 ## Published parametrisations
 
 A 64-bit / 19937-state configuration is available in the library as
-[`melg19937-64`](/library/melg19937-64) once its YAML is committed.
+[`melg19937-64`](../papers/harase-kimoto-2018.md) once its YAML is committed.
 
 ---
 

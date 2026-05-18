@@ -325,14 +325,14 @@ for locally antithetic output design) are all carried out.
 - S. Tezuka and P. L'Ecuyer. *Efficient and portable combined Tausworthe random
   number generators.* ACM Trans. Model. Comput. Simul. **1** (1991), 99–112.
   [DOI](https://doi.org/10.1145/122124.122127).  Published as
-  [`taus88`](/library/taus88) in the library.
+  [`taus88`](../papers/lecuyer-1996.md) in the library.
 - P. L'Ecuyer. *Maximally equidistributed combined Tausworthe generators.*
   Math. Comp. **65** (1996), 203–213.
   [DOI](https://doi.org/10.1090/S0025-5718-96-00696-5)
 - P. L'Ecuyer. *Tables of maximally equidistributed combined LFSR generators.*
   Math. Comp. **68** (1999), 261–269.
   [JSTOR](https://www.jstor.org/stable/2585109).  Published as
-  [`lfsr113`](/library/lfsr113) in the library.
+  [`lfsr113`](../papers/lecuyer-1999.md) in the library.
 - F. Panneton, P. L'Ecuyer, and M. Matsumoto. *Improved long-period generators
   based on linear recurrences modulo 2.* ACM Trans. Math. Softw. **32** (2006),
   1–16. [WELL family.]

@@ -135,7 +135,7 @@ fixed_params:
   equidistributed uniform pseudo-random number generator.*
   ACM Trans. Model. Comput. Simul. **8** (1998), 3–30.
   [DOI](https://doi.org/10.1145/272991.272995).  Published as
-  [`mt19937`](/library/mt19937) in the library.
+  [`mt19937`](../papers/matsumoto-nishimura-1998.md) in the library.
 - T. Nishimura. *Tables of 64-bit Mersenne Twisters.*
   ACM Trans. Model. Comput. Simul. **10** (2000), 348–357.
   [DOI](https://doi.org/10.1145/369534.369540).

@@ -21,3 +21,6 @@ See [About the bibliography](about.md) for the original paper-catalog notes.
 ## Companion reports
 
 - [Cellular automata equidistribution report](cellular-automata-equidistribution-report.md) — REGPOLY-side reproduction notes for Bhuvaneswari & Bhattacharjee (2026).
+
+```{include} _auto_catalog.md
+```

@@ -132,6 +132,6 @@ for the search-side details.
   pseudorandom number generators.* Math. Comput. Simulation **100**
   (2014), 103–113.
   [DOI](https://doi.org/10.1016/j.matcom.2014.02.002).
-  Published as [`mttoolbox-rmt`](/library/mttoolbox-rmt) in the
+  Published as [`mttoolbox-rmt`](../papers/mttoolbox-rmt.md) in the
   library (the practical source of truth for RMT64 parameters
   remains the upstream MTToolBox `samples/RMT/` distribution).

@@ -109,5 +109,5 @@ layout, SIMD lane assumptions, dSFMT's double-precision splice, etc.
 - {First author}, {Year}. *{Paper title}.*
   {Journal} {volume} ({year}), {pages}.
   [DOI](https://doi.org/{...}).
-  Published as [`{lib_id}`](/library/{lib_id}) in the library.
+  Published as [`{lib_id}`](../papers/{paper_id}.md) in the library.
 - {Other paper if relevant}.

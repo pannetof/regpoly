@@ -8,11 +8,26 @@ regpoly-legacy = { workspace = true }
 
 [dependency-groups]
 docs = [
-    "mkdocs>=1.6",
-    "mkdocs-material>=9.5",
-    "pymdown-extensions>=10.7",
-    "mkdocs-gen-files>=0.5",
-    "mkdocs-jupyter>=0.25",
+    # Sphinx orchestrator
+    "sphinx>=8.0",
+    # PyData Sphinx Theme — NumPy / SciPy / pandas visual language
+    "pydata-sphinx-theme>=0.16",
+    # MyST-Parser — read existing .md narrative pages as-is
+    "myst-parser>=4.0",
+    # MyST-NB — render notebooks with jupyter-cache (hash-based execution)
+    "myst-nb>=1.1",
+    "jupyter-cache>=1.0",
+    # sphinx-design — card grids on the home page
+    "sphinx-design>=0.6",
+    # Tiny QoL extensions
+    "sphinx-copybutton>=0.5",
+    "sphinx-autodoc-typehints>=2.4",
+    # URL redirects so old MkDocs URLs survive the cutover
+    "sphinx-reredirects>=0.1",
+    # C++ via Doxygen → Breathe → Exhale
+    # (requires `doxygen` + `graphviz` on PATH at build time)
+    "breathe>=4.35",
+    "exhale>=0.3",
 ]
 lint = [
     "ruff>=0.6",
@@ -55,12 +70,83 @@ extend-exclude = [
     "docs/notebooks",
 ]
 
-# Phase 0 baseline: enforce only pyflakes (undefined names, unused imports)
-# and import sorting. The full lint + format gate will be tightened in later
-# phases as Python code gets rewritten as thin wrappers around regpoly_cpp.
+# Baseline: enforce only pyflakes (undefined names, unused imports) and
+# import sorting on the whole workspace. The `D` (pydocstyle) rules are
+# scoped to the public-API surface via the per-file overrides below;
+# applying them workspace-wide would warn on every internal helper.
 [tool.ruff.lint]
 select = ["F", "I"]
 ignore = ["F401", "F841"]
+
+# pydocstyle (D) rules on the public-API source dirs. Google convention
+# (matches the [API doc style guide](../docs/dev/api-docs-style.md)).
+# These rules are added incrementally as the docstring backfill lands —
+# any module that's clean per pydocstyle can be removed from the
+# `per-file-ignores` allow-list below.
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+# Scope the D rules to public Python source. Tests, scripts, and the
+# pre-v2 web internals (routes/, tasks/) are kept out of the gate until
+# their backfill catches up.
+[tool.ruff.lint.per-file-ignores]
+# Tests are exempt from D rules (test functions are self-documenting
+# via their assertion patterns; docstrings would mostly be noise).
+"packages/*/tests/**" = ["D"]
+# Auto-generated reference modules.
+"packages/regpoly/tests/*_mttoolbox_reference.py" = ["D"]
+"packages/regpoly/src/regpoly/data/**" = ["D"]
+# Web internals (route handlers, tasks workers, migrations) — internal,
+# not user-facing API. Will be promoted from this exemption list as
+# the backfill progresses.
+"packages/regpoly-web/src/regpoly_web/routes/**" = ["D"]
+"packages/regpoly-web/src/regpoly_web/tasks/**" = ["D"]
+"packages/regpoly-web/src/regpoly_web/migrations/**" = ["D"]
+# regpoly-cpp Python shim (just re-exports the .so).
+"packages/regpoly-cpp/src/regpoly_cpp/**" = ["D"]
+# Legacy reader internals — only LegacyReader / seek_from_legacy /
+# parse_* / public CLI entry are documented. Private parsers are
+# self-contained and would clutter the API ref.
+"packages/regpoly-legacy/src/regpoly_legacy/cli.py" = ["D"]
+
+# Workspace-wide opt-in to the D rules — add module globs here once
+# their backfill is complete. The plan is to flip this from "explicit
+# allow-list" to "enforce on every public module" once every src/
+# tree under packages/ is documented.
+[tool.ruff.lint.extend-per-file-ignores]
+# Public API modules whose backfill is in progress — disable D
+# until the per-module docstring sweep lands. Listed explicitly so
+# the contributor can see what's left.
+"packages/regpoly/src/regpoly/core/bitvect.py" = ["D"]
+"packages/regpoly/src/regpoly/core/matrix.py" = ["D"]
+"packages/regpoly/src/regpoly/core/component.py" = ["D"]
+"packages/regpoly/src/regpoly/core/combination.py" = ["D"]
+"packages/regpoly/src/regpoly/core/combination_build.py" = ["D"]
+"packages/regpoly/src/regpoly/core/transformation.py" = ["D"]
+"packages/regpoly/src/regpoly/core/parametric.py" = ["D"]
+"packages/regpoly/src/regpoly/search/seek.py" = ["D"]
+"packages/regpoly/src/regpoly/search/search_primitive.py" = ["D"]
+"packages/regpoly/src/regpoly/search/tempering_search.py" = ["D"]
+"packages/regpoly/src/regpoly/search/tempering_optimizer.py" = ["D"]
+"packages/regpoly/src/regpoly/search/primitivity.py" = ["D"]
+"packages/regpoly/src/regpoly/analyses/**" = ["D"]
+"packages/regpoly/src/regpoly/io/**" = ["D"]
+"packages/regpoly/src/regpoly/tools/**" = ["D"]
+"packages/regpoly/src/regpoly/well.py" = ["D"]
+"packages/regpoly/src/regpoly/__init__.py" = ["D"]
+"packages/regpoly-legacy/src/regpoly_legacy/__init__.py" = ["D"]
+"packages/regpoly-legacy/src/regpoly_legacy/well_legacy_decode.py" = ["D"]
+"packages/regpoly-legacy/src/regpoly_legacy/tools/**" = ["D"]
+# reader.py: public functions (parse_*) and LegacyReader are documented;
+# the private `_parse_int`/`_parse_hex`/`_tokenise_*` helpers still
+# carry pre-existing inline docstrings that don't match Google style.
+# Removing this ignore is part of the long-tail backfill.
+"packages/regpoly-legacy/src/regpoly_legacy/reader.py" = ["D"]
+"packages/regpoly-web/src/regpoly_web/__init__.py" = ["D"]
+"packages/regpoly-web/src/regpoly_web/app.py" = ["D"]
+"packages/regpoly-web/src/regpoly_web/config.py" = ["D"]
+"packages/regpoly-web/src/regpoly_web/database.py" = ["D"]
+"packages/regpoly-web/src/regpoly_web/models.py" = ["D"]
 
 [tool.pytest.ini_options]
 markers = [

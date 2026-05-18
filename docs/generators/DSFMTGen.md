@@ -119,5 +119,5 @@ structural_params:
   implementation of 128-bit instruction-based fast pseudorandom
   number generator.* Master's thesis, Hiroshima University, 2009.
   [DOI](https://doi.org/10.15027/29071).
-  Published as [`saito-2009-dsfmt`](/library/saito-2009-dsfmt) in
+  Published as [`saito-2009-dsfmt`](../papers/saito-2009-dsfmt.md) in
   the library.

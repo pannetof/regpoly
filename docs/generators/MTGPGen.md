@@ -137,5 +137,5 @@ for the search-side details.
   1–20.
   [DOI](https://doi.org/10.1145/2427023.2427030).
   Published as
-  [`saito-matsumoto-2013-mtgp`](/library/saito-matsumoto-2013-mtgp)
+  [`saito-matsumoto-2013-mtgp`](../papers/saito-matsumoto-2013-mtgp.md)
   in the library.

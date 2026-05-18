@@ -67,7 +67,7 @@ period = 2^k - 1 when T is primitive AND gcd(s, 2^k - 1) = 1
 ## Catalog entries
 
 The full set of paper-published constructions is at
-[`library/bhuvaneswari-bhattacharjee-2026-cellular-automata`](/library/bhuvaneswari-bhattacharjee-2026-cellular-automata).
+[`library/bhuvaneswari-bhattacharjee-2026-cellular-automata`](../papers/bhuvaneswari-bhattacharjee-2026-cellular-automata.md).
 That entry catalogs ~116 generators:
 
 - **R1** (k=32 single CA, weak — Table 1).
@@ -186,7 +186,7 @@ disagreement deficits.
   arXiv preprint 2603.19656.
   [DOI](https://doi.org/10.48550/arXiv.2603.19656).
   Published as
-  [`bhuvaneswari-bhattacharjee-2026-cellular-automata`](/library/bhuvaneswari-bhattacharjee-2026-cellular-automata)
+  [`bhuvaneswari-bhattacharjee-2026-cellular-automata`](../papers/bhuvaneswari-bhattacharjee-2026-cellular-automata.md)
   in the library.
 - Cattell K & Zhang S, 1995.
   *Minimal cost one-dimensional linear hybrid cellular automata of

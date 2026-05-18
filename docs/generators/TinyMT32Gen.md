@@ -132,5 +132,5 @@ for the search-side details.
   Pseudorandom Number Generator (PRNG).* IETF RFC 8682, 2020.
   [DOI](https://doi.org/10.17487/RFC8682).
   Published as
-  [`saito-matsumoto-2011-tinymt`](/library/saito-matsumoto-2011-tinymt)
+  [`saito-matsumoto-2011-tinymt`](../papers/saito-matsumoto-2011-tinymt.md)
   in the library.

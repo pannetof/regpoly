@@ -158,5 +158,5 @@ tunable.
   Quasi-Monte Carlo Methods 2006, Springer (2008), 607–622.
   [DOI](https://doi.org/10.1007/978-3-540-74496-2_36).
   Published as
-  [`saito-matsumoto-2008`](/library/saito-matsumoto-2008) in the
+  [`saito-matsumoto-2008`](../papers/saito-matsumoto-2008.md) in the
   library.
