@@ -803,7 +803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="theory/LCP%20Irreducibility/" class="md-nav__link">
+      <a href="theory/lcp-irreducibility/" class="md-nav__link">
         
   
   
@@ -831,7 +831,7 @@
   
   
     <li class="md-nav__item">
-      <a href="theory/optimzer_temper/" class="md-nav__link">
+      <a href="theory/optimizer_temper/" class="md-nav__link">
         
   
   
@@ -2180,8 +2180,6 @@
       
         
       
-        
-      
     
     
     
@@ -2298,34 +2296,6 @@
     
   
     Web
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="usage/web-user-stories/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Web — user stories
   
 
     
@@ -2964,6 +2934,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3093,6 +3069,90 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dev/postgres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL (local dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dev/regpoly-web-design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — design spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dev/web-user-stories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — user stories
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3178,13 +3238,15 @@
 <h2 id="quick-links">Quick links<a class="headerlink" href="#quick-links" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong><a href="theory/f2-linear-generators/">F₂-linear generator theory</a></strong> — start here.</li>
+<li><strong><a href="theory/">Theory index</a></strong> — all the algorithm specs.</li>
 <li><strong><a href="generators/">Generator catalogue</a></strong> — one page per family (MT, SFMT, WELL, MELG, …).</li>
 <li><strong><a href="library/">Library</a></strong> — published parameter sets, indexed by paper.</li>
 <li><strong><a href="papers/">Papers</a></strong> — bibliography and PDFs.</li>
-<li><strong><a href="usage/python/">Usage</a></strong> — how to drive REGPOLY from Python, C++, the web UI, or notebooks.</li>
+<li><strong><a href="usage/python/">Usage</a></strong> — Python entry point. See also <a href="usage/cpp/">C++ CLI</a>, <a href="usage/web/">Web UI</a>, and <a href="usage/notebooks/">Notebooks</a>.</li>
+<li><strong><a href="dev/architecture/">Dev</a></strong> — architecture, <a href="dev/building/">building</a>, <a href="dev/contributing/">contributing</a>, <a href="dev/postgres/">Postgres dev-env</a>, <a href="dev/regpoly-web-design-spec/">web design spec</a>, <a href="dev/web-user-stories/">user stories</a>.</li>
 </ul>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
-<p>REGPOLY is a <code>uv</code> workspace of three packages:</p>
+<p>REGPOLY is a <code>uv</code> workspace of four packages:</p>
 <table>
 <thead>
 <tr>
@@ -3195,7 +3257,7 @@
 <tbody>
 <tr>
 <td><code>regpoly-cpp</code></td>
-<td>C++ core: GF(2) algebra, lattice methods, all generator families, search drivers, YAML, catalog. Publishes the <code>_regpoly_cpp</code> Python extension and a standalone <code>regpoly-cli</code> binary.</td>
+<td>C++ core: GF(2) algebra, lattice methods, all generator families, search drivers, YAML, catalog. Publishes the <code>_regpoly_cpp</code> Python extension and a standalone <code>regpoly-cli</code> binary. Can also be built <strong>without</strong> Python/pybind11 (<code>-DREGPOLY_BUILD_PYTHON_EXTENSION=OFF</code>).</td>
 </tr>
 <tr>
 <td><code>regpoly</code></td>
@@ -3203,11 +3265,20 @@
 </tr>
 <tr>
 <td><code>regpoly-web</code></td>
-<td>FastAPI web UI for launching searches and browsing results. Uses <code>regpoly</code> only.</td>
+<td>FastAPI web UI for launching searches and browsing results (PostgreSQL via <code>psycopg3</code>). Uses <code>regpoly</code> only.</td>
+</tr>
+<tr>
+<td><code>regpoly-legacy</code></td>
+<td>Optional pure-Python add-on that reads the pre-v2 <code>.dat</code> parameter format and builds <code>Generator</code> objects through the same C++ factory.</td>
 </tr>
 </tbody>
 </table>
-<p>Dependency arrows are strictly one-way: <code>regpoly-web → regpoly → regpoly-cpp</code>.</p>
+<p>Dependency arrows are strictly one-way:</p>
+<ul>
+<li><code>regpoly-web → regpoly → regpoly-cpp</code></li>
+<li><code>regpoly-legacy → regpoly → regpoly-cpp</code></li>
+</ul>
+<p>Both layered contracts are enforced by <code>import-linter</code> in CI.</p>
 
 
 

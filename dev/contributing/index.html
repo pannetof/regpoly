@@ -16,6 +16,8 @@
         <link rel="prev" href="../building/">
       
       
+        <link rel="next" href="../postgres/">
+      
       
         
       
@@ -734,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../theory/LCP%20Irreducibility/" class="md-nav__link">
+      <a href="../../theory/lcp-irreducibility/" class="md-nav__link">
         
   
   
@@ -762,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../theory/optimzer_temper/" class="md-nav__link">
+      <a href="../../theory/optimizer_temper/" class="md-nav__link">
         
   
   
@@ -2111,8 +2113,6 @@
       
         
       
-        
-      
     
     
     
@@ -2229,34 +2229,6 @@
     
   
     Web
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/web-user-stories/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Web — user stories
   
 
     
@@ -2897,6 +2869,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3039,6 +3017,90 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../postgres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL (local dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../regpoly-web-design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — design spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-user-stories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — user stories
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3090,16 +3152,13 @@
 
 
 <h1 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h1>
-<blockquote>
-<p><strong>Status</strong>: Phase 0 placeholder.</p>
-</blockquote>
-<p>Code lives in three packages under <code>packages/</code>. Tests live alongside each package under <code>tests/</code>. The active redesign roadmap is at <code>~/.claude/plans/i-want-to-have-rippling-starlight.md</code> (local, not committed).</p>
+<p>Code lives in four packages under <code>packages/</code>. Tests live alongside each package under <code>tests/</code>.</p>
 <p>When adding a new generator family:</p>
 <ol>
 <li>Add the C++ implementation under <code>packages/regpoly-cpp/src/generators/</code> and register it in <code>factory.cpp</code>.</li>
 <li>Add a GoogleTest case under <code>packages/regpoly-cpp/tests/</code>.</li>
-<li>Add a doc page under <code>docs/generators/&lt;family&gt;.md</code> from the template (Phase 6+).</li>
-<li>Add a notebook under <code>docs/notebooks/families/&lt;family&gt;.ipynb</code> from the template (Phase 7+).</li>
+<li>Add a doc page under <code>docs/generators/&lt;family&gt;.md</code> (copy <a href="../../generators/_template/"><code>docs/generators/_template.md</code></a> and fill it in).</li>
+<li>Add a per-family notebook by extending <code>docs/notebooks/families/_stamp.py</code> (the parametric driver that stamps <code>&lt;family&gt;.ipynb</code>).</li>
 <li>If the family has known parameter sets from the literature, add a catalog entry under <code>docs/library/</code>.</li>
 </ol>
 <p>CI is gated by:</p>
@@ -3107,9 +3166,13 @@
 <li><code>ctest</code> (C++ unit tests).</li>
 <li><code>pytest</code> default lane (no <code>slow</code> / <code>e2e</code>).</li>
 <li><code>ruff check</code>, <code>ruff format --check</code>.</li>
-<li><code>import-linter</code> (enforces <code>regpoly-web → regpoly → regpoly_cpp</code>).</li>
+<li><code>import-linter</code> — two layered contracts:<ul>
+<li><code>regpoly_web → regpoly → regpoly_cpp</code></li>
+<li><code>regpoly_legacy → regpoly → regpoly_cpp</code></li>
 </ul>
-<p>The slow lane runs nightly and on <code>slow</code>-labeled PRs.</p>
+</li>
+</ul>
+<p>The slow lane (<code>-m slow</code>) runs MTToolBox cross-checks and <code>nbmake</code> notebook execution; the e2e lane (<code>-m e2e</code>) runs Playwright golden-path browser tests for the web app.</p>
 
 
 

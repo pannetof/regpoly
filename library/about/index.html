@@ -736,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../theory/LCP%20Irreducibility/" class="md-nav__link">
+      <a href="../../theory/lcp-irreducibility/" class="md-nav__link">
         
   
   
@@ -764,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../theory/optimzer_temper/" class="md-nav__link">
+      <a href="../../theory/optimizer_temper/" class="md-nav__link">
         
   
   
@@ -2204,8 +2204,6 @@
       
         
       
-        
-      
     
     
     
@@ -2322,34 +2320,6 @@
     
   
     Web
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/web-user-stories/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Web — user stories
   
 
     
@@ -2988,6 +2958,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3104,6 +3080,90 @@
     
   
     Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/postgres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL (local dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/regpoly-web-design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — design spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/web-user-stories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — user stories
   
 
     
@@ -3247,13 +3307,13 @@ cross-check fixture, never as a paper).</p>
 </li>
 </ol>
 <h2 id="cross-check-catalog-schema-_paramsyaml">Cross-check catalog schema (<code>*_params.yaml</code>)<a class="headerlink" href="#cross-check-catalog-schema-_paramsyaml" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SFMT</span><span class="w">                </span><span class="c1"># regpoly Generateur family name</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">family</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SFMTGen</span><span class="w">             </span><span class="c1"># regpoly Generator family name (canonical -Gen)</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">mttoolbox_binary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sfmtdc/calc_equidist</span><span class="w">   </span><span class="c1"># path under MTToolBox/samples/</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">slow_threshold_mexp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20000</span><span class="w">  </span><span class="c1"># entries with mexp &gt; this use pytest -m slow</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">generators</span><span class="p">:</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sfmt607</span><span class="w">             </span><span class="c1"># arbitrary stable identifier</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">mexp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">607</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="c1"># --- params consumed by regpoly&#39;s Generateur.create() ---</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="c1"># --- params consumed by regpoly&#39;s Generator.create() ---</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">regpoly</span><span class="p">:</span>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">pos1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">sl1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>

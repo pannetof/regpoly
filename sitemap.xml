@@ -21,6 +21,14 @@
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
+         <loc>https://pannetof.github.io/regpoly/dev/regpoly-web-design-spec/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pannetof.github.io/regpoly/dev/web-user-stories/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
          <loc>https://pannetof.github.io/regpoly/generators/</loc>
          <lastmod>2026-05-18</lastmod>
     </url>
@@ -253,10 +261,6 @@
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
-         <loc>https://pannetof.github.io/regpoly/theory/LCP%20Irreducibility/</loc>
-         <lastmod>2026-05-18</lastmod>
-    </url>
-    <url>
          <loc>https://pannetof.github.io/regpoly/theory/antithetic-check/</loc>
          <lastmod>2026-05-18</lastmod>
     </url>
@@ -277,7 +281,11 @@
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
-         <loc>https://pannetof.github.io/regpoly/theory/optimzer_temper/</loc>
+         <loc>https://pannetof.github.io/regpoly/theory/lcp-irreducibility/</loc>
+         <lastmod>2026-05-18</lastmod>
+    </url>
+    <url>
+         <loc>https://pannetof.github.io/regpoly/theory/optimizer_temper/</loc>
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>
@@ -298,14 +306,6 @@
     </url>
     <url>
          <loc>https://pannetof.github.io/regpoly/usage/python/</loc>
-         <lastmod>2026-05-18</lastmod>
-    </url>
-    <url>
-         <loc>https://pannetof.github.io/regpoly/usage/regpoly-web-design-spec/</loc>
-         <lastmod>2026-05-18</lastmod>
-    </url>
-    <url>
-         <loc>https://pannetof.github.io/regpoly/usage/web-user-stories/</loc>
          <lastmod>2026-05-18</lastmod>
     </url>
     <url>

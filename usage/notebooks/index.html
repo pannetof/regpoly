@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://pannetof.github.io/regpoly/usage/notebooks/">
       
       
-        <link rel="prev" href="../web-user-stories/">
+        <link rel="prev" href="../web/">
       
       
         <link rel="next" href="../../notebooks/families/DSFMTGen/">
@@ -736,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../theory/LCP%20Irreducibility/" class="md-nav__link">
+      <a href="../../theory/lcp-irreducibility/" class="md-nav__link">
         
   
   
@@ -764,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../theory/optimzer_temper/" class="md-nav__link">
+      <a href="../../theory/optimizer_temper/" class="md-nav__link">
         
   
   
@@ -2115,8 +2115,6 @@
       
         
       
-        
-      
     
     
     
@@ -2236,34 +2234,6 @@
     
   
     Web
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../web-user-stories/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Web — user stories
   
 
     
@@ -2982,6 +2952,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3111,6 +3087,90 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/postgres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL (local dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/regpoly-web-design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — design spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/web-user-stories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — user stories
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3205,15 +3265,10 @@
 <h1 id="notebooks">Notebooks<a class="headerlink" href="#notebooks" title="Permanent link">&para;</a></h1>
 <p>The doc site renders Jupyter notebooks via <a href="https://github.com/danielfrg/mkdocs-jupyter"><code>mkdocs-jupyter</code></a>. Notebooks live under <code>docs/notebooks/</code> and fall in three categories:</p>
 <ul>
-<li><code>docs/notebooks/families/</code> — one notebook per generator family. Phase 7 authors all 18 from a common skeleton (<code>_template.ipynb</code>); each notebook ports a familiar parameter set from the catalog, verifies the characteristic polynomial and full-period claim, computes equidistribution <code>d(1..L)</code>, cross-checks against published values, and runs a small search for new parameters of the same shape.</li>
-<li><code>docs/notebooks/research/</code> — preserved, including:<ul>
-<li><code>melg_paper_verification.ipynb</code> — reproduces the MELG-19937 reference numbers.</li>
-<li><code>melg_charpoly_derivation.ipynb</code> — derives the MELG characteristic polynomial step by step.</li>
-</ul>
-</li>
-<li><code>docs/notebooks/utilities/</code> — preserved, including:<ul>
-<li><code>bitmatrix_display.ipynb</code> — visualisation helpers for GF(2) matrices.</li>
-<li><code>primitive.ipynb</code> — primitivity-test utilities.</li>
+<li><code>docs/notebooks/families/</code> — one notebook per generator family, plus a <code>CombinedGenerator.ipynb</code> overview. Notebooks are stamped from the parametric driver <code>_stamp.py</code> (which writes the notebook) and executed via <code>_runner.py</code>. Each notebook loads a familiar parameter set from the catalog, verifies the characteristic polynomial and full-period claim, computes equidistribution <code>d(1..L)</code>, cross-checks against published values, and runs a small search for new parameters of the same shape.</li>
+<li><code>docs/notebooks/research/</code> — paper reproductions:<ul>
+<li><code>ca_paper_tables.ipynb</code> — reproduces tables from the Bhuvaneswari–Bhattacharjee (2026) cellular-automata paper.</li>
+<li><code>ca_tables_7_to_10.ipynb</code> — extended CA tables (sizes 7–10).</li>
 </ul>
 </li>
 </ul>

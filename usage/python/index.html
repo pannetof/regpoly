@@ -736,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../theory/LCP%20Irreducibility/" class="md-nav__link">
+      <a href="../../theory/lcp-irreducibility/" class="md-nav__link">
         
   
   
@@ -764,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../theory/optimzer_temper/" class="md-nav__link">
+      <a href="../../theory/optimizer_temper/" class="md-nav__link">
         
   
   
@@ -2115,8 +2115,6 @@
       
         
       
-        
-      
     
     
     
@@ -2338,34 +2336,6 @@
     
   
     Web
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../web-user-stories/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Web — user stories
   
 
     
@@ -3004,6 +2974,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3133,6 +3109,90 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/postgres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL (local dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/regpoly-web-design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — design spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/web-user-stories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — user stories
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3249,13 +3309,13 @@
 <h1 id="using-regpoly-from-python">Using REGPOLY from Python<a class="headerlink" href="#using-regpoly-from-python" title="Permanent link">&para;</a></h1>
 <p>The <code>regpoly</code> package is a thin Python wrapper around the C++ core (<code>regpoly_cpp</code>). Use it when you want full search-loop ergonomics — DataFrames, plots, notebook integration — on top of the same algorithms the standalone CLI runs.</p>
 <h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/pannetof/regpoly
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>regpoly
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/pannetof/regpoly_monorepo
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>regpoly_monorepo
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>uv<span class="w"> </span>sync
 </code></pre></div>
-<p><code>uv sync</code> installs the workspace in editable mode and builds the C++ extension via <code>scikit-build-core</code>. After it completes, the <code>regpoly</code> and <code>regpoly-web</code> console scripts are on the venv's <code>PATH</code>.</p>
+<p><code>uv sync</code> installs the workspace in editable mode and builds the C++ extension via <code>scikit-build-core</code>. After it completes, the <code>regpoly</code>, <code>regpoly-web</code>, and <code>regpoly-legacy</code> console scripts are on the venv's <code>PATH</code>.</p>
 <h2 id="run-a-search-from-a-yaml-config">Run a search from a YAML config<a class="headerlink" href="#run-a-search-from-a-yaml-config" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>regpoly<span class="w"> </span>shared/yaml/equidist/well19937a.yml
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>regpoly<span class="w"> </span>shared/yaml/equidist/mt19937.yaml
 </code></pre></div>
 <p>Test config templates live under <a href="https://github.com/pannetof/regpoly/tree/master/shared/yaml"><code>shared/yaml/</code></a>. The search loop iterates a <code>Combination</code> of generator pools, runs the configured analysis (<code>equidistribution</code>, <code>collision_free</code>, <code>tuplets</code>), and writes a tested-generator YAML for any candidate that passes the acceptance predicate.</p>
 <h2 id="use-the-library-programmatically">Use the library programmatically<a class="headerlink" href="#use-the-library-programmatically" title="Permanent link">&para;</a></h2>
@@ -3283,7 +3343,7 @@
 <li>
 <p>Iterate a Seek search:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">regpoly.search.seek</span><span class="w"> </span><span class="kn">import</span> <span class="n">Seek</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">seek</span> <span class="o">=</span> <span class="n">Seek</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;shared/yaml/equidist/well19937a.yml&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">seek</span> <span class="o">=</span> <span class="n">Seek</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;shared/yaml/equidist/mt19937.yaml&quot;</span><span class="p">)</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">seek</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div>
 </li>

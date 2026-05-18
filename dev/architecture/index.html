@@ -736,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../theory/LCP%20Irreducibility/" class="md-nav__link">
+      <a href="../../theory/lcp-irreducibility/" class="md-nav__link">
         
   
   
@@ -764,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../theory/optimzer_temper/" class="md-nav__link">
+      <a href="../../theory/optimizer_temper/" class="md-nav__link">
         
   
   
@@ -2113,8 +2113,6 @@
       
         
       
-        
-      
     
     
     
@@ -2231,34 +2229,6 @@
     
   
     Web
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/web-user-stories/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Web — user stories
   
 
     
@@ -2899,6 +2869,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3024,6 +3000,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3089,6 +3076,90 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../postgres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL (local dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../regpoly-web-design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — design spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-user-stories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — user stories
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3133,6 +3204,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See also
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3159,9 +3241,6 @@
 
 
 <h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
-<blockquote>
-<p><strong>Status</strong>: Phase 0 placeholder. Phase 6 will lift content from the active redesign plan at <code>~/.claude/plans/i-want-to-have-rippling-starlight.md</code>.</p>
-</blockquote>
 <p>REGPOLY is a <code>uv</code> workspace of four packages with strict one-way dependencies:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>regpoly-web      →  regpoly  →  regpoly-cpp
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>   FastAPI           Python      C++ core
@@ -3176,6 +3255,14 @@
 <li><strong>Pure C++</strong> (via <code>cmake -DREGPOLY_BUILD_PYTHON_EXTENSION=OFF</code>): builds the static library + CLI + headers + <code>find_package(regpoly)</code> config package, with <strong>no pybind11 or Python dependency at configure, build, or install time</strong>. The pybind11 extension is skipped entirely.</li>
 </ul>
 <p>Both modes share the same <code>regpoly_core</code> static library — the Python wheel just adds a thin pybind11 module on top.</p>
+<h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../building/">Building</a> — full build / test recipes (Python + pure C++ + docs).</li>
+<li><a href="../contributing/">Contributing</a> — how to add a generator family + CI gates.</li>
+<li><a href="../postgres/">PostgreSQL for local dev</a> — spinning up a dev DB for <code>regpoly-web</code>.</li>
+<li><a href="../regpoly-web-design-spec/">Web — design spec</a> — the FastAPI app's internal design.</li>
+<li><a href="../web-user-stories/">Web — user stories</a> — UX scenarios driving the web UI.</li>
+</ul>
 
 
 

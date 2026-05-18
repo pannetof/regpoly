@@ -854,7 +854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../LCP%20Irreducibility/" class="md-nav__link">
+      <a href="../lcp-irreducibility/" class="md-nav__link">
         
   
   
@@ -882,7 +882,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../optimzer_temper/" class="md-nav__link">
+      <a href="../optimizer_temper/" class="md-nav__link">
         
   
   
@@ -2231,8 +2231,6 @@
       
         
       
-        
-      
     
     
     
@@ -2349,34 +2347,6 @@
     
   
     Web
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/web-user-stories/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Web — user stories
   
 
     
@@ -3015,6 +2985,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3131,6 +3107,90 @@
     
   
     Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/postgres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL (local dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/regpoly-web-design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — design spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/web-user-stories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — user stories
   
 
     
@@ -3291,7 +3351,7 @@
 <li><strong>Full period.</strong> If <span class="arithmatex">\(\chi(t)\)</span> is <strong>primitive</strong> over <span class="arithmatex">\(\mathbb{F}_2\)</span> (irreducible AND its roots generate <span class="arithmatex">\(\mathbb{F}_{2^k}^*\)</span>), then <span class="arithmatex">\(A\)</span> has order <span class="arithmatex">\(2^k - 1\)</span>. Every non-zero state lies on a single cycle of length <span class="arithmatex">\(2^k - 1\)</span>. This is what families like MT19937 are designed for: the state size <span class="arithmatex">\(k\)</span> is chosen so <span class="arithmatex">\(2^k - 1\)</span> is a Mersenne prime, which simplifies primitivity checks.</li>
 <li><strong>Reducible <span class="arithmatex">\(\chi(t)\)</span>.</strong> If <span class="arithmatex">\(\chi(t)\)</span> factors, the state space splits into invariant subspaces, and cycle lengths divide the orders of the irreducible factors. REGPOLY's <a href="../equidistribution-spec/">equidistribution machinery</a> is designed to handle this case: it does not assume full period.</li>
 </ul>
-<p>Primitivity (and full period) is checked in REGPOLY by the <code>is_full_period</code> driver in <code>regpoly_cpp::algebra::primitivity</code>, backed by an embedded Cunningham factor table (Phase 2.4).</p>
+<p>Primitivity (and full period) is checked in REGPOLY by the <code>is_full_period</code> driver in <code>regpoly_cpp::algebra::primitivity</code>, backed by an embedded Cunningham factor table.</p>
 <h2 id="equidistribution">Equidistribution<a class="headerlink" href="#equidistribution" title="Permanent link">&para;</a></h2>
 <p>The defining quality metric for an F₂-linear generator is <strong>equidistribution</strong>: how uniformly its output points fill the unit hypercube <span class="arithmatex">\([0, 1)^L\)</span>.</p>
 <p>For a single resolution <span class="arithmatex">\(\ell \in \{1, \ldots, w\}\)</span>, the <strong>dimension of equidistribution</strong> <span class="arithmatex">\(d(\ell)\)</span> is the largest <span class="arithmatex">\(L\)</span> such that the set of all <span class="arithmatex">\(L\)</span>-tuples of consecutive outputs, truncated to <span class="arithmatex">\(\ell\)</span> leading bits each, covers every <span class="arithmatex">\(\ell L\)</span>-bit pattern exactly <span class="arithmatex">\(2^{k - \ell L}\)</span> times. Equivalently, the matrix that maps the state to those <span class="arithmatex">\(\ell L\)</span> output bits has rank <span class="arithmatex">\(\ell L\)</span>.</p>
@@ -3311,7 +3371,7 @@
 \mathbf{y}_n = \mathbf{y}^{(1)}_n \oplus \mathbf{y}^{(2)}_n \oplus \cdots \oplus \mathbf{y}^{(J)}_n ,
 \]</div>
 <p>where each component <span class="arithmatex">\(j\)</span> is itself an F₂-linear generator of state size <span class="arithmatex">\(k_j\)</span>, and the outputs are XORed bitwise. The combined state has size <span class="arithmatex">\(k_g = \sum_j k_j\)</span> and characteristic polynomial <span class="arithmatex">\(\chi_g(t) = \prod_j \chi_j(t)\)</span> (provided the <span class="arithmatex">\(\chi_j\)</span> are pairwise coprime).</p>
-<p>Combined generators improve equidistribution by widening the state space without paying the per-step cost of running a single huge component, and by letting the combination "average out" the equidistribution defects of the individual components. The <code>Combination</code> C++ class (Phase 2.4) builds these and is the live object every search loop iterates.</p>
+<p>Combined generators improve equidistribution by widening the state space without paying the per-step cost of running a single huge component, and by letting the combination "average out" the equidistribution defects of the individual components. The <code>Combination</code> C++ class builds these and is the live object every search loop iterates.</p>
 <h2 id="tempering-as-a-linear-map">Tempering as a linear map<a class="headerlink" href="#tempering-as-a-linear-map" title="Permanent link">&para;</a></h2>
 <p>Many families wrap a <strong>tempering</strong> linear bijection <span class="arithmatex">\(T : \mathbb{F}_2^w \to \mathbb{F}_2^w\)</span> around the raw output:</p>
 <div class="arithmatex">\[

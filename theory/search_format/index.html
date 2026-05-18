@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://pannetof.github.io/regpoly/theory/search_format/">
       
       
-        <link rel="prev" href="../optimzer_temper/">
+        <link rel="prev" href="../optimizer_temper/">
       
       
         <link rel="next" href="../../generators/">
@@ -741,7 +741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../LCP%20Irreducibility/" class="md-nav__link">
+      <a href="../lcp-irreducibility/" class="md-nav__link">
         
   
   
@@ -769,7 +769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../optimzer_temper/" class="md-nav__link">
+      <a href="../optimizer_temper/" class="md-nav__link">
         
   
   
@@ -2259,8 +2259,6 @@
       
         
       
-        
-      
     
     
     
@@ -2377,34 +2375,6 @@
     
   
     Web
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/web-user-stories/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Web — user stories
   
 
     
@@ -3043,6 +3013,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3159,6 +3135,90 @@
     
   
     Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/postgres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL (local dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/regpoly-web-design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — design spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/web-user-stories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — user stories
   
 
     
@@ -3393,7 +3453,7 @@ to stop).</p>
 <h3 id="structural_params"><code>structural_params</code><a class="headerlink" href="#structural_params" title="Permanent link">&para;</a></h3>
 <p>Parameters that define the period k. These must always be provided and
 are never randomized.</p>
-<p>Call <code>Generateur.parameters(family)</code> to see which parameters are
+<p>Call <code>Generator.parameters(family)</code> to see which parameters are
 structural for a given family.</p>
 <h3 id="fixed_params"><code>fixed_params</code><a class="headerlink" href="#fixed_params" title="Permanent link">&para;</a></h3>
 <p>Parameters that are varied during the search. Two cases:</p>
@@ -3427,12 +3487,14 @@ have randomization hints will also be randomized automatically.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>regpoly<span class="w"> </span>fullperiodsearch.TGFSR.w32r3.yaml
 </code></pre></div>
 <p>Or from Python:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">regpoly.search_primitive</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrimitiveSearch</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">regpoly.search.primitive_search</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrimitiveSearch</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">search</span> <span class="o">=</span> <span class="n">PrimitiveSearch</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;fullperiodsearch.TGFSR.w32r3.yaml&quot;</span><span class="p">)</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">results</span> <span class="o">=</span> <span class="n">search</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="generator-family-names">Generator Family Names<a class="headerlink" href="#generator-family-names" title="Permanent link">&para;</a></h2>
+<p>The 17 registered families (canonical <code>-Gen</code> class names; legacy aliases
+preserved via <code>_FAMILY_ALIASES</code> and C++ factory <code>reg_alias</code> entries):</p>
 <table>
 <thead>
 <tr>
@@ -3444,43 +3506,88 @@ have randomization hints will also be randomized automatically.</p>
 <tbody>
 <tr>
 <td>Polynomial LCG</td>
-<td><code>PolyLCG</code></td>
-<td><code>polylcg</code></td>
+<td><code>PolyLCGGen</code></td>
+<td><code>polylcg</code>, <code>PolyLCG</code></td>
 </tr>
 <tr>
 <td>Tausworthe</td>
-<td><code>Tausworthe</code></td>
-<td><code>taus</code>, <code>taus2</code></td>
+<td><code>TauswortheGen</code></td>
+<td><code>taus</code>, <code>taus2</code>, <code>Tausworthe</code></td>
 </tr>
 <tr>
 <td>Twisted GFSR</td>
-<td><code>TGFSR</code></td>
-<td><code>tgfsr</code>, <code>TGFSRGen</code></td>
+<td><code>TGFSRGen</code></td>
+<td><code>tgfsr</code>, <code>TGFSR</code></td>
 </tr>
 <tr>
 <td>Mersenne Twister</td>
-<td><code>MersenneTwister</code></td>
-<td><code>MT</code></td>
+<td><code>MTGen</code></td>
+<td><code>MT</code>, <code>MersenneTwister</code></td>
 </tr>
 <tr>
 <td>GF(2^w) Poly LCG</td>
-<td><code>GenF2wPolyLCG</code></td>
-<td><code>genf2w</code></td>
+<td><code>F2wPolyLCGGen</code></td>
+<td><code>genf2w</code>, <code>GenF2wPolyLCG</code></td>
 </tr>
 <tr>
 <td>GF(2^w) LFSR</td>
+<td><code>F2wLFSRGen</code></td>
 <td><code>GenF2wLFSR</code></td>
-<td><code>genf2w</code> (with type=lfsr)</td>
 </tr>
 <tr>
 <td>Marsaglia Xor-shift</td>
 <td><code>MarsaXorshiftGen</code></td>
-<td><code>marsaxorshift</code></td>
+<td><code>marsaxorshift</code>, <code>XorShift128Gen</code></td>
 </tr>
 <tr>
-<td>WELL RNG</td>
-<td><code>WELLRNG</code></td>
-<td><code>carry</code>, <code>Carry2Gen</code></td>
+<td>Cellular Automata</td>
+<td><code>CellularAutomataGen</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>WELL</td>
+<td><code>WELLGen</code></td>
+<td><code>WELLRNG</code>, <code>carry</code>, <code>Carry2Gen</code></td>
+</tr>
+<tr>
+<td>MELG</td>
+<td><code>MELGGen</code></td>
+<td><code>MELG</code></td>
+</tr>
+<tr>
+<td>SFMT</td>
+<td><code>SFMTGen</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>dSFMT</td>
+<td><code>DSFMTGen</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>MTGP</td>
+<td><code>MTGPGen</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>TinyMT32</td>
+<td><code>TinyMT32Gen</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Reducible MT64</td>
+<td><code>RMT64Gen</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Xoroshiro</td>
+<td><code>XoroshiroGen</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Xoshiro</td>
+<td><code>XoshiroGen</code></td>
+<td>—</td>
 </tr>
 </tbody>
 </table>

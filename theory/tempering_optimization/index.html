@@ -16,7 +16,7 @@
         <link rel="prev" href="../lattice_method_harase/">
       
       
-        <link rel="next" href="../LCP%20Irreducibility/">
+        <link rel="next" href="../lcp-irreducibility/">
       
       
         
@@ -1116,7 +1116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../LCP%20Irreducibility/" class="md-nav__link">
+      <a href="../lcp-irreducibility/" class="md-nav__link">
         
   
   
@@ -1144,7 +1144,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../optimzer_temper/" class="md-nav__link">
+      <a href="../optimizer_temper/" class="md-nav__link">
         
   
   
@@ -2493,8 +2493,6 @@
       
         
       
-        
-      
     
     
     
@@ -2611,34 +2609,6 @@
     
   
     Web
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/web-user-stories/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Web — user stories
   
 
     
@@ -3277,6 +3247,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3393,6 +3369,90 @@
     
   
     Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/postgres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL (local dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/regpoly-web-design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — design spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev/web-user-stories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — user stories
   
 
     
@@ -3796,8 +3856,10 @@
 <p>Optimization of tempering bitmask parameters to minimize the total
 dimension defect of an F2-linear generator.  The algorithm uses
 <strong>safe masks</strong> with <strong>random multi-bit perturbation</strong> and an
-<strong>incremental dual-lattice basis</strong> (StackBase), mirroring the C
-code's <code>OptimizeTemper()</code> from <code>temperMK.c</code>.</p>
+<strong>incremental dual-lattice basis</strong> (StackBase). Implemented in
+<code>packages/regpoly-cpp/src/search/tempering_optimizer.cpp</code>
+(<code>TemperingOptimizer</code>); reproduces the historical
+<code>OptimizeTemper()</code> driver of the upstream C codebase.</p>
 <h2 id="1-background">1. Background<a class="headerlink" href="#1-background" title="Permanent link">&para;</a></h2>
 <h3 id="why-tempering">Why tempering?<a class="headerlink" href="#why-tempering" title="Permanent link">&para;</a></h3>
 <p>An F2-linear generator produces output by extracting <span class="arithmatex">\(w\)</span> bits from a

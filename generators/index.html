@@ -736,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../theory/LCP%20Irreducibility/" class="md-nav__link">
+      <a href="../theory/lcp-irreducibility/" class="md-nav__link">
         
   
   
@@ -764,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../theory/optimzer_temper/" class="md-nav__link">
+      <a href="../theory/optimizer_temper/" class="md-nav__link">
         
   
   
@@ -2118,8 +2118,6 @@
       
         
       
-        
-      
     
     
     
@@ -2236,34 +2234,6 @@
     
   
     Web
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../usage/web-user-stories/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Web — user stories
   
 
     
@@ -2902,6 +2872,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3031,6 +3007,90 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/postgres/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PostgreSQL (local dev)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/regpoly-web-design-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — design spec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/web-user-stories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web — user stories
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3109,10 +3169,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#other" class="md-nav__link">
+  <a href="#cellular-automata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Other
+        Cellular automata
       
     </span>
   </a>
@@ -3120,10 +3180,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#combined-generator" class="md-nav__link">
+  <a href="#melg" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Combined generator
+        MELG
       
     </span>
   </a>
@@ -3156,10 +3216,7 @@
 
 
 <h1 id="generators">Generators<a class="headerlink" href="#generators" title="Permanent link">&para;</a></h1>
-<p>REGPOLY implements 16 F₂-linear generator families plus a <code>CombinedGenerator</code> that XORs J of them. Each family page below documents the recurrence, the parameter space, common parameter sets from the literature, and source-file pointers.</p>
-<blockquote>
-<p><strong>Status</strong>: Phase 0 ports the existing per-family pages as-is. Phase 6 rewrites them onto a common template (<code>_template.md</code>, also pending) with paper references, equidistribution properties, and notebook links.</p>
-</blockquote>
+<p>REGPOLY implements 17 F₂-linear generator families plus a <code>CombinedGenerator</code> that XORs J of them. Each family page below documents the recurrence, the parameter space, common parameter sets from the literature, and source-file pointers.</p>
 <h2 id="mersenne-twister-family">Mersenne Twister family<a class="headerlink" href="#mersenne-twister-family" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="MTGen/">MT (Mersenne Twister)</a></li>
@@ -3167,7 +3224,7 @@
 <li><a href="DSFMTGen/">dSFMT (Double-precision SFMT)</a></li>
 <li><a href="MTGPGen/">MTGP (MT for GPU)</a></li>
 <li><a href="TinyMT32Gen/">TinyMT32</a></li>
-<li><a href="RMT64Gen/">RMT64 (Rotated MT 64-bit)</a></li>
+<li><a href="RMT64Gen/">RMT64 (Reducible MT 64-bit)</a></li>
 </ul>
 <h2 id="well-and-tausworthe-style">WELL and Tausworthe-style<a class="headerlink" href="#well-and-tausworthe-style" title="Permanent link">&para;</a></h2>
 <ul>
@@ -3187,13 +3244,13 @@
 <li><a href="XoroshiroGen/">Xoroshiro (Blackman–Vigna)</a></li>
 <li><a href="XoshiroGen/">Xoshiro (Blackman–Vigna)</a></li>
 </ul>
-<h2 id="other">Other<a class="headerlink" href="#other" title="Permanent link">&para;</a></h2>
+<h2 id="cellular-automata">Cellular automata<a class="headerlink" href="#cellular-automata" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="MELGGen/">MELG (Multiplicative-Equidistribution LCG)</a></li>
+<li><a href="CellularAutomataGen/">Two-rule (90/150) cellular automata</a></li>
 </ul>
-<h2 id="combined-generator">Combined generator<a class="headerlink" href="#combined-generator" title="Permanent link">&para;</a></h2>
+<h2 id="melg">MELG<a class="headerlink" href="#melg" title="Permanent link">&para;</a></h2>
 <ul>
-<li><em>Page to be authored in Phase 1.</em></li>
+<li><a href="MELGGen/">MELG (Maximally Equidistributed F₂-Linear)</a></li>
 </ul>
 
 
