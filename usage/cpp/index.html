@@ -2268,6 +2268,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Build">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pure-c-build-no-python-no-pybind11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pure-C++ build (no Python, no pybind11)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3175,6 +3192,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Build">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pure-c-build-no-python-no-pybind11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pure-C++ build (no Python, no pybind11)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3256,22 +3290,30 @@
 <p>The <code>regpoly-cli</code> binary is produced in <code>build/regpoly-cli</code>. Run the GoogleTest suite via <code>ctest</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ctest<span class="w"> </span>--test-dir<span class="w"> </span>build<span class="w"> </span>--output-on-failure
 </code></pre></div>
+<h3 id="pure-c-build-no-python-no-pybind11">Pure-C++ build (no Python, no pybind11)<a class="headerlink" href="#pure-c-build-no-python-no-pybind11" title="Permanent link">&para;</a></h3>
+<p>The default configure builds the <code>_regpoly_cpp</code> pybind11 extension alongside the static library and CLI, which requires <code>pybind11</code> to be <code>find_package</code>-able. C++-only consumers who don't want any Python tooling pass <code>-DREGPOLY_BUILD_PYTHON_EXTENSION=OFF</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cmake<span class="w"> </span>-S<span class="w"> </span>packages/regpoly-cpp<span class="w"> </span>-B<span class="w"> </span>build<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">      </span>-DREGPOLY_BUILD_PYTHON_EXTENSION<span class="o">=</span>OFF<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">      </span>-DREGPOLY_BUILD_TESTS<span class="o">=</span>ON
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>cmake<span class="w"> </span>--build<span class="w"> </span>build<span class="w"> </span>-j
+</code></pre></div>
+<p>This produces <code>libregpoly_core.a</code>, <code>regpoly-cli</code>, the public headers, and the <code>find_package(regpoly)</code> CMake config package — no <code>.so</code>, no pybind11 dependency. The GoogleTest suite (<code>ctest</code>) still runs in this mode.</p>
 <h2 id="cli-subcommands">CLI subcommands<a class="headerlink" href="#cli-subcommands" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>regpoly-cli &lt;command&gt; [options]
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  catalog list [--library DIR]
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  catalog show PAPER_ID [--library DIR]
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  catalog gen GEN_ID [--library DIR]
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  search FILE.yaml
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  show FILE.yaml
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  publish FILE.yaml --paper PAPER_ID --gen-id GEN_ID
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>          [--display TEXT] [--target STR] [--starred] [--library DIR]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>regpoly-cli &lt;command&gt; [options]
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  catalog list [--library DIR]
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  catalog show PAPER_ID [--library DIR]
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  catalog gen GEN_ID [--library DIR]
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  search FILE.yaml
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  show FILE.yaml
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>  publish FILE.yaml --paper PAPER_ID --gen-id GEN_ID
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>          [--display TEXT] [--target STR] [--starred] [--library DIR]
 </code></pre></div>
 <p><code>search FILE.yaml</code> runs an equidistribution search against the same seek-style YAML format the Python CLI accepts (see <a href="../../theory/search_format/">Search format</a>). <code>show FILE.yaml</code> prints a tested-generator YAML — components, tempering chain, and analysis results. <code>publish</code> appends a tested-generator entry to an existing paper YAML under the catalog and is the canonical way to grow <code>docs/library/</code> from C++.</p>
 <h2 id="linking-from-another-cmake-project">Linking from another CMake project<a class="headerlink" href="#linking-from-another-cmake-project" title="Permanent link">&para;</a></h2>
 <p>A future install step will publish a <code>regpoly-config.cmake</code> package so downstream consumers can write:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">find_package</span><span class="p">(</span><span class="s">regpoly</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_project</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">regpoly::regpoly</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">find_package</span><span class="p">(</span><span class="s">regpoly</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_project</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">regpoly::regpoly</span><span class="p">)</span>
 </code></pre></div>
 <p>Until then, link against the <code>regpoly_core</code> static library and add the public headers from <code>packages/regpoly-cpp/src/include/</code> to your include path.</p>
 <h2 id="cpython-parity">C++/Python parity<a class="headerlink" href="#cpython-parity" title="Permanent link">&para;</a></h2>
