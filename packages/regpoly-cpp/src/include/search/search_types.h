@@ -21,6 +21,8 @@
 // generator plus the structural metadata (family, k, L) the caller
 // needs to persist or display the result.
 
+namespace regpoly::core {
+
 struct SearchProgress {
     int64_t tries;
     double elapsed_seconds;
@@ -35,3 +37,5 @@ struct TestedGenerator {
                               // accepted this generator (1-based).
                               // 0 when not produced by an iteration loop.
 };
+
+}  // namespace regpoly::core

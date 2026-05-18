@@ -14,6 +14,8 @@
 // Forward declaration for pybind11 module type
 namespace pybind11 { class module_; }
 
+namespace regpoly::core {
+
 std::unique_ptr<Generator> create_generator(
     const std::string& family, const Params& params, int L);
 
@@ -26,3 +28,5 @@ std::vector<ParamSpec> get_trans_param_specs(const std::string& type);
 // Register all generator subclass types with pybind11
 // (defined in factory.cpp where all headers are available)
 void register_generator_types(pybind11::module_& m);
+
+}  // namespace regpoly::core

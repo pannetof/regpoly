@@ -29,6 +29,8 @@
 // On each successful reset()/next(), Combination updates k_g (sum of
 // active generator k's) and L (min active L, capped at Lmax).
 
+namespace regpoly::core {
+
 class Component {
 public:
     // Owned pool of generators (each unique_ptr is the sole owner).
@@ -155,3 +157,5 @@ private:
 // not affect the returned object.
 std::unique_ptr<CombinedGenerator>
 build_combined_from_combination(const Combination& comb);
+
+}  // namespace regpoly::core

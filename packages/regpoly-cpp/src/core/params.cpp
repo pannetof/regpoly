@@ -3,6 +3,11 @@
 
 #include "params.h"
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 void Params::set_int(const std::string& key, int64_t val) { ints_[key] = val; }
 void Params::set_bool(const std::string& key, bool val) { bools_[key] = val; }
 void Params::set_string(const std::string& key, const std::string& val) { strings_[key] = val; }
@@ -70,3 +75,5 @@ bool Params::has(const std::string& key) const {
 bool Params::has_struct_map(const std::string& key) const {
     return struct_maps_.count(key) > 0;
 }
+
+}  // namespace regpoly::core

@@ -40,7 +40,15 @@
 #include <string>
 #include <vector>
 
-namespace regpoly_yaml_config {
+namespace regpoly::yaml_config {
+
+using regpoly::core::Combination;
+using regpoly::core::Generator;
+using regpoly::core::Params;
+using regpoly::core::SearchProgress;
+using regpoly::core::SeekIterResult;
+using regpoly::core::SeekTestSpec;
+using regpoly::core::Transformation;
 
 struct ComponentSpec {
     enum class Source { Inline, Same };
@@ -89,4 +97,4 @@ struct BuiltSearch {
 };
 BuiltSearch build_search(const SeekConfig& cfg);
 
-}  // namespace regpoly_yaml_config
+}  // namespace regpoly::yaml_config

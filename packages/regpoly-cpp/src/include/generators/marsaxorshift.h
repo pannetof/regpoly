@@ -11,6 +11,8 @@
 
 // Forward declaration; full definition pulled in only by the .cpp.
 // This keeps NTL out of every translation unit that includes this header.
+namespace regpoly::core {
+
 class GenEnumerator;
 
 class MarsaXorshiftGen : public Generator {
@@ -107,3 +109,5 @@ private:
     // semantics as the fast path.  Defined in marsaxorshift.cpp.
     void next_wide_();
 };
+
+}  // namespace regpoly::core

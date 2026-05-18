@@ -3,6 +3,11 @@
 
 #include "f2w_polylcg.h"
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 F2wPolyLCGGen::F2wPolyLCGGen(int w, int r, int nbcoeff,
                                const std::vector<int>& nocoeff,
                                const std::vector<uint64_t>& coeff,
@@ -110,3 +115,5 @@ std::vector<ParamSpec> F2wPolyLCGGen::param_specs() {
         {"coeff",        "uint_vec", false, false, 0,  "bitmask_vec",     "w,nb_terms", false},
     };
 }
+
+}  // namespace regpoly::core

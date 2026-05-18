@@ -36,6 +36,10 @@
 #include "xoshiro.h"
 
 #include <pybind11/pybind11.h>
+
+using namespace regpoly::core;
+
+
 namespace py = pybind11;
 
 namespace {

@@ -4,6 +4,11 @@
 #include "tinymt32.h"
 #include <cstdio>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 TinyMT32Gen::TinyMT32Gen(uint32_t mat1, uint32_t mat2, uint32_t tmat, int L)
     : Generator(128, L),
       mat1_(mat1), mat2_(mat2), tmat_(tmat),
@@ -108,3 +113,5 @@ std::vector<ParamSpec> TinyMT32Gen::param_specs() {
         {"tmat", "int", true, false, 0, "", "", false},
     };
 }
+
+}  // namespace regpoly::core

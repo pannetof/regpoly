@@ -34,7 +34,10 @@
 // module: they own a thread-local std::mt19937_64 so the C++ search
 // drivers can run free of the GIL.
 
-namespace regpoly_random {
+namespace regpoly::random {
+
+using regpoly::core::Params;
+using regpoly::core::ParamSpec;
 
 // Seed the thread-local RNG. Pass 0 to derive a seed from the OS
 // entropy source. Match Python's `random.seed(int)` only for the
@@ -69,4 +72,4 @@ bool sample_generic_into(const ParamSpec& spec, Params& params);
 // no sampler exists for the spec's rand_type.
 bool sample_param_into(const ParamSpec& spec, Params& params, int L);
 
-}  // namespace regpoly_random
+}  // namespace regpoly::random

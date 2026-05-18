@@ -6,6 +6,11 @@
 #include <chrono>
 #include <climits>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 TemperingSearchResult run_tempering_search(
     Combination& comb,
     const TemperingSearchConfig& cfg,
@@ -76,3 +81,5 @@ TemperingSearchResult run_tempering_search(
         std::chrono::duration<double>(t_end - t_start).count();
     return result;
 }
+
+}  // namespace regpoly::core

@@ -29,6 +29,8 @@
 // Reference: Bhuvaneswari A & Bhattacharjee K. "Cellular Automata based
 // Resource Efficient Maximally Equidistributed Pseudo-Random Number
 // Generators", arXiv:2603.19656, 2026.
+namespace regpoly::core {
+
 class CellularAutomataGen : public Generator {
 public:
     // rule150_positions: 0-indexed cell positions that use rule 150;
@@ -67,3 +69,5 @@ private:
 
     void next_one_step_();
 };
+
+}  // namespace regpoly::core

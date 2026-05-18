@@ -11,6 +11,9 @@
 
 #include <regpoly/resolution_sets.h>
 
+using namespace regpoly::core;
+
+
 namespace {
 
 // Convert a vector<bool> to the list of indices where true, for easier

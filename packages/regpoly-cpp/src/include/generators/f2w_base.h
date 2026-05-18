@@ -7,6 +7,8 @@
 #include <vector>
 #include <cstdint>
 
+namespace regpoly::core {
+
 enum GenF2wType { GENF2W_POLYLCG = 0, GENF2W_LFSR = 1 };
 
 class F2wBaseGen : public Generator {
@@ -52,3 +54,5 @@ protected:
     uint64_t V(int idx) const;
     void SetV(int idx, uint64_t val);
 };
+
+}  // namespace regpoly::core

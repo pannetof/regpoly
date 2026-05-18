@@ -29,6 +29,8 @@
 // No existing dispatch site needs editing.
 
 // Forward declaration to avoid circular include.
+namespace regpoly::core {
+
 struct SeekIterResult;
 
 class Test {
@@ -117,3 +119,5 @@ private:
     double threshold_;
     int testtype_;
 };
+
+}  // namespace regpoly::core

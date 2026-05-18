@@ -21,6 +21,9 @@
 #include "params.h"
 #include "tempering_search.h"
 
+using namespace regpoly::core;
+
+
 namespace {
 
 std::unique_ptr<Generator> make_tgfsr(uint32_t a) {

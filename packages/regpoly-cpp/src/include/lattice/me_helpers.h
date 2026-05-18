@@ -8,6 +8,8 @@
 #include <vector>
 #include <memory>
 
+namespace regpoly::core {
+
 struct MeLatResult {
     std::vector<int> ecart;  // indexed 0..maxL, ecart[0] unused
     int se;
@@ -49,3 +51,5 @@ MeLatResult test_me_lat(
     const Generator& gen,
     int kg, int L, int maxL,
     const std::vector<int>& delta, int mse);
+
+}  // namespace regpoly::core

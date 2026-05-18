@@ -29,6 +29,9 @@
 
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
 // ── Central registration of every concrete Generator and Transformation ─
 //
 // Adding a new generator family means:
@@ -42,6 +45,8 @@
 // family_is_enumerable, make_gen_enumerator, create_transformation,
 // get_trans_param_specs) are pure registry lookups. There is no
 // per-family if-chain to maintain.
+
+namespace regpoly::core {
 
 namespace {
 
@@ -195,3 +200,5 @@ std::vector<ParamSpec> get_trans_param_specs(const std::string& type)
     register_all_transformations();
     return TR::lookup(type).param_specs();
 }
+
+}  // namespace regpoly::core

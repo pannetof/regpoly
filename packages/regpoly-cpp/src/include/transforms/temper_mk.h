@@ -8,6 +8,8 @@
 #include <memory>
 #include <string>
 
+namespace regpoly::core {
+
 class TemperMKTrans : public Transformation {
 public:
     TemperMKTrans(int w, int type, int eta, int mu, int u, int l,
@@ -37,3 +39,5 @@ private:
     int u_, l_;
     uint64_t b_, c_;
 };
+
+}  // namespace regpoly::core

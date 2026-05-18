@@ -23,6 +23,9 @@
 #include "tempering_optimizer.h"
 #include "transformation.h"
 
+using namespace regpoly::core;
+
+
 namespace {
 
 // Build a 1-component CombinedGenerator + tempMK chain so the cache

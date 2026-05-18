@@ -14,6 +14,11 @@
 #include <stdexcept>
 #include <vector>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 // Translate a SeekTestSpec into a polymorphic Test instance. This is
@@ -137,3 +142,5 @@ SeekResult run_seek_search(
         std::chrono::duration<double>(t_end - t_start).count()
     };
 }
+
+}  // namespace regpoly::core

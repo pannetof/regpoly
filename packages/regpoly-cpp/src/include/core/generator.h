@@ -10,6 +10,8 @@
 #include <sstream>
 #include <unordered_map>
 #include <vector>
+namespace regpoly::core {
+
 class Generator {
 public:
     Generator(int k, int L) : state_(k), k_(k), L_(L) {}
@@ -185,3 +187,4 @@ private:
         default_test_method_cache_;
 };
 
+}  // namespace regpoly::core

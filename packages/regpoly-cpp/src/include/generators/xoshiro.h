@@ -10,6 +10,8 @@
 #include <memory>
 #include <string>
 
+namespace regpoly::core {
+
 class GenEnumerator;
 
 // Blackman & Vigna (2022) xoshiro linear engine.
@@ -70,3 +72,5 @@ private:
     void next_4_();
     void next_8_();
 };
+
+}  // namespace regpoly::core

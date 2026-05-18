@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+namespace regpoly::core {
+
 class TGFSRGen : public Generator {
 public:
     TGFSRGen(int w, int r, int m, const BitVect& a, int L);
@@ -30,3 +32,5 @@ private:
     int w_, r_, m_;
     BitVect a_;
 };
+
+}  // namespace regpoly::core

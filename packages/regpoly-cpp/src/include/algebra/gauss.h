@@ -7,6 +7,8 @@
 #include <vector>
 #include <cstdint>
 
+namespace regpoly::core {
+
 class GaussMatrix {
 public:
     GaussMatrix(int nrows, int ncols);
@@ -43,3 +45,5 @@ private:
     std::vector<uint64_t> data_;
     static constexpr int WL = 64;
 };
+
+}  // namespace regpoly::core

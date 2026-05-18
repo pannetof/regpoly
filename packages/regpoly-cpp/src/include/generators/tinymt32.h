@@ -42,6 +42,8 @@
 //     out = status[3] ^ t1
 //     if (t1 & 1) out ^= tmat
 //     return out
+namespace regpoly::core {
+
 class TinyMT32Gen : public Generator {
 public:
     TinyMT32Gen(uint32_t mat1, uint32_t mat2, uint32_t tmat, int L);
@@ -70,3 +72,5 @@ private:
     void store_status(const uint32_t s[4]);
     uint32_t compute_temper(const uint32_t s[4]) const;
 };
+
+}  // namespace regpoly::core

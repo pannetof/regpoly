@@ -24,6 +24,9 @@
 #include "factory.h"
 #include "params.h"
 
+using namespace regpoly::core;
+
+
 namespace fs = std::filesystem;
 
 namespace {

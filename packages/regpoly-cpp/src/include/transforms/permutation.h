@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+namespace regpoly::core {
+
 class PermutationTrans : public Transformation {
 public:
     PermutationTrans(int w, int p, int q);
@@ -26,3 +28,5 @@ public:
 private:
     int p_, q_;
 };
+
+}  // namespace regpoly::core

@@ -24,6 +24,8 @@
 //   2. Register it via `MethodRegistry::reg("baz", ...)` in factory.cpp.
 // No existing dispatch site needs editing.
 
+namespace regpoly::core {
+
 struct EquidistributionMethodResult {
     std::vector<int> ecart;  // size maxL+1; ecart[0] unused
     int  se = 0;
@@ -64,3 +66,5 @@ public:
     // All registered method names, in registration order.
     static std::vector<std::string> names();
 };
+
+}  // namespace regpoly::core

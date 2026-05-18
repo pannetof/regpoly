@@ -12,6 +12,9 @@
 
 #include "well.h"
 
+using namespace regpoly::core;
+
+
 namespace {
 
 constexpr int kW = 32;

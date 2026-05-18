@@ -5,6 +5,11 @@
 #include <sstream>
 #include <iomanip>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 TemperMKTrans::TemperMKTrans(int w, int type, int eta, int mu,
                              int u, int l, uint64_t b, uint64_t c)
     : type_(type), eta_(eta), mu_(mu), u_(u), l_(l), b_(b), c_(c)
@@ -128,3 +133,5 @@ std::vector<ParamSpec> TemperMKTrans::param_specs() {
         {"c",   "int", false, false, 0, "bitmask", "w", true},
     };
 }
+
+}  // namespace regpoly::core

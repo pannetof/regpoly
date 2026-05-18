@@ -5,9 +5,14 @@
 #include <algorithm>
 #include <cstring>
 
+using namespace regpoly::core;
+
+
 // ═══════════════════════════════════════════════════════════════════════════
 // GaussMatrix — construction and basic operations
 // ═══════════════════════════════════════════════════════════════════════════
+
+namespace regpoly::core {
 
 GaussMatrix::GaussMatrix(int nrows, int ncols)
     : nrows_(nrows), ncols_(ncols),
@@ -278,3 +283,5 @@ int GaussMatrix::rang_cf(int /*kg*/, int t, int l, int L) {
     }
     return rang;
 }
+
+}  // namespace regpoly::core

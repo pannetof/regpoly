@@ -8,11 +8,16 @@
 #include <algorithm>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
 // ══════════════════════════════════════════════════════════════════════════
 // NTL conversion helpers
 // ══════════════════════════════════════════════════════════════════════════
 
 // BitVect bit i = coefficient of z^i → NTL GF2X
+namespace regpoly::core {
+
 static NTL::GF2X bv_to_gf2x(const BitVect& bv, int deg) {
     NTL::GF2X p;
     for (int i = 0; i < deg; i++)
@@ -253,3 +258,5 @@ MeLatResult test_me_lat(
 
     return result;
 }
+
+}  // namespace regpoly::core

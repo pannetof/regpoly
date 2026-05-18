@@ -21,7 +21,11 @@
 #include <sstream>
 #include <sys/stat.h>
 
-namespace regpoly_catalog {
+using namespace regpoly::core;
+using namespace regpoly::library;
+
+
+namespace regpoly::library {
 
 namespace {
 
@@ -1178,4 +1182,4 @@ std::string publish_tested_generator(
     return p->source_path;
 }
 
-}  // namespace regpoly_catalog
+}  // namespace regpoly::library

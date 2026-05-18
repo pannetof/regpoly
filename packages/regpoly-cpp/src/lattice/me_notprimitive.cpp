@@ -19,6 +19,11 @@
 #include <NTL/vec_GF2.h>
 #include <NTL/GF2.h>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 // ── Mersenne-prime-exponent fast path (mirrors generateur.cpp) ─────────
@@ -416,3 +421,5 @@ MeLatResult test_me_notprimitive(
     for (int l = maxl_overall + 1; l <= maxL; l++) res.ecart[l] = INT_MAX;
     return res;
 }
+
+}  // namespace regpoly::core

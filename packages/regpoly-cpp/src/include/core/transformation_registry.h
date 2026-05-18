@@ -27,6 +27,8 @@
 //
 // The factory entry points create_transformation() and
 // get_trans_param_specs() are pure registry lookups.
+namespace regpoly::core {
+
 class TransformationRegistry {
 public:
     using FromParamsFn = std::function<
@@ -46,3 +48,5 @@ public:
     static const Info& lookup(const std::string& name);
     static const Info* find(const std::string& name);
 };
+
+}  // namespace regpoly::core

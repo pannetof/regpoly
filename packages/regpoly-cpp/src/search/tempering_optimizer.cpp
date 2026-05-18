@@ -13,6 +13,12 @@
 #include <functional>
 #include <utility>
 
+using namespace regpoly::core;
+using namespace regpoly::random;
+
+
+namespace regpoly::core {
+
 namespace {
 
 // Apply a single-key partial update to a transformation: mirrors
@@ -29,7 +35,7 @@ void set_trans_param(TemperParamLocator& loc, int64_t new_value) {
 
 uint64_t random_perturbation(int width) {
     if (width <= 0) return 0;
-    uint64_t r = regpoly_random::rng()();
+    uint64_t r = regpoly::random::rng()();
     if (width >= 64) return r;
     return r & ((uint64_t(1) << width) - 1);
 }
@@ -71,7 +77,7 @@ TemperingOptResult run_tempering_optimizer_once(
     std::vector<TemperParamLocator>& params,
     const std::vector<std::vector<uint64_t>>& safe_masks)
 {
-    regpoly_random::seed(cfg.random_seed);
+    regpoly::random::seed(cfg.random_seed);
 
     const int L = cache.L();
     const int max_essais = cfg.max_essais;
@@ -148,7 +154,7 @@ TemperingOptResult run_tempering_optimizer_minimize(
     std::vector<TemperParamLocator>& params,
     const std::vector<std::vector<uint64_t>>& safe_masks)
 {
-    regpoly_random::seed(cfg.random_seed);
+    regpoly::random::seed(cfg.random_seed);
 
     const int L = cache.L();
     const int n_restarts = cfg.n_restarts;
@@ -209,3 +215,5 @@ TemperingOptResult run_tempering_optimizer_minimize(
     best.essais = n_calls;
     return best;
 }
+
+}  // namespace regpoly::core

@@ -6,6 +6,11 @@
 #include <deque>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 // Lazily-initialised singletons. Function-local statics avoid the
@@ -99,3 +104,5 @@ const std::vector<GeneratorRegistry::Info*>& GeneratorRegistry::canonical_entrie
 const std::vector<std::pair<std::string, std::string>>& GeneratorRegistry::aliases() {
     return alias_pairs();
 }
+
+}  // namespace regpoly::core

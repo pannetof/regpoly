@@ -25,6 +25,8 @@
 // computation that depends on `mu`/width and changes infrequently).
 // The driver receives the precomputed safe_masks and just consumes them.
 
+namespace regpoly::core {
+
 struct TemperParamLocator {
     Transformation* trans;       // not owned; lifetime is the caller's
     std::string param_name;      // e.g. "b"
@@ -82,3 +84,5 @@ TemperingOptResult run_tempering_optimizer_minimize(
     TemperOptCache& cache,
     std::vector<TemperParamLocator>& params,
     const std::vector<std::vector<uint64_t>>& safe_masks);
+
+}  // namespace regpoly::core

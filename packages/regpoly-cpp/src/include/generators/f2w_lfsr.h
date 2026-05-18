@@ -8,6 +8,8 @@
 #include <string>
 #include <algorithm>
 
+namespace regpoly::core {
+
 class F2wLFSRGen : public F2wBaseGen {
 public:
     F2wLFSRGen(int w, int r, int nbcoeff,
@@ -31,3 +33,5 @@ public:
 private:
     int state_bits_;
 };
+
+}  // namespace regpoly::core

@@ -18,6 +18,9 @@
 
 #include <vector>
 
+using namespace regpoly::core;
+
+
 namespace {
 
 struct Unpacked {
@@ -30,6 +33,8 @@ Unpacked unpack(const Generator& gen) {
 }
 
 }  // namespace
+
+namespace regpoly::core {
 
 MeLatResult test_me_lat(
     const Generator& gen,
@@ -77,3 +82,5 @@ PISCache::PISCache(const Generator& gen, int kg, int L)
 
 TemperOptCache::TemperOptCache(const Generator& gen, int kg, int L)
     : TemperOptCache(unpack(gen).gens, unpack(gen).trans, kg, L) {}
+
+}  // namespace regpoly::core

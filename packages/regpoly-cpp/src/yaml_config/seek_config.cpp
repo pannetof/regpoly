@@ -19,7 +19,11 @@
 #include <string>
 #include <vector>
 
-namespace regpoly_yaml_config {
+using namespace regpoly::core;
+using namespace regpoly::yaml_config;
+
+
+namespace regpoly::yaml_config {
 
 namespace {
 
@@ -597,4 +601,4 @@ BuiltSearch build_search(const SeekConfig& cfg) {
     return built;
 }
 
-}  // namespace regpoly_yaml_config
+}  // namespace regpoly::yaml_config

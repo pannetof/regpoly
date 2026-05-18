@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+namespace regpoly::core {
+
 class PolyLCGGen : public Generator {
 public:
     PolyLCGGen(int k, const BitVect& poly, int L);
@@ -26,3 +28,5 @@ public:
 private:
     BitVect poly_;
 };
+
+}  // namespace regpoly::core

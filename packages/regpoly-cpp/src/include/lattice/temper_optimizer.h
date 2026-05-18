@@ -26,6 +26,8 @@
 // Cost per compute_gap(v): O(k) for FindPolys at one resolution + one Lenstra.
 // ══════════════════════════════════════════════════════════════════════════
 
+namespace regpoly::core {
+
 class TemperOptCache {
 public:
     TemperOptCache(
@@ -97,3 +99,5 @@ private:
     // Normalize a single polynomial: h = g * inv_g0 mod M
     void normalize_single(BitVect& poly);
 };
+
+}  // namespace regpoly::core

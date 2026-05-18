@@ -5,7 +5,12 @@
 #include <climits>
 #include <algorithm>
 
+using namespace regpoly::core;
+
+
 // ── NTL helpers (same as lattice_polys.cpp) ─────────────────────────────
+
+namespace regpoly::core {
 
 static NTL::GF2X bv_to_gf2x_local(const BitVect& bv, int deg) {
     NTL::GF2X p;
@@ -278,3 +283,5 @@ int TemperOptCache::compute_gap(int v) {
     int d = std::min(length, Deg_ / v);
     return Deg_ / v - d;
 }
+
+}  // namespace regpoly::core

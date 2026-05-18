@@ -10,6 +10,11 @@
 #include <climits>
 #include <vector>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 // Mirror Python's float(sys.maxsize) sentinel exactly: on 64-bit Python
@@ -191,3 +196,5 @@ TupletsRunResult run_tuplets(
 
     return out;
 }
+
+}  // namespace regpoly::core

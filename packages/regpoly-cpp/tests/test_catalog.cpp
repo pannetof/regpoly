@@ -16,8 +16,13 @@
 
 #include "catalog.h"
 
+using namespace regpoly::core;
+
+
+using namespace regpoly::library;
+
+
 namespace fs = std::filesystem;
-using namespace regpoly_catalog;
 
 namespace {
 

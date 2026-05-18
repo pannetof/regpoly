@@ -8,6 +8,11 @@
 #include <sstream>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 NTL::GF2X char_poly_to_gf2x(const Generator& gen) {
@@ -246,3 +251,5 @@ std::optional<std::string> CombinedGenerator::compute_default_test_method(const 
     }
     return std::nullopt;
 }
+
+}  // namespace regpoly::core

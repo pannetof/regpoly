@@ -27,6 +27,9 @@
 #include "generator.h"
 #include "tausworthe.h"
 
+using namespace regpoly::core;
+
+
 namespace {
 
 std::unique_ptr<TauswortheGen> make_taus_a() {

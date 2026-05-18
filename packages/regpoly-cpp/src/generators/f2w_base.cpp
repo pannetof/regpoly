@@ -6,6 +6,11 @@
 #include <iomanip>
 #include <cstdio>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 F2wBaseGen::F2wBaseGen(int w, int r, int nbcoeff,
                        const std::vector<int>& nocoeff,
                        const std::vector<uint64_t>& coeff,
@@ -68,3 +73,5 @@ uint64_t F2wBaseGen::V(int idx) const {
 void F2wBaseGen::SetV(int idx, uint64_t val) {
     state_.set_word(idx, w_, val & maskw_);
 }
+
+}  // namespace regpoly::core

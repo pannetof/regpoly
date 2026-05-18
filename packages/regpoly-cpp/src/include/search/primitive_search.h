@@ -25,8 +25,10 @@
 // Python remains responsible for: YAML parsing, .partial recovery
 // I/O, dedup against the existing-results set, the merged output
 // file, header/footer printing. The driver owns the random sampling
-// (via regpoly_random::sample_param_into), the factory call, and the
+// (via regpoly::random::sample_param_into), the factory call, and the
 // is_full_period check.
+
+namespace regpoly::core {
 
 struct PrimitiveSearchConfig {
     std::string family;
@@ -55,3 +57,5 @@ int64_t run_primitive_search(
     const PrimitiveSearchConfig& cfg,
     const OnHitFn& on_hit,
     const OnProgressFn& on_progress);
+
+}  // namespace regpoly::core

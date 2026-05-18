@@ -17,6 +17,9 @@
 #include "factory.h"
 #include "params.h"
 
+using namespace regpoly::core;
+
+
 namespace {
 
 // Build a tiny TGFSR generator with a chosen `a` so we can produce

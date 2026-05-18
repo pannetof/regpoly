@@ -10,6 +10,11 @@
 #include <sstream>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 int validate_ctor_(int w, int r, int A, int B) {
@@ -216,3 +221,5 @@ std::unique_ptr<GenEnumerator> XoshiroGen::make_enumerator(
         throw std::invalid_argument("needs_r_in_4_or_8");
     return std::make_unique<XoshiroEnumerator>(w, r);
 }
+
+}  // namespace regpoly::core

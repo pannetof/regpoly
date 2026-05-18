@@ -22,6 +22,8 @@
 // combinatorial totals routinely exceed 2^63.  Python bindings lift
 // them to arbitrary-precision ints.
 
+namespace regpoly::core {
+
 class GenEnumerator {
 public:
     struct Axis {
@@ -77,3 +79,5 @@ NTL::ZZ binomial_zz(int n, int k);
 // concrete enumerator otherwise reimplements the istream/ostream dance.
 NTL::ZZ      parse_zz(const std::string& dec);
 std::string  zz_to_dec(const NTL::ZZ& z);
+
+}  // namespace regpoly::core

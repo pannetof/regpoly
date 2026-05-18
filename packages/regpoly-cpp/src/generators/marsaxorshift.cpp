@@ -12,6 +12,11 @@
 #include <sstream>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 // Validate (type, w, r, payload) consistency.  Throws
@@ -883,3 +888,5 @@ std::unique_ptr<GenEnumerator> MarsaXorshiftGen::make_enumerator(
         "MarsaXorshiftGen::make_enumerator: unsupported type (must be "
         "one of 1, 2, 3, 4, 100)");
 }
+
+}  // namespace regpoly::core

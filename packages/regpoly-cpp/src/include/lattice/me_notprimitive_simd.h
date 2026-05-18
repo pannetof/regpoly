@@ -33,6 +33,8 @@
 // hint.  For `simd_lane_count() == 1`, the algorithm collapses to
 // behaviour identical to plain `test_me_notprimitive`.
 
+namespace regpoly::core {
+
 MeLatResult test_me_notprimitive_simd(
     const std::vector<Generator*>& gens,
     const std::vector<std::vector<Transformation*>>& trans,
@@ -44,3 +46,5 @@ MeLatResult test_me_notprimitive_simd(
     const Generator& gen,
     int kg, int L, int maxL,
     const std::vector<int>& delta, int mse);
+
+}  // namespace regpoly::core

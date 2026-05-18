@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+namespace regpoly::core {
+
 class F2wPolyLCGGen : public F2wBaseGen {
 public:
     F2wPolyLCGGen(int w, int r, int nbcoeff,
@@ -23,3 +25,5 @@ public:
     void next() override;
     std::unique_ptr<Generator> copy() const override;
 };
+
+}  // namespace regpoly::core

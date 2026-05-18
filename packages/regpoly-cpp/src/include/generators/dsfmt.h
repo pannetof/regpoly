@@ -28,6 +28,8 @@
 // simd_advance_one_word / simd_read_super_word / simd_add_state /
 // simd_reset_word_index following the SFMTGen pattern but with the dSFMT
 // recurrence and the lung carry.
+namespace regpoly::core {
+
 class DSFMTGen : public Generator {
 public:
     DSFMTGen(int mexp, int pos1, int sl1,
@@ -113,3 +115,5 @@ private:
         work_.set_word(2 * word_idx + (1 - l), 64, val);
     }
 };
+
+}  // namespace regpoly::core

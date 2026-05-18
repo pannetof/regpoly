@@ -17,8 +17,12 @@
 // K should be an upper bound on the actual minimal polynomial degree
 // (typically gen.k() — but for non-full-period generators the true
 // minimal polynomial may be smaller).
+namespace regpoly::core {
+
 int packed_bm(const Generator& gen,
               const BitVect& init_state,
               int K,
               BitVect* out_min_poly,
               int bit_idx = 0);   // which output bit to BM (default 0)
+
+}  // namespace regpoly::core

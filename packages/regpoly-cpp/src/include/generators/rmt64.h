@@ -42,6 +42,8 @@
 //     x ^= (x << 37) & maskc
 //     x ^= (x >> 43)
 //     return x      // 64-bit output
+namespace regpoly::core {
+
 class RMT64Gen : public Generator {
 public:
     RMT64Gen(int mexp, int pos, uint64_t mata,
@@ -79,3 +81,5 @@ private:
         state_.set_word(i, 64, v);
     }
 };
+
+}  // namespace regpoly::core

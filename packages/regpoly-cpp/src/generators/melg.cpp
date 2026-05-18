@@ -8,6 +8,10 @@
 #include <cstring>
 #include <NTL/GF2X.h>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
 
 MELGGen::MELGGen(int w, int N, int M, int r, int sigma1, int sigma2,
            uint64_t a, int L)
@@ -575,3 +579,5 @@ std::vector<ParamSpec> MELGGen::param_specs() {
         {"a",      "int", false, false, 0,  "bitmask", "w", false},
     };
 }
+
+}  // namespace regpoly::core

@@ -5,9 +5,14 @@
 #include <vector>
 #include <cstring>
 
+using namespace regpoly::core;
+
+
 // Polynomials C, B and the output sequence are stored as packed uint64_t
 // arrays (MSB-first, matching BitVect convention).  This gives ~64×
 // speedup over the element-wise int-array version for the inner loop.
+
+namespace regpoly::core {
 
 namespace {
 
@@ -114,3 +119,5 @@ int packed_bm(const Generator& gen,
     }
     return Len;
 }
+
+}  // namespace regpoly::core

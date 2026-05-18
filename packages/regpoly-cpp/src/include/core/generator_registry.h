@@ -18,6 +18,8 @@
 // regpoly_core's public surface).
 namespace pybind11 { class module_; }
 
+namespace regpoly::core {
+
 // Self-registering registry of Generator subclass types.
 //
 // Each subclass (FooGen) registers itself once per build by writing a
@@ -120,3 +122,5 @@ public:
         _regpoly_gen_alias_##__LINE__ =                               \
             GeneratorRegistry::reg_alias((Alias), (CanonicalName));   \
     }
+
+}  // namespace regpoly::core

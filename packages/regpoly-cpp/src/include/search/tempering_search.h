@@ -29,6 +29,8 @@
 // succeeded (got_result == true). This matches Python's behaviour of
 // skipping combos with no usable results.
 
+namespace regpoly::core {
+
 struct TemperingSearchConfig {
     int nb_tries = 1;
     int progress_interval = 0;       // 0 = never fire on_progress
@@ -83,3 +85,5 @@ TemperingSearchResult run_tempering_search(
     const TempSearchOnTryFn& on_try,
     const TempSearchOnComboDoneFn& on_combo_done,
     const TempSearchOnProgressFn& on_progress);
+
+}  // namespace regpoly::core

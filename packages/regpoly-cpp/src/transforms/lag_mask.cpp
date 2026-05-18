@@ -5,6 +5,11 @@
 #include <sstream>
 #include <iomanip>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 LaggedTempering::LaggedTempering(int w, int sigma, int L, uint64_t b)
     : sigma_(sigma), L_(L), b_(b)
 {
@@ -101,3 +106,5 @@ std::vector<ParamSpec> LaggedTempering::param_specs() {
         {"b",     "int", false, false, 0, "bitmask", "w", true},
     };
 }
+
+}  // namespace regpoly::core

@@ -8,6 +8,11 @@
 
 #include <NTL/ZZ.h>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 NTL::ZZ binomial_zz(int n, int k) {
     if (k < 0 || k > n) return NTL::ZZ(0);
     if (k == 0 || k == n) return NTL::ZZ(1);
@@ -93,3 +98,5 @@ std::vector<NTL::ZZ> mixed_radix_decode(
     }
     return out;
 }
+
+}  // namespace regpoly::core

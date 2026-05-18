@@ -7,6 +7,8 @@
 #include <cstring>
 #include <algorithm>
 
+namespace regpoly::core {
+
 class BitVect {
     std::vector<uint64_t> words_;
     int nbits_;
@@ -66,3 +68,5 @@ public:
 private:
     void clear_tail();
 };
+
+}  // namespace regpoly::core

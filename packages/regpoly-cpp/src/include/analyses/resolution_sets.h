@@ -23,6 +23,8 @@
 //
 // Returns a vector of size L+1 (out[0] always false; out[l] is true iff
 // l is in Psi_12).
+namespace regpoly::core {
+
 std::vector<bool> compute_psi12(int kg, int L);
 
 // Phi_4: the dimensions t ∈ {2..kg} whose collision-free rank must be
@@ -34,3 +36,5 @@ std::vector<bool> compute_psi12(int kg, int L);
 //
 // Returns a vector of size kg+1 (out[0] = out[1] = false).
 std::vector<bool> compute_phi4(int kg, int L);
+
+}  // namespace regpoly::core

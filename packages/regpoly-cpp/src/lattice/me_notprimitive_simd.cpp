@@ -17,6 +17,11 @@
 #include <NTL/GF2.h>
 #include <NTL/vec_GF2.h>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 // ─────────────────────────────────────────────────────────────────────
@@ -127,7 +132,6 @@ BitVect apply_polynomial(const NTL::GF2X& g, const BitVect& s,
     }
     return r;
 }
-
 
 // ─────────────────────────────────────────────────────────────────────
 // SimdLinVec — port of MTToolBox simd_linear_generator_vector
@@ -602,3 +606,5 @@ MeLatResult test_me_notprimitive_simd(
     for (int l = maxl_overall + 1; l <= maxL; l++) res.ecart[l] = INT_MAX;
     return res;
 }
+
+}  // namespace regpoly::core

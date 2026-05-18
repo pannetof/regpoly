@@ -25,6 +25,8 @@
 // src/algebra/primitive_factors_data.cpp, generated from
 // packages/regpoly/src/regpoly/data/primitive_factors.json).
 
+namespace regpoly::core {
+
 bool is_mersenne_prime_exponent(int k);
 
 // Returns the sorted list of prime factors of 2^k - 1 as decimal
@@ -50,13 +52,15 @@ bool is_full_period(const BitVect& char_poly, int k);
 // in its lower `w` bits, with the leading `z^w` term implicit).
 bool is_irreducible_gf2w_modM(uint64_t modM_value, int w);
 
+}  // namespace regpoly::core
+
 // Internal data-access functions (used by the implementation; exposed
 // for the GoogleTest fixtures).
-namespace regpoly_internal {
+namespace regpoly::internal {
 
 // Lookup factors of Phi_n(2) for a single n. `complete` is set to the
 // table entry's "complete" flag. Returns nullptr if n is not in the
 // table.
 const std::vector<std::string>* lookup_factors(int n, bool& complete);
 
-}  // namespace regpoly_internal
+}  // namespace regpoly::internal

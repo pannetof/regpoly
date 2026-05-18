@@ -11,7 +11,12 @@
 #include <NTL/GF2XFactoring.h>
 #include <NTL/ZZ.h>
 
+using namespace regpoly::core;
+
+
 // ── Default get_output ──────────────────────────────────────────────────
+
+namespace regpoly::core {
 
 BitVect Generator::get_output() const {
     BitVect out(L_);
@@ -314,3 +319,5 @@ std::vector<BitVect> Generator::transition_matrix() const {
     }
     return rows;
 }
+
+}  // namespace regpoly::core

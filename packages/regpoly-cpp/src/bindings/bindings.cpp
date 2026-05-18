@@ -40,6 +40,11 @@
 #include <NTL/ZZ.h>
 #include <random>
 
+using namespace regpoly::core;
+using namespace regpoly::internal;
+using namespace regpoly::random;
+
+
 namespace py = pybind11;
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -897,7 +902,7 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
             spec.name = "__random_param_tmp";
             spec.rand_type = rand_type;
             spec.rand_args = rand_args;
-            if (!regpoly_random::sample_generic_into(spec, p))
+            if (!regpoly::random::sample_generic_into(spec, p))
                 throw std::invalid_argument(
                     "random_param: unsupported rand_type '"
                     + rand_type + "'");
@@ -1468,7 +1473,7 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
     // package is a thin shim that re-exports these types and adds
     // Path-typed source_path / dict-typed params.
 
-    using namespace regpoly_catalog;
+    using namespace regpoly::library;
 
     // ParamValue → native Python value (int / str / bool / list[int]
     // / nested dict-of-dicts for StructMap-shaped fields like WELL
@@ -1509,7 +1514,7 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
     };
     // Component → dict matching Python's _normalize_components shape.
     auto comp_to_py = [pmap_to_py, step_to_py](
-        const regpoly_catalog::Component& c) -> py::dict {
+        const regpoly::library::Component& c) -> py::dict {
         py::dict d;
         d["family"] = py::str(c.family);
         d["L"] = py::int_(c.L);
@@ -1651,7 +1656,7 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
                   }
                   steps.push_back(std::move(st));
               }
-              return regpoly_catalog::config_hash(family, pm, steps);
+              return regpoly::library::config_hash(family, pm, steps);
           },
           py::arg("family"), py::arg("params"), py::arg("tempering"),
           "Stable short hash of one component config.");

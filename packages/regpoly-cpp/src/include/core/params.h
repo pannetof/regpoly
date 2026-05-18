@@ -16,6 +16,8 @@
 // like {M, t} or {M, q, t, s, a}). The variant covers the scalar leaves
 // PyYAML / pybind11 produce; deeper nesting beyond the two levels here is
 // not supported on purpose — keep the shape boring.
+namespace regpoly::core {
+
 using ParamScalar = std::variant<int64_t, uint64_t, std::string, bool>;
 using StructEntry = std::map<std::string, ParamScalar>;
 using StructMap   = std::map<std::string, StructEntry>;
@@ -54,3 +56,5 @@ private:
     std::unordered_map<std::string, std::vector<uint64_t>> uint_vecs_;
     std::unordered_map<std::string, StructMap> struct_maps_;
 };
+
+}  // namespace regpoly::core

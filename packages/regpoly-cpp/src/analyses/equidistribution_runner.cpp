@@ -11,6 +11,11 @@
 #include <utility>
 #include <vector>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 struct UnpackedGenerator {
@@ -113,3 +118,5 @@ CollisionFreeResult run_collision_free(
 
     return {std::move(ecart_cf), secf, true};
 }
+
+}  // namespace regpoly::core

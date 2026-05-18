@@ -17,6 +17,8 @@
 // today by TauswortheGen's poly sampler, which also chooses `s`.)  Kept
 // adjacent to the first family that needs it; hoist to a shared
 // header when a second family registers a sampler.
+namespace regpoly::core {
+
 struct RandomParamResult {
     bool is_vec = false;
     int64_t int_val = 0;
@@ -96,3 +98,5 @@ private:
     void next_quick();
     void next_general();
 };
+
+}  // namespace regpoly::core

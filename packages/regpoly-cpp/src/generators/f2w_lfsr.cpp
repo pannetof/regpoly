@@ -4,6 +4,11 @@
 #include "f2w_lfsr.h"
 #include "f2w_polylcg.h"
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 F2wLFSRGen::F2wLFSRGen(int w, int r, int nbcoeff,
                          const std::vector<int>& nocoeff,
                          const std::vector<uint64_t>& coeff,
@@ -114,3 +119,5 @@ std::unique_ptr<Generator> F2wLFSRGen::from_params(const Params& params, int L) 
 std::vector<ParamSpec> F2wLFSRGen::param_specs() {
     return F2wPolyLCGGen::param_specs();  // same parameter layout
 }
+
+}  // namespace regpoly::core

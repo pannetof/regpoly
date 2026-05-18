@@ -29,6 +29,8 @@
  * Period: 2^p - 1 where p = N*w - r.
  * Output: w[i] (without tempering).
  */
+namespace regpoly::core {
+
 class MELGGen : public Generator {
 public:
     MELGGen(int w, int N, int M, int r, int sigma1, int sigma2,
@@ -70,3 +72,5 @@ private:
     // Array part rotated by i_*w_, v appended at the end.
     BitVect rotated_state() const;
 };
+
+}  // namespace regpoly::core

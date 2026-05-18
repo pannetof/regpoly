@@ -6,6 +6,11 @@
 #include <algorithm>
 #include <cmath>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 int isqrt(int n) {
@@ -44,3 +49,5 @@ std::vector<bool> compute_phi4(int kg, int L) {
     }
     return phi;
 }
+
+}  // namespace regpoly::core

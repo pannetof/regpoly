@@ -28,6 +28,8 @@
 // search-driver loop is migrated to C++ and SIMD-aware combined
 // scenarios become a real concern.
 
+namespace regpoly::core {
+
 class CombinedGenerator : public Generator {
 public:
     using ComponentTempering =
@@ -116,3 +118,5 @@ private:
 
     void refresh_concatenated_state();
 };
+
+}  // namespace regpoly::core

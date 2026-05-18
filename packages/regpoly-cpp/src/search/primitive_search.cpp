@@ -15,6 +15,13 @@
 #include <memory>
 #include <stdexcept>
 
+using namespace regpoly::core;
+using namespace regpoly::internal;
+using namespace regpoly::random;
+
+
+namespace regpoly::core {
+
 namespace {
 
 // Copy every key from `src` into `dst`, overwriting existing values.
@@ -34,7 +41,7 @@ int64_t run_primitive_search(
     const OnHitFn& on_hit,
     const OnProgressFn& on_progress)
 {
-    regpoly_random::seed(cfg.random_seed);
+    regpoly::random::seed(cfg.random_seed);
 
     auto specs = get_gen_param_specs(cfg.family);
     const int progress_every = cfg.progress_interval > 0
@@ -84,7 +91,7 @@ int64_t run_primitive_search(
             p.set_struct_map(
                 "matrices",
                 WELLGen::random_matrices(well_w, cfg.max_cost,
-                                         regpoly_random::rng()));
+                                         regpoly::random::rng()));
         }
         // Merge structural + fixed + sampled-where-needed.
         merge_into(p, cfg.structural_params);
@@ -104,7 +111,7 @@ int64_t run_primitive_search(
                     "' has no default and no random sampler — fixed_params "
                     "must pin it");
             try {
-                if (!regpoly_random::sample_param_into(spec, p, cfg.L))
+                if (!regpoly::random::sample_param_into(spec, p, cfg.L))
                     throw std::invalid_argument(
                         "PrimitiveSearch: no sampler registered for rand_type '"
                         + rt + "' (parameter '" + spec.name + "')");
@@ -152,3 +159,5 @@ int64_t run_primitive_search(
 
     return tries;
 }
+
+}  // namespace regpoly::core

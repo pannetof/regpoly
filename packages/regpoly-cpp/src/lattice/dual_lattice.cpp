@@ -4,6 +4,9 @@
 #include "dual_lattice.h"
 #include <cstring>
 
+using namespace regpoly::core;
+
+
 // ══════════════════════════════════════════════════════════════════════════
 // PolVect — flat contiguous storage for l polynomials of degree ≤ degmax
 //
@@ -14,6 +17,8 @@
 // set_all_polvect_resolutions() to update every basis vector's
 // resolution as the algorithm grows the basis.
 // ══════════════════════════════════════════════════════════════════════════
+
+namespace regpoly::core {
 
 PolVect::PolVect(int resolution_, int degmax)
     : deg(INT_MIN), indicemaxdeg(INT_MIN),
@@ -428,3 +433,5 @@ int DualLatticeBase::lenstra(int res) {
 
     return vb(0).deg;
 }
+
+}  // namespace regpoly::core

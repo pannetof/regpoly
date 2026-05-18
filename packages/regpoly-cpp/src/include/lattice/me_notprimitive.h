@@ -34,6 +34,8 @@
 // the upper bound is p, not kg.  This is the "honest" k(v) for any
 // F_2-linear generator regardless of full-period status.
 
+namespace regpoly::core {
+
 MeLatResult test_me_notprimitive(
     const std::vector<Generator*>& gens,
     const std::vector<std::vector<Transformation*>>& trans,
@@ -45,3 +47,5 @@ MeLatResult test_me_notprimitive(
     const Generator& gen,
     int kg, int L, int maxL,
     const std::vector<int>& delta, int mse);
+
+}  // namespace regpoly::core

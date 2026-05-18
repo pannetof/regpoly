@@ -6,6 +6,9 @@
 #include <cstdio>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
 // dSFMT recurrence (from dSMFT/dSFMT-common.h:101-113 and
 // MTToolBox/samples/dSFMTdc/dSFMTsearch.hpp:254-272):
 //
@@ -16,6 +19,8 @@
 //   r.u[1]    = (lung.u[1] >> SR)  ^ (lung.u[1] & MSK2) ^ t1;
 //
 // where SR = 12 is hardcoded.
+
+namespace regpoly::core {
 
 static constexpr int kSR = 12;
 
@@ -252,3 +257,5 @@ std::optional<std::string> DSFMTGen::compute_default_test_method(const std::stri
     if (test_type == "equidistribution") return std::string("simd_notprimitive");
     return std::nullopt;
 }
+
+}  // namespace regpoly::core

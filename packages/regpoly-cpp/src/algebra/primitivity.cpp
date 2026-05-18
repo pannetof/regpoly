@@ -16,6 +16,10 @@
 #include <stdexcept>
 #include <unordered_set>
 
+using namespace regpoly::core;
+using namespace regpoly::internal;
+
+
 namespace {
 
 const std::unordered_set<int>& mersenne_prime_exponents() {
@@ -80,6 +84,8 @@ bool ntl_is_primitive_with_factors(
 
 }  // namespace
 
+namespace regpoly::core {
+
 bool is_mersenne_prime_exponent(int k) {
     const auto& s = mersenne_prime_exponents();
     return s.find(k) != s.end();
@@ -103,7 +109,7 @@ std::optional<std::vector<std::string>> get_primitive_factors_for_k(int k) {
     for (int d : divisors_of(k)) {
         if (d == 1) continue;
         bool complete = false;
-        const auto* facs = regpoly_internal::lookup_factors(d, complete);
+        const auto* facs = regpoly::internal::lookup_factors(d, complete);
         if (facs == nullptr) return std::nullopt;
         if (!complete) return std::nullopt;
         for (const auto& p : *facs)
@@ -161,3 +167,5 @@ bool is_irreducible_gf2w_modM(uint64_t modM_value, int w) {
     }
     return ntl_is_irreducible(f);
 }
+
+}  // namespace regpoly::core

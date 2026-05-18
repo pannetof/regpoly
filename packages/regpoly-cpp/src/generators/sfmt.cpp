@@ -6,9 +6,14 @@
 #include <cstdio>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
 // ── 128-bit byte-shifts (lshift128 / rshift128 from the SFMTGen spec) ──
 // Both operate on a 128-bit quantity represented as four 32-bit lanes
 // u[0..3] with u[0] the low 32 bits.
+
+namespace regpoly::core {
 
 static void lshift128(uint32_t out[4], const uint32_t in[4], int bytes) {
     const int bits = bytes * 8;
@@ -404,3 +409,5 @@ std::optional<std::string> SFMTGen::compute_default_test_method(const std::strin
     if (test_type == "equidistribution") return std::string("simd_notprimitive");
     return std::nullopt;
 }
+
+}  // namespace regpoly::core

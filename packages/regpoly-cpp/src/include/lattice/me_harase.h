@@ -23,6 +23,8 @@
 //   Harase, Matsumoto, Saito (2011). "Fast Lattice Reduction for
 //   F2-Linear Pseudorandom Number Generators." Math. Comp. 80(273).
 
+namespace regpoly::core {
+
 MeLatResult test_me_harase(
     const std::vector<Generator*>& gens,
     const std::vector<std::vector<Transformation*>>& trans,
@@ -84,3 +86,5 @@ private:
     struct Impl;
     std::shared_ptr<Impl> impl_;
 };
+
+}  // namespace regpoly::core

@@ -8,7 +8,13 @@
 #include <vector>
 #include <string>
 
-namespace regpoly_internal {
+using namespace regpoly::core;
+
+
+using namespace regpoly::internal;
+
+
+namespace regpoly::internal {
 
 struct FactorEntry {
     bool complete;
@@ -1529,4 +1535,4 @@ const std::vector<std::string>* lookup_factors(int k, bool& complete) {
     return &it->second.factors;
 }
 
-}  // namespace regpoly_internal
+}  // namespace regpoly::internal

@@ -6,6 +6,11 @@
 #include <iomanip>
 #include <vector>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 PolyLCGGen::PolyLCGGen(int k, const BitVect& poly, int L)
     : Generator(k, L), poly_(poly.copy()) {}
 
@@ -109,3 +114,5 @@ std::vector<ParamSpec> PolyLCGGen::param_specs() {
         {"poly", "int_vec", false, false, 0, "poly_exponents",  "k", false},
     };
 }
+
+}  // namespace regpoly::core

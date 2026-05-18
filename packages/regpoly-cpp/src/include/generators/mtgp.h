@@ -32,6 +32,8 @@
 //   t' = t ^ (t >> 16)
 //   output = status_new ^ tmp_tbl[t' & 0x0f]
 // where t = state[(i + pos - 1) % N] (the word just before the pick-up).
+namespace regpoly::core {
+
 class MTGPGen : public Generator {
 public:
     MTGPGen(int mexp, int pos, int sh1, int sh2, uint32_t mask,
@@ -73,3 +75,5 @@ private:
         state_.set_word(i, 32, (uint64_t)v);
     }
 };
+
+}  // namespace regpoly::core

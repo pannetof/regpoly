@@ -8,7 +8,12 @@
 #include <sstream>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
 // ── Component ──────────────────────────────────────────────────────────────
+
+namespace regpoly::core {
 
 Component::Component()
     : pool_(std::make_shared<GenPool>()),
@@ -217,3 +222,5 @@ build_combined_from_combination(const Combination& comb)
     return std::make_unique<CombinedGenerator>(
         std::move(comps), std::move(chains), comb.Lmax());
 }
+
+}  // namespace regpoly::core

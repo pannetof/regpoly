@@ -22,6 +22,10 @@
 #include "well.h"
 #include "factory.h"
 
+using namespace regpoly::core;
+using namespace regpoly::internal;
+
+
 namespace {
 
 // Build a config that searches for full-period TGFSR with a fixed

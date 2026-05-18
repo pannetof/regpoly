@@ -7,6 +7,8 @@
 #include <string>
 #include <memory>
 
+namespace regpoly::core {
+
 class Transformation {
 public:
     Transformation() : w_(0) {}
@@ -23,3 +25,5 @@ public:
 protected:
     int w_;
 };
+
+}  // namespace regpoly::core

@@ -10,6 +10,8 @@
 #include <memory>
 #include <string>
 
+namespace regpoly::core {
+
 class GenEnumerator;
 
 // Blackman & Vigna (2022) xoroshiro linear engine.
@@ -65,3 +67,5 @@ private:
 
     uint64_t rotl_(uint64_t x, int rot) const;
 };
+
+}  // namespace regpoly::core

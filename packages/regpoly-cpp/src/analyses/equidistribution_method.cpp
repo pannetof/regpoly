@@ -14,7 +14,12 @@
 #include <unordered_map>
 #include <utility>
 
+using namespace regpoly::core;
+
+
 // ── Concrete method classes ─────────────────────────────────────────────
+
+namespace regpoly::core {
 
 namespace {
 
@@ -171,3 +176,5 @@ std::vector<std::string> MethodRegistry::names() {
     register_builtin_methods();
     return order();
 }
+
+}  // namespace regpoly::core

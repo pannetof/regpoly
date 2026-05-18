@@ -9,7 +9,12 @@
 
 #include <utility>
 
+using namespace regpoly::core;
+
+
 // ── EquidistributionTestRunner ──────────────────────────────────────────
+
+namespace regpoly::core {
 
 EquidistributionTestRunner::EquidistributionTestRunner(
     std::unique_ptr<EquidistributionMethod> method,
@@ -45,7 +50,6 @@ bool EquidistributionTestRunner::passed(const SeekIterResult& iter) const {
     return iter.me_se <= mse_;
 }
 
-
 // ── CollisionFreeTestRunner ─────────────────────────────────────────────
 
 void CollisionFreeTestRunner::run(
@@ -64,7 +68,6 @@ void CollisionFreeTestRunner::run(
     iter.cf_secf     = r.secf;
     iter.cf_verified = r.verified;
 }
-
 
 // ── TupletsTestRunner ───────────────────────────────────────────────────
 
@@ -97,3 +100,5 @@ void TupletsTestRunner::run(
 bool TupletsTestRunner::passed(const SeekIterResult& iter) const {
     return iter.tup_is_ok;
 }
+
+}  // namespace regpoly::core

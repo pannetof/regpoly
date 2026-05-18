@@ -23,6 +23,8 @@
 // The function consumes a single Generator& (typically a CombinedGenerator
 // per Phase 1) and returns ecart, se, and verified.
 
+namespace regpoly::core {
+
 struct MatricialEquidResult {
     std::vector<int> ecart;  // size Lmax+1; ecart[0] unused
     int se;
@@ -52,3 +54,5 @@ struct CollisionFreeResult {
 CollisionFreeResult run_collision_free(
     const Generator& gen,
     int kg, int L, int L_for_phi4);
+
+}  // namespace regpoly::core

@@ -30,6 +30,8 @@
 // disambiguated by `SeekTestSpec::method_name` instead; the
 // Equidistribution* enumerators are kept as aliases for SeekTestSpec
 // to remain API-compatible.
+namespace regpoly::core {
+
 enum class SeekTestKind : uint8_t {
     Equidistribution                  = 0,
     CollisionFree                     = 6,
@@ -140,3 +142,5 @@ SeekResult run_seek_search(
     const SeekOnPrepFn& on_prep,
     const SeekOnIterFn& on_iter,
     const SeekOnProgressFn& on_progress);
+
+}  // namespace regpoly::core

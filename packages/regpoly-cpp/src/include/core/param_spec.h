@@ -6,6 +6,8 @@
 #include <vector>
 #include <cstdint>
 
+namespace regpoly::core {
+
 struct ParamSpec {
     std::string name;
     std::string type;       // "int", "bool", "int_vec", "uint_vec"
@@ -22,3 +24,5 @@ struct ParamSpec {
                             //   none/"":         not randomizable
     bool optimizable;       // true → can be optimized (tempering bitmasks)
 };
+
+}  // namespace regpoly::core

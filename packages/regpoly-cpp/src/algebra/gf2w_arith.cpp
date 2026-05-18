@@ -5,6 +5,11 @@
 #include <vector>
 #include <cstdlib>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 uint64_t gf2w_multiply_z(uint64_t a, int k, uint64_t modM) {
     for (int i = 0; i < k; i++) {
         if (a & 1ULL)
@@ -139,3 +144,5 @@ std::vector<uint64_t> gf2w_make_table(int w, uint64_t modM) {
 
     return table;
 }
+
+}  // namespace regpoly::core

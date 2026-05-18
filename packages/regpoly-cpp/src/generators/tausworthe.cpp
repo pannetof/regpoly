@@ -15,6 +15,11 @@
 
 #include <NTL/ZZ.h>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 TauswortheGen::TauswortheGen(int k, const std::vector<int>& Q, int s, bool quicktaus, int L)
     : Generator(k, L), Q_(Q), NbCoeff_((int)Q.size()),
       s_(s), quicktaus_(quicktaus), gen_kms_(k - s)
@@ -663,3 +668,5 @@ std::unique_ptr<GenEnumerator> TauswortheGen::make_enumerator(
     return std::make_unique<TausworthePolyEnumerator>(
         k, nb_terms, quicktaus, L, std::move(s_values));
 }
+
+}  // namespace regpoly::core

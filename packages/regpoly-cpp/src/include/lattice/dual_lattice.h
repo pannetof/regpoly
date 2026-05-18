@@ -24,6 +24,8 @@
 // (INT_MIN if the vector is zero).  `indicemaxdeg` is the coordinate
 // that achieves that max degree.
 
+namespace regpoly::core {
+
 struct PolVect {
     std::vector<uint64_t> data;   // flat storage: maxresolution * nwords
     int deg = INT_MIN;
@@ -136,3 +138,5 @@ private:
     void solve_axb(int m, std::vector<int>& x);
     void permute_coord(int m);
 };
+
+}  // namespace regpoly::core

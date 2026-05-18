@@ -22,11 +22,15 @@
 #include <fstream>
 #include <string>
 
+using namespace regpoly::core;
+using namespace regpoly::yaml_config;
+
+
 namespace fs = std::filesystem;
-using regpoly_yaml_config::ComponentSpec;
-using regpoly_yaml_config::SeekConfig;
-using regpoly_yaml_config::build_search;
-using regpoly_yaml_config::load_seek_config;
+using regpoly::yaml_config::ComponentSpec;
+using regpoly::yaml_config::SeekConfig;
+using regpoly::yaml_config::build_search;
+using regpoly::yaml_config::load_seek_config;
 
 namespace {
 

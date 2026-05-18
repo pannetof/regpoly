@@ -5,6 +5,11 @@
 #include <cstdio>
 #include <NTL/GF2X.h>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 TGFSRGen::TGFSRGen(int w, int r, int m, const BitVect& a, int L)
     : Generator(w * r, L), w_(w), r_(r), m_(m), a_(a.copy()) {}
 
@@ -117,3 +122,5 @@ std::vector<ParamSpec> TGFSRGen::param_specs() {
         {"a", "int", false, false, 0, "bitmask", "w", false},
     };
 }
+
+}  // namespace regpoly::core

@@ -12,6 +12,8 @@
 #include <vector>
 #include <functional>
 
+namespace regpoly::core {
+
 class WELLGen : public Generator {
 public:
     // One algorithm slot's transformation. `Mi` selects which paper M-class
@@ -97,3 +99,5 @@ private:
     static int type_cost(int Mi);
     static std::string type_display(const MatrixEntry& m);
 };
+
+}  // namespace regpoly::core

@@ -40,6 +40,11 @@
 #include <string>
 #include <vector>
 
+using namespace regpoly::core;
+using namespace regpoly::library;
+using namespace regpoly::yaml_config;
+
+
 namespace fs = std::filesystem;
 
 namespace {
@@ -133,11 +138,11 @@ int cmd_catalog(std::vector<std::string> args) {
         return 2;
     }
 
-    regpoly_catalog::Catalog cat(library_dir);
+    regpoly::library::Catalog cat(library_dir);
     cat.load();
 
     if (action == "list") {
-        regpoly_catalog::Catalog::PapersFilter f;
+        regpoly::library::Catalog::PapersFilter f;
         f.include_invalid = true;
         auto papers = cat.papers(f);
         for (const auto& p : papers) {
@@ -230,17 +235,17 @@ int cmd_search(std::vector<std::string> args) {
     }
     const std::string yaml_path = args[0];
 
-    regpoly_yaml_config::SeekConfig cfg;
+    regpoly::yaml_config::SeekConfig cfg;
     try {
-        cfg = regpoly_yaml_config::load_seek_config(yaml_path);
+        cfg = regpoly::yaml_config::load_seek_config(yaml_path);
     } catch (const std::exception& exc) {
         std::cerr << "regpoly-cli: " << exc.what() << "\n";
         return 1;
     }
 
-    regpoly_yaml_config::BuiltSearch built;
+    regpoly::yaml_config::BuiltSearch built;
     try {
-        built = regpoly_yaml_config::build_search(cfg);
+        built = regpoly::yaml_config::build_search(cfg);
     } catch (const std::exception& exc) {
         std::cerr << "regpoly-cli: " << exc.what() << "\n";
         return 1;
@@ -486,7 +491,7 @@ int cmd_publish(std::vector<std::string> args) {
     }
 
     try {
-        std::string out_path = regpoly_catalog::publish_tested_generator(
+        std::string out_path = regpoly::library::publish_tested_generator(
             library_dir, paper_id, gen_id, display, source, target, starred);
         std::cout << "published " << gen_id << " into " << out_path << "\n";
     } catch (const std::exception& exc) {

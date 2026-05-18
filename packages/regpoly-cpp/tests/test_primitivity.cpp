@@ -19,6 +19,12 @@
 
 #include <regpoly/primitivity.h>
 
+using namespace regpoly::core;
+
+
+using namespace regpoly::internal;
+
+
 TEST(MersennePrimeExponent, KnownExponents) {
     EXPECT_TRUE(is_mersenne_prime_exponent(2));
     EXPECT_TRUE(is_mersenne_prime_exponent(3));

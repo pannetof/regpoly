@@ -26,6 +26,8 @@
 // MSK1..MSK4.  The parity constants from the reference code are not
 // used here — the regpoly pipeline initialises the state to a
 // non-zero bit pattern via Combinaison.
+namespace regpoly::core {
+
 class SFMTGen : public Generator {
 public:
     SFMTGen(int mexp, int pos1, int sl1, int sl2, int sr1, int sr2,
@@ -119,3 +121,5 @@ private:
         work_.set_word(4 * word_idx + (3 - l), 32, (uint64_t)val);
     }
 };
+
+}  // namespace regpoly::core

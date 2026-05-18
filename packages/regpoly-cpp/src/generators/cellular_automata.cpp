@@ -6,6 +6,11 @@
 #include <sstream>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 CellularAutomataGen::CellularAutomataGen(
     int k, const std::vector<int>& rule150_positions, int s, int L)
     : Generator(k, L),
@@ -91,3 +96,5 @@ CellularAutomataGen::compute_default_test_method(const std::string& test_type) c
         return std::string("matricial");
     return Generator::compute_default_test_method(test_type);
 }
+
+}  // namespace regpoly::core

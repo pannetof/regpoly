@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <cstring>
 
+using namespace regpoly::core;
+
+
 // ══════════════════════════════════════════════════════════════════════════
 // Harase PIS method — state-space equidistribution computation.
 //
@@ -22,6 +25,8 @@
 // Shift by z = one call to next() on each component.
 // XOR = extract transition states, XOR word arrays, init back.
 // ══════════════════════════════════════════════════════════════════════════
+
+namespace regpoly::core {
 
 namespace {
 
@@ -522,3 +527,5 @@ int PISCache::restore_and_reduce(int v) {
     // Reduce at resolution v
     return I.reduce_at(v);
 }
+
+}  // namespace regpoly::core

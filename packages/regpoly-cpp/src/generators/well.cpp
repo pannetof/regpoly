@@ -9,6 +9,11 @@
 #include <iomanip>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 WELLGen::WELLGen(int w, int r, int p, int m1, int m2, int m3,
                      const std::vector<MatrixEntry>& matrices, int L)
     : Generator(w * r - p, L),
@@ -523,3 +528,5 @@ StructMap WELLGen::random_matrices(int w, int max_cost,
     }
     return out;
 }
+
+}  // namespace regpoly::core

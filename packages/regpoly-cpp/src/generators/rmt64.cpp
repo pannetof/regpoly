@@ -4,6 +4,11 @@
 #include "rmt64.h"
 #include <cstdio>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 RMT64Gen::RMT64Gen(int mexp, int pos, uint64_t mata,
              uint64_t maskb, uint64_t maskc, int L)
     : Generator(((mexp / 64) + 1) * 64, L),
@@ -109,3 +114,5 @@ std::optional<std::string> RMT64Gen::compute_default_test_method(const std::stri
     if (test_type == "equidistribution") return std::string("notprimitive");
     return std::nullopt;
 }
+
+}  // namespace regpoly::core

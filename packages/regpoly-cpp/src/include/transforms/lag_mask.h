@@ -23,6 +23,8 @@
  *   L      — lag index for T2 (0 < L < num_words)
  *   b      — bit mask for T2
  */
+namespace regpoly::core {
+
 class LaggedTempering : public Transformation {
 public:
     LaggedTempering(int w, int sigma, int L, uint64_t b);
@@ -41,3 +43,5 @@ private:
     int L_;
     uint64_t b_;
 };
+
+}  // namespace regpoly::core

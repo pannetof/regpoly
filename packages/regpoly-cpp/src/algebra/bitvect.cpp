@@ -4,6 +4,11 @@
 #include "bitvect.h"
 #include <algorithm>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 int BitVect::get_bit(int i) const {
     int w = i / WL;
     int b = WL - 1 - (i % WL);
@@ -227,3 +232,5 @@ void BitVect::clear_tail() {
         words_.back() &= (~0ULL) << (WL - rem);
     }
 }
+
+}  // namespace regpoly::core

@@ -6,6 +6,11 @@
 #include <cstdio>
 #include <NTL/GF2X.h>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 MTGen::MTGen(int w, int r, int m, int p, uint64_t a, int L)
     : Generator(w * r - p, L),
       w_(w), r_(r), m_(m), p_(p), a_(a),
@@ -182,3 +187,5 @@ std::vector<ParamSpec> MTGen::param_specs() {
         {"a", "int", false, false, 0,  "bitmask", "w", false},
     };
 }
+
+}  // namespace regpoly::core

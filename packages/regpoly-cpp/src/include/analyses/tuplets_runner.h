@@ -22,6 +22,8 @@
 //     across languages stay byte-identical for the typical test
 //     parameter regimes.
 
+namespace regpoly::core {
+
 constexpr int TUPLETS_TYPE_SUM = 0;
 constexpr int TUPLETS_TYPE_MAX = 1;
 
@@ -44,3 +46,5 @@ TupletsRunResult run_tuplets(
     const std::vector<int>& tuph,
     double threshold,
     int testtype);
+
+}  // namespace regpoly::core

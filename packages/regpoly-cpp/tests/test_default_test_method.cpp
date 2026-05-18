@@ -30,6 +30,9 @@
 #include "sfmt.h"
 #include "tausworthe.h"
 
+using namespace regpoly::core;
+
+
 namespace {
 
 // SFMT-19937 reference parameters (from SFMT-params19937.h).

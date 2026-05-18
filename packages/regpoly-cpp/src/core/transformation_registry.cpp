@@ -5,6 +5,11 @@
 
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 namespace {
 
 // Function-local statics to avoid static-initialisation order issues.
@@ -46,3 +51,5 @@ const TransformationRegistry::Info* TransformationRegistry::find(const std::stri
     auto it = m.find(name);
     return it == m.end() ? nullptr : it->second;
 }
+
+}  // namespace regpoly::core

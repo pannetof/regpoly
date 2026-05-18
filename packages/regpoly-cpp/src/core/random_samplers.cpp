@@ -13,7 +13,12 @@
 #include <stdexcept>
 #include <string>
 
-namespace regpoly_random {
+using namespace regpoly::core;
+using namespace regpoly::internal;
+using namespace regpoly::random;
+
+
+namespace regpoly::random {
 
 namespace {
 
@@ -240,4 +245,4 @@ bool sample_param_into(const ParamSpec& spec, Params& params, int L) {
     return false;
 }
 
-}  // namespace regpoly_random
+}  // namespace regpoly::random

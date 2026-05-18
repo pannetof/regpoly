@@ -9,6 +9,9 @@
 
 #include <regpoly/bitvect.h>
 
+using namespace regpoly::core;
+
+
 TEST(BitVectSmoke, ConstructionRecordsRequestedSize) {
     BitVect bv(8);
     EXPECT_EQ(bv.nbits(), 8);

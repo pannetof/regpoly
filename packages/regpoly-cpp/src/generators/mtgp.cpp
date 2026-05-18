@@ -6,6 +6,11 @@
 #include <cstdio>
 #include <stdexcept>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 MTGPGen::MTGPGen(int mexp, int pos, int sh1, int sh2, uint32_t mask,
            const std::vector<uint32_t>& tbl,
            const std::vector<uint32_t>& tmp_tbl,
@@ -123,3 +128,5 @@ std::optional<std::string> MTGPGen::compute_default_test_method(const std::strin
     if (test_type == "equidistribution") return std::string("simd_notprimitive");
     return std::nullopt;
 }
+
+}  // namespace regpoly::core

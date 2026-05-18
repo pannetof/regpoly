@@ -8,6 +8,8 @@
 #include <memory>
 #include <string>
 
+namespace regpoly::core {
+
 class MTGen : public Generator {
 public:
     MTGen(int w, int r, int m, int p, uint64_t a, int L);
@@ -43,3 +45,5 @@ private:
     void SetV(int idx, uint64_t val);
     BitVect rotated_state() const;
 };
+
+}  // namespace regpoly::core

@@ -4,6 +4,11 @@
 #include "permutation.h"
 #include <sstream>
 
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
 PermutationTrans::PermutationTrans(int w, int p, int q)
     : p_(p), q_(q)
 {
@@ -58,3 +63,5 @@ std::vector<ParamSpec> PermutationTrans::param_specs() {
         {"q", "int", false, false, 0, "range", "0,w-1", false},
     };
 }
+
+}  // namespace regpoly::core
