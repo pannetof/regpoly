@@ -2,7 +2,7 @@
 
 This document enumerates the concrete user-facing scenarios the
 `regpoly-web` application supports as of v2.0.0. It is the
-operator-side companion to [Web usage](web.md): if `web.md` answers
+operator-side companion to [Web usage](../usage/web.md): if `web.md` answers
 "how do I run the server?", this file answers "what can a user
 *do* once it is running?". Each story is grounded in an actual
 route or template, not aspirational.
@@ -275,7 +275,7 @@ leaving the browser.
 *Route:* `GET /tested-generators/{tg_id}` →
 `templates/tested_generators/detail.html`. *Backed by:*
 `/api/tested-generators/{tg_id}` — which since v2.0 reads from
-the typed result tables introduced in [schema v2](web.md#database-schema).
+the typed result tables introduced in [schema v2](../usage/web.md#database-schema).
 
 ### S6.3 — Delete a tested generator
 
@@ -476,7 +476,7 @@ DB with a v2.0 server, the schema is upgraded in place at
 startup — typed result tables are created and the legacy
 `test_result` rows are backfilled. The migration is idempotent.
 
-*See:* [Web usage → Database schema](web.md#database-schema).
+*See:* [Web usage → Database schema](../usage/web.md#database-schema).
 
 ### S11.3 — Workers are out-of-process
 
@@ -496,7 +496,7 @@ no zombie progress rows that pretend a worker is still alive.
 
 ## See also
 
-- [Web usage](web.md) — operator-side: install, flags, schema migration.
+- [Web usage](../usage/web.md) — operator-side: install, flags, schema migration.
 - [Architecture](../dev/architecture.md) — how the web app talks to
   the C++ core through `regpoly`.
-- [Python usage](python.md) — the same algorithms without the web layer.
+- [Python usage](../usage/python.md) — the same algorithms without the web layer.

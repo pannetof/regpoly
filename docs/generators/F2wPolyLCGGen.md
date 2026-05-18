@@ -1,8 +1,8 @@
-# GenF2wPolyLCG
+# F2wPolyLCGGen — Polynomial LCG over GF(2^w)
 
-**C++ class:** `GenF2wPolyLCG`
-**Name in code:** `"Generator in F_{2^w}"` / `"Polynomial LCG in F_{2^w}[z]/P(z)"`
-**Legacy aliases:** `genf2w`
+**C++ class:** `F2wPolyLCGGen`
+**Registered name:** `"F2wPolyLCGGen"`
+**Legacy aliases:** `GenF2wPolyLCG`, `genf2w`
 
 Polynomial Linear Congruential Generator in the extension field
 GF(2^w). The state consists of r elements of GF(2^w), viewed as

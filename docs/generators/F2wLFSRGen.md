@@ -1,8 +1,8 @@
-# GenF2wLFSR
+# F2wLFSRGen — LFSR over GF(2^w)
 
-**C++ class:** `GenF2wLFSR`
-**Name in code:** `"Generator in F_{2^w}"` / `"LFSR in F_{2^w}"`
-**Legacy aliases:** `genf2w` (with type=lfsr)
+**C++ class:** `F2wLFSRGen`
+**Registered name:** `"F2wLFSRGen"`
+**Legacy aliases:** `GenF2wLFSR`, `genf2w` (with type=lfsr)
 
 Linear Feedback Shift Register in the extension field GF(2^w). The
 state consists of r elements of GF(2^w). Unlike the Polynomial LCG

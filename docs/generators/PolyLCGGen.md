@@ -1,8 +1,8 @@
-# PolyLCG
+# PolyLCGGen — Polynomial LCG over GF(2)
 
-**C++ class:** `PolyLCG`
-**Name in code:** `"Polynomial LCG"`
-**Legacy aliases:** `polylcg`
+**C++ class:** `PolyLCGGen`
+**Registered name:** `"PolyLCGGen"`
+**Legacy aliases:** `PolyLCG`, `polylcg`
 
 Polynomial Linear Congruential Generator over GF(2). The state is a
 k-bit register that evolves by multiplication by z in the quotient ring

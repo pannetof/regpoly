@@ -1,9 +1,10 @@
-# WELL
+# WELLGen — Well Equidistributed Long-period Linear
 
 **C++ class:** `WELLGen`
-**Name in code:** `"Carry Generator"` (historical; returned by
-`Generator::name()`)
-**Aliases accepted by the factory:** `WELLRNG`
+**Registered name:** `"WELLGen"`
+**Legacy aliases:** `WELLRNG`. The pre-v2 `.dat` reader also accepted
+the tag `carry` (historical "Carry Generator" naming); that path lives
+in the optional `regpoly-legacy` add-on.
 
 Well Equidistributed Long-period Linear (WELL) generators of Panneton,
 L'Ecuyer, & Matsumoto (2006). The state is `r` words of `w` bits

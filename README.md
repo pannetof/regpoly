@@ -55,42 +55,33 @@ Produces `libregpoly_core.a`, the `regpoly-cli` binary, public headers, and the 
 
 ## Usage
 
-### YAML mode
+### YAML mode (canonical)
 
 ```bash
-python -m regpoly.io.cli <config.yaml>
+uv run regpoly <config.yaml>
 ```
 
-YAML configuration files are in the `yaml/` directory. They specify the
-generator family, parameters, tempering, and test method in a single file.
-
-**Single generator, lattice method (WELL19937a):**
-
-```bash
-python -m regpoly.io.cli yaml/equidist/well19937a.yml
-```
+YAML configuration files live under `shared/yaml/` (workspace root).
+They specify the generator family, parameters, tempering, and test
+method in a single file.
 
 **Mersenne Twister MT19937 with tempering:**
 
 ```bash
-python -m regpoly.io.cli yaml/equidist/mt19937.yaml
+uv run regpoly shared/yaml/equidist/mt19937.yaml
 ```
 
 **Two-component combined generator:**
 
 ```bash
-python -m regpoly.io.cli yaml/equidist/example3.yaml
+uv run regpoly shared/yaml/equidist/example3.yaml
 ```
 
-### Legacy mode
+### Legacy `.dat` mode (optional add-on)
 
-```bash
-python -m regpoly.io.cli <nb_comp> <test_file> <gen_file1> [gen_file2 ...]
-```
-
-This mode reads the same input files as the C `POL` program and now
-lives in the optional `regpoly-legacy` add-on package (installed by
-default in the workspace). The fixtures themselves live under
+The pre-v2 C-compatible `.dat` parameter format is supported via the
+`regpoly-legacy` add-on (installed by default in the workspace; ships
+a `regpoly-legacy` console script). Fixtures live under
 `packages/regpoly-legacy/shared/legacy_parameters/`.
 
 **Single TGFSR generator:**
@@ -159,10 +150,10 @@ components:
 
 ## Supported Generator Families
 
-All families are exposed under their new canonical class name (with the
-`-Gen` suffix). Legacy short tags (lowercase, French) and pre-rename
-class names are still accepted via `_FAMILY_ALIASES` and the
-backwards-compat aliases in `factory.cpp` / `bindings.cpp`.
+The 17 generator families are exposed under their canonical class names
+(with the `-Gen` suffix). Legacy short tags (lowercase, French) and
+pre-rename class names are still accepted via the Python `_FAMILY_ALIASES`
+table and the C++ factory `reg_alias` entries.
 
 - `TGFSRGen` --- Twisted GFSR
 - `MTGen` --- Mersenne Twister
@@ -171,40 +162,80 @@ backwards-compat aliases in `factory.cpp` / `bindings.cpp`.
 - `WELLGen` --- WELL / carry generators
 - `F2wLFSRGen`, `F2wPolyLCGGen` --- GF(2^w) generators
 - `MarsaXorshiftGen` --- Marsaglia Xor-shift
+- `CellularAutomataGen` --- Two-rule (rule 90/150) cellular automata (Bhuvaneswari–Bhattacharjee 2026)
+- `XoroshiroGen`, `XoshiroGen` --- Blackman–Vigna 2022 scrambled xor-shift
 - `MELGGen` --- Maximally Equidistributed F₂-Linear (Harase-Kimoto)
 - `SFMTGen`, `DSFMTGen` --- SIMD-Friendly MT (single / double precision)
 - `MTGPGen` --- MT for Graphic Processors
 - `TinyMT32Gen` --- Tiny MT (127-bit state)
 - `RMT64Gen` --- Reducible MT (64-bit)
 
-## Source Organization
+## Repository Layout
 
 ```
-cpp_regpoly/
-  src/
-    cpp/                  C++ implementation
-      include/<bucket>/   headers, grouped by responsibility
-      core/               base classes (generator, params, factory, enumerator)
-      algebra/            BitVect, GaussMatrix, GF(2^w), Berlekamp-Massey
-      generators/         18 generator families (one .cpp per family)
-      transforms/         output tempering: permutation, temper_mk, lag_mask
-      lattice/            ME analysis: dual_lattice, me_harase, me_notprimitive,
-                          me_notprimitive_simd, me_helpers, temper_optimizer
-      bindings/           pybind11 module
-    python/               Python package (imported as `regpoly`)
-      core/               wrappers: generator, combination, transformation, ...
-      search/             seek, search_primitive, tempering_search, ...
-      io/                 cli, tested_generator
-      (pre-v2 .dat reader lives in the optional regpoly-legacy add-on:
-       packages/regpoly-legacy/src/regpoly_legacy/reader.py)
-      analyses/           equidistribution / collision-free / tuplets tests
-      library/            published-generators paper catalog
-      web/                FastAPI app + routes + templates + tasks
-  docs/
-    generators/           per-family markdown (one file per *Gen class)
-    library/              paper YAMLs + cross-check fixture YAMLs
-  papers/                 reference PDFs for paper YAMLs
-  tests/                  pytest suite (smoke, library, MTToolBox crosscheck, …)
-  setup.py                pybind11 build configuration
-  pyproject.toml          package metadata (package_dir maps regpoly → src/python)
+regpoly_monorepo/                       (uv workspace root)
+├── pyproject.toml                      workspace + lint contracts + testpaths
+├── packages/
+│   ├── regpoly-cpp/                    C++ core (scikit-build-core wheel)
+│   │   ├── pyproject.toml
+│   │   ├── CMakeLists.txt              optional pybind11 (REGPOLY_BUILD_PYTHON_EXTENSION)
+│   │   └── src/                        algebra/ analyses/ bindings/ cli/ core/
+│   │                                     generators/ io/ lattice/ library/
+│   │                                     search/ transforms/ yaml_config/
+│   ├── regpoly/                        Python wrapper layer (setuptools)
+│   │   └── src/regpoly/                core/ search/ analyses/ io/ tools/ library/
+│   ├── regpoly-web/                    FastAPI + PostgreSQL (setuptools)
+│   │   └── src/regpoly_web/            app + routes + templates + tasks
+│   └── regpoly-legacy/                 optional pure-Python .dat reader (setuptools)
+│       └── src/regpoly_legacy/         reader/ seek_factory/ cli/ tools/
+├── shared/yaml/                        workspace-shared YAML search configs
+├── third_party/                        MTToolBox (vendored), dSMFT (reference)
+└── docs/                               MkDocs Material site
+    ├── generators/                     one .md per *Gen family (17 pages)
+    ├── library/                        paper YAMLs + per-family params catalog
+    ├── papers/                         reference PDFs
+    ├── theory/                         F₂-linear theory + algorithm specs
+    ├── usage/                          python / cpp / web / notebooks how-tos
+    └── dev/                            architecture, building, contributing
 ```
+
+Builds are driven by `pyproject.toml` in each package (no top-level
+`setup.py`). The C++ core can also be built and installed standalone
+via plain CMake — see [docs/usage/cpp.md](docs/usage/cpp.md).
+
+## Documentation
+
+Full MkDocs Material site: **[docs/index.md](docs/index.md)** (deployed to
+GitHub Pages on every push to `master` via
+[`.github/workflows/docs.yml`](.github/workflows/docs.yml)).
+
+| Section | Where |
+|---|---|
+| **Theory** — F₂-linear framework, equidistribution, lattice methods, tempering, search format | [`docs/theory/`](docs/theory/index.md) |
+| **Generators** — one page per family (17 total) | [`docs/generators/`](docs/generators/index.md) |
+| **Usage** — Python, C++ CLI, web UI, notebooks | [`docs/usage/python.md`](docs/usage/python.md), [`cpp.md`](docs/usage/cpp.md), [`web.md`](docs/usage/web.md), [`notebooks.md`](docs/usage/notebooks.md) |
+| **Library** — published parameter catalogs | [`docs/library/`](docs/library/index.md) |
+| **Papers** — bibliography + PDFs | [`docs/papers/`](docs/papers/index.md) |
+| **Dev** — architecture, building, contributing, Postgres dev-env, web design spec, user stories | [`docs/dev/`](docs/dev/architecture.md) |
+
+### Package READMEs
+
+- [`packages/regpoly-cpp/README.md`](packages/regpoly-cpp/README.md) — C++ core (both build modes).
+- [`packages/regpoly/README.md`](packages/regpoly/README.md) — Python wrapper + `regpoly` CLI.
+- [`packages/regpoly-web/README.md`](packages/regpoly-web/README.md) — FastAPI web UI.
+- [`packages/regpoly-legacy/README.md`](packages/regpoly-legacy/README.md) — optional `.dat` add-on.
+- [`packages/regpoly/tests/README.md`](packages/regpoly/tests/README.md) — test lanes + MTToolBox cross-check refresh recipe.
+- [`packages/regpoly/tests/_mttoolbox_build.md`](packages/regpoly/tests/_mttoolbox_build.md) — building the upstream `calc_equidist` reference binaries.
+
+### Deployment
+
+- [`DEPLOY.md`](DEPLOY.md) — three-container Docker stack (db / web / worker).
+- [`deploy/README.md`](deploy/README.md) — directory index for the `deploy/` artifacts.
+
+### Other top-level docs
+
+- [`CHANGELOG.md`](CHANGELOG.md) — release notes; v2.0.0 (2026-05-04) tagged the
+  9-phase C++ rewrite; `Unreleased` covers the `regpoly-legacy` extraction and
+  the optional pure-C++ build mode.
+- [`CLAUDE.md`](CLAUDE.md) — project instructions for Claude Code sessions
+  (workspace conventions, deferred decisions, history).

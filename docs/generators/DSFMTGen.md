@@ -1,7 +1,8 @@
-# dSFMT — Double-precision SIMD-oriented Fast Mersenne Twister
+# DSFMTGen — Double-precision SIMD-oriented Fast Mersenne Twister
 
 **C++ class:** `DSFMTGen`
-**Name in code:** `"dSFMTGen"` (alias: `"DSFMTGen"`)
+**Registered name:** `"DSFMTGen"`
+**Legacy aliases:** `dSFMTGen`
 
 `DSFMTGen` is the dSFMT generator of Saito (2009): a SIMD MT variant
 that emits 52-bit IEEE-754 mantissa fractions in a 2-lane SIMD packing,

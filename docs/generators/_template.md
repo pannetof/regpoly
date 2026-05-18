@@ -1,7 +1,7 @@
 # {Family display name}
 
 <!--
-  Per-family page template (Phase 6).
+  Per-family page template.
   Copy this file to <Family>Gen.md, fill in each section against the
   C++ class in packages/regpoly-cpp/src/generators/, and link it in
   mkdocs.yml under the `Generators:` nav.
@@ -54,7 +54,7 @@ Roles:
   reported when a candidate passes equidistribution.
 
 The `Rand type` and `Rand args` columns name the C++ sampler in
-`regpoly_random::sample_param_into` (Phase 2.4).
+`regpoly_random::sample_param_into`.
 
 ## State size (period exponent)
 

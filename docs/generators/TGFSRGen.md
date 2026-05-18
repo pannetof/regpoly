@@ -1,8 +1,8 @@
-# TGFSR
+# TGFSRGen — Twisted GFSR
 
-**C++ class:** `TGFSR`
-**Name in code:** `"TGFSR"`
-**Legacy aliases:** `tgfsr`
+**C++ class:** `TGFSRGen`
+**Registered name:** `"TGFSRGen"`
+**Legacy aliases:** `TGFSR`, `tgfsr`
 
 Twisted Generalized Feedback Shift Register. The state consists of r
 words of w bits each. The feedback uses a "twist" matrix A that

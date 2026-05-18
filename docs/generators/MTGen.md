@@ -1,8 +1,8 @@
-# MersenneTwister
+# MTGen — Mersenne Twister
 
-**C++ class:** `MersenneTwister`
-**Name in code:** `"Mersenne Twister"`
-**Legacy aliases:** `MT`
+**C++ class:** `MTGen`
+**Registered name:** `"MTGen"`
+**Legacy aliases:** `MersenneTwister`, `MT`
 
 The Mersenne Twister algorithm (MT19937 family). A generalization of
 the TGFSR that uses a partial word split controlled by a separation

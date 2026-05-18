@@ -19,11 +19,11 @@ If the `-dev` packages are not installed, link directly against the
 runtime sonames using `-l:libgmp.so.10 -l:libgf2x.so.3`.
 
 MTToolBox's static lib must exist at
-`/home/frpan/projets/claude_projects/regpoly/MinimalCode/cpp_regpoly/MTToolBox/lib/libMTToolBox.a`.
+`/home/frpan/projets/claude_projects/regpoly_monorepo/third_party/MTToolBox/lib/libMTToolBox.a`.
 Build it once with:
 
 ```bash
-cd /home/frpan/projets/claude_projects/regpoly/MinimalCode/cpp_regpoly/MTToolBox/lib
+cd /home/frpan/projets/claude_projects/regpoly_monorepo/third_party/MTToolBox/lib
 g++ -O2 -std=c++11 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS \
     -I../include -c period.cpp -o period.o
 g++ -O2 -std=c++11 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS \
@@ -41,8 +41,8 @@ GMP, GF2X. Common flags:
 
 ```bash
 CXXFLAGS="-O2 -std=c++11 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS"
-INCLUDE="-I/home/frpan/projets/claude_projects/regpoly/MinimalCode/cpp_regpoly/MTToolBox/include"
-LIBS="-L/home/frpan/projets/claude_projects/regpoly/MinimalCode/cpp_regpoly/MTToolBox/lib \
+INCLUDE="-I/home/frpan/projets/claude_projects/regpoly_monorepo/third_party/MTToolBox/include"
+LIBS="-L/home/frpan/projets/claude_projects/regpoly_monorepo/third_party/MTToolBox/lib \
       -lMTToolBox -lntl -l:libgmp.so.10 -l:libgf2x.so.3"
 ```
 

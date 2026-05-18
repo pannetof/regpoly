@@ -43,7 +43,7 @@ to stop).
 Parameters that define the period k. These must always be provided and
 are never randomized.
 
-Call `Generateur.parameters(family)` to see which parameters are
+Call `Generator.parameters(family)` to see which parameters are
 structural for a given family.
 
 ### `fixed_params`
@@ -89,7 +89,7 @@ regpoly fullperiodsearch.TGFSR.w32r3.yaml
 Or from Python:
 
 ```python
-from regpoly.search_primitive import PrimitiveSearch
+from regpoly.search.primitive_search import PrimitiveSearch
 
 search = PrimitiveSearch.from_yaml("fullperiodsearch.TGFSR.w32r3.yaml")
 results = search.run()
@@ -97,16 +97,28 @@ results = search.run()
 
 ## Generator Family Names
 
+The 17 registered families (canonical `-Gen` class names; legacy aliases
+preserved via `_FAMILY_ALIASES` and C++ factory `reg_alias` entries):
+
 | Family | C++ class name | Legacy aliases |
 |--------|---------------|----------------|
-| Polynomial LCG | `PolyLCG` | `polylcg` |
-| Tausworthe | `Tausworthe` | `taus`, `taus2` |
-| Twisted GFSR | `TGFSR` | `tgfsr`, `TGFSRGen` |
-| Mersenne Twister | `MersenneTwister` | `MT` |
-| GF(2^w) Poly LCG | `GenF2wPolyLCG` | `genf2w` |
-| GF(2^w) LFSR | `GenF2wLFSR` | `genf2w` (with type=lfsr) |
-| Marsaglia Xor-shift | `MarsaXorshiftGen` | `marsaxorshift` |
-| WELL RNG | `WELLRNG` | `carry`, `Carry2Gen` |
+| Polynomial LCG | `PolyLCGGen` | `polylcg`, `PolyLCG` |
+| Tausworthe | `TauswortheGen` | `taus`, `taus2`, `Tausworthe` |
+| Twisted GFSR | `TGFSRGen` | `tgfsr`, `TGFSR` |
+| Mersenne Twister | `MTGen` | `MT`, `MersenneTwister` |
+| GF(2^w) Poly LCG | `F2wPolyLCGGen` | `genf2w`, `GenF2wPolyLCG` |
+| GF(2^w) LFSR | `F2wLFSRGen` | `GenF2wLFSR` |
+| Marsaglia Xor-shift | `MarsaXorshiftGen` | `marsaxorshift`, `XorShift128Gen` |
+| Cellular Automata | `CellularAutomataGen` | — |
+| WELL | `WELLGen` | `WELLRNG`, `carry`, `Carry2Gen` |
+| MELG | `MELGGen` | `MELG` |
+| SFMT | `SFMTGen` | — |
+| dSFMT | `DSFMTGen` | — |
+| MTGP | `MTGPGen` | — |
+| TinyMT32 | `TinyMT32Gen` | — |
+| Reducible MT64 | `RMT64Gen` | — |
+| Xoroshiro | `XoroshiroGen` | — |
+| Xoshiro | `XoshiroGen` | — |
 
 See the per-generator documentation in `docs/generators/` for parameter
 details, mathematical formulas, and search examples.

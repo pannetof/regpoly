@@ -30,13 +30,13 @@ cross-check fixture, never as a paper).
 ## Cross-check catalog schema (`*_params.yaml`)
 
 ```yaml
-family: SFMT                # regpoly Generateur family name
+family: SFMTGen             # regpoly Generator family name (canonical -Gen)
 mttoolbox_binary: sfmtdc/calc_equidist   # path under MTToolBox/samples/
 slow_threshold_mexp: 20000  # entries with mexp > this use pytest -m slow
 generators:
   - id: sfmt607             # arbitrary stable identifier
     mexp: 607
-    # --- params consumed by regpoly's Generateur.create() ---
+    # --- params consumed by regpoly's Generator.create() ---
     regpoly:
       pos1: 2
       sl1: 15

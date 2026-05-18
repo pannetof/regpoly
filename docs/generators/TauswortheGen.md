@@ -1,4 +1,8 @@
-# Tausworthe Generators and QuickTaus
+# TauswortheGen — Tausworthe Generators and QuickTaus
+
+**C++ class:** `TauswortheGen`
+**Registered name:** `"TauswortheGen"`
+**Legacy aliases:** `Tausworthe`, `taus`, `taus2`
 
 L'Ecuyer-style framework for Tausworthe random number generators: the general
 bit-level linear recurrence, its matrix form, the QuickTaus fast implementation

@@ -77,8 +77,8 @@ nav:
       - Lattice (Couture–L'Ecuyer): theory/lattice_method_couture_lecuyer.md
       - Lattice (Harase): theory/lattice_method_harase.md
       - Tempering optimization: theory/tempering_optimization.md
-      - LCP irreducibility: theory/LCP Irreducibility.md
-      - Tempering optimizer notes: theory/optimzer_temper.md
+      - LCP irreducibility: theory/lcp-irreducibility.md
+      - Tempering optimizer notes: theory/optimizer_temper.md
       - Search format: theory/search_format.md
   - Generators:
       - generators/index.md
@@ -124,7 +124,6 @@ nav:
       - Python: usage/python.md
       - C++: usage/cpp.md
       - Web: usage/web.md
-      - Web — user stories: usage/web-user-stories.md
       - Notebooks: usage/notebooks.md
   - Notebooks:
       - "Per-family":
@@ -147,3 +146,6 @@ nav:
       - Architecture: dev/architecture.md
       - Building: dev/building.md
       - Contributing: dev/contributing.md
+      - PostgreSQL (local dev): dev/postgres.md
+      - Web — design spec: dev/regpoly-web-design-spec.md
+      - Web — user stories: dev/web-user-stories.md

@@ -345,25 +345,24 @@ recommended once the four-phase handling is implemented.
 
 ## 9. Data Structures and File Layout (for `regpoly`)
 
-Proposed module layout within the existing `MinimalCode` structure:
+Proposed module layout within `packages/regpoly-cpp/src/`:
 
 ```
-src/
-  de/
-    bm.c, bm.h              ← Berlekamp–Massey over F_2
-    factor.c, factor.h      ← wrapper around NTL/FLINT factorization
-    basis.c, basis.h        ← Route A / Route B basis construction
-    echelon.c, echelon.h    ← bit-packed F_2 echelon maintenance
-    de_core.c, de_core.h    ← §6 main loop, phase handling
-    guard.c, guard.h        ← initial-state guard
-    verify.c, verify.h      ← §8 sanity checks
-  de_driver.c               ← CLI: takes a generator, emits k(v) table
+analyses/
+  bm.{cpp,h}              ← Berlekamp–Massey over F_2
+  factor.{cpp,h}          ← wrapper around NTL factorization
+  basis.{cpp,h}           ← Route A / Route B basis construction
+  echelon.{cpp,h}         ← bit-packed F_2 echelon maintenance
+  de_core.{cpp,h}         ← §6 main loop, phase handling
+  guard.{cpp,h}           ← initial-state guard
+  verify.{cpp,h}          ← §8 sanity checks
+cli/
+  main.cpp                ← `regpoly-cli` driver (emits k(v) table)
 tests/
-  de/
-    mt19937_kv.c            ← cross-check against MT19937 published k(v)
-    sfmt19937_kv.c          ← cross-check against SFMT19937 Table 3
-    small_known.c           ← degenerate small-n generators with
-                                hand-computed k(v)
+  test_bm_kv_mt19937.cpp  ← cross-check against MT19937 published k(v)
+  test_bm_kv_sfmt.cpp     ← cross-check against SFMT19937 Table 3
+  test_bm_kv_small.cpp    ← degenerate small-n generators with
+                              hand-computed k(v)
 ```
 
 **Key types.**

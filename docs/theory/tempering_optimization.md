@@ -3,8 +3,10 @@
 Optimization of tempering bitmask parameters to minimize the total
 dimension defect of an F2-linear generator.  The algorithm uses
 **safe masks** with **random multi-bit perturbation** and an
-**incremental dual-lattice basis** (StackBase), mirroring the C
-code's `OptimizeTemper()` from `temperMK.c`.
+**incremental dual-lattice basis** (StackBase). Implemented in
+`packages/regpoly-cpp/src/search/tempering_optimizer.cpp`
+(`TemperingOptimizer`); reproduces the historical
+`OptimizeTemper()` driver of the upstream C codebase.
 
 ## 1. Background
 

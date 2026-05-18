@@ -33,7 +33,7 @@ a polynomial of degree $k$ over $\mathbb{F}_2$. Its factorization controls the c
 - **Full period.** If $\chi(t)$ is **primitive** over $\mathbb{F}_2$ (irreducible AND its roots generate $\mathbb{F}_{2^k}^*$), then $A$ has order $2^k - 1$. Every non-zero state lies on a single cycle of length $2^k - 1$. This is what families like MT19937 are designed for: the state size $k$ is chosen so $2^k - 1$ is a Mersenne prime, which simplifies primitivity checks.
 - **Reducible $\chi(t)$.** If $\chi(t)$ factors, the state space splits into invariant subspaces, and cycle lengths divide the orders of the irreducible factors. REGPOLY's [equidistribution machinery](equidistribution-spec.md) is designed to handle this case: it does not assume full period.
 
-Primitivity (and full period) is checked in REGPOLY by the `is_full_period` driver in `regpoly_cpp::algebra::primitivity`, backed by an embedded Cunningham factor table (Phase 2.4).
+Primitivity (and full period) is checked in REGPOLY by the `is_full_period` driver in `regpoly_cpp::algebra::primitivity`, backed by an embedded Cunningham factor table.
 
 ## Equidistribution
 
@@ -64,7 +64,7 @@ $$
 
 where each component $j$ is itself an F₂-linear generator of state size $k_j$, and the outputs are XORed bitwise. The combined state has size $k_g = \sum_j k_j$ and characteristic polynomial $\chi_g(t) = \prod_j \chi_j(t)$ (provided the $\chi_j$ are pairwise coprime).
 
-Combined generators improve equidistribution by widening the state space without paying the per-step cost of running a single huge component, and by letting the combination "average out" the equidistribution defects of the individual components. The `Combination` C++ class (Phase 2.4) builds these and is the live object every search loop iterates.
+Combined generators improve equidistribution by widening the state space without paying the per-step cost of running a single huge component, and by letting the combination "average out" the equidistribution defects of the individual components. The `Combination` C++ class builds these and is the live object every search loop iterates.
 
 ## Tempering as a linear map
 

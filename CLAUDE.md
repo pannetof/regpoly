@@ -32,25 +32,36 @@ regpoly_monorepo/
 ├── packages/
 │   ├── regpoly-cpp/
 │   │   ├── pyproject.toml
-│   │   ├── CMakeLists.txt               C++ build via scikit-build-core; -DREGPOLY_BUILD_TESTS=ON
-│   │   │                                  enables the GoogleTest target via ctest
-│   │   ├── src/                         {algebra,core,generators,transforms,lattice,bindings,include}/
+│   │   ├── CMakeLists.txt               C++ build via scikit-build-core (Python wheel mode)
+│   │   │                                  OR plain cmake -DREGPOLY_BUILD_PYTHON_EXTENSION=OFF
+│   │   │                                  (pure-C++ mode, no pybind11 needed).
+│   │   │                                  -DREGPOLY_BUILD_TESTS=ON enables GoogleTest via ctest.
+│   │   ├── src/                         algebra/ analyses/ bindings/ cli/ core/
+│   │   │   │                              generators/ lattice/ library/ search/
+│   │   │   │                              transforms/ yaml_config/ + include/<subdir>/
 │   │   │   └── regpoly_cpp/__init__.py  thin Python re-export of the .so
+│   │   │                                  (only shipped in wheel mode)
 │   │   └── tests/                       GoogleTest C++ tests (ctest) +
 │   │       ├── CMakeLists.txt           FetchContent googletest
-│   │       ├── test_smoke.cpp
+│   │       ├── test_smoke.cpp et al.
 │   │       └── python/                  pytest tests for the pybind11 binding ABI
 │   ├── regpoly/
 │   │   ├── pyproject.toml
-│   │   ├── src/regpoly/                 {core,library,analyses,search,io,data,tools,__init__.py}
+│   │   ├── src/regpoly/                 core/ analyses/ search/ io/ data/
+│   │   │                                  library/ tools/ __init__.py
 │   │   └── tests/                       pytest tests for the Python wrapper layer
 │   │                                      (incl. MTToolBox cross-check, marked @pytest.mark.slow)
-│   └── regpoly-web/
+│   ├── regpoly-web/
+│   │   ├── pyproject.toml
+│   │   ├── src/regpoly_web/             FastAPI app + routes + tasks + templates
+│   │   │                                  (PostgreSQL via psycopg3 since v2.x dockerize cutover)
+│   │   ├── scripts/                     regpoly-web.sh, wipe-db.sh
+│   │   └── tests/                       pytest + Playwright e2e (in the e2e marker)
+│   └── regpoly-legacy/                  optional pure-Python add-on (since post-v2.0)
 │       ├── pyproject.toml
-│       ├── src/regpoly_web/             FastAPI web app (was cpp_regpoly/src/python/web/)
-│       ├── scripts/                     regpoly-web.sh, wipe-db.sh
-│       ├── var/                         regpoly.db (user data, gitignored)
-│       └── tests/                       pytest + (Phase 5) Playwright e2e
+│       ├── src/regpoly_legacy/          reader / seek_factory / cli / tools/
+│       ├── shared/                      legacy_parameters/ + yaml/equidist/ for `.dat` flows
+│       └── tests/python/                + tests/python/data/golden/ frozen snapshots
 ├── third_party/
 │   ├── MTToolBox/                       vendored; used only by the slow-lane cross-check
 │   └── dSMFT/                           vendored reference for dSFMT recurrence (comments only)
@@ -70,9 +81,9 @@ regpoly_monorepo/
 │   │                                      ${prefix}/share/regpoly/catalog/.
 │   ├── papers/                          PDFs + bibliography (was shared/papers/)
 │   ├── usage/                           {python,cpp,web,notebooks}.md
-│   ├── dev/                             architecture, building, contributing
-│   └── notebooks/                       (Phase 7) per-family + research + utility notebooks
-└── notebooks/                           legacy notebooks (Phase 7 will rewrite under docs/notebooks/)
+│   ├── dev/                             architecture, building, contributing, postgres
+│   └── notebooks/                       per-family + research + utility notebooks
+└── notebooks/                           pre-v2 notebooks kept for reference
 ```
 
 ## Build & Run
@@ -80,24 +91,37 @@ regpoly_monorepo/
 ```bash
 cd /home/frpan/projets/claude_projects/regpoly_monorepo
 
-# Install everything in the workspace (editable), build the C++ extension:
+# Install every workspace member (editable) and build the C++ extension:
 uv sync
 
-# Run the search CLI:
-uv run regpoly shared/yaml/equidist/well19937a.yml
+# Run the search CLI on a workspace YAML:
+uv run regpoly shared/yaml/equidist/mt19937.yaml
 
-# Run the web app:
-uv run regpoly-web --db packages/regpoly-web/var/regpoly.db
+# Run the legacy `.dat` reader (add-on; takes positional args):
+uv run regpoly-legacy seek 1 \
+  packages/regpoly-legacy/shared/legacy_parameters/example1c \
+  packages/regpoly-legacy/shared/legacy_parameters/96_1.dt
+
+# Run the web app (Postgres-only; default DSN comes from $REGPOLY_DB_URL):
+uv run regpoly-web                                       # uses $REGPOLY_DB_URL
+uv run regpoly-web --db-url postgresql://user:pw@host/regpoly
 
 # Run tests (default skips slow + e2e):
 uv run pytest                         # all default-lane tests across packages
 uv run pytest -m slow                 # MTToolBox cross-checks, nbmake notebooks
-uv run pytest -m e2e                  # Playwright golden paths (after Phase 5)
+uv run pytest -m e2e                  # Playwright golden paths
 
-# C++ tests:
+# C++ tests (default Python-wheel build mode):
 cmake -S packages/regpoly-cpp -B build -DREGPOLY_BUILD_TESTS=ON
 cmake --build build -j
 ctest --test-dir build --output-on-failure
+
+# C++ tests (pure-C++ mode, no pybind11 needed):
+cmake -S packages/regpoly-cpp -B build-cpp \
+      -DREGPOLY_BUILD_PYTHON_EXTENSION=OFF \
+      -DREGPOLY_BUILD_TESTS=ON
+cmake --build build-cpp -j
+ctest --test-dir build-cpp --output-on-failure
 
 # Docs site:
 uv sync --group docs
@@ -133,10 +157,10 @@ The previous home of the C++ port was `MinimalCode/cpp_regpoly/`. Its contents h
 
 ## Conventions
 
-- **One-way deps.** `regpoly-web` may import `regpoly`; `regpoly` may import `regpoly_cpp`; nothing goes backwards. Enforced by `import-linter` (contracts in workspace `pyproject.toml`).
-- **`shared/` is runtime data only.** YAML config templates and legacy `.dat` test fixtures. Documentation, papers, and the catalog live under `docs/`.
-- **`var/` and `regpoly.db` are user data.** Never commit DB files or move them into `src/`.
-- **C++ extension stays in `regpoly-cpp`.** The `.so` is a build artefact of `regpoly-cpp`; `regpoly` consumes it via the `regpoly_cpp` package interface only.
+- **One-way deps.** Two layered import-linter contracts: `regpoly-web → regpoly → regpoly-cpp` (catalog / YAML / web path) and `regpoly-legacy → regpoly → regpoly-cpp` (pre-v2 `.dat` path). Nothing goes backwards. Defined in the workspace `pyproject.toml`.
+- **`shared/` is workspace-shared runtime data only.** YAML search configs live under `shared/yaml/`. Pre-v2 `.dat` fixtures are NOT here anymore — they moved to `packages/regpoly-legacy/shared/legacy_parameters/`.
+- **C++ extension stays in `regpoly-cpp`.** The `.so` is a build artefact of `regpoly-cpp` (when built in Python-wheel mode); `regpoly` consumes it via the `regpoly_cpp` package interface only.
+- **Pure-C++ users.** `cmake -DREGPOLY_BUILD_PYTHON_EXTENSION=OFF` builds `libregpoly_core.a` + `regpoly-cli` + headers + `find_package(regpoly)` config — no pybind11, no Python.
 - **Git is per-monorepo, not per-package.** Run `git init` once at the workspace root.
 
 ## Deferred decisions (call out before changing)

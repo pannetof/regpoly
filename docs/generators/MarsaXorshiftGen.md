@@ -1,8 +1,9 @@
-# MarsaXorshiftGen
+# MarsaXorshiftGen — Marsaglia Xor-shift
 
 **C++ class:** `MarsaXorshiftGen`
-**Name in code:** `"Marsaglia Xor-shift"`
-**Legacy aliases:** `marsaxorshift`
+**Registered name:** `"MarsaXorshiftGen"` (C++ factory)
+**Python-only aliases:** `marsaxorshift` (via `regpoly.core.generator._FAMILY_ALIASES`).
+The C++ factory has no `reg_alias` entry for this family.
 
 Marsaglia's Xor-shift generators. A family of generators based on
 XOR and shift operations. Multiple types are supported, ranging from

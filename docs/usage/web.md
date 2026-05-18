@@ -1,19 +1,23 @@
 # Using the REGPOLY web UI
 
-`regpoly-web` is a FastAPI server backed by a SQLite result store. It exposes a browser UI for kicking off full-period and tempering searches, watching their progress over Server-Sent Events, browsing tested generators, and inspecting equidistribution results.
+`regpoly-web` is a FastAPI server backed by a PostgreSQL result store (via `psycopg3`). It exposes a browser UI for kicking off full-period and tempering searches, watching their progress over Server-Sent Events, browsing tested generators, and inspecting equidistribution results.
 
 ## Start the server
 
 ```bash
-uv run regpoly-web --db packages/regpoly-web/var/regpoly.db
+uv run regpoly-web --db-url postgresql://user:pw@host/regpoly
+# or via the environment:
+REGPOLY_DB_URL=postgresql://user:pw@host/regpoly uv run regpoly-web
 ```
 
 | Flag | Default | Notes |
 |---|---|---|
-| `--host HOST` | `127.0.0.1` | Bind address. |
-| `--port PORT` | `8000` | TCP port. |
-| `--db DB` | `var/regpoly.db` | SQLite file. Auto-created on first start; v1 databases are migrated to v2 in place at startup (see [Database schema](#database-schema)). |
+| `--host HOST` | `127.0.0.1` | Bind address (env: `REGPOLY_HOST`). |
+| `--port PORT` | `8000` | TCP port (env: `REGPOLY_PORT`). |
+| `--db-url URL` | *(env: `REGPOLY_DB_URL`)* | PostgreSQL DSN. Schema is applied at lifespan startup from `schema.sql`. |
 | `--reload` | off | Hot-reload Python sources (development only). |
+
+For local development without a system Postgres, the `pgserver` package (installed via the `test` dependency group) can spin up an ephemeral instance. See [`docs/dev/postgres.md`](../dev/postgres.md).
 
 Then point a browser at <http://localhost:8000/>.
 
@@ -29,17 +33,7 @@ Then point a browser at <http://localhost:8000/>.
 
 ## Database schema
 
-The web app keeps state in a SQLite file. Schema v2 (Phase 5.4) introduces three typed result tables that mirror the C++ analysis structs 1:1 — `equidistribution_result`, `collision_free_result`, `tuplets_result` — so the UI receives the full typed result without going through opaque JSON.
-
-Old v1 databases are auto-upgraded the first time the server opens them: `init_sync` runs `regpoly_web.migrations.v2.migrate_v2_inplace`, which backfills the typed tables from the legacy `test_result.detail` blobs. Migration is idempotent.
-
-To run the migration offline (e.g. before deploying a new server build):
-
-```bash
-uv run python packages/regpoly-web/scripts/migrate_v2.py path/to/regpoly.db
-```
-
-The legacy `test_result` table is preserved for backward-compat reads through Phase 5; Phase 8 drops it.
+The web app keeps state in PostgreSQL. The schema (`packages/regpoly-web/src/regpoly_web/schema.sql`) is applied at FastAPI lifespan startup via `psycopg3`. Three typed result tables mirror the C++ analysis structs 1:1 — `equidistribution_result`, `collision_free_result`, `tuplets_result` — so the UI receives the full typed result without opaque JSON.
 
 ## Headless smoke and end-to-end tests
 

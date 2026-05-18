@@ -1,8 +1,6 @@
 # Generators
 
-REGPOLY implements 16 F₂-linear generator families plus a `CombinedGenerator` that XORs J of them. Each family page below documents the recurrence, the parameter space, common parameter sets from the literature, and source-file pointers.
-
-> **Status**: Phase 0 ports the existing per-family pages as-is. Phase 6 rewrites them onto a common template (`_template.md`, also pending) with paper references, equidistribution properties, and notebook links.
+REGPOLY implements 17 F₂-linear generator families plus a `CombinedGenerator` that XORs J of them. Each family page below documents the recurrence, the parameter space, common parameter sets from the literature, and source-file pointers.
 
 ## Mersenne Twister family
 
@@ -11,7 +9,7 @@ REGPOLY implements 16 F₂-linear generator families plus a `CombinedGenerator` 
 - [dSFMT (Double-precision SFMT)](DSFMTGen.md)
 - [MTGP (MT for GPU)](MTGPGen.md)
 - [TinyMT32](TinyMT32Gen.md)
-- [RMT64 (Rotated MT 64-bit)](RMT64Gen.md)
+- [RMT64 (Reducible MT 64-bit)](RMT64Gen.md)
 
 ## WELL and Tausworthe-style
 
@@ -31,10 +29,10 @@ REGPOLY implements 16 F₂-linear generator families plus a `CombinedGenerator` 
 - [Xoroshiro (Blackman–Vigna)](XoroshiroGen.md)
 - [Xoshiro (Blackman–Vigna)](XoshiroGen.md)
 
-## Other
+## Cellular automata
 
-- [MELG (Multiplicative-Equidistribution LCG)](MELGGen.md)
+- [Two-rule (90/150) cellular automata](CellularAutomataGen.md)
 
-## Combined generator
+## MELG
 
-- *Page to be authored in Phase 1.*
+- [MELG (Maximally Equidistributed F₂-Linear)](MELGGen.md)

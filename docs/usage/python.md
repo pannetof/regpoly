@@ -5,17 +5,17 @@ The `regpoly` package is a thin Python wrapper around the C++ core (`regpoly_cpp
 ## Install
 
 ```bash
-git clone https://github.com/pannetof/regpoly
-cd regpoly
+git clone https://github.com/pannetof/regpoly_monorepo
+cd regpoly_monorepo
 uv sync
 ```
 
-`uv sync` installs the workspace in editable mode and builds the C++ extension via `scikit-build-core`. After it completes, the `regpoly` and `regpoly-web` console scripts are on the venv's `PATH`.
+`uv sync` installs the workspace in editable mode and builds the C++ extension via `scikit-build-core`. After it completes, the `regpoly`, `regpoly-web`, and `regpoly-legacy` console scripts are on the venv's `PATH`.
 
 ## Run a search from a YAML config
 
 ```bash
-uv run regpoly shared/yaml/equidist/well19937a.yml
+uv run regpoly shared/yaml/equidist/mt19937.yaml
 ```
 
 Test config templates live under [`shared/yaml/`](https://github.com/pannetof/regpoly/tree/master/shared/yaml). The search loop iterates a `Combination` of generator pools, runs the configured analysis (`equidistribution`, `collision_free`, `tuplets`), and writes a tested-generator YAML for any candidate that passes the acceptance predicate.
@@ -50,7 +50,7 @@ comb.reset()
 
     ```python
     from regpoly.search.seek import Seek
-    seek = Seek.from_yaml("shared/yaml/equidist/well19937a.yml")
+    seek = Seek.from_yaml("shared/yaml/equidist/mt19937.yaml")
     seek.run()
     ```
 

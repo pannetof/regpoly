@@ -1,7 +1,8 @@
-# MELG
+# MELGGen — Maximally Equidistributed F₂-Linear
 
-**C++ class:** `MELG`
-**Name in code:** `"MELG"`
+**C++ class:** `MELGGen`
+**Registered name:** `"MELGGen"`
+**Legacy aliases:** `MELG`
 
 Maximally Equidistributed Long-period Generator of Harase & Kimoto
 (2018).  A 64-bit F₂-linear generator family designed to improve on

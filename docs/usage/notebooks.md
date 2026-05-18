@@ -2,13 +2,10 @@
 
 The doc site renders Jupyter notebooks via [`mkdocs-jupyter`](https://github.com/danielfrg/mkdocs-jupyter). Notebooks live under `docs/notebooks/` and fall in three categories:
 
-- `docs/notebooks/families/` — one notebook per generator family. Phase 7 authors all 18 from a common skeleton (`_template.ipynb`); each notebook ports a familiar parameter set from the catalog, verifies the characteristic polynomial and full-period claim, computes equidistribution `d(1..L)`, cross-checks against published values, and runs a small search for new parameters of the same shape.
-- `docs/notebooks/research/` — preserved, including:
-    - `melg_paper_verification.ipynb` — reproduces the MELG-19937 reference numbers.
-    - `melg_charpoly_derivation.ipynb` — derives the MELG characteristic polynomial step by step.
-- `docs/notebooks/utilities/` — preserved, including:
-    - `bitmatrix_display.ipynb` — visualisation helpers for GF(2) matrices.
-    - `primitive.ipynb` — primitivity-test utilities.
+- `docs/notebooks/families/` — one notebook per generator family, plus a `CombinedGenerator.ipynb` overview. Notebooks are stamped from the parametric driver `_stamp.py` (which writes the notebook) and executed via `_runner.py`. Each notebook loads a familiar parameter set from the catalog, verifies the characteristic polynomial and full-period claim, computes equidistribution `d(1..L)`, cross-checks against published values, and runs a small search for new parameters of the same shape.
+- `docs/notebooks/research/` — paper reproductions:
+    - `ca_paper_tables.ipynb` — reproduces tables from the Bhuvaneswari–Bhattacharjee (2026) cellular-automata paper.
+    - `ca_tables_7_to_10.ipynb` — extended CA tables (sizes 7–10).
 
 ## Running locally
 
