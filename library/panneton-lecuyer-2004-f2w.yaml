@@ -1,0 +1,2476 @@
+id: panneton-lecuyer-2004-f2w
+authors:
+  - {family: Panneton,  given: François}
+  - {family: L'Ecuyer,  given: Pierre}
+year: 2004
+title: "Random Number Generators Based on Linear Recurrences in F_{2^w}"
+venue: "Monte Carlo and Quasi-Monte Carlo Methods 2004"
+pdf: docs/papers/f2w.pdf
+doi: https://doi.org/10.1007/3-540-31186-6
+bibkey: PannetonLEcuyer2004F2w
+starred: true
+tags: [F2w, LFSR, PolyLCG, F2-linear, MCQMC]
+
+abstract: |
+  This paper explores new ways of constructing and implementing random
+  number generators based on linear recurrences in a finite field with
+  2^w elements, for some integer w.  Two types of constructions are
+  examined: an LFSR in F_{2^w} (state s_n, recurrence (6)) and a
+  polynomial LCG in F_{2^w}[z]/P(z) (state q_n, recurrence (7)); the
+  two are related by transposition of the F₂-state transition matrix.
+  Concrete parameter sets are given for generators with good
+  equidistribution properties whose speed is comparable to that of the
+  fastest generators available at the time.  Two implementation
+  techniques use precomputed tables to speed up multiplications in
+  F_{2^w}: a general-coefficient layout (Table 1, truncation output
+  B = T_L) and a special form (eq. 14) with small s_{b_i} and d_{b_i}
+  bounds (Table 2, Matsumoto-Kurita tempering output B = M_L with
+  s1=7, s2=15).
+
+notes: |
+  Each row of paper Tables 1 and 2 appears twice — once with
+  family: F2wLFSRGen, once with family: F2wPolyLCGGen — because the
+  paper (§1, p.3) states that LFSR and PolyLCG with L = w = 32 and
+  B = (B̃ 0) (B̃ a w×w matrix) share the same characteristic
+  polynomial and equidistribution.  Both Table 1 (B̃ = I_w) and
+  Table 2 (B̃ = M-K mask) satisfy this precondition.
+  
+  Table 1 uses truncation output (tempering: []); Table 2 uses
+  Matsumoto-Kurita type I tempering (tempMK with eta=s1=7,
+  mu=s2=15, plus per-row b/c).  The s column in Table 2 (3 or 7) is
+  the search-time bound on s_{b_i} from form (14), not a runtime
+  parameter; reflected only in the entry id.
+  
+  `modM = a` (the paper's hex bit-vector verbatim, LSB-first packing:
+  bit i = coefficient of z^i in M(z) for 0 ≤ i < w; the leading z^w
+  bit is implicit in the F2w arithmetic loop, so do NOT OR (1 << w) in).
+  Convention verified empirically: every paper row in this catalog has
+  `is_full_period` = true with this encoding (the alternative `(1<<w)|a`
+  would give a non-primitive characteristic polynomial).
+  `modM` currently displays as a long decimal in the web UI because
+  the C++ ParamSpec marks it `rand_type=""` rather than "bitmask";
+  this is cosmetic and unrelated to correctness.
+
+generators:
+  - id: f2w-lfsr-t1-r01
+    display: "F2wLFSR2_gen_96 (T1 row 1)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xccb06f34
+          normal_basis: false
+          step: 1
+          nocoeff: [1, 0]
+          coeff: [0x30a72fa7, 0x537a531f]
+        tempering: []
+    notes: |
+      Paper Table 1, row 1.  E=21, S=3.
+      P(z) = z^3 + 0x30a72fa7·z^1 + 0x537a531f over F_{2^32}
+        with M(z) = 0xccb06f34.
+  - id: f2w-polylcg-t1-r01
+    display: "F2wPolyLCG2_gen_96 (T1 row 1)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xccb06f34
+          normal_basis: false
+          step: 1
+          nocoeff: [1, 0]
+          coeff: [0x30a72fa7, 0x537a531f]
+        tempering: []
+    notes: |
+      Paper Table 1, row 1.  E=21, S=3.
+      P(z) = z^3 + 0x30a72fa7·z^1 + 0x537a531f over F_{2^32}
+        with M(z) = 0xccb06f34.
+  - id: f2w-lfsr-t1-r02
+    display: "F2wLFSR2_gen_96 (T1 row 2)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xccb06f34
+          normal_basis: false
+          step: 1
+          nocoeff: [1, 0]
+          coeff: [0x04a87b98, 0x4dd5e06e]
+        tempering: []
+    notes: |
+      Paper Table 1, row 2.  E=21, S=3.
+      P(z) = z^3 + 0x04a87b98·z^1 + 0x4dd5e06e over F_{2^32}
+        with M(z) = 0xccb06f34.
+  - id: f2w-polylcg-t1-r02
+    display: "F2wPolyLCG2_gen_96 (T1 row 2)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xccb06f34
+          normal_basis: false
+          step: 1
+          nocoeff: [1, 0]
+          coeff: [0x04a87b98, 0x4dd5e06e]
+        tempering: []
+    notes: |
+      Paper Table 1, row 2.  E=21, S=3.
+      P(z) = z^3 + 0x04a87b98·z^1 + 0x4dd5e06e over F_{2^32}
+        with M(z) = 0xccb06f34.
+  - id: f2w-lfsr-t1-r03
+    display: "F2wLFSR3_gen_96 (T1 row 3)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xd53c36b9
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0xbbf58bb6, 0xbd0c7735, 0xb7c5019c]
+        tempering: []
+    notes: |
+      Paper Table 1, row 3.  ME (maximally equidistributed).
+      P(z) = z^3 + 0xbbf58bb6·z^2 + 0xbd0c7735·z^1 + 0xb7c5019c over F_{2^32}
+        with M(z) = 0xd53c36b9.
+  - id: f2w-polylcg-t1-r03
+    display: "F2wPolyLCG3_gen_96 (T1 row 3)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xd53c36b9
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0xbbf58bb6, 0xbd0c7735, 0xb7c5019c]
+        tempering: []
+    notes: |
+      Paper Table 1, row 3.  ME (maximally equidistributed).
+      P(z) = z^3 + 0xbbf58bb6·z^2 + 0xbd0c7735·z^1 + 0xb7c5019c over F_{2^32}
+        with M(z) = 0xd53c36b9.
+  - id: f2w-lfsr-t1-r04
+    display: "F2wLFSR3_gen_96 (T1 row 4)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xd53c36b9
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0xdb3bd1c3, 0xffbaad94, 0x2f55958b]
+        tempering: []
+    notes: |
+      Paper Table 1, row 4.  ME (maximally equidistributed).
+      P(z) = z^3 + 0xdb3bd1c3·z^2 + 0xffbaad94·z^1 + 0x2f55958b over F_{2^32}
+        with M(z) = 0xd53c36b9.
+  - id: f2w-polylcg-t1-r04
+    display: "F2wPolyLCG3_gen_96 (T1 row 4)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xd53c36b9
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0xdb3bd1c3, 0xffbaad94, 0x2f55958b]
+        tempering: []
+    notes: |
+      Paper Table 1, row 4.  ME (maximally equidistributed).
+      P(z) = z^3 + 0xdb3bd1c3·z^2 + 0xffbaad94·z^1 + 0x2f55958b over F_{2^32}
+        with M(z) = 0xd53c36b9.
+  - id: f2w-lfsr-t1-r05
+    display: "F2wLFSR3_gen_256 (T1 row 5)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xce023b3b
+          normal_basis: false
+          step: 1
+          nocoeff: [6, 3, 0]
+          coeff: [0xfba454a9, 0x045861d5, 0xc5fb7653]
+        tempering: []
+    notes: |
+      Paper Table 1, row 5.  E=22, S=6.
+      P(z) = z^8 + 0xfba454a9·z^6 + 0x045861d5·z^3 + 0xc5fb7653 over F_{2^32}
+        with M(z) = 0xce023b3b.
+  - id: f2w-polylcg-t1-r05
+    display: "F2wPolyLCG3_gen_256 (T1 row 5)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xce023b3b
+          normal_basis: false
+          step: 1
+          nocoeff: [6, 3, 0]
+          coeff: [0xfba454a9, 0x045861d5, 0xc5fb7653]
+        tempering: []
+    notes: |
+      Paper Table 1, row 5.  E=22, S=6.
+      P(z) = z^8 + 0xfba454a9·z^6 + 0x045861d5·z^3 + 0xc5fb7653 over F_{2^32}
+        with M(z) = 0xce023b3b.
+  - id: f2w-lfsr-t1-r06
+    display: "F2wLFSR3_gen_256 (T1 row 6)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xce023b3b
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 2, 0]
+          coeff: [0x623a6e23, 0xde6f829f, 0x17600ef0]
+        tempering: []
+    notes: |
+      Paper Table 1, row 6.  E=22, S=6.
+      P(z) = z^8 + 0x623a6e23·z^5 + 0xde6f829f·z^2 + 0x17600ef0 over F_{2^32}
+        with M(z) = 0xce023b3b.
+  - id: f2w-polylcg-t1-r06
+    display: "F2wPolyLCG3_gen_256 (T1 row 6)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xce023b3b
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 2, 0]
+          coeff: [0x623a6e23, 0xde6f829f, 0x17600ef0]
+        tempering: []
+    notes: |
+      Paper Table 1, row 6.  E=22, S=6.
+      P(z) = z^8 + 0x623a6e23·z^5 + 0xde6f829f·z^2 + 0x17600ef0 over F_{2^32}
+        with M(z) = 0xce023b3b.
+  - id: f2w-lfsr-t1-r07
+    display: "F2wLFSR2_gen_416 (T1 row 7)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xf9820db6
+          normal_basis: false
+          step: 1
+          nocoeff: [8, 0]
+          coeff: [0x2be45a08, 0xb4816b12]
+        tempering: []
+    notes: |
+      Paper Table 1, row 7.  E=17, S=29.
+      P(z) = z^13 + 0x2be45a08·z^8 + 0xb4816b12 over F_{2^32}
+        with M(z) = 0xf9820db6.
+  - id: f2w-polylcg-t1-r07
+    display: "F2wPolyLCG2_gen_416 (T1 row 7)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xf9820db6
+          normal_basis: false
+          step: 1
+          nocoeff: [8, 0]
+          coeff: [0x2be45a08, 0xb4816b12]
+        tempering: []
+    notes: |
+      Paper Table 1, row 7.  E=17, S=29.
+      P(z) = z^13 + 0x2be45a08·z^8 + 0xb4816b12 over F_{2^32}
+        with M(z) = 0xf9820db6.
+  - id: f2w-lfsr-t1-r08
+    display: "F2wLFSR2_gen_416 (T1 row 8)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xf9820db6
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 0]
+          coeff: [0x7a64a92e, 0xc0643058]
+        tempering: []
+    notes: |
+      Paper Table 1, row 8.  E=17, S=29.
+      P(z) = z^13 + 0x7a64a92e·z^5 + 0xc0643058 over F_{2^32}
+        with M(z) = 0xf9820db6.
+  - id: f2w-polylcg-t1-r08
+    display: "F2wPolyLCG2_gen_416 (T1 row 8)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xf9820db6
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 0]
+          coeff: [0x7a64a92e, 0xc0643058]
+        tempering: []
+    notes: |
+      Paper Table 1, row 8.  E=17, S=29.
+      P(z) = z^13 + 0x7a64a92e·z^5 + 0xc0643058 over F_{2^32}
+        with M(z) = 0xf9820db6.
+  - id: f2w-lfsr-t1-r09
+    display: "F2wLFSR3_gen_416 (T1 row 9)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0x9f26eaa3
+          normal_basis: false
+          step: 1
+          nocoeff: [10, 5, 0]
+          coeff: [0x99e34535, 0xf09bf592, 0x9803caf7]
+        tempering: []
+    notes: |
+      Paper Table 1, row 9.  E=22, S=13.
+      P(z) = z^13 + 0x99e34535·z^10 + 0xf09bf592·z^5 + 0x9803caf7 over F_{2^32}
+        with M(z) = 0x9f26eaa3.
+  - id: f2w-polylcg-t1-r09
+    display: "F2wPolyLCG3_gen_416 (T1 row 9)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0x9f26eaa3
+          normal_basis: false
+          step: 1
+          nocoeff: [10, 5, 0]
+          coeff: [0x99e34535, 0xf09bf592, 0x9803caf7]
+        tempering: []
+    notes: |
+      Paper Table 1, row 9.  E=22, S=13.
+      P(z) = z^13 + 0x99e34535·z^10 + 0xf09bf592·z^5 + 0x9803caf7 over F_{2^32}
+        with M(z) = 0x9f26eaa3.
+  - id: f2w-lfsr-t1-r10
+    display: "F2wLFSR3_gen_416 (T1 row 10)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0x9f26eaa3
+          normal_basis: false
+          step: 1
+          nocoeff: [10, 5, 0]
+          coeff: [0x62a42238, 0xe765704a, 0x2f95dc0e]
+        tempering: []
+    notes: |
+      Paper Table 1, row 10.  E=20, S=14.
+      P(z) = z^13 + 0x62a42238·z^10 + 0xe765704a·z^5 + 0x2f95dc0e over F_{2^32}
+        with M(z) = 0x9f26eaa3.
+  - id: f2w-polylcg-t1-r10
+    display: "F2wPolyLCG3_gen_416 (T1 row 10)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0x9f26eaa3
+          normal_basis: false
+          step: 1
+          nocoeff: [10, 5, 0]
+          coeff: [0x62a42238, 0xe765704a, 0x2f95dc0e]
+        tempering: []
+    notes: |
+      Paper Table 1, row 10.  E=20, S=14.
+      P(z) = z^13 + 0x62a42238·z^10 + 0xe765704a·z^5 + 0x2f95dc0e over F_{2^32}
+        with M(z) = 0x9f26eaa3.
+  - id: f2w-lfsr-t1-r11
+    display: F2wLFSR2_31_800
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xfa4f9b3f
+          normal_basis: false
+          step: 1
+          nocoeff: [7, 0]
+          coeff: [0xe6a68d20, 0x287ab842]
+        tempering: []
+    notes: |
+      Paper Table 1, row 11.  E=15, S=74.
+      P(z) = z^25 + 0xe6a68d20·z^7 + 0x287ab842 over F_{2^32}
+        with M(z) = 0xfa4f9b3f.
+  - id: f2w-polylcg-t1-r11
+    display: F2wPolyLCG2_31_800
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xfa4f9b3f
+          normal_basis: false
+          step: 1
+          nocoeff: [7, 0]
+          coeff: [0xe6a68d20, 0x287ab842]
+        tempering: []
+    notes: |
+      Paper Table 1, row 11.  E=15, S=74.
+      P(z) = z^25 + 0xe6a68d20·z^7 + 0x287ab842 over F_{2^32}
+        with M(z) = 0xfa4f9b3f.
+  - id: f2w-lfsr-t1-r12
+    display: "F2wLFSR2_gen_800 (T1 row 12)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xfa4f9b3f
+          normal_basis: false
+          step: 1
+          nocoeff: [18, 0]
+          coeff: [0x26dc0579, 0x88fc8c8a]
+        tempering: []
+    notes: |
+      Paper Table 1, row 12.  E=15, S=77.
+      P(z) = z^25 + 0x26dc0579·z^18 + 0x88fc8c8a over F_{2^32}
+        with M(z) = 0xfa4f9b3f.
+  - id: f2w-polylcg-t1-r12
+    display: "F2wPolyLCG2_gen_800 (T1 row 12)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xfa4f9b3f
+          normal_basis: false
+          step: 1
+          nocoeff: [18, 0]
+          coeff: [0x26dc0579, 0x88fc8c8a]
+        tempering: []
+    notes: |
+      Paper Table 1, row 12.  E=15, S=77.
+      P(z) = z^25 + 0x26dc0579·z^18 + 0x88fc8c8a over F_{2^32}
+        with M(z) = 0xfa4f9b3f.
+  - id: f2w-lfsr-t1-r13
+    display: F2wLFSR3_31_800
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xf70211b8
+          normal_basis: false
+          step: 1
+          nocoeff: [20, 14, 0]
+          coeff: [0x0001e6f1, 0x1d5e07e3, 0x3e433359]
+        tempering: []
+    notes: |
+      Paper Table 1, row 13.  E=16, S=42.
+      P(z) = z^25 + 0x0001e6f1·z^20 + 0x1d5e07e3·z^14 + 0x3e433359 over F_{2^32}
+        with M(z) = 0xf70211b8.
+  - id: f2w-polylcg-t1-r13
+    display: F2wPolyLCG3_31_800
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xf70211b8
+          normal_basis: false
+          step: 1
+          nocoeff: [20, 14, 0]
+          coeff: [0x0001e6f1, 0x1d5e07e3, 0x3e433359]
+        tempering: []
+    notes: |
+      Paper Table 1, row 13.  E=16, S=42.
+      P(z) = z^25 + 0x0001e6f1·z^20 + 0x1d5e07e3·z^14 + 0x3e433359 over F_{2^32}
+        with M(z) = 0xf70211b8.
+  - id: f2w-lfsr-t1-r14
+    display: "F2wLFSR3_gen_800 (T1 row 14)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xf70211b8
+          normal_basis: false
+          step: 1
+          nocoeff: [24, 16, 0]
+          coeff: [0xbe1ed999, 0xe21e9910, 0xe09361e8]
+        tempering: []
+    notes: |
+      Paper Table 1, row 14.  E=19, S=54.
+      P(z) = z^25 + 0xbe1ed999·z^24 + 0xe21e9910·z^16 + 0xe09361e8 over F_{2^32}
+        with M(z) = 0xf70211b8.
+  - id: f2w-polylcg-t1-r14
+    display: "F2wPolyLCG3_gen_800 (T1 row 14)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xf70211b8
+          normal_basis: false
+          step: 1
+          nocoeff: [24, 16, 0]
+          coeff: [0xbe1ed999, 0xe21e9910, 0xe09361e8]
+        tempering: []
+    notes: |
+      Paper Table 1, row 14.  E=19, S=54.
+      P(z) = z^25 + 0xbe1ed999·z^24 + 0xe21e9910·z^16 + 0xe09361e8 over F_{2^32}
+        with M(z) = 0xf70211b8.
+  - id: f2w-lfsr-t2-r01
+    display: "F2wLFSR2_3_96 (T2 row 1)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xf6b5876b
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 0]
+          coeff: [0x30000000, 0xa0000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x5ccce080
+            c: 0x71d7800c
+    notes: |
+      Paper Table 2, row 1.  s=3.  E=21, S=3.
+      P(z) = z^3 + 0x30000000·z^2 + 0xa0000000 over F_{2^32}
+        with M(z) = 0xf6b5876b.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x5ccce080, c=0x71d7800c.
+  - id: f2w-polylcg-t2-r01
+    display: "F2wPolyLCG2_3_96 (T2 row 1)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xf6b5876b
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 0]
+          coeff: [0x30000000, 0xa0000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x5ccce080
+            c: 0x71d7800c
+    notes: |
+      Paper Table 2, row 1.  s=3.  E=21, S=3.
+      P(z) = z^3 + 0x30000000·z^2 + 0xa0000000 over F_{2^32}
+        with M(z) = 0xf6b5876b.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x5ccce080, c=0x71d7800c.
+  - id: f2w-lfsr-t2-r02
+    display: "F2wLFSR2_3_96 (T2 row 2)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xf6b5876b
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 0]
+          coeff: [0x30000000, 0xa0000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x792b3701
+            c: 0x9fe700b6
+    notes: |
+      Paper Table 2, row 2.  s=3.  E=21, S=3.
+      P(z) = z^3 + 0x30000000·z^2 + 0xa0000000 over F_{2^32}
+        with M(z) = 0xf6b5876b.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x792b3701, c=0x9fe700b6.
+  - id: f2w-polylcg-t2-r02
+    display: "F2wPolyLCG2_3_96 (T2 row 2)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xf6b5876b
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 0]
+          coeff: [0x30000000, 0xa0000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x792b3701
+            c: 0x9fe700b6
+    notes: |
+      Paper Table 2, row 2.  s=3.  E=21, S=3.
+      P(z) = z^3 + 0x30000000·z^2 + 0xa0000000 over F_{2^32}
+        with M(z) = 0xf6b5876b.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x792b3701, c=0x9fe700b6.
+  - id: f2w-lfsr-t2-r03
+    display: "F2wLFSR2_7_96 (T2 row 3)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0x958357a6
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 0]
+          coeff: [0x0c000000, 0x41000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x8c5f6000
+            c: 0xf00e8066
+    notes: |
+      Paper Table 2, row 3.  s=7.  E=21, S=3.
+      P(z) = z^3 + 0x0c000000·z^2 + 0x41000000 over F_{2^32}
+        with M(z) = 0x958357a6.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x8c5f6000, c=0xf00e8066.
+  - id: f2w-polylcg-t2-r03
+    display: "F2wPolyLCG2_7_96 (T2 row 3)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0x958357a6
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 0]
+          coeff: [0x0c000000, 0x41000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x8c5f6000
+            c: 0xf00e8066
+    notes: |
+      Paper Table 2, row 3.  s=7.  E=21, S=3.
+      P(z) = z^3 + 0x0c000000·z^2 + 0x41000000 over F_{2^32}
+        with M(z) = 0x958357a6.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x8c5f6000, c=0xf00e8066.
+  - id: f2w-lfsr-t2-r04
+    display: "F2wLFSR2_7_96 (T2 row 4)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0x958357a6
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 0]
+          coeff: [0xa0000000, 0x12000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x1d768200
+            c: 0xd1e701c2
+    notes: |
+      Paper Table 2, row 4.  s=7.  E=21, S=3.
+      P(z) = z^3 + 0xa0000000·z^2 + 0x12000000 over F_{2^32}
+        with M(z) = 0x958357a6.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x1d768200, c=0xd1e701c2.
+  - id: f2w-polylcg-t2-r04
+    display: "F2wPolyLCG2_7_96 (T2 row 4)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0x958357a6
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 0]
+          coeff: [0xa0000000, 0x12000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x1d768200
+            c: 0xd1e701c2
+    notes: |
+      Paper Table 2, row 4.  s=7.  E=21, S=3.
+      P(z) = z^3 + 0xa0000000·z^2 + 0x12000000 over F_{2^32}
+        with M(z) = 0x958357a6.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x1d768200, c=0xd1e701c2.
+  - id: f2w-lfsr-t2-r05
+    display: "F2wLFSR3_3_96 (T2 row 5)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0x8a81f5f4
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0x90000000, 0xa0000000, 0x50000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x24b97381
+            c: 0xf9d98000
+    notes: |
+      Paper Table 2, row 5.  s=3.  ME (maximally equidistributed).
+      P(z) = z^3 + 0x90000000·z^2 + 0xa0000000·z^1 + 0x50000000 over F_{2^32}
+        with M(z) = 0x8a81f5f4.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x24b97381, c=0xf9d98000.
+  - id: f2w-polylcg-t2-r05
+    display: "F2wPolyLCG3_3_96 (T2 row 5)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0x8a81f5f4
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0x90000000, 0xa0000000, 0x50000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x24b97381
+            c: 0xf9d98000
+    notes: |
+      Paper Table 2, row 5.  s=3.  ME (maximally equidistributed).
+      P(z) = z^3 + 0x90000000·z^2 + 0xa0000000·z^1 + 0x50000000 over F_{2^32}
+        with M(z) = 0x8a81f5f4.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x24b97381, c=0xf9d98000.
+  - id: f2w-lfsr-t2-r06
+    display: "F2wLFSR3_3_96 (T2 row 6)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0x8a81f5f4
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0x90000000, 0x30000000, 0x50000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xb9b76401
+            c: 0xb24b0001
+    notes: |
+      Paper Table 2, row 6.  s=3.  ME (maximally equidistributed).
+      P(z) = z^3 + 0x90000000·z^2 + 0x30000000·z^1 + 0x50000000 over F_{2^32}
+        with M(z) = 0x8a81f5f4.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xb9b76401, c=0xb24b0001.
+  - id: f2w-polylcg-t2-r06
+    display: "F2wPolyLCG3_3_96 (T2 row 6)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0x8a81f5f4
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0x90000000, 0x30000000, 0x50000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xb9b76401
+            c: 0xb24b0001
+    notes: |
+      Paper Table 2, row 6.  s=3.  ME (maximally equidistributed).
+      P(z) = z^3 + 0x90000000·z^2 + 0x30000000·z^1 + 0x50000000 over F_{2^32}
+        with M(z) = 0x8a81f5f4.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xb9b76401, c=0xb24b0001.
+  - id: f2w-lfsr-t2-r07
+    display: "F2wLFSR3_7_96 (T2 row 7)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xfcb5f714
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0x03000000, 0x48000000, 0x18000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xa4d07c01
+            c: 0xbe2f8001
+    notes: |
+      Paper Table 2, row 7.  s=7.  ME (maximally equidistributed).
+      P(z) = z^3 + 0x03000000·z^2 + 0x48000000·z^1 + 0x18000000 over F_{2^32}
+        with M(z) = 0xfcb5f714.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xa4d07c01, c=0xbe2f8001.
+  - id: f2w-polylcg-t2-r07
+    display: "F2wPolyLCG3_7_96 (T2 row 7)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xfcb5f714
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0x03000000, 0x48000000, 0x18000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xa4d07c01
+            c: 0xbe2f8001
+    notes: |
+      Paper Table 2, row 7.  s=7.  ME (maximally equidistributed).
+      P(z) = z^3 + 0x03000000·z^2 + 0x48000000·z^1 + 0x18000000 over F_{2^32}
+        with M(z) = 0xfcb5f714.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xa4d07c01, c=0xbe2f8001.
+  - id: f2w-lfsr-t2-r08
+    display: "F2wLFSR3_7_96 (T2 row 8)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xfcb5f714
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0x21000000, 0x12000000, 0x0a000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x77f22481
+            c: 0x57eb8001
+    notes: |
+      Paper Table 2, row 8.  s=7.  ME (maximally equidistributed).
+      P(z) = z^3 + 0x21000000·z^2 + 0x12000000·z^1 + 0x0a000000 over F_{2^32}
+        with M(z) = 0xfcb5f714.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x77f22481, c=0x57eb8001.
+  - id: f2w-polylcg-t2-r08
+    display: "F2wPolyLCG3_7_96 (T2 row 8)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 3
+          modM: 0xfcb5f714
+          normal_basis: false
+          step: 1
+          nocoeff: [2, 1, 0]
+          coeff: [0x21000000, 0x12000000, 0x0a000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x77f22481
+            c: 0x57eb8001
+    notes: |
+      Paper Table 2, row 8.  s=7.  ME (maximally equidistributed).
+      P(z) = z^3 + 0x21000000·z^2 + 0x12000000·z^1 + 0x0a000000 over F_{2^32}
+        with M(z) = 0xfcb5f714.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x77f22481, c=0x57eb8001.
+  - id: f2w-lfsr-t2-r09
+    display: "F2wLFSR3_3_256 (T2 row 9)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xd3e9de82
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 3, 0]
+          coeff: [0xa0000000, 0xc0000000, 0x30000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xa13a9c81
+            c: 0x5e6d801b
+    notes: |
+      Paper Table 2, row 9.  s=3.  E=21, S=7.
+      P(z) = z^8 + 0xa0000000·z^5 + 0xc0000000·z^3 + 0x30000000 over F_{2^32}
+        with M(z) = 0xd3e9de82.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xa13a9c81, c=0x5e6d801b.
+  - id: f2w-polylcg-t2-r09
+    display: "F2wPolyLCG3_3_256 (T2 row 9)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xd3e9de82
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 3, 0]
+          coeff: [0xa0000000, 0xc0000000, 0x30000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xa13a9c81
+            c: 0x5e6d801b
+    notes: |
+      Paper Table 2, row 9.  s=3.  E=21, S=7.
+      P(z) = z^8 + 0xa0000000·z^5 + 0xc0000000·z^3 + 0x30000000 over F_{2^32}
+        with M(z) = 0xd3e9de82.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xa13a9c81, c=0x5e6d801b.
+  - id: f2w-lfsr-t2-r10
+    display: "F2wLFSR3_3_256 (T2 row 10)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xd3e9de82
+          normal_basis: false
+          step: 1
+          nocoeff: [7, 3, 0]
+          coeff: [0xc0000000, 0x50000000, 0x60000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x4c0ad481
+            c: 0xebd30053
+    notes: |
+      Paper Table 2, row 10.  s=3.  E=21, S=10.
+      P(z) = z^8 + 0xc0000000·z^7 + 0x50000000·z^3 + 0x60000000 over F_{2^32}
+        with M(z) = 0xd3e9de82.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x4c0ad481, c=0xebd30053.
+      ⚠ Apparent paper erratum: the published parameters here
+        do not give a primitive characteristic polynomial under
+        our F2w implementation (exhaustive bit-reversal /
+        permutation search yields no full-period candidate).
+        Use F2wLFSR3_3_800 or F2wLFSR3_7_800 (verified full-period)
+        instead, or revisit if the paper publishes errata.
+  - id: f2w-polylcg-t2-r10
+    display: "F2wPolyLCG3_3_256 (T2 row 10)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xd3e9de82
+          normal_basis: false
+          step: 1
+          nocoeff: [7, 3, 0]
+          coeff: [0xc0000000, 0x50000000, 0x60000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x4c0ad481
+            c: 0xebd30053
+    notes: |
+      Paper Table 2, row 10.  s=3.  E=21, S=10.
+      P(z) = z^8 + 0xc0000000·z^7 + 0x50000000·z^3 + 0x60000000 over F_{2^32}
+        with M(z) = 0xd3e9de82.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x4c0ad481, c=0xebd30053.
+      ⚠ Apparent paper erratum: the published parameters here
+        do not give a primitive characteristic polynomial under
+        our F2w implementation (exhaustive bit-reversal /
+        permutation search yields no full-period candidate).
+        Use F2wLFSR3_3_800 or F2wLFSR3_7_800 (verified full-period)
+        instead, or revisit if the paper publishes errata.
+  - id: f2w-lfsr-t2-r11
+    display: "F2wLFSR3_3_256 (T2 row 11)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xd3e9de82
+          normal_basis: false
+          step: 1
+          nocoeff: [7, 4, 0]
+          coeff: [0x60000000, 0x90000000, 0xc0000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xb39e2581
+            c: 0x36f30072
+    notes: |
+      Paper Table 2, row 11.  s=3.  E=21, S=10.
+      P(z) = z^8 + 0x60000000·z^7 + 0x90000000·z^4 + 0xc0000000 over F_{2^32}
+        with M(z) = 0xd3e9de82.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xb39e2581, c=0x36f30072.
+      ⚠ Apparent paper erratum: the published parameters here
+        do not give a primitive characteristic polynomial under
+        our F2w implementation (exhaustive bit-reversal /
+        permutation search yields no full-period candidate).
+        Use F2wLFSR3_3_800 or F2wLFSR3_7_800 (verified full-period)
+        instead, or revisit if the paper publishes errata.
+  - id: f2w-polylcg-t2-r11
+    display: "F2wPolyLCG3_3_256 (T2 row 11)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xd3e9de82
+          normal_basis: false
+          step: 1
+          nocoeff: [7, 4, 0]
+          coeff: [0x60000000, 0x90000000, 0xc0000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xb39e2581
+            c: 0x36f30072
+    notes: |
+      Paper Table 2, row 11.  s=3.  E=21, S=10.
+      P(z) = z^8 + 0x60000000·z^7 + 0x90000000·z^4 + 0xc0000000 over F_{2^32}
+        with M(z) = 0xd3e9de82.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xb39e2581, c=0x36f30072.
+      ⚠ Apparent paper erratum: the published parameters here
+        do not give a primitive characteristic polynomial under
+        our F2w implementation (exhaustive bit-reversal /
+        permutation search yields no full-period candidate).
+        Use F2wLFSR3_3_800 or F2wLFSR3_7_800 (verified full-period)
+        instead, or revisit if the paper publishes errata.
+  - id: f2w-lfsr-t2-r12
+    display: "F2wLFSR3_3_256 (T2 row 12)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xd3e9de82
+          normal_basis: false
+          step: 1
+          nocoeff: [7, 4, 0]
+          coeff: [0xc0000000, 0x90000000, 0x30000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x98fd4c01
+            c: 0xeea3003c
+    notes: |
+      Paper Table 2, row 12.  s=3.  E=21, S=10.
+      P(z) = z^8 + 0xc0000000·z^7 + 0x90000000·z^4 + 0x30000000 over F_{2^32}
+        with M(z) = 0xd3e9de82.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x98fd4c01, c=0xeea3003c.
+      ⚠ Apparent paper erratum: the published parameters here
+        do not give a primitive characteristic polynomial under
+        our F2w implementation (exhaustive bit-reversal /
+        permutation search yields no full-period candidate).
+        Use F2wLFSR3_3_800 or F2wLFSR3_7_800 (verified full-period)
+        instead, or revisit if the paper publishes errata.
+  - id: f2w-polylcg-t2-r12
+    display: "F2wPolyLCG3_3_256 (T2 row 12)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xd3e9de82
+          normal_basis: false
+          step: 1
+          nocoeff: [7, 4, 0]
+          coeff: [0xc0000000, 0x90000000, 0x30000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x98fd4c01
+            c: 0xeea3003c
+    notes: |
+      Paper Table 2, row 12.  s=3.  E=21, S=10.
+      P(z) = z^8 + 0xc0000000·z^7 + 0x90000000·z^4 + 0x30000000 over F_{2^32}
+        with M(z) = 0xd3e9de82.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x98fd4c01, c=0xeea3003c.
+      ⚠ Apparent paper erratum: the published parameters here
+        do not give a primitive characteristic polynomial under
+        our F2w implementation (exhaustive bit-reversal /
+        permutation search yields no full-period candidate).
+        Use F2wLFSR3_3_800 or F2wLFSR3_7_800 (verified full-period)
+        instead, or revisit if the paper publishes errata.
+  - id: f2w-lfsr-t2-r13
+    display: "F2wLFSR3_7_256 (T2 row 13)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xae397b58
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 2, 0]
+          coeff: [0x03000000, 0x44000000, 0x28000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x05bf4081
+            c: 0xeb67000c
+    notes: |
+      Paper Table 2, row 13.  s=7.  E=22, S=6.
+      P(z) = z^8 + 0x03000000·z^5 + 0x44000000·z^2 + 0x28000000 over F_{2^32}
+        with M(z) = 0xae397b58.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x05bf4081, c=0xeb67000c.
+  - id: f2w-polylcg-t2-r13
+    display: "F2wPolyLCG3_7_256 (T2 row 13)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xae397b58
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 2, 0]
+          coeff: [0x03000000, 0x44000000, 0x28000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x05bf4081
+            c: 0xeb67000c
+    notes: |
+      Paper Table 2, row 13.  s=7.  E=22, S=6.
+      P(z) = z^8 + 0x03000000·z^5 + 0x44000000·z^2 + 0x28000000 over F_{2^32}
+        with M(z) = 0xae397b58.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x05bf4081, c=0xeb67000c.
+  - id: f2w-lfsr-t2-r14
+    display: "F2wLFSR3_7_256 (T2 row 14)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xae397b58
+          normal_basis: false
+          step: 1
+          nocoeff: [6, 3, 0]
+          coeff: [0x41000000, 0x05000000, 0x60000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x1360c281
+            c: 0xf3eb8004
+    notes: |
+      Paper Table 2, row 14.  s=7.  E=22, S=6.
+      P(z) = z^8 + 0x41000000·z^6 + 0x05000000·z^3 + 0x60000000 over F_{2^32}
+        with M(z) = 0xae397b58.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x1360c281, c=0xf3eb8004.
+  - id: f2w-polylcg-t2-r14
+    display: "F2wPolyLCG3_7_256 (T2 row 14)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 8
+          modM: 0xae397b58
+          normal_basis: false
+          step: 1
+          nocoeff: [6, 3, 0]
+          coeff: [0x41000000, 0x05000000, 0x60000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x1360c281
+            c: 0xf3eb8004
+    notes: |
+      Paper Table 2, row 14.  s=7.  E=22, S=6.
+      P(z) = z^8 + 0x41000000·z^6 + 0x05000000·z^3 + 0x60000000 over F_{2^32}
+        with M(z) = 0xae397b58.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x1360c281, c=0xf3eb8004.
+  - id: f2w-lfsr-t2-r15
+    display: "F2wLFSR2_3_416 (T2 row 15)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xae8b80e1
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 0]
+          coeff: [0x50000000, 0x30000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xc55b6000
+            c: 0xfcbd0015
+    notes: |
+      Paper Table 2, row 15.  s=3.  E=17, S=32.
+      P(z) = z^13 + 0x50000000·z^5 + 0x30000000 over F_{2^32}
+        with M(z) = 0xae8b80e1.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xc55b6000, c=0xfcbd0015.
+  - id: f2w-polylcg-t2-r15
+    display: "F2wPolyLCG2_3_416 (T2 row 15)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xae8b80e1
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 0]
+          coeff: [0x50000000, 0x30000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xc55b6000
+            c: 0xfcbd0015
+    notes: |
+      Paper Table 2, row 15.  s=3.  E=17, S=32.
+      P(z) = z^13 + 0x50000000·z^5 + 0x30000000 over F_{2^32}
+        with M(z) = 0xae8b80e1.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xc55b6000, c=0xfcbd0015.
+  - id: f2w-lfsr-t2-r16
+    display: "F2wLFSR2_3_416 (T2 row 16)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xae8b80e1
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 0]
+          coeff: [0x50000000, 0x30000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x360d4401
+            c: 0xeb31803f
+    notes: |
+      Paper Table 2, row 16.  s=3.  E=17, S=32.
+      P(z) = z^13 + 0x50000000·z^5 + 0x30000000 over F_{2^32}
+        with M(z) = 0xae8b80e1.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x360d4401, c=0xeb31803f.
+  - id: f2w-polylcg-t2-r16
+    display: "F2wPolyLCG2_3_416 (T2 row 16)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xae8b80e1
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 0]
+          coeff: [0x50000000, 0x30000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x360d4401
+            c: 0xeb31803f
+    notes: |
+      Paper Table 2, row 16.  s=3.  E=17, S=32.
+      P(z) = z^13 + 0x50000000·z^5 + 0x30000000 over F_{2^32}
+        with M(z) = 0xae8b80e1.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x360d4401, c=0xeb31803f.
+  - id: f2w-lfsr-t2-r17
+    display: "F2wLFSR2_7_416 (T2 row 17)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xc65a6fe2
+          normal_basis: false
+          step: 1
+          nocoeff: [8, 0]
+          coeff: [0x0c000000, 0x28000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x977e1101
+            c: 0xfac78000
+    notes: |
+      Paper Table 2, row 17.  s=7.  E=17, S=29.
+      P(z) = z^13 + 0x0c000000·z^8 + 0x28000000 over F_{2^32}
+        with M(z) = 0xc65a6fe2.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x977e1101, c=0xfac78000.
+  - id: f2w-polylcg-t2-r17
+    display: "F2wPolyLCG2_7_416 (T2 row 17)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xc65a6fe2
+          normal_basis: false
+          step: 1
+          nocoeff: [8, 0]
+          coeff: [0x0c000000, 0x28000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x977e1101
+            c: 0xfac78000
+    notes: |
+      Paper Table 2, row 17.  s=7.  E=17, S=29.
+      P(z) = z^13 + 0x0c000000·z^8 + 0x28000000 over F_{2^32}
+        with M(z) = 0xc65a6fe2.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x977e1101, c=0xfac78000.
+  - id: f2w-lfsr-t2-r18
+    display: "F2wLFSR2_7_416 (T2 row 18)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xc65a6fe2
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 0]
+          coeff: [0x21000000, 0x44000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xdf850601
+            c: 0xe3758001
+    notes: |
+      Paper Table 2, row 18.  s=7.  E=17, S=29.
+      P(z) = z^13 + 0x21000000·z^5 + 0x44000000 over F_{2^32}
+        with M(z) = 0xc65a6fe2.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xdf850601, c=0xe3758001.
+  - id: f2w-polylcg-t2-r18
+    display: "F2wPolyLCG2_7_416 (T2 row 18)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0xc65a6fe2
+          normal_basis: false
+          step: 1
+          nocoeff: [5, 0]
+          coeff: [0x21000000, 0x44000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xdf850601
+            c: 0xe3758001
+    notes: |
+      Paper Table 2, row 18.  s=7.  E=17, S=29.
+      P(z) = z^13 + 0x21000000·z^5 + 0x44000000 over F_{2^32}
+        with M(z) = 0xc65a6fe2.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xdf850601, c=0xe3758001.
+  - id: f2w-lfsr-t2-r19
+    display: F2wLFSR2_7_416
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0x92bb39c1
+          normal_basis: false
+          step: 1
+          nocoeff: [9, 6, 0]
+          coeff: [0x06000000, 0x41000000, 0x05000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x5f9bca01
+            c: 0xfd9d8006
+    notes: |
+      Paper Table 2, row 19, paper-named "F2wLFSR2_7_416".
+      But b_{r−q} = 0x41000000 ≠ 0, so by the paper's own rule
+      (m=2 iff b_{r−q}=0) the row is structurally m=3.  The display
+      name preserves the paper's literal label.  s=7, E=22, S=13.
+      P(z) = z^13 + 0x06000000·z^9 + 0x41000000·z^6 + 0x05000000 over F_{2^32}
+        with M(z) = 0x92bb39c1.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x5f9bca01, c=0xfd9d8006.
+  - id: f2w-polylcg-t2-r19
+    display: F2wPolyLCG2_7_416
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0x92bb39c1
+          normal_basis: false
+          step: 1
+          nocoeff: [9, 6, 0]
+          coeff: [0x06000000, 0x41000000, 0x05000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x5f9bca01
+            c: 0xfd9d8006
+    notes: |
+      Paper Table 2, row 19, paper-named "F2wLFSR2_7_416".
+      But b_{r−q} = 0x41000000 ≠ 0, so by the paper's own rule
+      (m=2 iff b_{r−q}=0) the row is structurally m=3.  The display
+      name preserves the paper's literal label.  s=7, E=22, S=13.
+      P(z) = z^13 + 0x06000000·z^9 + 0x41000000·z^6 + 0x05000000 over F_{2^32}
+        with M(z) = 0x92bb39c1.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x5f9bca01, c=0xfd9d8006.
+  - id: f2w-lfsr-t2-r20
+    display: "F2wLFSR3_7_416 (T2 row 20)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0x92bb39c1
+          normal_basis: false
+          step: 1
+          nocoeff: [8, 5, 0]
+          coeff: [0x11000000, 0x0c000000, 0x30000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xb8404581
+            c: 0x22e30003
+    notes: |
+      Paper Table 2, row 20.  s=7.  E=22, S=13.
+      P(z) = z^13 + 0x11000000·z^8 + 0x0c000000·z^5 + 0x30000000 over F_{2^32}
+        with M(z) = 0x92bb39c1.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xb8404581, c=0x22e30003.
+  - id: f2w-polylcg-t2-r20
+    display: "F2wPolyLCG3_7_416 (T2 row 20)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 13
+          modM: 0x92bb39c1
+          normal_basis: false
+          step: 1
+          nocoeff: [8, 5, 0]
+          coeff: [0x11000000, 0x0c000000, 0x30000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xb8404581
+            c: 0x22e30003
+    notes: |
+      Paper Table 2, row 20.  s=7.  E=22, S=13.
+      P(z) = z^13 + 0x11000000·z^8 + 0x0c000000·z^5 + 0x30000000 over F_{2^32}
+        with M(z) = 0x92bb39c1.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xb8404581, c=0x22e30003.
+  - id: f2w-lfsr-t2-r21
+    display: F2wLFSR2_3_800
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xe307bc0e
+          normal_basis: false
+          step: 1
+          nocoeff: [11, 0]
+          coeff: [0x30000000, 0x50000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xf7b31a80
+            c: 0xaf530001
+    notes: |
+      Paper Table 2, row 21.  s=3.  E=13, S=72.
+      P(z) = z^25 + 0x30000000·z^11 + 0x50000000 over F_{2^32}
+        with M(z) = 0xe307bc0e.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xf7b31a80, c=0xaf530001.
+  - id: f2w-polylcg-t2-r21
+    display: F2wPolyLCG2_3_800
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xe307bc0e
+          normal_basis: false
+          step: 1
+          nocoeff: [11, 0]
+          coeff: [0x30000000, 0x50000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xf7b31a80
+            c: 0xaf530001
+    notes: |
+      Paper Table 2, row 21.  s=3.  E=13, S=72.
+      P(z) = z^25 + 0x30000000·z^11 + 0x50000000 over F_{2^32}
+        with M(z) = 0xe307bc0e.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xf7b31a80, c=0xaf530001.
+  - id: f2w-lfsr-t2-r22
+    display: "F2wLFSR2_3_800 (T2 row 22)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xe307bc0e
+          normal_basis: false
+          step: 1
+          nocoeff: [11, 0]
+          coeff: [0x30000000, 0x50000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xf0ba1601
+            c: 0xab4b0000
+    notes: |
+      Paper Table 2, row 22.  s=3.  E=10, S=75.
+      P(z) = z^25 + 0x30000000·z^11 + 0x50000000 over F_{2^32}
+        with M(z) = 0xe307bc0e.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xf0ba1601, c=0xab4b0000.
+  - id: f2w-polylcg-t2-r22
+    display: "F2wPolyLCG2_3_800 (T2 row 22)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xe307bc0e
+          normal_basis: false
+          step: 1
+          nocoeff: [11, 0]
+          coeff: [0x30000000, 0x50000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xf0ba1601
+            c: 0xab4b0000
+    notes: |
+      Paper Table 2, row 22.  s=3.  E=10, S=75.
+      P(z) = z^25 + 0x30000000·z^11 + 0x50000000 over F_{2^32}
+        with M(z) = 0xe307bc0e.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xf0ba1601, c=0xab4b0000.
+  - id: f2w-lfsr-t2-r23
+    display: F2wLFSR2_7_800
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xf282ea95
+          normal_basis: false
+          step: 1
+          nocoeff: [11, 0]
+          coeff: [0x05000000, 0x12000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xa6ea0881
+            c: 0x4de58000
+    notes: |
+      Paper Table 2, row 23.  s=7.  E=9, S=67.
+      P(z) = z^25 + 0x05000000·z^11 + 0x12000000 over F_{2^32}
+        with M(z) = 0xf282ea95.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xa6ea0881, c=0x4de58000.
+  - id: f2w-polylcg-t2-r23
+    display: F2wPolyLCG2_7_800
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xf282ea95
+          normal_basis: false
+          step: 1
+          nocoeff: [11, 0]
+          coeff: [0x05000000, 0x12000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xa6ea0881
+            c: 0x4de58000
+    notes: |
+      Paper Table 2, row 23.  s=7.  E=9, S=67.
+      P(z) = z^25 + 0x05000000·z^11 + 0x12000000 over F_{2^32}
+        with M(z) = 0xf282ea95.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xa6ea0881, c=0x4de58000.
+  - id: f2w-lfsr-t2-r24
+    display: "F2wLFSR2_7_800 (T2 row 24)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xf282ea95
+          normal_basis: false
+          step: 1
+          nocoeff: [9, 0]
+          coeff: [0x09000000, 0x28000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xfa3cc981
+            c: 0x6cf88000
+    notes: |
+      Paper Table 2, row 24.  s=7.  E=9, S=68.
+      P(z) = z^25 + 0x09000000·z^9 + 0x28000000 over F_{2^32}
+        with M(z) = 0xf282ea95.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xfa3cc981, c=0x6cf88000.
+  - id: f2w-polylcg-t2-r24
+    display: "F2wPolyLCG2_7_800 (T2 row 24)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xf282ea95
+          normal_basis: false
+          step: 1
+          nocoeff: [9, 0]
+          coeff: [0x09000000, 0x28000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xfa3cc981
+            c: 0x6cf88000
+    notes: |
+      Paper Table 2, row 24.  s=7.  E=9, S=68.
+      P(z) = z^25 + 0x09000000·z^9 + 0x28000000 over F_{2^32}
+        with M(z) = 0xf282ea95.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xfa3cc981, c=0x6cf88000.
+  - id: f2w-lfsr-t2-r25
+    display: F2wLFSR3_3_800
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xe397e5c4
+          normal_basis: false
+          step: 1
+          nocoeff: [21, 6, 0]
+          coeff: [0x30000000, 0xc0000000, 0xa0000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x994aa401
+            c: 0x5a9d8001
+    notes: |
+      Paper Table 2, row 25.  s=3.  E=9, S=45.
+      P(z) = z^25 + 0x30000000·z^21 + 0xc0000000·z^6 + 0xa0000000 over F_{2^32}
+        with M(z) = 0xe397e5c4.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x994aa401, c=0x5a9d8001.
+  - id: f2w-polylcg-t2-r25
+    display: F2wPolyLCG3_3_800
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xe397e5c4
+          normal_basis: false
+          step: 1
+          nocoeff: [21, 6, 0]
+          coeff: [0x30000000, 0xc0000000, 0xa0000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x994aa401
+            c: 0x5a9d8001
+    notes: |
+      Paper Table 2, row 25.  s=3.  E=9, S=45.
+      P(z) = z^25 + 0x30000000·z^21 + 0xc0000000·z^6 + 0xa0000000 over F_{2^32}
+        with M(z) = 0xe397e5c4.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x994aa401, c=0x5a9d8001.
+  - id: f2w-lfsr-t2-r26
+    display: "F2wLFSR3_3_800 (T2 row 26)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xe397e5c4
+          normal_basis: false
+          step: 1
+          nocoeff: [19, 7, 0]
+          coeff: [0xc0000000, 0x60000000, 0x90000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xb3965001
+            c: 0x2b6c8001
+    notes: |
+      Paper Table 2, row 26.  s=3.  E=13, S=49.
+      P(z) = z^25 + 0xc0000000·z^19 + 0x60000000·z^7 + 0x90000000 over F_{2^32}
+        with M(z) = 0xe397e5c4.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xb3965001, c=0x2b6c8001.
+  - id: f2w-polylcg-t2-r26
+    display: "F2wPolyLCG3_3_800 (T2 row 26)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0xe397e5c4
+          normal_basis: false
+          step: 1
+          nocoeff: [19, 7, 0]
+          coeff: [0xc0000000, 0x60000000, 0x90000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xb3965001
+            c: 0x2b6c8001
+    notes: |
+      Paper Table 2, row 26.  s=3.  E=13, S=49.
+      P(z) = z^25 + 0xc0000000·z^19 + 0x60000000·z^7 + 0x90000000 over F_{2^32}
+        with M(z) = 0xe397e5c4.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xb3965001, c=0x2b6c8001.
+  - id: f2w-lfsr-t2-r27
+    display: F2wLFSR3_7_800
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0x9f1f0184
+          normal_basis: false
+          step: 1
+          nocoeff: [18, 13, 0]
+          coeff: [0x42000000, 0x21000000, 0x50000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xc19ee400
+            c: 0x7e778000
+    notes: |
+      Paper Table 2, row 27.  s=7.  E=21, S=36.
+      P(z) = z^25 + 0x42000000·z^18 + 0x21000000·z^13 + 0x50000000 over F_{2^32}
+        with M(z) = 0x9f1f0184.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xc19ee400, c=0x7e778000.
+  - id: f2w-polylcg-t2-r27
+    display: F2wPolyLCG3_7_800
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0x9f1f0184
+          normal_basis: false
+          step: 1
+          nocoeff: [18, 13, 0]
+          coeff: [0x42000000, 0x21000000, 0x50000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0xc19ee400
+            c: 0x7e778000
+    notes: |
+      Paper Table 2, row 27.  s=7.  E=21, S=36.
+      P(z) = z^25 + 0x42000000·z^18 + 0x21000000·z^13 + 0x50000000 over F_{2^32}
+        with M(z) = 0x9f1f0184.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0xc19ee400, c=0x7e778000.
+  - id: f2w-lfsr-t2-r28
+    display: "F2wLFSR3_7_800 (T2 row 28)"
+    family: F2wLFSRGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wLFSRGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0x9f1f0184
+          normal_basis: false
+          step: 1
+          nocoeff: [13, 5, 0]
+          coeff: [0x12000000, 0x28000000, 0x06000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x9e60e080
+            c: 0x736b0000
+    notes: |
+      Paper Table 2, row 28.  s=7.  E=21, S=37.
+      P(z) = z^25 + 0x12000000·z^13 + 0x28000000·z^5 + 0x06000000 over F_{2^32}
+        with M(z) = 0x9f1f0184.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x9e60e080, c=0x736b0000.
+  - id: f2w-polylcg-t2-r28
+    display: "F2wPolyLCG3_7_800 (T2 row 28)"
+    family: F2wPolyLCGGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: false
+    components:
+      - family: F2wPolyLCGGen
+        L: 32
+        params:
+          w: 32
+          r: 25
+          modM: 0x9f1f0184
+          normal_basis: false
+          step: 1
+          nocoeff: [13, 5, 0]
+          coeff: [0x12000000, 0x28000000, 0x06000000]
+        tempering:
+          - type: tempMK
+            w: 32
+            eta: 7
+            mu: 15
+            b: 0x9e60e080
+            c: 0x736b0000
+    notes: |
+      Paper Table 2, row 28.  s=7.  E=21, S=37.
+      P(z) = z^25 + 0x12000000·z^13 + 0x28000000·z^5 + 0x06000000 over F_{2^32}
+        with M(z) = 0x9f1f0184.
+      Output: Matsumoto-Kurita type I (tempMK)
+        s1=eta=7, s2=mu=15, b=0x9e60e080, c=0x736b0000.

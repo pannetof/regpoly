@@ -365,7 +365,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../notebooks/families/AC1DGen/" class="md-tabs__link">
+        <a href="../notebooks/families/DSFMTGen/" class="md-tabs__link">
           
   
   
@@ -1299,34 +1299,6 @@
   
   
     <li class="md-nav__item">
-      <a href="MatsumotoGen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Matsumoto
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="MarsaXorshiftGen/" class="md-nav__link">
         
   
@@ -1355,14 +1327,14 @@
   
   
     <li class="md-nav__item">
-      <a href="AC1DGen/" class="md-nav__link">
+      <a href="XoroshiroGen/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    AC1D
+    Xoroshiro (Blackman–Vigna)
   
 
     
@@ -1383,14 +1355,42 @@
   
   
     <li class="md-nav__item">
-      <a href="XorShift128Gen/" class="md-nav__link">
+      <a href="XoshiroGen/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    XorShift128
+    Xoshiro (Blackman–Vigna)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="CellularAutomataGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cellular Automata (Bhuvaneswari–Bhattacharjee)
   
 
     
@@ -1673,6 +1673,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1717,6 +1721,62 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../papers/bhuvaneswari-bhattacharjee-2026-cellular-automata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bhuvaneswari & Bhattacharjee 2026 — Cellular Automata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../papers/cellular-automata-equidistribution-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bhuvaneswari & Bhattacharjee 2026 — Equidistribution report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2347,12 +2407,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2397,34 +2451,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notebooks/families/AC1DGen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    AC1DGen — equidistribution demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -2629,34 +2655,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../notebooks/families/MatsumotoGen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MatsumotoGen — equidistribution demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../notebooks/families/PolyLCGGen/" class="md-nav__link">
         
   
@@ -2833,34 +2831,6 @@
     
   
     WELLGen — equidistribution demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notebooks/families/XorShift128Gen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    XorShift128Gen — equidistribution demo
   
 
     
@@ -3186,7 +3156,7 @@
 
 
 <h1 id="generators">Generators<a class="headerlink" href="#generators" title="Permanent link">&para;</a></h1>
-<p>REGPOLY implements 18 F₂-linear generator families plus a <code>CombinedGenerator</code> that XORs J of them. Each family page below documents the recurrence, the parameter space, common parameter sets from the literature, and source-file pointers.</p>
+<p>REGPOLY implements 16 F₂-linear generator families plus a <code>CombinedGenerator</code> that XORs J of them. Each family page below documents the recurrence, the parameter space, common parameter sets from the literature, and source-file pointers.</p>
 <blockquote>
 <p><strong>Status</strong>: Phase 0 ports the existing per-family pages as-is. Phase 6 rewrites them onto a common template (<code>_template.md</code>, also pending) with paper references, equidistribution properties, and notebook links.</p>
 </blockquote>
@@ -3198,7 +3168,6 @@
 <li><a href="MTGPGen/">MTGP (MT for GPU)</a></li>
 <li><a href="TinyMT32Gen/">TinyMT32</a></li>
 <li><a href="RMT64Gen/">RMT64 (Rotated MT 64-bit)</a></li>
-<li><a href="MatsumotoGen/">Matsumoto</a></li>
 </ul>
 <h2 id="well-and-tausworthe-style">WELL and Tausworthe-style<a class="headerlink" href="#well-and-tausworthe-style" title="Permanent link">&para;</a></h2>
 <ul>
@@ -3214,12 +3183,12 @@
 </ul>
 <h2 id="xorshift-family">Xorshift family<a class="headerlink" href="#xorshift-family" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="XorShift128Gen/">XorShift128</a></li>
 <li><a href="MarsaXorshiftGen/">Marsaglia XORShift</a></li>
+<li><a href="XoroshiroGen/">Xoroshiro (Blackman–Vigna)</a></li>
+<li><a href="XoshiroGen/">Xoshiro (Blackman–Vigna)</a></li>
 </ul>
 <h2 id="other">Other<a class="headerlink" href="#other" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="AC1DGen/">AC1D (Additive Cellular 1D)</a></li>
 <li><a href="MELGGen/">MELG (Multiplicative-Equidistribution LCG)</a></li>
 </ul>
 <h2 id="combined-generator">Combined generator<a class="headerlink" href="#combined-generator" title="Permanent link">&para;</a></h2>

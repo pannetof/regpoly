@@ -363,7 +363,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../notebooks/families/AC1DGen/" class="md-tabs__link">
+        <a href="../../notebooks/families/DSFMTGen/" class="md-tabs__link">
           
   
   
@@ -1294,34 +1294,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../generators/MatsumotoGen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Matsumoto
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../generators/MarsaXorshiftGen/" class="md-nav__link">
         
   
@@ -1350,14 +1322,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../generators/AC1DGen/" class="md-nav__link">
+      <a href="../../generators/XoroshiroGen/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    AC1D
+    Xoroshiro (Blackman–Vigna)
   
 
     
@@ -1378,14 +1350,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../generators/XorShift128Gen/" class="md-nav__link">
+      <a href="../../generators/XoshiroGen/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    XorShift128
+    Xoshiro (Blackman–Vigna)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/CellularAutomataGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cellular Automata (Bhuvaneswari–Bhattacharjee)
   
 
     
@@ -1668,6 +1668,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1712,6 +1716,62 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../papers/bhuvaneswari-bhattacharjee-2026-cellular-automata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bhuvaneswari & Bhattacharjee 2026 — Cellular Automata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../papers/cellular-automata-equidistribution-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bhuvaneswari & Bhattacharjee 2026 — Equidistribution report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2342,12 +2402,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2392,34 +2446,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../notebooks/families/AC1DGen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    AC1DGen — equidistribution demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -2624,34 +2650,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/families/MatsumotoGen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MatsumotoGen — equidistribution demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../notebooks/families/PolyLCGGen/" class="md-nav__link">
         
   
@@ -2828,34 +2826,6 @@
     
   
     WELLGen — equidistribution demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../notebooks/families/XorShift128Gen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    XorShift128Gen — equidistribution demo
   
 
     
@@ -3125,11 +3095,13 @@
 <blockquote>
 <p><strong>Status</strong>: Phase 0 placeholder. Phase 6 will lift content from the active redesign plan at <code>~/.claude/plans/i-want-to-have-rippling-starlight.md</code>.</p>
 </blockquote>
-<p>REGPOLY is a <code>uv</code> workspace of three packages with strict one-way dependencies:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>regpoly-web  →  regpoly  →  regpoly-cpp
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>   FastAPI       Python      C++ core
+<p>REGPOLY is a <code>uv</code> workspace of four packages with strict one-way dependencies:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>regpoly-web      →  regpoly  →  regpoly-cpp
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>   FastAPI           Python      C++ core
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>regpoly-legacy   →  regpoly  →  regpoly-cpp
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>   pure-Python       (same arrow — `regpoly-legacy` is an optional add-on)
 </code></pre></div>
-<p><code>import-linter</code> enforces this in CI. The C++ core carries every algorithm, every YAML schema, the catalog reader/writer, the legacy <code>.dat</code> reader, and a standalone <code>regpoly-cli</code> binary so a user working exclusively in C++ has full feature parity with a Python user.</p>
+<p><code>import-linter</code> enforces both layered arrows in CI. The C++ core carries every algorithm, the YAML search schema, the catalog reader/writer, and a standalone <code>regpoly-cli</code> binary so a user working exclusively in C++ has feature parity with a Python user for the <em>catalog-driven</em> path. The historical pre-v2 <code>.dat</code> parameter format is <strong>not</strong> supported by the C++ core; reading it requires the optional pure-Python <code>regpoly-legacy</code> add-on, which parses <code>.dat</code> files in Python and constructs <code>Generator</code> objects via the existing C++ factory.</p>
 
 
 

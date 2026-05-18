@@ -365,7 +365,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../notebooks/families/AC1DGen/" class="md-tabs__link">
+        <a href="../../notebooks/families/DSFMTGen/" class="md-tabs__link">
           
   
   
@@ -1294,34 +1294,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../generators/MatsumotoGen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Matsumoto
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../generators/MarsaXorshiftGen/" class="md-nav__link">
         
   
@@ -1350,14 +1322,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../generators/AC1DGen/" class="md-nav__link">
+      <a href="../../generators/XoroshiroGen/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    AC1D
+    Xoroshiro (Blackman–Vigna)
   
 
     
@@ -1378,14 +1350,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../../generators/XorShift128Gen/" class="md-nav__link">
+      <a href="../../generators/XoshiroGen/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    XorShift128
+    Xoshiro (Blackman–Vigna)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generators/CellularAutomataGen/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cellular Automata (Bhuvaneswari–Bhattacharjee)
   
 
     
@@ -1675,6 +1675,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1722,6 +1726,62 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bhuvaneswari-bhattacharjee-2026-cellular-automata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bhuvaneswari & Bhattacharjee 2026 — Cellular Automata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cellular-automata-equidistribution-report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bhuvaneswari & Bhattacharjee 2026 — Equidistribution report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2421,12 +2481,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2471,34 +2525,6 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../notebooks/families/AC1DGen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    AC1DGen — equidistribution demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -2703,34 +2729,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../notebooks/families/MatsumotoGen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    MatsumotoGen — equidistribution demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../notebooks/families/PolyLCGGen/" class="md-nav__link">
         
   
@@ -2907,34 +2905,6 @@
     
   
     WELLGen — equidistribution demo
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../notebooks/families/XorShift128Gen/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    XorShift128Gen — equidistribution demo
   
 
     
@@ -3221,11 +3191,14 @@
 <p>BibTeX key: <code>Marsaglia2003Xorshift</code></p>
 <p>Tags: <code>xorshift</code> <code>128bit</code> <code>Marsaglia</code></p>
 <h2 id="abstract">Abstract<a class="headerlink" href="#abstract" title="Permanent link">&para;</a></h2>
-<p>Marsaglia's 128-bit Xor-shift generator: four 32-bit words rotated
-through a triple-shift recurrence (parametrised by a shift triple
-<code>(a, b, c)</code>) producing 32-bit output. The paper tabulates 81
-triples that yield maximum-length sequences over the 128-bit state
-space (period 2^{128} - 1).</p>
+<p>Marsaglia's family of fast Xor-shift RNGs with periods 2ⁿ−1 for
+n = 32, 64, 96, 128, 160, 192.  Each generator combines a small
+number of <code>y ^ (y &lt;&lt; a)</code> / <code>y ^ (y &gt;&gt; b)</code> operations on one or more
+32-bit (or 64-bit) state words.  The paper tabulates 81 full-period
+triples for the 32-bit single-word case, 275 for the 64-bit case,
+and gives 4 / 4 / 4 / 3 explicit triples for the n = 64 / 96 / 128 /
+160 promotion forms.  Marsaglia's named C functions <code>xor()</code>,
+<code>xor64()</code>, <code>xor96</code>, <code>xor128()</code>, <code>xor160</code> are all registered below.</p>
 <h2 id="generators-in-this-paper">Generators in this paper<a class="headerlink" href="#generators-in-this-paper" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -3239,9 +3212,58 @@ space (period 2^{128} - 1).</p>
 </thead>
 <tbody>
 <tr>
-<td><code>marsaglia-5-14-1-xorshift2</code></td>
-<td>Xorshift128 (5,14,1) — xorshift-2 form</td>
-<td><code>XorShift128Gen</code></td>
+<td><code>marsaglia-2003-xor</code></td>
+<td>xor() — Marsaglia 32-bit single-word, [a,b,c]=(13,17,5)</td>
+<td><code>MarsaXorshiftGen</code></td>
+<td>no</td>
+<td>32</td>
+</tr>
+<tr>
+<td><code>marsaglia-2003-xor64</code></td>
+<td>xor64() — Marsaglia 64-bit single-word, [a,b,c]=(13,7,17)</td>
+<td><code>MarsaXorshiftGen</code></td>
+<td>no</td>
+<td>64</td>
+</tr>
+<tr>
+<td><code>marsaglia-2003-xor96</code></td>
+<td>xor96 — Marsaglia 96-bit triples form, [a,b,c]=(10,5,26)</td>
+<td><code>MarsaXorshiftGen</code></td>
+<td>no</td>
+<td>32</td>
+</tr>
+<tr>
+<td><code>marsaglia-2003-xor128-named</code></td>
+<td>xor128() — Marsaglia named function, [a,b,c]=(11,8,19)</td>
+<td><code>MarsaXorshiftGen</code></td>
+<td>no</td>
+<td>32</td>
+</tr>
+<tr>
+<td><code>marsaglia-2003-xor128-4xor</code></td>
+<td>xor128 (4-xorshift form) — Marsaglia [a,b,c,d]=(20,11,27,6)</td>
+<td><code>MarsaXorshiftGen</code></td>
+<td>no</td>
+<td>32</td>
+</tr>
+<tr>
+<td><code>marsaglia-2003-xor160-a</code></td>
+<td>xor160 — Marsaglia 160-bit, [a,b,c]=(2,1,4)</td>
+<td><code>MarsaXorshiftGen</code></td>
+<td>no</td>
+<td>32</td>
+</tr>
+<tr>
+<td><code>marsaglia-2003-xor160-b</code></td>
+<td>xor160 — Marsaglia 160-bit, [a,b,c]=(7,13,6)</td>
+<td><code>MarsaXorshiftGen</code></td>
+<td>no</td>
+<td>32</td>
+</tr>
+<tr>
+<td><code>marsaglia-2003-xor160-c</code></td>
+<td>xor160 — Marsaglia 160-bit, [a,b,c]=(1,1,20)</td>
+<td><code>MarsaXorshiftGen</code></td>
 <td>no</td>
 <td>32</td>
 </tr>
