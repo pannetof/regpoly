@@ -5,12 +5,11 @@
 #include "generator_registry.h"
 #include "transformation_registry.h"
 
-#include "ac1d.h"
+#include "cellular_automata.h"
 #include "dsfmt.h"
 #include "f2w_lfsr.h"
 #include "f2w_polylcg.h"
 #include "marsaxorshift.h"
-#include "matsumoto.h"
 #include "melg.h"
 #include "mt.h"
 #include "mtgp.h"
@@ -21,6 +20,8 @@
 #include "tgfsr.h"
 #include "tinymt32.h"
 #include "well.h"
+#include "xoroshiro.h"
+#include "xoshiro.h"
 
 #include "lag_mask.h"
 #include "permutation.h"
@@ -74,16 +75,15 @@ void register_all_generators() {
                 &F2wLFSRGen::from_params, &F2wLFSRGen::param_specs);
         GR::reg_alias("GenF2wLFSR", "F2wLFSRGen");
 
-        GR::reg("MatsumotoGen",
-                &MatsumotoGen::from_params, &MatsumotoGen::param_specs);
-
         GR::reg("MarsaXorshiftGen",
                 &MarsaXorshiftGen::from_params, &MarsaXorshiftGen::param_specs,
                 /*bind=*/{},
                 &MarsaXorshiftGen::make_enumerator);
 
-        GR::reg("AC1DGen",
-                &AC1DGen::from_params, &AC1DGen::param_specs);
+        GR::reg("CellularAutomataGen",
+                &CellularAutomataGen::from_params,
+                &CellularAutomataGen::param_specs);
+        GR::reg_alias("CA", "CellularAutomataGen");
 
         GR::reg("WELLGen",
                 &WELLGen::from_params, &WELLGen::param_specs);
@@ -112,6 +112,18 @@ void register_all_generators() {
         GR::reg("RMT64Gen",
                 &RMT64Gen::from_params, &RMT64Gen::param_specs);
         GR::reg_alias("RMT64", "RMT64Gen");
+
+        GR::reg("XoroshiroGen",
+                &XoroshiroGen::from_params, &XoroshiroGen::param_specs,
+                /*bind=*/{},
+                &XoroshiroGen::make_enumerator);
+        GR::reg_alias("Xoroshiro", "XoroshiroGen");
+
+        GR::reg("XoshiroGen",
+                &XoshiroGen::from_params, &XoshiroGen::param_specs,
+                /*bind=*/{},
+                &XoshiroGen::make_enumerator);
+        GR::reg_alias("Xoshiro", "XoshiroGen");
         return 0;
     }();
     (void)once;

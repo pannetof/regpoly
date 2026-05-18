@@ -142,8 +142,11 @@
         </div>
       </template>
 
-      <!-- Non-structural parameters card -->
-      <template x-if="family">
+      <!-- Non-structural parameters card.  Hidden when every
+           non-structural param is owned by the enumerator (e.g.
+           xoroshiro/xoshiro in exhaustive mode — A, B, [C] are all
+           produced by the search). -->
+      <template x-if="family && visibleNonStructural().length > 0">
         <div class="card form-section-card">
           <div class="card-header">
             <h3 class="card-title mb-0">Non-structural parameters</h3>
@@ -684,11 +687,31 @@ function primitiveSearchForm() {
         // True when `p` should be removed from the rendered form
         // entirely (not just disabled).  Type-irrelevant and
         // enumerator-owned MarsaXorshift params fall into this bucket;
-        // non-MarsaXorshift families are unaffected.
+        // for xoroshiro/xoshiro the enumerator owns every non-structural
+        // param (A, B, [C]) in exhaustive mode, so hide them all.
         isParamHidden(p) {
             if (this.marsaParamIrrelevant_(p)) return true;
             if (this.marsaParamEnumerated_(p)) return true;
+            if (this.bvParamEnumerated_(p)) return true;
             return false;
+        },
+
+        // ── Blackman–Vigna helpers (xoroshiro / xoshiro) ───────────
+        isBlackmanVignaFamily() {
+            return this.family === 'XoroshiroGen'
+                || this.family === 'XoshiroGen'
+                || this.family === 'Xoroshiro'
+                || this.family === 'Xoshiro';
+        },
+
+        // True when `p` is enumerator-owned for xoroshiro/xoshiro and
+        // the user picked exhaustive mode.  Both families enumerate
+        // every non-structural param, so the rule is simply
+        // "non-structural in exhaustive mode".
+        bvParamEnumerated_(p) {
+            if (!this.isBlackmanVignaFamily()) return false;
+            if (this.mode !== 'exhaustive') return false;
+            return !p.structural;
         },
 
         // Expected length of an int_vec param, or null when the form

@@ -1,0 +1,179 @@
+id: blackman-vigna-2022-scrambled
+authors:
+  - {family: Blackman, given: David}
+  - {family: Vigna, given: Sebastiano}
+year: 2022
+title: "Scrambled Linear Pseudorandom Number Generators"
+venue: ACM Transactions on Mathematical Software
+volume: "47"
+issue: "4"
+pages: "1-32"
+doi: https://doi.org/10.1145/3460772
+pdf: docs/papers/xoroshiro.pdf
+bibkey: BlackmanVigna2022Scrambled
+starred: true
+tags: [xoroshiro, xoshiro, F2-linear, equidistribution]
+
+abstract: |
+  Two new F₂-linear transformations — xoroshiro (xor/rotate/shift/
+  rotate) and xoshiro (xor/shift/rotate) — designed for fast
+  superscalar implementation, paired with nonlinear scramblers
+  (+, ++, *, **) that delete the linear artifacts detected by the
+  binary-rank and linear-complexity tests in TestU01.  The paper
+  develops the theory of word polynomials over noncommutative rings
+  to compute characteristic polynomials of the linear engines, lists
+  the full-period parameter triples found by exhaustive search (up to
+  4096 bits of state), and proves equidistribution results for the
+  scrambled generators.  The xoshiro256++/xoshiro256** combinations
+  pass every empirical test the authors are aware of at 0.86 ns per
+  64-bit value on commodity x86 hardware.
+
+notes: |
+  This entry catalogs only the **linear engines** — xoroshiro and
+  xoshiro — i.e. the raw recurrence matrices X_{kw} and S_{4w}/S_{8w}
+  from §3 of the paper.  The +/++/*/** scramblers are nonlinear
+  output transforms applied to the state at read time; they do not
+  alter the underlying state evolution and are not represented as
+  separate ``Generator`` families in this codebase.
+
+  The C++ classes are ``XoroshiroGen`` (rw × rw, parameter triple
+  ``(A, B, C)`` with r ≥ 2) and ``XoshiroGen`` (4w × 4w or 8w × 8w,
+  parameter pair ``(A, B)``).  The paper writes "k" for the word
+  count; this codebase reserves k for the state size in bits, so the
+  C++ classes and YAML use ``r`` (matching the variable name used by
+  related papers such as Panneton & L'Ecuyer 2005).  Both use w-bit
+  blocks within a single BitVect; ``w`` is capped at 64 in this
+  implementation since the paper specifies generators only for
+  w ∈ {16, 32, 64}.
+
+  Reproductions: every weight in Tables 2 and 5 is reproduced by
+  ``packages/regpoly/tests/test_blackman_vigna_tables.py``,
+  which builds each engine, runs Berlekamp–Massey to recover the
+  characteristic polynomial, and counts non-zero coefficients.
+  The exhaustive primitive-polynomial counts and maximum weights of
+  Tables 7-10 are reproduced for w = 16 over the state-size columns
+  whose 2^k − 1 factorisation is present in
+  ``packages/regpoly/src/regpoly/data/primitive_factors.json``.
+
+  The ++ rows below carry the same engine family but a *different*
+  triple than the bare xoroshiro128 row — the authors retuned (A, B, C)
+  for the ++ scrambler.  Since we only represent the engine here, both
+  appear as distinct parameter sets of the same C++ class.
+
+generators:
+  # ── Table 2: 64-bit linear engines ────────────────────────────────────
+
+  - id: blackman-vigna-2022-xoroshiro128
+    display: "xoroshiro128 (w=64, k=2; A=24, B=16, C=37; weight 53)"
+    family: XoroshiroGen
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: XoroshiroGen
+        L: 64
+        params: {w: 64, r: 2, A: 24, B: 16, C: 37}
+        tempering: []
+    notes: |
+      Table 2 row 1 — the engine recommended for use with the +, *
+      and ** scramblers (xoroshiro128+, xoroshiro128*,
+      xoroshiro128**).  Period 2¹²⁸ − 1, char-poly weight 53.
+
+  - id: blackman-vigna-2022-xoroshiro128pp
+    display: "xoroshiro128++ engine (w=64, k=2; A=49, B=21, C=28; weight 63)"
+    family: XoroshiroGen
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: XoroshiroGen
+        L: 64
+        params: {w: 64, r: 2, A: 49, B: 21, C: 28}
+        tempering: []
+    notes: |
+      Table 2 row 2 — the (A, B, C) triple retuned for use with the
+      ++ scrambler.  Char-poly weight 63.
+
+  - id: blackman-vigna-2022-xoshiro256
+    display: "xoshiro256 (w=64, k=4; A=17, B=45; weight 115)"
+    family: XoshiroGen
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: XoshiroGen
+        L: 64
+        params: {w: 64, r: 4, A: 17, B: 45}
+        tempering: []
+    notes: |
+      Table 2 row 3 — the engine recommended for use with the +, ++
+      and ** scramblers.  Period 2²⁵⁶ − 1, char-poly weight 115.
+
+  - id: blackman-vigna-2022-xoshiro512
+    display: "xoshiro512 (w=64, k=8; A=11, B=21; weight 251)"
+    family: XoshiroGen
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: XoshiroGen
+        L: 64
+        params: {w: 64, r: 8, A: 11, B: 21}
+        tempering: []
+    notes: |
+      Table 2 row 4.  Period 2⁵¹² − 1, char-poly weight 251.
+
+  - id: blackman-vigna-2022-xoroshiro1024
+    display: "xoroshiro1024 (w=64, k=16; A=25, B=27, C=36; weight 439)"
+    family: XoroshiroGen
+    target: tested_generator
+    combined: false
+    Lmax: 64
+    starred: true
+    components:
+      - family: XoroshiroGen
+        L: 64
+        params: {w: 64, r: 16, A: 25, B: 27, C: 36}
+        tempering: []
+    notes: |
+      Table 2 row 5 — the largest 64-bit engine in the paper.
+      Period 2¹⁰²⁴ − 1, char-poly weight 439.  Replaces
+      xorshift1024* (Vigna 2017) for users who want rotations.
+
+  # ── Table 5: 32-bit linear engines ────────────────────────────────────
+
+  - id: blackman-vigna-2022-xoroshiro64
+    display: "xoroshiro64 (w=32, k=2; A=26, B=9, C=13; weight 31)"
+    family: XoroshiroGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    components:
+      - family: XoroshiroGen
+        L: 32
+        params: {w: 32, r: 2, A: 26, B: 9, C: 13}
+        tempering: []
+    notes: |
+      Table 5 row 1.  Period 2⁶⁴ − 1, char-poly weight 31.  The
+      paper recommends the * scrambler at this state size; the +
+      scrambler is considered too weak.
+
+  - id: blackman-vigna-2022-xoshiro128
+    display: "xoshiro128 (w=32, k=4; A=9, B=11; weight 55)"
+    family: XoshiroGen
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: XoshiroGen
+        L: 32
+        params: {w: 32, r: 4, A: 9, B: 11}
+        tempering: []
+    notes: |
+      Table 5 row 2 — the 32-bit counterpart of xoshiro256.
+      Period 2¹²⁸ − 1, char-poly weight 55.

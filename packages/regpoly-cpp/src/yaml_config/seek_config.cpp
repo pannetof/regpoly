@@ -5,7 +5,6 @@
 
 #include "equidistribution_method.h"
 #include "factory.h"
-#include "legacy_reader.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -252,9 +251,12 @@ ComponentSpec parse_component(const YAML::Node& comp_node,
         }
     } else if (gens_node.IsMap()) {
         if (gens_node["legacy_file"]) {
-            out.source = ComponentSpec::Source::LegacyFile;
-            std::string raw = gens_node["legacy_file"].as<std::string>("");
-            out.legacy_file_path = resolve_path(raw, base_dir);
+            throw std::runtime_error(filename + ": components["
+                + std::to_string(comp_index)
+                + "].generators.legacy_file: support has moved to the "
+                  "regpoly-legacy add-on package. Install regpoly-legacy "
+                  "and use `regpoly-legacy seek` for legacy .dat input, "
+                  "or re-author this config with an inline 'family:' block.");
         } else if (gens_node["family"]) {
             out.source = ComponentSpec::Source::Inline;
             out.inline_family = gens_node["family"].as<std::string>("");
@@ -315,7 +317,7 @@ ComponentSpec parse_component(const YAML::Node& comp_node,
             throw std::runtime_error(filename + ": components["
                 + std::to_string(comp_index)
                 + "].generators must contain one of: "
-                  "legacy_file, family, file (or be the string 'same')");
+                  "family, file (or be the string 'same')");
         }
     } else {
         throw std::runtime_error(filename + ": components["
@@ -458,31 +460,6 @@ build_inline_pool(const ComponentSpec& spec, int Lmax,
     return out;
 }
 
-// Build a Generator pool from a legacy_file source.
-std::vector<std::unique_ptr<Generator>>
-build_legacy_pool(const ComponentSpec& spec, int Lmax,
-                  const std::string& context) {
-    std::vector<std::unique_ptr<Generator>> out;
-    std::vector<regpoly_legacy::LegacyGeneratorSpec> raw;
-    try {
-        raw = regpoly_legacy::read_generator_specs(spec.legacy_file_path, Lmax);
-    } catch (const std::exception& exc) {
-        throw std::runtime_error(context + " legacy_file '"
-            + spec.legacy_file_path + "': " + exc.what());
-    }
-    for (size_t i = 0; i < raw.size(); ++i) {
-        try {
-            out.push_back(create_generator(raw[i].family,
-                                           raw[i].params, Lmax));
-        } catch (const std::exception& exc) {
-            throw std::runtime_error(context + " legacy_file generator["
-                + std::to_string(i) + "] (" + raw[i].family
-                + "): " + exc.what());
-        }
-    }
-    return out;
-}
-
 // Apply default w from the inline component's common_params (if any)
 // to a tempering Params block when 'w' is missing. Mirrors catalog
 // .cpp's dry_build_generator.
@@ -569,12 +546,8 @@ BuiltSearch build_search(const SeekConfig& cfg) {
             built.combination->component(j).share_pool_with(
                 built.combination->component(j - 1));
         } else {
-            std::vector<std::unique_ptr<Generator>> pool;
-            if (spec.source == ComponentSpec::Source::LegacyFile) {
-                pool = build_legacy_pool(spec, cfg.Lmax, ctx);
-            } else {
-                pool = build_inline_pool(spec, cfg.Lmax, ctx);
-            }
+            std::vector<std::unique_ptr<Generator>> pool =
+                build_inline_pool(spec, cfg.Lmax, ctx);
             if (pool.empty()) {
                 throw std::runtime_error(ctx
                     + ": resolved generator pool is empty");

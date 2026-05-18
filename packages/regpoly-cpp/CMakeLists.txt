@@ -40,7 +40,6 @@ file(GLOB_RECURSE REGPOLY_ALL_SOURCES
      src/transforms/*.cpp
      src/lattice/*.cpp
      src/library/*.cpp
-     src/io/*.cpp
      src/search/*.cpp
      src/yaml_config/*.cpp)
 
@@ -58,7 +57,6 @@ set(REGPOLY_CPP_INCLUDE_DIRS
     src/include/transforms
     src/include/lattice
     src/include/library
-    src/include/io
     src/include/search
     src/include/yaml_config)
 
@@ -92,7 +90,6 @@ set(REGPOLY_PUBLIC_HEADER_BASES
     src/include/search/tempering_optimizer.h
     src/include/search/tempering_search.h
     src/include/library/catalog.h
-    src/include/io/legacy_reader.h
     src/include/yaml_config/seek_config.h
 )
 foreach(hdr IN LISTS REGPOLY_PUBLIC_HEADER_BASES)

@@ -16,11 +16,12 @@ form to the paper-aligned
       ...
 form.
 
-Mirrors the per-Mi positional decoding done by `legacy_reader.cpp` —
-M0/M1 take no args; M2/M3 use pi[0] as t; M4 uses pu[0] as a; M5 uses
-(pi[0], pu[0]) as (t, b); M6 uses (pi[0], pu[0..2]) decoded back to
-paper (q, t, s, a) via the same single-bit / single-zero-bit pattern
-recognition as the C++ helpers `decode_d_s_mask` / `decode_test_mask`.
+Mirrors the per-Mi positional decoding done by the (now-relocated)
+legacy reader — M0/M1 take no args; M2/M3 use pi[0] as t; M4 uses pu[0]
+as a; M5 uses (pi[0], pu[0]) as (t, b); M6 uses (pi[0], pu[0..2])
+decoded back to paper (q, t, s, a) via the same single-bit /
+single-zero-bit pattern recognition as the helpers in
+``packages/regpoly-legacy/src/regpoly_legacy/well_legacy_decode.py``.
 
 Drops `mat_types_version: 2` if present (the structural shape is now
 the discriminant — no version key needed).

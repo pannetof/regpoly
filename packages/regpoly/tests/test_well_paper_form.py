@@ -4,18 +4,17 @@
 """Byte-for-byte equivalence test for WELL constructed via the
 paper-aligned `matrices` map.
 
-Two construction paths must produce identical output streams:
+Verifies that the structured-kwarg path
+``matrices={T0: {M: 3, t: -25}, ...}`` passed to ``Generator.create``
+from Python produces the same output stream as the historical
+construction (formerly via the legacy `.dat` reader; that reader has
+moved to the regpoly-legacy add-on, but the same parameters set is
+checked in inline here).
 
-1. The legacy reader path: read shared/legacy_parameters/carry32_624_31_final.dat,
-   which writes a StructMap into Params via the .dat-format token decoder.
-2. The structured-kwarg path: pass `matrices={T0: {M: 3, t: -25}, ...}`
-   directly to Generator.create from Python.
-
-Both go through WELLGen::from_params with the same MatrixEntry array.
-The byte-for-byte fixture at packages/regpoly-cpp/tests/fixtures/well19937a_1024.bin
-was captured pre-rename with the deterministic seed (bit 0 set, all
-others zero); after the structured-Params refactor the same fixture
-must still match.
+The byte-for-byte fixture at
+packages/regpoly-cpp/tests/fixtures/well19937a_1024.bin was captured
+pre-rename with the deterministic seed (bit 0 set, all others zero);
+after the structured-Params refactor the same fixture must still match.
 """
 
 from __future__ import annotations

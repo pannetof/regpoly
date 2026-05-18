@@ -29,9 +29,7 @@ KNOWN_FAMILIES: list[str] = [
     "TauswortheGen",
     "TGFSRGen",
     "MTGen",
-    "MatsumotoGen",
     "MarsaXorshiftGen",
-    "AC1DGen",
     "WELLGen",
     "F2wLFSRGen",
     "F2wPolyLCGGen",
@@ -41,6 +39,8 @@ KNOWN_FAMILIES: list[str] = [
     "MTGPGen",
     "TinyMT32Gen",
     "RMT64Gen",
+    "XoroshiroGen",
+    "XoshiroGen",
 ]
 
 # Transformation types exposed by the factory.

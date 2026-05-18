@@ -1,0 +1,8 @@
+marsaxorshift
+5 3 32              # nbgen=5, r=3, w=32 — one row per sub-code 21..25
+5                   # numberGenToAllocate (unused by the reader, mirrors fixture shape)
+21 2 3 -5 7 -11 13 -17
+22 2 3 -5 7 -11 13 -17
+23 2 3 -5 7 -11 13 -17
+24 2 3 -5 7 -11 13 -17
+25 2 3 -5 7 -11 13 -17

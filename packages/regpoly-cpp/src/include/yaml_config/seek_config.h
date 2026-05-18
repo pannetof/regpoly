@@ -11,13 +11,14 @@
 // the existing factories, and hand off to run_seek_search().
 //
 // The schema supported here is a strict subset of the Python loader's
-// — three component sources (legacy_file, inline family/common/
-// generators, and the literal "same" sentinel), simple tempering
-// chains, and the three test types (equidistribution, collision_free,
-// tuplets). The `file:` source (per-family Generator.from_yaml) is
-// intentionally NOT supported in this cut; it is used by exactly one
-// sample config (example3.yaml) and will land alongside the catalog
-// integration in a later phase.
+// — two component sources (inline family/common/generators and the
+// literal "same" sentinel), simple tempering chains, and the three
+// test types (equidistribution, collision_free, tuplets). The
+// `file:` source (per-family Generator.from_yaml) is intentionally
+// NOT supported in this cut; it is used by exactly one sample config
+// (example3.yaml) and will land alongside the catalog integration in
+// a later phase. The pre-v2 `legacy_file:` source has moved to the
+// optional `regpoly-legacy` Python add-on.
 //
 // Tempering values that are YAML maps with a `random:` key (the
 // Python placeholder for "fill in randomly") are silently dropped
@@ -42,11 +43,8 @@
 namespace regpoly_yaml_config {
 
 struct ComponentSpec {
-    enum class Source { LegacyFile, Inline, Same };
-    Source source = Source::LegacyFile;
-
-    // LegacyFile source (resolved absolute path).
-    std::string legacy_file_path;
+    enum class Source { Inline, Same };
+    Source source = Source::Inline;
 
     // Inline source.
     std::string inline_family;        // e.g. "TGFSRGen"
@@ -77,7 +75,7 @@ struct SeekConfig {
 SeekConfig load_seek_config(const std::string& filename);
 
 // Build a fully-initialised Combination from the SeekConfig:
-// resolves legacy_file/inline/same into actual Generator objects via
+// resolves inline/same into actual Generator objects via
 // the existing factories, attaches the tempering chain to each
 // component, and calls reset(). Returns the Combination plus the
 // owning vectors of generators / transformations (kept alive in case

@@ -1,6 +1,6 @@
 # Generators
 
-REGPOLY implements 18 F₂-linear generator families plus a `CombinedGenerator` that XORs J of them. Each family page below documents the recurrence, the parameter space, common parameter sets from the literature, and source-file pointers.
+REGPOLY implements 16 F₂-linear generator families plus a `CombinedGenerator` that XORs J of them. Each family page below documents the recurrence, the parameter space, common parameter sets from the literature, and source-file pointers.
 
 > **Status**: Phase 0 ports the existing per-family pages as-is. Phase 6 rewrites them onto a common template (`_template.md`, also pending) with paper references, equidistribution properties, and notebook links.
 
@@ -12,7 +12,6 @@ REGPOLY implements 18 F₂-linear generator families plus a `CombinedGenerator` 
 - [MTGP (MT for GPU)](MTGPGen.md)
 - [TinyMT32](TinyMT32Gen.md)
 - [RMT64 (Rotated MT 64-bit)](RMT64Gen.md)
-- [Matsumoto](MatsumotoGen.md)
 
 ## WELL and Tausworthe-style
 
@@ -29,10 +28,11 @@ REGPOLY implements 18 F₂-linear generator families plus a `CombinedGenerator` 
 ## Xorshift family
 
 - [Marsaglia XORShift](MarsaXorshiftGen.md)
+- [Xoroshiro (Blackman–Vigna)](XoroshiroGen.md)
+- [Xoshiro (Blackman–Vigna)](XoshiroGen.md)
 
 ## Other
 
-- [AC1D (Additive Cellular 1D)](AC1DGen.md)
 - [MELG (Multiplicative-Equidistribution LCG)](MELGGen.md)
 
 ## Combined generator

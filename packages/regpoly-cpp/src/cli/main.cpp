@@ -14,12 +14,6 @@
 //                            citation, generator list).
 //   regpoly-cli catalog gen  GEN_ID  [--library DIR]
 //                            print one generator's record + paper.
-//   regpoly-cli legacy-info  FILE.dat [-L N]
-//                            parse a legacy generator file via the C++
-//                            legacy reader and print one line per
-//                            parsed generator (family + params).
-//   regpoly-cli legacy-trans FILE.dat
-//                            same for a legacy transformations file.
 //
 // Phase 4.2 adds `search FILE.yaml` — load a seek-style YAML config
 // and run the equidistribution search loop via the existing C++
@@ -31,7 +25,6 @@
 
 #include "catalog.h"
 #include "combination.h"
-#include "legacy_reader.h"
 #include "params.h"
 #include "seek_config.h"
 #include "seek_search.h"
@@ -62,10 +55,6 @@ constexpr const char* kUsage =
     "      Print one paper's full record.\n"
     "  catalog gen GEN_ID [--library DIR]\n"
     "      Print one generator's record + its paper.\n"
-    "  legacy-info FILE.dat [-L N]\n"
-    "      Parse a legacy .dat generator file (default L=32).\n"
-    "  legacy-trans FILE.dat\n"
-    "      Parse a legacy .dat transformations file.\n"
     "  search FILE.yaml\n"
     "      Load a seek-style YAML search config and run the\n"
     "      equidistribution search loop. Output format does not\n"
@@ -126,32 +115,6 @@ int consume_L_flag(std::vector<std::string>& args, int def = 32) {
         }
     }
     return def;
-}
-
-std::string params_to_one_line(const Params& p) {
-    std::ostringstream os;
-    bool first = true;
-    auto sep = [&]() { if (!first) os << ", "; first = false; };
-    for (const auto& kv : p.ints())     { sep(); os << kv.first << "=" << kv.second; }
-    for (const auto& kv : p.bools())    { sep(); os << kv.first << "=" << (kv.second ? "true" : "false"); }
-    for (const auto& kv : p.strings())  { sep(); os << kv.first << "='" << kv.second << "'"; }
-    for (const auto& kv : p.int_vecs()) {
-        sep(); os << kv.first << "=[";
-        for (size_t i = 0; i < kv.second.size(); ++i) {
-            if (i) os << ",";
-            os << kv.second[i];
-        }
-        os << "]";
-    }
-    for (const auto& kv : p.uint_vecs()) {
-        sep(); os << kv.first << "=[";
-        for (size_t i = 0; i < kv.second.size(); ++i) {
-            if (i) os << ",";
-            os << "0x" << std::hex << kv.second[i] << std::dec;
-        }
-        os << "]";
-    }
-    return os.str();
 }
 
 int cmd_catalog(std::vector<std::string> args) {
@@ -244,34 +207,6 @@ int cmd_catalog(std::vector<std::string> args) {
     std::cerr << "regpoly-cli: unknown catalog sub-action '"
               << action << "'\n";
     return 2;
-}
-
-int cmd_legacy_info(std::vector<std::string> args) {
-    if (args.empty()) {
-        std::cerr << "regpoly-cli: legacy-info requires FILE.dat\n";
-        return 2;
-    }
-    int L = consume_L_flag(args, 32);
-    if (args.empty()) {
-        std::cerr << "regpoly-cli: legacy-info requires FILE.dat\n";
-        return 2;
-    }
-    std::string path = args[0];
-    try {
-        auto specs = regpoly_legacy::read_generator_specs(path, L);
-        std::cout << "file:      " << path << "\n";
-        std::cout << "L:         " << L << "\n";
-        std::cout << "generators: " << specs.size() << "\n";
-        for (size_t i = 0; i < specs.size(); ++i) {
-            const auto& s = specs[i];
-            std::cout << "  [" << i << "] " << s.family << "  "
-                      << params_to_one_line(s.params) << "\n";
-        }
-    } catch (const std::exception& exc) {
-        std::cerr << "regpoly-cli: " << exc.what() << "\n";
-        return 1;
-    }
-    return 0;
 }
 
 const char* test_kind_name(SeekTestKind k) {
@@ -561,29 +496,6 @@ int cmd_publish(std::vector<std::string> args) {
     return 0;
 }
 
-int cmd_legacy_trans(std::vector<std::string> args) {
-    if (args.empty()) {
-        std::cerr << "regpoly-cli: legacy-trans requires FILE.dat\n";
-        return 2;
-    }
-    std::string path = args[0];
-    try {
-        auto r = regpoly_legacy::read_transformation_specs(path);
-        std::cout << "file:      " << path << "\n";
-        std::cout << "transformations: " << r.specs.size() << "\n";
-        std::cout << "mk_opt:    " << (r.mk_opt ? "yes" : "no") << "\n";
-        for (size_t i = 0; i < r.specs.size(); ++i) {
-            const auto& s = r.specs[i];
-            std::cout << "  [" << i << "] " << s.trans_type << "  "
-                      << params_to_one_line(s.params) << "\n";
-        }
-    } catch (const std::exception& exc) {
-        std::cerr << "regpoly-cli: " << exc.what() << "\n";
-        return 1;
-    }
-    return 0;
-}
-
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -599,8 +511,6 @@ int main(int argc, char** argv) {
     for (int i = 2; i < argc; ++i) rest.emplace_back(argv[i]);
 
     if (cmd == "catalog")      return cmd_catalog(std::move(rest));
-    if (cmd == "legacy-info")  return cmd_legacy_info(std::move(rest));
-    if (cmd == "legacy-trans") return cmd_legacy_trans(std::move(rest));
     if (cmd == "search")       return cmd_search(std::move(rest));
     if (cmd == "show")         return cmd_show(std::move(rest));
     if (cmd == "publish")      return cmd_publish(std::move(rest));

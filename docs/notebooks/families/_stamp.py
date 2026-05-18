@@ -39,9 +39,7 @@ FAMILIES: dict[str, str | None] = {
     "PolyLCGGen":      None,
     "F2wLFSRGen":      None,
     "F2wPolyLCGGen":   None,
-    "MatsumotoGen":    None,
     "MarsaXorshiftGen": None,
-    "AC1DGen":         None,
 }
 
 AUTO_MARKER = "# stamp:auto-generated"

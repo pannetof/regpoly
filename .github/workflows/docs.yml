@@ -31,7 +31,8 @@ jobs:
           uv sync --group docs \
             --no-install-package regpoly-cpp \
             --no-install-package regpoly \
-            --no-install-package regpoly-web
+            --no-install-package regpoly-web \
+            --no-install-package regpoly-legacy
 
       - name: Configure git for gh-deploy
         run: |

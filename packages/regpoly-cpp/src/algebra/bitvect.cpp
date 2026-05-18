@@ -69,6 +69,14 @@ void BitVect::xor_with(const BitVect& other) {
         words_[i] ^= other.words_[i];
 }
 
+void BitVect::and_with(const BitVect& other) {
+    int n = std::min((int)words_.size(), (int)other.words_.size());
+    for (int i = 0; i < n; i++)
+        words_[i] &= other.words_[i];
+    for (int i = n; i < (int)words_.size(); i++)
+        words_[i] = 0;
+}
+
 void BitVect::and_mask(int t) {
     if (t <= 0) {
         zero();

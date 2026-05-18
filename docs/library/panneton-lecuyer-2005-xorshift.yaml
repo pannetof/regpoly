@@ -30,7 +30,7 @@ abstract: |
 notes: |
   Reproductions: every Δ₁ value in Tables III and IV is reproduced
   byte-for-byte by the test
-  `packages/regpoly-cpp/tests/python/test_panneton_lecuyer_xorshift_tables.py`,
+  `packages/regpoly/tests/test_panneton_lecuyer_xorshift_tables.py`,
   which builds the (rw × rw) GF(2) transition matrix in strict
   32-bit semantics and runs the existing matricial-DE kernel.
 

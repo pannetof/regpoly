@@ -27,9 +27,7 @@ add_executable(regpoly_cpp_tests
     test_seek_search.cpp
     test_seek_config.cpp
     test_catalog.cpp
-    test_legacy_reader.cpp
     test_well_byte_for_byte.cpp
-    test_well_legacy_decode.cpp
     test_well_random_matrices.cpp
     test_tempering_optimizer.cpp
     test_tempering_search.cpp
@@ -43,7 +41,6 @@ target_include_directories(regpoly_cpp_tests PRIVATE
     ../src/include/transforms
     ../src/include/lattice
     ../src/include/library
-    ../src/include/io
     ../src/include/search
     ../src/include/yaml_config)
 target_link_libraries(regpoly_cpp_tests PRIVATE
@@ -92,23 +89,14 @@ if(TARGET regpoly_cli)
     set_tests_properties(RegpolyCli.CatalogGenMT PROPERTIES
         PASS_REGULAR_EXPRESSION "MersenneTwister")
 
-    add_test(NAME RegpolyCli.LegacyInfoMT
-             COMMAND ${REGPOLY_CLI} legacy-info
-                     ${REPO_ROOT}/shared/legacy_parameters/MT19937.dat)
-    set_tests_properties(RegpolyCli.LegacyInfoMT PROPERTIES
-        PASS_REGULAR_EXPRESSION "MersenneTwister")
-
-    add_test(NAME RegpolyCli.LegacyTrans
-             COMMAND ${REGPOLY_CLI} legacy-trans
-                     ${REPO_ROOT}/shared/legacy_parameters/trans32.dat)
-    set_tests_properties(RegpolyCli.LegacyTrans PROPERTIES
-        PASS_REGULAR_EXPRESSION "tempMK")
-
     # Phase 4.2: end-to-end search via the YAML config loader.
-    add_test(NAME RegpolyCli.SearchCarry32
+    # (The carry32 fixture used here previously was driven by the
+    # pre-v2 `legacy_file:` source; it has moved to the regpoly-legacy
+    # add-on. Use an inline-form workspace YAML.)
+    add_test(NAME RegpolyCli.SearchCombined
              COMMAND ${REGPOLY_CLI} search
-                     ${REPO_ROOT}/shared/yaml/equidist/carry32.yaml)
-    set_tests_properties(RegpolyCli.SearchCarry32 PROPERTIES
+                     ${REPO_ROOT}/shared/yaml/equidist/combined.yaml)
+    set_tests_properties(RegpolyCli.SearchCombined PROPERTIES
         PASS_REGULAR_EXPRESSION "combos")
 
     # Phase 4.3: tested-generator file display.

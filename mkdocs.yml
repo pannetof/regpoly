@@ -95,9 +95,10 @@ nav:
       - PolyLCG: generators/PolyLCGGen.md
       - F2w-LFSR: generators/F2wLFSRGen.md
       - F2w-PolyLCG: generators/F2wPolyLCGGen.md
-      - Matsumoto: generators/MatsumotoGen.md
       - Marsaglia XORShift: generators/MarsaXorshiftGen.md
-      - AC1D: generators/AC1DGen.md
+      - Xoroshiro (Blackman–Vigna): generators/XoroshiroGen.md
+      - Xoshiro (Blackman–Vigna): generators/XoshiroGen.md
+      - "Cellular Automata (Bhuvaneswari–Bhattacharjee)": generators/CellularAutomataGen.md
       - MELG: generators/MELGGen.md
   - Library:
       - library/index.md
@@ -106,6 +107,8 @@ nav:
       - papers/index.md
       - About the bibliography: papers/about.md
       - "Catalog-backed (auto-generated)":
+          - "Bhuvaneswari & Bhattacharjee 2026 — Cellular Automata": papers/bhuvaneswari-bhattacharjee-2026-cellular-automata.md
+          - "Bhuvaneswari & Bhattacharjee 2026 — Equidistribution report": papers/cellular-automata-equidistribution-report.md
           - "Harase & Kimoto 2018": papers/harase-kimoto-2018.md
           - "L'Ecuyer 1996": papers/lecuyer-1996.md
           - "L'Ecuyer 1999": papers/lecuyer-1999.md
@@ -125,7 +128,6 @@ nav:
       - Notebooks: usage/notebooks.md
   - Notebooks:
       - "Per-family":
-          - "AC1D":           notebooks/families/AC1DGen.ipynb
           - "DSFMT":          notebooks/families/DSFMTGen.ipynb
           - "F2w-LFSR":       notebooks/families/F2wLFSRGen.ipynb
           - "F2w-PolyLCG":    notebooks/families/F2wPolyLCGGen.ipynb
@@ -133,7 +135,6 @@ nav:
           - "MT":             notebooks/families/MTGen.ipynb
           - "MTGP":           notebooks/families/MTGPGen.ipynb
           - "Marsaglia XOR":  notebooks/families/MarsaXorshiftGen.ipynb
-          - "Matsumoto":      notebooks/families/MatsumotoGen.ipynb
           - "PolyLCG":        notebooks/families/PolyLCGGen.ipynb
           - "RMT64":          notebooks/families/RMT64Gen.ipynb
           - "SFMT":           notebooks/families/SFMTGen.ipynb

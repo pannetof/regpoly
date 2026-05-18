@@ -4,8 +4,9 @@ C++ accelerated Python package for analyzing the equidistribution properties of
 pseudo-random number generators based on modulo-2 linear recurrences.
 Uses pybind11 for Python bindings and NTL for polynomial arithmetic.
 
-This is the primary implementation, supporting both YAML configuration files
-and the legacy C-compatible input format.
+This is the primary implementation. Search configuration uses YAML; the
+pre-v2 C-compatible `.dat` parameter format is supported via the optional
+pure-Python `regpoly-legacy` add-on package.
 
 ## Dependencies
 
@@ -64,20 +65,23 @@ python -m regpoly.io.cli yaml/equidist/example3.yaml
 python -m regpoly.io.cli <nb_comp> <test_file> <gen_file1> [gen_file2 ...]
 ```
 
-This mode reads the same input files as the C `POL` program.
+This mode reads the same input files as the C `POL` program and now
+lives in the optional `regpoly-legacy` add-on package (installed by
+default in the workspace). The fixtures themselves live under
+`packages/regpoly-legacy/shared/legacy_parameters/`.
 
 **Single TGFSR generator:**
 
 ```bash
-cd legacy_parameters
-python -m regpoly.io.cli 1 example1c 96_1.dt
+cd packages/regpoly-legacy/shared/legacy_parameters
+uv run regpoly-legacy seek 1 example1c 96_1.dt
 ```
 
 **Two-component combined generator:**
 
 ```bash
-cd legacy_parameters
-python -m regpoly.io.cli 2 example3 96_1.dt 155_2.dt
+cd packages/regpoly-legacy/shared/legacy_parameters
+uv run regpoly-legacy seek 2 example3 96_1.dt 155_2.dt
 ```
 
 ## YAML Configuration Format
@@ -144,8 +148,6 @@ backwards-compat aliases in `factory.cpp` / `bindings.cpp`.
 - `WELLGen` --- WELL / carry generators
 - `F2wLFSRGen`, `F2wPolyLCGGen` --- GF(2^w) generators
 - `MarsaXorshiftGen` --- Marsaglia Xor-shift
-- `MatsumotoGen` --- Matsumoto generators
-- `AC1DGen` --- AC1D generators
 - `MELGGen` --- Maximally Equidistributed F₂-Linear (Harase-Kimoto)
 - `SFMTGen`, `DSFMTGen` --- SIMD-Friendly MT (single / double precision)
 - `MTGPGen` --- MT for Graphic Processors
@@ -169,7 +171,9 @@ cpp_regpoly/
     python/               Python package (imported as `regpoly`)
       core/               wrappers: generator, combination, transformation, ...
       search/             seek, search_primitive, tempering_search, ...
-      io/                 cli, legacy_reader, tested_generator
+      io/                 cli, tested_generator
+      (pre-v2 .dat reader lives in the optional regpoly-legacy add-on:
+       packages/regpoly-legacy/src/regpoly_legacy/reader.py)
       analyses/           equidistribution / collision-free / tuplets tests
       library/            published-generators paper catalog
       web/                FastAPI app + routes + templates + tasks

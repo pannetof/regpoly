@@ -11,8 +11,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `packages/regpoly-cpp/` | Native C++ core: GF(2) linear algebra, MT-family generators, lattice methods, pybind11 bindings. Publishes the `_regpoly_cpp` extension and a thin `regpoly_cpp` Python wrapper. | scikit-build-core + CMake |
 | `packages/regpoly/`     | Pure-Python library: YAML config, generator catalogue, search loop, equidistribution analyses, CLI (`regpoly`). Depends on `regpoly-cpp`. | setuptools |
 | `packages/regpoly-web/` | FastAPI web shell + SQLite-backed result store. CLI (`regpoly-web`). Depends on `regpoly`. | setuptools |
+| `packages/regpoly-legacy/` | **Optional** pure-Python add-on: reads pre-v2 `.dat` parameter files via `regpoly_legacy.LegacyReader` and exposes a `regpoly-legacy` CLI (`info` / `trans` / `seek`). Constructs `Generator` objects through the existing `regpoly` factory. Depends on `regpoly`. No C++ code of its own. | setuptools |
 
-**Dependency arrows are strictly one-way:** `regpoly-web → regpoly → regpoly-cpp`. No cross-imports in the other direction. If a future change tempts you to make `regpoly-cpp` import from `regpoly`, that's a sign the boundary is wrong — push the abstraction down into `regpoly-cpp` instead.
+**Dependency arrows are strictly one-way.** Two layered contracts in import-linter:
+- `regpoly-web → regpoly → regpoly-cpp` (catalog / YAML / web path)
+- `regpoly-legacy → regpoly → regpoly-cpp` (pre-v2 `.dat` path)
+
+No cross-imports in the other direction. `regpoly-legacy` and `regpoly-web` never import each other. If a future change tempts you to make `regpoly-cpp` import from `regpoly` (or `regpoly` import from `regpoly-legacy`), that's a sign the boundary is wrong — push the abstraction down instead.
 
 ## Repository Layout
 
@@ -50,8 +55,9 @@ regpoly_monorepo/
 │   ├── MTToolBox/                       vendored; used only by the slow-lane cross-check
 │   └── dSMFT/                           vendored reference for dSFMT recurrence (comments only)
 ├── shared/                              runtime data only
-│   ├── yaml/                            YAML configs for the search CLI
-│   └── legacy_parameters/               legacy *.dat / example* parameter files (test fixtures)
+│   └── yaml/                            YAML configs for the search CLI
+│                                          (pre-v2 .dat fixtures live under
+│                                           packages/regpoly-legacy/shared/legacy_parameters/)
 ├── docs/                                MkDocs Material site (workspace-root)
 │   ├── mkdocs.yml
 │   ├── index.md

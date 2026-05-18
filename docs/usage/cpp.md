@@ -1,6 +1,8 @@
 # Using REGPOLY from C++
 
-REGPOLY ships a standalone C++ binary, `regpoly-cli`, plus a CMake-installable library so downstream C++ projects can link against the search drivers, the catalog, and the legacy `.dat` reader without bringing in Python.
+REGPOLY ships a standalone C++ binary, `regpoly-cli`, plus a CMake-installable library so downstream C++ projects can link against the search drivers and the catalog without bringing in Python.
+
+The pre-v2 `.dat` parameter format is **not** parseable from C++; reading those files requires the optional pure-Python `regpoly-legacy` add-on package (`uv run regpoly-legacy info FILE.dat`).
 
 ## Build
 
@@ -23,8 +25,6 @@ regpoly-cli <command> [options]
   catalog list [--library DIR]
   catalog show PAPER_ID [--library DIR]
   catalog gen GEN_ID [--library DIR]
-  legacy-info FILE.dat [-L N]
-  legacy-trans FILE.dat
   search FILE.yaml
   show FILE.yaml
   publish FILE.yaml --paper PAPER_ID --gen-id GEN_ID
@@ -46,7 +46,9 @@ Until then, link against the `regpoly_core` static library and add the public he
 
 ## C++/Python parity
 
-A C++-only user has feature parity with a Python user: the same YAML configs, the same catalog, the same legacy `.dat` reader. The Python wrappers add result decoration (DataFrames, plots) but do not gate any algorithm.
+A C++-only user has feature parity with a Python user for the **catalog- and YAML-driven** path: the same YAML configs, the same catalog, the same search drivers. The Python wrappers add result decoration (DataFrames, plots) but do not gate any algorithm.
+
+The one piece of feature drift is the pre-v2 `.dat` parameter format. That reader was retired from the C++ core in v2.x — it now lives only in the pure-Python `regpoly-legacy` add-on, so a C++-only user must either convert their `.dat` fixture to the YAML catalog format up-front, or fall back to invoking `regpoly-legacy seek` from the command line.
 
 ## See also
 

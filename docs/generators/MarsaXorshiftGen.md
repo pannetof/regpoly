@@ -30,7 +30,7 @@ v ^= ShiftR(v, c)
 (Historical note: legacy `.dat` files tag this recurrence with sub-codes
 21..25 to drive sibling-variant expansion in the parser; the runtime
 collapses all five back to `type: 2`. See
-`packages/regpoly-cpp/src/io/legacy_reader.cpp::read_marsaxorshift`.)
+`packages/regpoly-legacy/src/regpoly_legacy/reader.py::_read_marsaxorshift`.)
 
 State: r words in a circular buffer. Two words are selected (x from
 position r-1 and y from position m-1) and combined:

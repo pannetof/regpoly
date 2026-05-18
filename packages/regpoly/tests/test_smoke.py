@@ -143,9 +143,7 @@ def test_resolve_family_aliases():
     assert resolve_family("taus2") == "TauswortheGen"
     assert resolve_family("tgfsr") == "TGFSRGen"
     assert resolve_family("MT") == "MTGen"
-    assert resolve_family("matsumoto") == "MatsumotoGen"
     assert resolve_family("marsaxorshift") == "MarsaXorshiftGen"
-    assert resolve_family("AC1D") == "AC1DGen"
     assert resolve_family("carry") == "WELLGen"
 
 

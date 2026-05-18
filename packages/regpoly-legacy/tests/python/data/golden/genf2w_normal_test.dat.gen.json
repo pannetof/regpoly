@@ -1,0 +1,21 @@
+[
+  [
+    "GenF2wPolyLCG",
+    {
+      "coeff": [
+        10,
+        5
+      ],
+      "modM": 9,
+      "nocoeff": [
+        2,
+        0
+      ],
+      "normal_basis": true,
+      "r": 3,
+      "step": 1,
+      "type": "polylcg",
+      "w": 4
+    }
+  ]
+]

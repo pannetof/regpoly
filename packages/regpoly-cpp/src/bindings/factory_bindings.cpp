@@ -16,13 +16,12 @@
 #include "factory.h"
 #include "generator_registry.h"
 
-#include "ac1d.h"
+#include "cellular_automata.h"
 #include "dsfmt.h"
 #include "f2w_base.h"
 #include "f2w_lfsr.h"
 #include "f2w_polylcg.h"
 #include "marsaxorshift.h"
-#include "matsumoto.h"
 #include "melg.h"
 #include "mt.h"
 #include "mtgp.h"
@@ -33,6 +32,8 @@
 #include "tgfsr.h"
 #include "tinymt32.h"
 #include "well.h"
+#include "xoroshiro.h"
+#include "xoshiro.h"
 
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
@@ -68,9 +69,8 @@ void register_generator_types(py::module_& m) {
     py::class_<F2wBaseGen, Generator, std::unique_ptr<F2wBaseGen>>(m, "F2wBaseGen");
     py::class_<F2wPolyLCGGen, F2wBaseGen, std::unique_ptr<F2wPolyLCGGen>>(m, "F2wPolyLCGGen");
     py::class_<F2wLFSRGen,    F2wBaseGen, std::unique_ptr<F2wLFSRGen>>   (m, "F2wLFSRGen");
-    bind_gen<MatsumotoGen>    (m, "MatsumotoGen");
     bind_gen<MarsaXorshiftGen>(m, "MarsaXorshiftGen");
-    bind_gen<AC1DGen>         (m, "AC1DGen");
+    bind_gen<CellularAutomataGen>(m, "CellularAutomataGen");
     py::class_<WELLGen, Generator, std::unique_ptr<WELLGen>>(m, "WELLGen")
         .def("total_cost", &WELLGen::total_cost,
              "Sum of per-Mi costs across the 8 algorithm slots T0..T7.");
@@ -80,6 +80,8 @@ void register_generator_types(py::module_& m) {
     bind_gen<MTGPGen>         (m, "MTGPGen");
     bind_gen<TinyMT32Gen>     (m, "TinyMT32Gen");
     bind_gen<RMT64Gen>        (m, "RMT64Gen");
+    bind_gen<XoroshiroGen>    (m, "XoroshiroGen");
+    bind_gen<XoshiroGen>      (m, "XoshiroGen");
 
     // F2wBase legacy alias is a class, not a registry alias, so it is
     // declared here directly (the registry handles only concrete

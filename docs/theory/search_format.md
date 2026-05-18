@@ -105,9 +105,7 @@ results = search.run()
 | Mersenne Twister | `MersenneTwister` | `MT` |
 | GF(2^w) Poly LCG | `GenF2wPolyLCG` | `genf2w` |
 | GF(2^w) LFSR | `GenF2wLFSR` | `genf2w` (with type=lfsr) |
-| Matsumoto | `MatsumotoGen` | `matsumoto` |
 | Marsaglia Xor-shift | `MarsaXorshiftGen` | `marsaxorshift` |
-| AC-1D | `AC1DGen` | `AC1D` |
 | WELL RNG | `WELLRNG` | `carry`, `Carry2Gen` |
 
 See the per-generator documentation in `docs/generators/` for parameter

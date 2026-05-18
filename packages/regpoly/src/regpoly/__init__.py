@@ -27,7 +27,6 @@ from regpoly.core.component import Component
 from regpoly.core.generator import Generator
 from regpoly.core.matrix import BitMatrix
 from regpoly.core.transformation import Transformation
-from regpoly.io.legacy_reader import LegacyReader
 from regpoly.search.search_primitive import PrimitiveSearch
 from regpoly.search.seek import Seek
 from regpoly.search.tempering_optimizer import TemperingOptimizer
@@ -45,7 +44,6 @@ __all__ = [
     "Component",
     "Combination",
     "Transformation",
-    "LegacyReader",
     "Seek",
     "PrimitiveSearch",
     "TemperingOptimizer",

@@ -3,60 +3,80 @@
 
 // Byte-for-byte WELL output stream test.
 //
-// Locks the output of WELL19937a (paper Table II, first row of
-// shared/legacy_parameters/carry32_624_31_final.dat) against a frozen
-// binary fixture. The fixture was captured before the M0..M6 rename;
-// after the rename, the read-time remap in legacy_reader.cpp must
-// produce a generator that emits the same bytes.
+// Locks the output of WELL19937a (paper Table II row 1) against a
+// frozen binary fixture. This is the only test that catches an
+// accidental case-body swap in apply_matrix(): equidistribution-based
+// tests cannot tell two primitive WELLs apart.
 //
-// This is the only test that catches an accidental case-body swap in
-// apply_matrix(): equidistribution-based tests cannot tell two
-// primitive WELLs apart.
+// The WELL parameters are constructed inline below (formerly read from
+// shared/legacy_parameters/carry32_624_31_final.dat through the
+// pre-v2 .dat reader, which moved to the regpoly-legacy add-on).
 
 #include <gtest/gtest.h>
 
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <vector>
 
 #include "bitvect.h"
-#include "legacy_reader.h"
+#include "factory.h"
+#include "params.h"
 
 namespace fs = std::filesystem;
-using namespace regpoly_legacy;
 
 namespace {
-
-fs::path find_legacy_dir() {
-    auto try_paths = std::vector<fs::path>{
-        fs::path(__FILE__).parent_path(),
-        fs::current_path(),
-    };
-    for (auto base : try_paths) {
-        for (int up = 0; up < 8; ++up) {
-            auto cand = base / "shared" / "legacy_parameters";
-            if (fs::is_directory(cand)) return cand;
-            if (base == base.parent_path()) break;
-            base = base.parent_path();
-        }
-    }
-    ADD_FAILURE() << "could not find shared/legacy_parameters directory";
-    return {};
-}
 
 fs::path find_fixtures_dir() {
     // The fixtures live under tests/fixtures/ in the source tree.
     return fs::path(__FILE__).parent_path() / "fixtures";
 }
 
+// Inline WELL19937a constructor. Mirrors paper Table II row 1 — the
+// same parameters the pre-v2 fixture
+// `carry32_624_31_final.dat` (now in packages/regpoly-legacy/shared/
+// legacy_parameters/) would have produced via the legacy `.dat` path.
+std::unique_ptr<Generator> make_well19937a(int L) {
+    Params p;
+    p.set_int("w", 32);
+    p.set_int("r", 624);
+    p.set_int("p", 31);
+    p.set_int("m1", 70);
+    p.set_int("m2", 179);
+    p.set_int("m3", 449);
+
+    StructMap matrices;
+    auto set_M = [&](const char* slot, int64_t M) {
+        StructEntry e;
+        e["M"] = M;
+        matrices[slot] = std::move(e);
+    };
+    auto set_Mt = [&](const char* slot, int64_t M, int64_t t) {
+        StructEntry e;
+        e["M"] = M;
+        e["t"] = t;
+        matrices[slot] = std::move(e);
+    };
+
+    set_Mt("T0", 3, -25);
+    set_Mt("T1", 3,  27);
+    set_Mt("T2", 2,   9);
+    set_Mt("T3", 3,   1);
+    set_M ("T4", 1);
+    set_Mt("T5", 3,  -9);
+    set_Mt("T6", 3, -21);
+    set_Mt("T7", 3,  21);
+
+    p.set_struct_map("matrices", std::move(matrices));
+    return create_generator("WELLGen", p, L);
+}
+
 }  // namespace
 
 TEST(WELLByteForByte, WELL19937aMatchesFixture) {
-    auto dat = (find_legacy_dir() / "carry32_624_31_final.dat").string();
-    auto gens = read_generators(dat, 32);
-    ASSERT_EQ(gens.size(), 1u);
-    auto& gen = gens.front();
+    auto gen = make_well19937a(32);
+    ASSERT_NE(gen, nullptr);
     ASSERT_EQ(gen->name(), "Carry Generator");
 
     // Deterministic seed: bit 0 set, all others zero.

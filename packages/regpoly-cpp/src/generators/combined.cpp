@@ -219,6 +219,30 @@ std::optional<std::string> CombinedGenerator::compute_default_test_method(const 
     // component's own cache is consulted/populated.
     if (components_.size() == 1)
         return components_[0]->default_test_method(test_type);
-    if (test_type == "equidistribution") return std::string("notprimitive");
+    if (test_type == "equidistribution") {
+        // If every component agrees on a non-empty preferred method,
+        // honor it.  This lets families like CellularAutomataGen opt
+        // into the matricial method even when wrapped in a combined
+        // generator (paper convention treats the combined matrix as a
+        // single rank target).  Falls back to "notprimitive" — the safe
+        // default for reducible combined characteristic polynomials.
+        std::optional<std::string> unanimous;
+        for (const auto& c : components_) {
+            auto m = c->default_test_method(test_type);
+            if (!m.has_value()) {
+                unanimous.reset();
+                break;
+            }
+            if (!unanimous.has_value())
+                unanimous = m;
+            else if (*unanimous != *m) {
+                unanimous.reset();
+                break;
+            }
+        }
+        if (unanimous.has_value())
+            return unanimous;
+        return std::string("notprimitive");
+    }
     return std::nullopt;
 }

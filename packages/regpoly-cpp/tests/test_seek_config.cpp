@@ -48,44 +48,29 @@ std::string repo_root() {
 
 }  // namespace
 
-TEST(SeekConfig, ParsesCarry32) {
-    std::string path = repo_root() + "/shared/yaml/equidist/carry32.yaml";
-    SeekConfig cfg = load_seek_config(path);
-
-    EXPECT_EQ(cfg.seed1, 1059674621);
-    EXPECT_EQ(cfg.seed2, 1170794524);
-    EXPECT_EQ(cfg.Lmax, 32);
-    EXPECT_EQ(cfg.nbtries, 1);
-
-    ASSERT_EQ(cfg.components.size(), 1u);
-    EXPECT_EQ(cfg.components[0].source, ComponentSpec::Source::LegacyFile);
-    // Path resolution should give us an absolute path that ends in
-    // legacy_parameters/carry32_16_0_1.dat.
-    EXPECT_NE(cfg.components[0].legacy_file_path.find(
-                  "legacy_parameters/carry32_16_0_1.dat"),
-              std::string::npos);
-    EXPECT_TRUE(cfg.components[0].tempering.empty());
-
-    ASSERT_EQ(cfg.tests.size(), 1u);
-    EXPECT_EQ(cfg.tests[0].kind, SeekTestKind::EquidistributionMatricial);
-    EXPECT_EQ(cfg.tests[0].eq_L_max_test, 32);
-    EXPECT_EQ(cfg.tests[0].eq_mse, 100);
-    ASSERT_EQ(cfg.tests[0].eq_delta.size(), 33u);
-    // No `delta:` block in carry32.yaml — every entry stays at INT_MAX.
-    EXPECT_EQ(cfg.tests[0].eq_delta[1], INT_MAX);
-    EXPECT_EQ(cfg.tests[0].eq_delta[32], INT_MAX);
-}
-
-TEST(SeekConfig, BuildSearchCarry32ResetsCleanly) {
-    std::string path = repo_root() + "/shared/yaml/equidist/carry32.yaml";
-    SeekConfig cfg = load_seek_config(path);
-    auto built = build_search(cfg);
-    ASSERT_NE(built.combination, nullptr);
-    EXPECT_EQ(built.combination->J(), 1);
-    EXPECT_EQ(built.combination->Lmax(), 32);
-    // build_search calls reset() — it must have succeeded.
-    EXPECT_FALSE(built.combination->exhausted());
-    EXPECT_GT(built.combination->k_g(), 0);
+TEST(SeekConfig, RejectsLegacyFileSourceWithMigrationPointer) {
+    // The pre-v2 `legacy_file:` component source is rejected at the
+    // YAML loader. The error message must point at regpoly-legacy.
+    auto tmpdir = fs::temp_directory_path()
+        / ("regpoly_seek_cfg_legacy_reject_" + std::to_string(::getpid()));
+    fs::create_directories(tmpdir);
+    auto yaml_path = tmpdir / "cfg.yaml";
+    {
+        std::ofstream f(yaml_path);
+        f << "search:\n  Lmax: 32\ncomponents:\n"
+          << "  - generators:\n      legacy_file: anything.dat\n"
+          << "tests:\n  - type: equidistribution\n    max_gap_sum: 100\n";
+    }
+    try {
+        load_seek_config(yaml_path.string());
+        FAIL() << "expected load_seek_config to throw";
+    } catch (const std::runtime_error& exc) {
+        const std::string msg = exc.what();
+        EXPECT_NE(msg.find("regpoly-legacy"), std::string::npos)
+            << "error message should reference regpoly-legacy add-on; got: "
+            << msg;
+    }
+    fs::remove_all(tmpdir);
 }
 
 TEST(SeekConfig, ParsesCombinedTwoComponents) {
@@ -170,41 +155,6 @@ TEST(SeekConfig, ParsesSameSentinelAsSharedPool) {
     EXPECT_EQ(built.combination->component(0).pool_id(),
               built.combination->component(1).pool_id());
     EXPECT_FALSE(built.combination->exhausted());
-}
-
-TEST(SeekConfig, ResolvesRelativeLegacyPathAgainstYamlDir) {
-    // Write a temporary YAML file in a fresh subdir and a sibling .dat
-    // file the YAML's `legacy_file: ../sub2/foo.dat` should resolve to.
-    auto tmpdir = fs::temp_directory_path()
-        / ("regpoly_seek_cfg_test_" + std::to_string(::getpid()));
-    fs::create_directories(tmpdir / "sub1");
-    fs::create_directories(tmpdir / "sub2");
-    auto dat_path = tmpdir / "sub2" / "foo.dat";
-    auto yaml_path = tmpdir / "sub1" / "cfg.yaml";
-
-    {
-        // Minimal valid carry32 .dat — same shape as
-        // shared/legacy_parameters/carry32_16_0_1.dat first line.
-        std::ofstream f(dat_path);
-        f << "carry\n1\n32 16 1 0 1\n";  // family + count + (w, r, m, deltax/?)
-    }
-    {
-        std::ofstream f(yaml_path);
-        f << "search:\n  Lmax: 32\ncomponents:\n"
-          << "  - generators:\n      legacy_file: ../sub2/foo.dat\n"
-          << "tests:\n  - type: equidistribution\n    max_gap_sum: 100\n";
-    }
-
-    SeekConfig cfg = load_seek_config(yaml_path.string());
-    ASSERT_EQ(cfg.components.size(), 1u);
-    EXPECT_EQ(cfg.components[0].source, ComponentSpec::Source::LegacyFile);
-    // The resolved path should be the absolute path to dat_path.
-    fs::path resolved(cfg.components[0].legacy_file_path);
-    EXPECT_TRUE(resolved.is_absolute());
-    EXPECT_EQ(fs::weakly_canonical(resolved),
-              fs::weakly_canonical(dat_path));
-
-    fs::remove_all(tmpdir);
 }
 
 TEST(SeekConfig, RejectsMissingFile) {

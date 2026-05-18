@@ -5,7 +5,7 @@
 against ``MarsaXorshiftGen``.
 
 The C++ enumerator's behaviour is covered by
-``packages/regpoly-cpp/tests/python/test_marsaxorshift_enumerator.py``.
+``packages/regpoly/tests/test_marsaxorshift_enumerator.py``.
 Here we cover the Python wrapper specifically — the ``NotEnumerable``
 exception-massaging in
 ``regpoly.core.parametric.build_gen_enumerator`` strips the pybind11

@@ -6,6 +6,7 @@
 #include <pybind11/numpy.h>
 
 #include "bitvect.h"
+#include "bm.h"
 #include "combination.h"
 #include "combined.h"
 #include "equidistribution_method.h"
@@ -25,7 +26,6 @@
 #include "seek_search.h"
 #include "tempering_search.h"
 #include "catalog.h"
-#include "legacy_reader.h"
 #include "temper_optimizer.h"
 #include "tempering_optimizer.h"
 #include "random_samplers.h"
@@ -1066,6 +1066,29 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
           "True iff the generator's characteristic polynomial is "
           "primitive (period 2^k - 1).");
 
+    m.def("is_full_period",
+          [](const BitVect& char_poly, int k) -> bool {
+              return is_full_period(char_poly, k);
+          },
+          py::arg("char_poly"), py::arg("k"),
+          "Variant: test primitivity of a candidate char-poly directly.  "
+          "Bit j of char_poly is the coefficient of x^j (leading x^k is "
+          "implicit).");
+
+    m.def("packed_bm",
+          [](const Generator& gen, const BitVect& init_state, int K,
+             int bit_idx) -> std::pair<int, BitVect> {
+              BitVect mp;
+              int L = packed_bm(gen, init_state, K, &mp, bit_idx);
+              return {L, mp};
+          },
+          py::arg("gen"), py::arg("init_state"), py::arg("K"),
+          py::arg("bit_idx") = 0,
+          "Run packed Berlekamp-Massey over F_2 on output bit `bit_idx` of "
+          "`gen` after init(init_state).  Returns (linear_complexity, "
+          "min_poly_BitVect).  min_poly is K bits, MSB-first (same "
+          "convention as Generator::char_poly()).");
+
     // ── Search drivers (Phase 2.4) ─────────────────────────────────────
     //
     // Free functions whose loops own the iteration, randomization,
@@ -1632,41 +1655,4 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
           },
           py::arg("family"), py::arg("params"), py::arg("tempering"),
           "Stable short hash of one component config.");
-
-    // ── Legacy reader (Phase 3.3) ──────────────────────────────────────
-    //
-    // The C++ regpoly_legacy::read_*_specs returns Params records. We
-    // surface them to Python as (family, params_dict) tuples so the
-    // Python wrapper can call Generator.create / Transformation.create
-    // and preserve its _params dict for downstream randomisation.
-
-    m.def("legacy_read_generator_specs",
-          [](const std::string& filename, int L) -> py::list {
-              auto specs = regpoly_legacy::read_generator_specs(filename, L);
-              py::list out;
-              for (const auto& s : specs) {
-                  out.append(py::make_tuple(
-                      py::str(s.family), params_to_dict(s.params)));
-              }
-              return out;
-          }, py::arg("filename"), py::arg("L"),
-          "Parse a legacy .dat generator file and return a list of "
-          "(family, params_dict) tuples. Used by the Python "
-          "regpoly.io.legacy_reader shim to round-trip via "
-          "Generator.create() so the Python wrapper's _params dict "
-          "stays populated for randomisation paths.");
-
-    m.def("legacy_read_transformation_specs",
-          [](const std::string& filename) -> py::tuple {
-              auto r = regpoly_legacy::read_transformation_specs(filename);
-              py::list specs;
-              for (const auto& s : r.specs) {
-                  specs.append(py::make_tuple(
-                      py::str(s.trans_type), params_to_dict(s.params)));
-              }
-              return py::make_tuple(specs, r.mk_opt);
-          }, py::arg("filename"),
-          "Parse a legacy .dat transformations file. Returns a "
-          "(specs_list, mk_opt) tuple; specs_list is a list of "
-          "(type, params_dict) tuples.");
 }

@@ -5,7 +5,7 @@
 paper-faithful Δ₁ values of Panneton & L'Ecuyer (2005) Tables III & IV.
 
 The companion test
-``packages/regpoly-cpp/tests/python/test_panneton_lecuyer_xorshift_tables.py``
+``packages/regpoly/tests/test_panneton_lecuyer_xorshift_tables.py``
 feeds an abstract (rw × rw) GF(2) transition matrix through the C++
 ``dimension_equid`` kernel and never calls the runtime ``next()``.
 These tests close the loop: they instantiate the generator via the
@@ -14,8 +14,9 @@ public Python wrapper (``Generator.create``), run the same
 matches the paper.  A regression in the C++ runtime's w-bit masking
 would show up here.
 
-This file lives in ``packages/regpoly/tests/`` rather than under
-``regpoly-cpp/tests/python/`` because it imports
+This file lives in ``packages/regpoly/tests/`` (the right side of the
+one-way ``regpoly_web → regpoly → regpoly_cpp`` boundary) because it
+imports
 ``regpoly.core.generator`` / ``regpoly.core.combination`` /
 ``regpoly.analyses.equidistribution_test`` — packages above
 ``regpoly_cpp`` in the workspace's one-way dependency order.

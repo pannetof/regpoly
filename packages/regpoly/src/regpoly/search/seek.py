@@ -4,9 +4,11 @@
 """
 seek.py — Seek class: runs the equidistribution search.
 
-Supports two input formats:
-  - YAML: single config file (equidist.*.yaml)
-  - Legacy: nb_comp + test_file + gen_data_files (C-compatible)
+Input format: YAML configuration file (``equidist.*.yaml``). The
+``legacy_file:`` key for embedding pre-v2 ``.dat`` parameter pools has
+moved to the optional ``regpoly-legacy`` add-on package — see
+``regpoly_legacy.seek_factory.seek_from_legacy(...)`` for the equivalent
+positional-argument form.
 """
 
 from __future__ import annotations
@@ -35,7 +37,6 @@ from regpoly.analyses.tuplets_test import TupletsTest
 from regpoly.core.combination import Combination
 from regpoly.core.generator import Generator
 from regpoly.core.transformation import Transformation
-from regpoly.io.legacy_reader import LegacyReader
 from regpoly.io.tested_generator import save_tested_generator
 
 _SEP      = "\n\n" + "+" * 104
@@ -47,9 +48,8 @@ class Seek:
     """
     Search for combined generators with good equidistribution properties.
 
-    Two ways to create:
-        Seek.from_yaml("search.config.yaml")
-        Seek.from_legacy(nb_comp, test_file, gen_data_files)
+    Construct via ``Seek.from_yaml("search.config.yaml")``. The legacy
+    positional-arg constructor moved to ``regpoly_legacy.seek_from_legacy``.
     """
 
     def __init__(self) -> None:
@@ -99,10 +99,13 @@ class Seek:
                 gen_lists.append(gen_list)
                 prev_gen_list = gen_list
             elif isinstance(gen_cfg, dict) and "legacy_file" in gen_cfg:
-                path = _resolve_path(gen_cfg["legacy_file"], base_dir)
-                gen_list = LegacyReader.read_generators(path, Lmax)
-                gen_lists.append(gen_list)
-                prev_gen_list = gen_list
+                raise ValueError(
+                    "legacy_file: support has moved to the regpoly-legacy "
+                    "add-on package. Install regpoly-legacy and use "
+                    "regpoly_legacy.seek_from_legacy(nb_comp, test_file, "
+                    "gen_data_files) instead, or re-author this config "
+                    "using inline 'family:' / 'file:' source forms."
+                )
             elif isinstance(gen_cfg, dict) and "family" in gen_cfg:
                 gen_list = _build_inline_generators(gen_cfg, Lmax)
                 gen_lists.append(gen_list)
@@ -144,14 +147,6 @@ class Seek:
         print(_format_search_summary(s._tests, s._nbtries, has_tempering, gen_lists))
         sys.stdout.flush()
 
-        return s
-
-    @classmethod
-    def from_legacy(cls, nb_comp: int, test_file: str, gen_data_files: list) -> "Seek":
-        """Build a Seek from legacy C-format files."""
-        s = cls()
-        s._comb, tests, s._nbtries = _read_legacy(nb_comp, test_file, gen_data_files)
-        s._tests = tests
         return s
 
     # -- Run ---------------------------------------------------------------
@@ -442,114 +437,6 @@ def _parse_tests(tests_cfg: list, Lmax: int) -> list:
         else:
             raise ValueError(f"Unknown test type: {test_type}")
     return tests
-
-
-def _read_legacy(nb_comp, test_file, gen_data_files):
-    """Read legacy C-format files and return (comb, tests, nbtries)."""
-    with open(test_file, encoding="latin-1") as f:
-        lines = [ln.split('#')[0].strip() for ln in f]
-    lines = [ln for ln in lines if ln]
-    i = 0
-
-    parts = lines[i].split(); i += 1
-    seed1 = int(parts[0])
-    seed2 = int(parts[1]) if seed1 != -1 else 0
-    seeds = [seed1, seed2]
-
-    Lmax = int(lines[i]); i += 1
-
-    temperings = []
-    mk_opt = False
-    has_tempering = False
-    for _ in range(nb_comp):
-        parts = lines[i].split(); i += 1
-        deftrans = int(parts[0])
-        if deftrans:
-            trans_list, mk_j = LegacyReader.read_transformations(parts[1])
-            temperings.append(trans_list)
-            mk_opt |= mk_j
-            has_tempering = True
-        else:
-            temperings.append([])
-
-    nbtries = int(lines[i]); i += 1
-    if not has_tempering:
-        nbtries = 1
-
-    parts = lines[i].split(); i += 1
-    mse_val = int(parts[0])
-    if mse_val == -1:
-        meverif = False
-        mse = sys.maxsize
-        method = METHOD_NOTHING
-    else:
-        meverif = True
-        mse = mse_val
-        method_str = parts[1].lower()
-        if method_str == "matrix":
-            method = METHOD_MATRICIAL
-        elif method_str == "lattice":
-            method = METHOD_DUALLATTICE
-        else:
-            raise ValueError(f"Unknown method '{method_str}' in {test_file}")
-
-    delta = [10_000_000] * (Lmax + 1)
-    delta_lines = []
-    nb_lines = int(lines[i]); i += 1
-    for _ in range(nb_lines):
-        parts = lines[i].split(); i += 1
-        jmin, jmax, ec = int(parts[0]), int(parts[1]), int(parts[2])
-        delta_lines.append((jmin, jmax, ec))
-        for j in range(jmin, jmax + 1):
-            delta[j] = ec
-
-    parts = lines[i].split(); i += 1
-    tupverif = int(parts[0])
-    if tupverif:
-        d = int(parts[1])
-        s_list = [0] + [int(parts[2 + j]) for j in range(d)]
-        mDD = float(parts[2 + d])
-        tuplets_test = TupletsTest(tupletsverif=True, d=d, s=s_list, mDD=mDD, testtype=_MAX_TYPE)
-    else:
-        tuplets_test = TupletsTest(tupletsverif=False)
-
-    gen_lists = []
-    old_gen_list = None
-    for path in gen_data_files:
-        if path.lower() == "same":
-            gen_lists.append(old_gen_list)
-        else:
-            old_gen_list = LegacyReader.read_generators(path, Lmax)
-            gen_lists.append(old_gen_list)
-
-    # Seed RNG
-    Seed1, Seed2, seed = _compute_seeds(seed1, seed2)
-    random.seed(seed)
-
-    print(_format_header(nb_comp, Seed1, Seed2, temperings))
-
-    comb = Combination.CreateFromFiles(gen_lists, Lmax, temperings)
-
-    if has_tempering:
-        print(f"Number of tries per combined generator : {nbtries}")
-    if meverif:
-        print(f"Upperbound for the sum of dimension gaps for resolutions in psi_12 : {mse}")
-    if nb_lines > 0:
-        print("delta for particular bits:")
-        for jmin, jmax, ec in delta_lines:
-            print(f"   >>Bits from {jmin} to {jmax} delta_i={ec}")
-    if tupverif:
-        print("Verification of DELTA( " +
-              ", ".join(str(s_list[j]) for j in range(1, d)) +
-              f"{s_list[d]})")
-    print("=" * 68)
-    for j, gen_list in enumerate(gen_lists):
-        print(f"- Component {j + 1}: {gen_list[0].name()} ")
-    sys.stdout.flush()
-
-    me_test = EquidistributionTest(L=Lmax, delta=delta, mse=mse, meverif=meverif, method=method)
-    tests = [me_test, tuplets_test]
-    return comb, tests, nbtries
 
 
 # ═══════════════════════════════════════════════════════════════════════════

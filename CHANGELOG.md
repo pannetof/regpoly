@@ -1,5 +1,44 @@
 # Changelog
 
+## Unreleased — legacy `.dat` reader extracted to add-on
+
+**Breaking changes** (C++ public API + YAML schema + CLI surface):
+
+- The C++ public API no longer exposes `<regpoly/legacy_reader.h>` or
+  the `regpoly_legacy::` namespace. Both `legacy_reader.{cpp,h}` and
+  `well_legacy_decode.{cpp,h}` were deleted from `packages/regpoly-cpp/`.
+- `regpoly-cli` no longer offers `legacy-info` / `legacy-trans` subcommands.
+- The YAML search schema rejects the `legacy_file:` component-source key
+  (both `seek_config.cpp` and Python `Seek.from_yaml` raise a clear error
+  pointing at the add-on).
+- The `regpoly` Python CLI (`uv run regpoly ...`) no longer accepts the
+  positional `nb_comp test_file gen_file1 [...]` form. `Seek.from_legacy()`
+  is gone.
+- The pybind11 module `_regpoly_cpp` no longer exposes
+  `legacy_read_generator_specs` / `legacy_read_transformation_specs`.
+- `from regpoly import LegacyReader` raises `ImportError`.
+
+**Replacement**: install the new optional pure-Python `regpoly-legacy`
+add-on. It ships:
+
+- `regpoly_legacy.LegacyReader` (drop-in API replacement for the old
+  `regpoly.io.legacy_reader.LegacyReader`).
+- `regpoly_legacy.seek_from_legacy(nb_comp, test_file, gen_data_files)`.
+- A `regpoly-legacy` console script with three subcommands: `info`,
+  `trans`, `seek`.
+
+The add-on parses `.dat` files in pure Python (no compiler needed) and
+constructs the resulting `Generator` / `Transformation` objects through
+the existing `regpoly.Generator.create()` factory — same C++ core under
+the hood, no behavioural drift.
+
+Historical legacy fixtures move from `shared/legacy_parameters/` to
+`packages/regpoly-legacy/shared/legacy_parameters/`. Six of the seven
+pre-v2 YAML configs that used `legacy_file:` move from
+`shared/yaml/equidist/` to `packages/regpoly-legacy/shared/yaml/equidist/`
+(the seventh, `carry32.yaml`, moves too — `test_seek_config` now uses a
+hand-authored inline fixture).
+
 ## v2.0.0 — 2026-05-04
 
 The v2.0 redesign concludes the 9-phase migration that pushed all

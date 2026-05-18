@@ -126,6 +126,9 @@ def _effective_L(body: PrimitiveSearchCreate, k: int) -> int:
         # small k (e.g. w=8, r=3 ⇒ k=24) cap at k so the output
         # bit-vector fits the state.
         return min(k, 32)
+    if family in ("XoroshiroGen", "XoshiroGen"):
+        # Each output is one w-bit word (Blackman & Vigna 2022).
+        return int(body.structural_params.get("w", 64))
     return k
 
 

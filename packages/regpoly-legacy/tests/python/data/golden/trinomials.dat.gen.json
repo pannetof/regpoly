@@ -1,0 +1,110 @@
+[
+  [
+    "Tausworthe",
+    {
+      "poly": [
+        0,
+        1,
+        3
+      ],
+      "quicktaus": true,
+      "s": 2
+    }
+  ],
+  [
+    "Tausworthe",
+    {
+      "poly": [
+        0,
+        1,
+        4
+      ],
+      "quicktaus": true,
+      "s": 3
+    }
+  ],
+  [
+    "Tausworthe",
+    {
+      "poly": [
+        0,
+        2,
+        5
+      ],
+      "quicktaus": true,
+      "s": 3
+    }
+  ],
+  [
+    "Tausworthe",
+    {
+      "poly": [
+        0,
+        1,
+        6
+      ],
+      "quicktaus": true,
+      "s": 5
+    }
+  ],
+  [
+    "Tausworthe",
+    {
+      "poly": [
+        0,
+        1,
+        7
+      ],
+      "quicktaus": true,
+      "s": 6
+    }
+  ],
+  [
+    "Tausworthe",
+    {
+      "poly": [
+        0,
+        3,
+        7
+      ],
+      "quicktaus": true,
+      "s": 4
+    }
+  ],
+  [
+    "Tausworthe",
+    {
+      "poly": [
+        0,
+        4,
+        9
+      ],
+      "quicktaus": true,
+      "s": 5
+    }
+  ],
+  [
+    "Tausworthe",
+    {
+      "poly": [
+        0,
+        3,
+        10
+      ],
+      "quicktaus": true,
+      "s": 7
+    }
+  ],
+  [
+    "Tausworthe",
+    {
+      "poly": [
+        0,
+        2,
+        11
+      ],
+      "quicktaus": true,
+      "s": 9
+    }
+  ]
+]

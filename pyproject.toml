@@ -2,8 +2,9 @@
 members = ["packages/*"]
 
 [tool.uv.sources]
-regpoly-cpp = { workspace = true }
-regpoly     = { workspace = true }
+regpoly-cpp    = { workspace = true }
+regpoly        = { workspace = true }
+regpoly-legacy = { workspace = true }
 
 [dependency-groups]
 docs = [
@@ -39,6 +40,11 @@ e2e = [
     "playwright>=1.45",
     "pytest-playwright>=0.5",
 ]
+dev = [
+    "numpy>=2.2.6",
+    "pypdf>=6.11.0",
+    "sympy>=1.14.0",
+]
 
 [tool.ruff]
 line-length = 100
@@ -65,17 +71,26 @@ testpaths = [
     "packages/regpoly-cpp/tests/python",
     "packages/regpoly/tests",
     "packages/regpoly-web/tests",
+    "packages/regpoly-legacy/tests/python",
 ]
 addopts = "-m 'not slow and not e2e' --import-mode=importlib --timeout=120 --timeout-method=thread"
 
 [tool.importlinter]
-root_packages = ["regpoly_cpp", "regpoly", "regpoly_web"]
+root_packages = ["regpoly_cpp", "regpoly", "regpoly_web", "regpoly_legacy"]
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "Layers: regpoly_web > regpoly > regpoly_cpp (one-way only)"
 type = "layers"
 layers = ["regpoly_web", "regpoly", "regpoly_cpp"]
+
+# regpoly_legacy is an optional add-on that sits *above* regpoly in the
+# dependency graph (legacy → regpoly → regpoly_cpp). It's a sibling of
+# regpoly_web on the consumer side, but the two never import each other.
+[[tool.importlinter.contracts]]
+name = "Layers: regpoly_legacy > regpoly > regpoly_cpp (one-way only)"
+type = "layers"
+layers = ["regpoly_legacy", "regpoly", "regpoly_cpp"]
 
 # Phase 5 will tighten this further: web routes/workers must NOT import
 # regpoly_cpp directly (only via regpoly). Captured here as a separate

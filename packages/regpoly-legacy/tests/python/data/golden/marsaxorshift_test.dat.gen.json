@@ -1,0 +1,54 @@
+[
+  [
+    "MarsaXorshiftGen",
+    {
+      "r": 1,
+      "shifts": [
+        13,
+        -17,
+        5
+      ],
+      "type": 1,
+      "w": 32
+    }
+  ],
+  [
+    "MarsaXorshiftGen",
+    {
+      "r": 1,
+      "shifts": [
+        5,
+        -17,
+        13
+      ],
+      "type": 1,
+      "w": 32
+    }
+  ],
+  [
+    "MarsaXorshiftGen",
+    {
+      "r": 1,
+      "shifts": [
+        -13,
+        17,
+        -5
+      ],
+      "type": 1,
+      "w": 32
+    }
+  ],
+  [
+    "MarsaXorshiftGen",
+    {
+      "r": 1,
+      "shifts": [
+        13,
+        -5,
+        17
+      ],
+      "type": 1,
+      "w": 32
+    }
+  ]
+]

@@ -38,6 +38,7 @@ public:
 
     // ── Bitwise in-place ─────────────────────────────────────────────────
     void xor_with(const BitVect& other);
+    void and_with(const BitVect& other);
     void and_mask(int t);
     void and_invmask(int t);
 
