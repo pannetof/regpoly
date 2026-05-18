@@ -39,6 +39,47 @@ pre-v2 YAML configs that used `legacy_file:` move from
 (the seventh, `carry32.yaml`, moves too — `test_seek_config` now uses a
 hand-authored inline fixture).
 
+### Pure-C++ build mode (no Python / pybind11 needed)
+
+`packages/regpoly-cpp/CMakeLists.txt` adds a new option:
+
+```
+-DREGPOLY_BUILD_PYTHON_EXTENSION=ON   # default: builds _regpoly_cpp.so
+-DREGPOLY_BUILD_PYTHON_EXTENSION=OFF  # pure-C++: skips find_package(pybind11)
+                                      # and skips the _regpoly_cpp target
+```
+
+When OFF, the build produces only `libregpoly_core.a`, the `regpoly-cli`
+binary, the public headers, and the `find_package(regpoly)` CMake
+config package — no pybind11 dependency at configure, build, or install
+time. The Python wheel build (scikit-build-core / `uv sync`) still
+defaults to ON; nothing changes for Python consumers.
+
+C++-only consumers can now do:
+
+```
+cmake -S packages/regpoly-cpp -B build -DREGPOLY_BUILD_PYTHON_EXTENSION=OFF
+cmake --build build
+sudo cmake --install build
+```
+
+and link their own project via `find_package(regpoly REQUIRED)` →
+`target_link_libraries(my_proj PRIVATE regpoly::regpoly)` without any
+Python tooling on the system.
+
+### `gen_primitive_factors_data.py` moved to `regpoly/tools/`
+
+The dev-time codegen script that produces
+`packages/regpoly-cpp/src/algebra/primitive_factors_data.cpp` from the
+canonical JSON factor table moved from `packages/regpoly-cpp/scripts/`
+to `packages/regpoly/src/regpoly/tools/`. Both regen scripts
+(`generate_factors.py` produces the JSON; `gen_primitive_factors_data.py`
+converts JSON → `.cpp`) now live side-by-side in `regpoly/tools/`.
+
+Invocation: `python -m regpoly.tools.gen_primitive_factors_data`.
+The generated `.cpp` is unchanged and remains committed to the repo, so
+fresh builds don't depend on running either script.
+
 ## v2.0.0 — 2026-05-04
 
 The v2.0 redesign concludes the 9-phase migration that pushed all

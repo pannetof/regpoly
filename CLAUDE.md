@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Package | Role | Build |
 |---|---|---|
-| `packages/regpoly-cpp/` | Native C++ core: GF(2) linear algebra, MT-family generators, lattice methods, pybind11 bindings. Publishes the `_regpoly_cpp` extension and a thin `regpoly_cpp` Python wrapper. | scikit-build-core + CMake |
+| `packages/regpoly-cpp/` | Native C++ core: GF(2) linear algebra, MT-family generators, lattice methods. Ships either as a Python wheel (`_regpoly_cpp` extension + thin `regpoly_cpp` package, via scikit-build-core) **or** as a pure-C++ install (`libregpoly_core.a` + `regpoly-cli` + `find_package(regpoly)` headers, via plain CMake with `-DREGPOLY_BUILD_PYTHON_EXTENSION=OFF` — no pybind11 needed). | scikit-build-core + CMake (optional pybind11) |
 | `packages/regpoly/`     | Pure-Python library: YAML config, generator catalogue, search loop, equidistribution analyses, CLI (`regpoly`). Depends on `regpoly-cpp`. | setuptools |
 | `packages/regpoly-web/` | FastAPI web shell + SQLite-backed result store. CLI (`regpoly-web`). Depends on `regpoly`. | setuptools |
 | `packages/regpoly-legacy/` | **Optional** pure-Python add-on: reads pre-v2 `.dat` parameter files via `regpoly_legacy.LegacyReader` and exposes a `regpoly-legacy` CLI (`info` / `trans` / `seek`). Constructs `Generator` objects through the existing `regpoly` factory. Depends on `regpoly`. No C++ code of its own. | setuptools |
@@ -113,7 +113,7 @@ The `tests/_mttoolbox_build.md` doc inside the regpoly package describes how to 
 
 ## Past redesign — v2.0 plan (COMPLETE)
 
-The 9-phase v2.0 redesign is **COMPLETE**. Tagged `v2.0.0` at commit `47c24e6` on 2026-05-04. Plan file: `~/.claude/plans/i-want-to-have-rippling-starlight.md` (preserved for reference). Final architecture: all algorithmic logic in C++; Python is a thin wrapper; the web app uses only Python (no `_cpp` imports); C++-only users have full feature parity via `regpoly-cli`.
+The 9-phase v2.0 redesign is **COMPLETE**. Tagged `v2.0.0` at commit `47c24e6` on 2026-05-04. Plan file: `~/.claude/plans/i-want-to-have-rippling-starlight.md` (preserved for reference). Final architecture: all algorithmic logic in C++; Python is a thin wrapper; the web app uses only Python (no `_cpp` imports); C++-only users have full feature parity via `regpoly-cli`, and can build the C++ core without any Python/pybind11 tooling via the CMake option `-DREGPOLY_BUILD_PYTHON_EXTENSION=OFF` (added v2.x post-release).
 
 ## Active plan — Simplify to three containers
 

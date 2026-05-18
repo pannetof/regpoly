@@ -17,6 +17,19 @@ The `regpoly-cli` binary is produced in `build/regpoly-cli`. Run the GoogleTest 
 ctest --test-dir build --output-on-failure
 ```
 
+### Pure-C++ build (no Python, no pybind11)
+
+The default configure builds the `_regpoly_cpp` pybind11 extension alongside the static library and CLI, which requires `pybind11` to be `find_package`-able. C++-only consumers who don't want any Python tooling pass `-DREGPOLY_BUILD_PYTHON_EXTENSION=OFF`:
+
+```bash
+cmake -S packages/regpoly-cpp -B build \
+      -DREGPOLY_BUILD_PYTHON_EXTENSION=OFF \
+      -DREGPOLY_BUILD_TESTS=ON
+cmake --build build -j
+```
+
+This produces `libregpoly_core.a`, `regpoly-cli`, the public headers, and the `find_package(regpoly)` CMake config package — no `.so`, no pybind11 dependency. The GoogleTest suite (`ctest`) still runs in this mode.
+
 ## CLI subcommands
 
 ```text

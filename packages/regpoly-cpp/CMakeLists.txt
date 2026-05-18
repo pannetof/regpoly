@@ -10,8 +10,16 @@ option(REGPOLY_INSTALL_CMAKE_PACKAGE
        "Install regpolyConfig.cmake for find_package(regpoly)" ON)
 option(REGPOLY_BUILD_CLI
        "Build the regpoly-cli executable (Phase 4 fills in subcommands)" ON)
+# Toggle the pybind11 extension. ON for the scikit-build-core / uv path
+# (the Python wheel ships `_regpoly_cpp.so`). OFF for pure-C++ consumers
+# who only want the static library + `regpoly-cli` and don't have pybind11
+# (or Python) available. When OFF, `find_package(pybind11)` is not called.
+option(REGPOLY_BUILD_PYTHON_EXTENSION
+       "Build the _regpoly_cpp pybind11 extension module" ON)
 
-find_package(pybind11 CONFIG REQUIRED)
+if(REGPOLY_BUILD_PYTHON_EXTENSION)
+    find_package(pybind11 CONFIG REQUIRED)
+endif()
 
 # ── yaml-cpp (Phase 3 / dockerize-plan 0b): vendored as a git submodule
 # at third_party/yaml-cpp (was FetchContent until commit ${this}). Local
@@ -142,16 +150,19 @@ add_library(regpoly::regpoly ALIAS regpoly_core)
 
 # ── Python extension: _regpoly_cpp ─────────────────────────────────────
 # Adds factory.cpp (pybind11 binding registration) and bindings.cpp on
-# top of regpoly_core.
+# top of regpoly_core. Gated by REGPOLY_BUILD_PYTHON_EXTENSION so a
+# pure-C++ build can skip pybind11 entirely.
 
-pybind11_add_module(_regpoly_cpp
-    src/bindings/bindings.cpp
-    src/bindings/factory_bindings.cpp)
-target_include_directories(_regpoly_cpp PRIVATE ${REGPOLY_CPP_INCLUDE_DIRS})
-target_link_libraries(_regpoly_cpp PRIVATE regpoly_core)
-target_compile_options(_regpoly_cpp PRIVATE ${_REGPOLY_ARCH_FLAGS})
+if(REGPOLY_BUILD_PYTHON_EXTENSION)
+    pybind11_add_module(_regpoly_cpp
+        src/bindings/bindings.cpp
+        src/bindings/factory_bindings.cpp)
+    target_include_directories(_regpoly_cpp PRIVATE ${REGPOLY_CPP_INCLUDE_DIRS})
+    target_link_libraries(_regpoly_cpp PRIVATE regpoly_core)
+    target_compile_options(_regpoly_cpp PRIVATE ${_REGPOLY_ARCH_FLAGS})
 
-install(TARGETS _regpoly_cpp DESTINATION regpoly_cpp)
+    install(TARGETS _regpoly_cpp DESTINATION regpoly_cpp)
+endif()
 
 # ── regpoly-cli executable (Phase 4 fills in subcommands) ───────────────
 

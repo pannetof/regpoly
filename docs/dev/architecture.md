@@ -12,3 +12,12 @@ regpoly-legacy   →  regpoly  →  regpoly-cpp
 ```
 
 `import-linter` enforces both layered arrows in CI. The C++ core carries every algorithm, the YAML search schema, the catalog reader/writer, and a standalone `regpoly-cli` binary so a user working exclusively in C++ has feature parity with a Python user for the *catalog-driven* path. The historical pre-v2 `.dat` parameter format is **not** supported by the C++ core; reading it requires the optional pure-Python `regpoly-legacy` add-on, which parses `.dat` files in Python and constructs `Generator` objects via the existing C++ factory.
+
+## Build modes
+
+`packages/regpoly-cpp/` supports two build modes:
+
+- **Python wheel** (default, via scikit-build-core + `uv sync`): builds `libregpoly_core.a`, the `regpoly-cli` binary, **and** the `_regpoly_cpp` pybind11 extension. Required by every Python consumer (`regpoly`, `regpoly-web`, `regpoly-legacy`).
+- **Pure C++** (via `cmake -DREGPOLY_BUILD_PYTHON_EXTENSION=OFF`): builds the static library + CLI + headers + `find_package(regpoly)` config package, with **no pybind11 or Python dependency at configure, build, or install time**. The pybind11 extension is skipped entirely.
+
+Both modes share the same `regpoly_core` static library — the Python wheel just adds a thin pybind11 module on top.

@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """
-Regenerate src/algebra/primitive_factors_data.cpp from the canonical
-JSON factor table at:
+Regenerate packages/regpoly-cpp/src/algebra/primitive_factors_data.cpp
+from the canonical JSON factor table at:
 
     packages/regpoly/src/regpoly/data/primitive_factors.json
 
-Run from anywhere — paths are computed relative to this script.
+Run from anywhere — paths are computed relative to this script — or as
+
+    python -m regpoly.tools.gen_primitive_factors_data
 
 The factor table holds the prime factors of Phi_n(2) for n up to a
-useful bound (covers all generator state sizes we care about). The
+useful bound (covers all generator state sizes we care about). It is
+the sync point between the JSON (read by Python tests + hand-tuned by
+humans, produced upstream by ``regpoly.tools.generate_factors``) and
+the C++ data table that compiles into ``_regpoly_cpp.so``. The
 generated .cpp file is committed to the repo so a fresh build does
 not depend on running this script.
 """
@@ -20,7 +25,14 @@ from pathlib import Path
 
 
 def main() -> None:
-    repo = Path(__file__).resolve().parents[3]
+    # Path layout: packages/regpoly/src/regpoly/tools/THIS_FILE.py
+    #   parents[0] = tools
+    #   parents[1] = regpoly (inner)
+    #   parents[2] = src
+    #   parents[3] = regpoly (outer, the package dir)
+    #   parents[4] = packages
+    #   parents[5] = repo root
+    repo = Path(__file__).resolve().parents[5]
     src = repo / "packages/regpoly/src/regpoly/data/primitive_factors.json"
     dst = repo / "packages/regpoly-cpp/src/algebra/primitive_factors_data.cpp"
 
@@ -31,7 +43,7 @@ def main() -> None:
     out.append("// AUTO-GENERATED from "
                "packages/regpoly/src/regpoly/data/primitive_factors.json")
     out.append("// Regenerate via "
-               "packages/regpoly-cpp/scripts/gen_primitive_factors_data.py")
+               "`python -m regpoly.tools.gen_primitive_factors_data`")
     out.append("// Embeds prime factors of Phi_n(2) for primitivity testing.")
     out.append("")
     out.append('#include "primitivity.h"')

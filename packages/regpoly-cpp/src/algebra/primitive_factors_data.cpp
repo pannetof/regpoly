@@ -1,5 +1,5 @@
 // AUTO-GENERATED from packages/regpoly/src/regpoly/data/primitive_factors.json
-// Regenerate via packages/regpoly-cpp/scripts/gen_primitive_factors_data.py
+// Regenerate via `python -m regpoly.tools.gen_primitive_factors_data`
 // Embeds prime factors of Phi_n(2) for primitivity testing.
 
 #include "primitivity.h"

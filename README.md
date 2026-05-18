@@ -1,19 +1,30 @@
-# cpp_regpoly --- C++/Python implementation of REGPOLY
+# regpoly --- C++/Python toolkit for combined PRNGs
 
-C++ accelerated Python package for analyzing the equidistribution properties of
-pseudo-random number generators based on modulo-2 linear recurrences.
-Uses pybind11 for Python bindings and NTL for polynomial arithmetic.
+Analyse the equidistribution properties of pseudo-random number
+generators based on modulo-2 linear recurrences (LFSRs over GF(2)).
+Uses NTL for polynomial arithmetic, with optional pybind11 bindings for
+the Python wrapper layer.
 
-This is the primary implementation. Search configuration uses YAML; the
-pre-v2 C-compatible `.dat` parameter format is supported via the optional
-pure-Python `regpoly-legacy` add-on package.
+The primary use-case is the full Python stack (`regpoly`, `regpoly-web`,
+optional `regpoly-legacy` add-on) built on top of the C++ core. The
+C++ core can also be built and installed **standalone**, without Python
+or pybind11, for pure C++ consumers.
+
+Search configuration uses YAML; the pre-v2 C-compatible `.dat`
+parameter format is supported via the optional pure-Python
+`regpoly-legacy` add-on package.
 
 ## Dependencies
 
-- Python 3.10+
-- pybind11 (installed automatically)
-- PyYAML (installed automatically)
+**Required (always):**
 - **libntl-dev** (NTL number theory library, must be installed system-wide)
+
+**Required for the Python wheel build (the default `uv sync` path):**
+- Python 3.10+
+- pybind11 ≥ 2.12 (pulled in automatically by scikit-build-core)
+- PyYAML (pulled in automatically)
+
+**For pure-C++ builds:** none of the Python-side dependencies above are needed; see [docs/usage/cpp.md](docs/usage/cpp.md#pure-c-build-no-python-no-pybind11).
 
 Install NTL on Debian/Ubuntu:
 
@@ -23,12 +34,24 @@ sudo apt install libntl-dev
 
 ## Installation
 
+### Python (Python wheel, default)
+
 ```bash
-cd cpp_regpoly
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+cd regpoly_monorepo
+uv sync           # builds the wheel via scikit-build-core
 ```
+
+### Pure C++ (no Python, no pybind11)
+
+```bash
+cd regpoly_monorepo
+cmake -S packages/regpoly-cpp -B build \
+      -DREGPOLY_BUILD_PYTHON_EXTENSION=OFF
+cmake --build build -j
+sudo cmake --install build
+```
+
+Produces `libregpoly_core.a`, the `regpoly-cli` binary, public headers, and the `find_package(regpoly)` CMake config package.
 
 ## Usage
 
