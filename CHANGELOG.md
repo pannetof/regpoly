@@ -1,5 +1,97 @@
 # Changelog
 
+## Unreleased — documentation framework migration: MkDocs → Sphinx
+
+Replaced the MkDocs Material site with a Sphinx + Doxygen + Breathe +
+Exhale stack using the PyData Sphinx Theme — the canonical "scientific
+Python library" framework (NumPy / SciPy / pandas / scikit-learn /
+ITK / VTK all use it). Migration delivers:
+
+- **Hierarchical C++ API**: Exhale auto-generates Class Hierarchy /
+  File Hierarchy / Namespace Hierarchy / Full API Index pages from
+  Doxygen XML. Click `regpoly::core::Generator` → see the full
+  inheritance tree of every `*Gen` family.
+- **Single visual language** across Python, C++, narrative pages, and
+  notebooks (was: mkdocstrings Material widgets for Python +
+  raw-Doxygen tables for C++).
+- **Bidirectional Python ↔ C++ cross-references**: every Python class
+  with a C++ counterpart links it via the Sphinx `:cpp:class:` domain
+  role; every C++ class with a Python wrapper carries `@see :py:class:`
+  in its Doxygen block. Click either side, jump to the other.
+- **Hash-based notebook execution** (MyST-NB + jupyter-cache, with the
+  cache key including the compiled pybind11 `.so` so notebook outputs
+  invalidate on C++ algorithm changes).
+
+Documentation conventions ([style guide](docs/dev/api-docs.md)):
+
+- **Python**: NumPy-style docstrings via Napoleon. Required sections:
+  `Parameters`, `Returns`, `Raises`. Recommended: `See Also`,
+  `Examples`, `Notes`. Rewrote 28 docstrings across 8 modules from
+  Google style; added bidirectional `:cpp:class:` cross-refs.
+- **C++**: full Doxygen blocks (`@brief @param @return @throws
+  @ingroup`) on every public symbol declared under
+  `packages/regpoly-cpp/src/include/` (55 headers, ~830 blocks).
+  `@code{.cpp}` examples on every user-constructible class.
+  `@return` singular (not `@returns`). Class-level long descriptions
+  preserve invariant prose.
+
+New user-facing on-ramp pages:
+
+- [Python / C++ bridge](docs/usage/python-cpp-bridge.md) — explains
+  the layered split + the wrapper-to-C++ cross-reference table.
+- [Equidistribution in 5 minutes](docs/theory/equidistribution-in-5-minutes.md)
+  — beginner on-ramp before the design-of-record spec.
+- [C++ usage](docs/usage/cpp.md) rewrite with a complete consumer
+  `CMakeLists.txt` example and a runnable "hello equidistribution"
+  C++ snippet that compiles against the pure-C++ install.
+
+Build commands changed:
+
+```
+# Was:
+cd docs && uv run mkdocs serve
+
+# Now:
+sudo apt install -y doxygen graphviz   # one-time
+uv run --group docs sphinx-build -b html docs site
+# or, for live-reload:
+uv run --group docs sphinx-autobuild docs site
+```
+
+CI (`.github/workflows/docs.yml`):
+
+- Builds the full uv workspace (including the pybind11 extension) so
+  autodoc has live signatures and `:cpp:class:` cross-refs resolve.
+- `apt install doxygen graphviz` step added.
+- Jupyter-cache action-cached, keyed on a hash of every `.ipynb` +
+  the compiled `.so`.
+- Deploys via `actions/deploy-pages` (was: `mkdocs gh-deploy`).
+- `sphinx-build -W` (warnings-as-errors) deferred until the
+  Exhale-duplicate-declaration baseline drops below the current 62.
+
+Removed: `mkdocs.yml`, `docs/gen_paper_pages.py` (logic now in a
+`builder-inited` hook in `docs/conf.py`), 26 obsolete
+`docs/api/python/*.md` mkdocstrings stubs, `docs/api/index.md`,
+`docs/api/cpp/index.md`, `docs/dev/api-docs-style.md` (replaced by
+`docs/dev/api-docs.md`), `docs/usage/notebooks.md` (replaced by
+`docs/notebooks/index.md`).
+
+Workspace notebook reorganisation: moved the 14 workspace-root
+reference notebooks (`notebooks/*.ipynb`) into
+`docs/notebooks/reference/` via `git mv` (preserves history). New
+`docs/notebooks/index.md` hub renders both the 15 family notebooks
+and the 14 reference notebooks. The 2 CA research notebooks under
+`docs/notebooks/research/` are excluded from execution.
+
+Canonical exemplars when documenting a new symbol:
+
+- C++: `packages/regpoly-cpp/src/include/library/catalog.h` (full
+  convention) and `core/generator.h` (abstract base + SIMD-override
+  prose preservation).
+- Python: `packages/regpoly/src/regpoly/library/__init__.py`
+  (NumPy docstrings, bidirectional `:cpp:class:` cross-refs).
+- Style guide: [docs/dev/api-docs.md](docs/dev/api-docs.md).
+
 ## Unreleased — legacy `.dat` reader extracted to add-on
 
 **Breaking changes** (C++ public API + YAML schema + CLI surface):

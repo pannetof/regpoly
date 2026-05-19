@@ -190,13 +190,17 @@ regpoly_monorepo/                       (uv workspace root)
 │       └── src/regpoly_legacy/         reader/ seek_factory/ cli/ tools/
 ├── shared/yaml/                        workspace-shared YAML search configs
 ├── third_party/                        MTToolBox (vendored), dSMFT (reference)
-└── docs/                               MkDocs Material site
+└── docs/                               Sphinx + Doxygen + Breathe + Exhale site
+    ├── conf.py                         Sphinx configuration
+    ├── Doxyfile                        Doxygen input → XML
+    ├── api/                            auto-generated Python + C++ reference
     ├── generators/                     one .md per *Gen family (17 pages)
     ├── library/                        paper YAMLs + per-family params catalog
-    ├── papers/                         reference PDFs
+    ├── notebooks/                      29 worked notebooks (15 family + 14 reference)
+    ├── papers/                         reference PDFs + auto-stubs from library/
     ├── theory/                         F₂-linear theory + algorithm specs
-    ├── usage/                          python / cpp / web / notebooks how-tos
-    └── dev/                            architecture, building, contributing
+    ├── usage/                          python / cpp / python-cpp-bridge / web
+    └── dev/                            architecture, building, contributing, api-docs
 ```
 
 Builds are driven by `pyproject.toml` in each package (no top-level
@@ -205,9 +209,20 @@ via plain CMake — see [docs/usage/cpp.md](docs/usage/cpp.md).
 
 ## Documentation
 
-Full MkDocs Material site: **[docs/index.md](docs/index.md)** (deployed to
-GitHub Pages on every push to `master` via
+Full Sphinx site (PyData Sphinx Theme + autodoc + Doxygen + Breathe +
+Exhale): **[docs/index.md](docs/index.md)** (deployed to GitHub Pages
+on every push to `master` via
 [`.github/workflows/docs.yml`](.github/workflows/docs.yml)).
+
+Build locally:
+
+```bash
+uv sync --group docs
+sudo apt install -y doxygen graphviz          # one-time
+uv run --group docs sphinx-build -b html docs site
+# or, for live-reload:
+uv run --group docs sphinx-autobuild docs site
+```
 
 | Section | Where |
 |---|---|

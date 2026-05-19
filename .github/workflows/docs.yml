@@ -5,39 +5,96 @@ on:
     branches: [master]
     paths:
       - "docs/**"
-      - "mkdocs.yml"
+      - "packages/regpoly-cpp/src/include/**"
+      - "packages/regpoly/src/regpoly/**"
+      - "packages/regpoly-legacy/src/regpoly_legacy/**"
+      - "packages/regpoly-web/src/regpoly_web/**"
+      - "notebooks/**"
+      - "CHANGELOG.md"
+      - "README.md"
+      - "DEPLOY.md"
       - ".github/workflows/docs.yml"
+      - "pyproject.toml"
+      - "uv.lock"
   workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment, cancel in-progress runs on new pushes.
+concurrency:
+  group: docs-pages
+  cancel-in-progress: true
 
 jobs:
-  build-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: recursive
+
+      - name: Install system dependencies (Doxygen + Graphviz)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
 
-      - name: Install docs deps (skip workspace packages — site is markdown-only)
-        run: |
-          uv python install 3.11
-          uv sync --group docs \
-            --no-install-package regpoly-cpp \
-            --no-install-package regpoly \
-            --no-install-package regpoly-web \
-            --no-install-package regpoly-legacy
+      - name: Set up Python 3.12
+        run: uv python install 3.12
 
-      - name: Configure git for gh-deploy
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Install workspace + docs deps (builds the C++ pybind11 extension)
+        run: uv sync --group docs
 
-      - name: Build and deploy MkDocs site to gh-pages
-        run: uv run --no-sync mkdocs gh-deploy --force --remote-name origin
+      - name: Cache jupyter-cache (notebook outputs)
+        uses: actions/cache@v4
+        with:
+          path: .jupyter_cache
+          # Invalidate when any source notebook changes OR when the C++
+          # extension's compiled .so changes (notebook outputs depend on
+          # the C++ algorithm bodies).
+          key: jupyter-cache-${{ runner.os }}-${{ hashFiles('docs/notebooks/**/*.ipynb', '.venv/lib/python3.12/site-packages/regpoly_cpp/*.so') }}
+          restore-keys: |
+            jupyter-cache-${{ runner.os }}-
+
+      - name: Build site
+        # NOTE: -W (warnings-as-errors) is deferred to a later step in
+        # the framework-migration plan once the warning baseline drops
+        # below the current 62 (all Exhale duplicate-declarations).
+        run: uv run --group docs sphinx-build -b html docs site
+
+      - name: Doctest
+        # Continue-on-error during the initial roll-out — a doctest
+        # failure should not block a docs deploy until the doctest
+        # surface has been audited. Promote to required once the
+        # discipline is in place.
+        continue-on-error: true
+        run: uv run --group docs sphinx-build -b doctest docs site_doctest
+
+      - name: Linkcheck
+        continue-on-error: true
+        run: uv run --group docs sphinx-build -b linkcheck docs site_linkcheck
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
