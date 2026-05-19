@@ -47,7 +47,7 @@ that distinguish parallel TinyMT instances.
 
 For a `(mat1, mat2, tmat)` tuple chosen by the upstream `tinymt32dc`
 search tool, $\chi_f$ is the primitive polynomial of degree 127
-over $\mathrm{GF}(2)$ guaranteeing the maximum period $2^{127} - 1$.
+over $\mathbb{F}_2$ guaranteeing the maximum period $2^{127} - 1$.
 regpoly recovers the minimal polynomial at runtime via Berlekamp–
 Massey on the bit-stream produced by `next()`.
 

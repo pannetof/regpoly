@@ -48,16 +48,16 @@ that resolution. The **total dimension defect** is the sum across
 resolutions:
 
 $$
-\text{SE} = \sum_{\ell=1}^{w} \delta(\ell) ,
+\text{SE} = \sum_{\ell=1}^{L} \delta(\ell) ,
 $$
 
-where $w$ is the output word width. SE is the single scalar REGPOLY's
+where $L$ is the output word width. SE is the single scalar REGPOLY's
 search loops use to rank candidate parameter sets.
 
 ## What "ME" means
 
 A generator with $\delta(\ell) = 0$ for every $\ell$ — every dimension
-gap is zero — is **maximally equidistributed (ME)**. ME at $w = 32$
+gap is zero — is **maximally equidistributed (ME)**. ME at $L = 32$
 means the generator is doing the best a 32-bit word size lets it do.
 ME is the ceiling; "$\text{SE} = 3$" is a small distance from that
 ceiling.
@@ -76,7 +76,7 @@ REGPOLY computes $d(\ell)$ via a matricial method:
 
 1. Build the $\ell t \times k$ matrix that maps the generator's state
    to the first $t$ output words truncated to $\ell$ leading bits each.
-2. Reduce it via Gaussian elimination over $\mathrm{GF}(2)$.
+2. Reduce it via Gaussian elimination over $\mathbb{F}_2$.
 3. The rank of that matrix at the largest $t$ where it equals $\ell t$
    is $d(\ell)$.
 
@@ -110,7 +110,7 @@ snippet with `regpoly::core::run_matricial_equidistribution`.
 ## See also
 
 - [F₂-linear generators](f2-linear-generators.md) — the matrices behind
-  $A$, $B$, $T$ and what "linear over $\mathrm{GF}(2)$" really means.
+  $A$, $B$, $T$ and what "linear over $\mathbb{F}_2$" really means.
 - [Equidistribution spec](equidistribution-spec.md) — full algorithm,
   including the reducible-$\chi$ case.
 - [Search format](search_format.md) — the YAML schema where you

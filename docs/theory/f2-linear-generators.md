@@ -1,6 +1,6 @@
 # F₂-linear generators
 
-This page is the umbrella reference for the family of pseudo-random number generators REGPOLY targets: **F₂-linear** generators, where the state evolves under a linear recurrence over the two-element field $\mathbb{F}_2 = \mathrm{GF}(2)$. Almost every modern high-quality bit-source for simulation — Mersenne Twister, WELL, MELG, SFMT, Tausworthe, xorshift — falls in this family.
+This page is the umbrella reference for the family of pseudo-random number generators REGPOLY targets: **F₂-linear** generators, where the state evolves under a linear recurrence over the two-element field $\mathbb{F}_2$ (also written `\mathrm{GF}(2)` in the older literature). Almost every modern high-quality bit-source for simulation — Mersenne Twister, WELL, MELG, SFMT, Tausworthe, xorshift — falls in this family.
 
 ## State, recurrence, and output
 
@@ -10,13 +10,13 @@ $$
 \mathbf{x}_{n+1} = A \,\mathbf{x}_n .
 $$
 
-The output at step $n$ is read off the state through a second linear map $B \in \mathbb{F}_2^{w \times k}$ that selects $w$ output bits:
+The output at step $n$ is read off the state through a second linear map $B \in \mathbb{F}_2^{L \times k}$ that selects $L$ output bits:
 
 $$
 \mathbf{y}_n = B \,\mathbf{x}_n .
 $$
 
-Finally, the integer or floating-point sample the user actually consumes is the binary expansion of $\mathbf{y}_n$, optionally postprocessed by a **tempering** linear map $T \in \mathbb{F}_2^{w \times w}$ (see [Tempering](#tempering-as-a-linear-map) below).
+Finally, the integer or floating-point sample the user actually consumes is the binary expansion of $\mathbf{y}_n$, optionally postprocessed by a **tempering** linear map $T \in \mathbb{F}_2^{L \times L}$ (see [Tempering](#tempering-as-a-linear-map) below).
 
 The matrices $A$, $B$, and $T$ together fully specify the generator. In implementation, $A$ is rarely written down explicitly — the family-specific recurrence (a TGFSR twist, a MELG lagged feedback, a Tausworthe LFSR) IS the description of $A$, encoded in word-sized operations that are equivalent to one matrix-vector product over $\mathbb{F}_2$.
 
@@ -39,7 +39,7 @@ Primitivity (and full period) is checked in REGPOLY by the `is_full_period` driv
 
 The defining quality metric for an F₂-linear generator is **equidistribution**: how uniformly its output points fill the unit hypercube $[0, 1)^t$.
 
-For a single resolution $\ell \in \{1, \ldots, w\}$, the **dimension of equidistribution** $d(\ell)$ is the largest $t$ such that the set of all $t$-tuples of consecutive outputs, truncated to $\ell$ leading bits each, covers every $\ell t$-bit pattern exactly $2^{k - \ell t}$ times. Equivalently, the matrix that maps the state to those $\ell t$ output bits has rank $\ell t$.
+For a single resolution $\ell \in \{1, \ldots, L\}$, the **dimension of equidistribution** $d(\ell)$ is the largest $t$ such that the set of all $t$-tuples of consecutive outputs, truncated to $\ell$ leading bits each, covers every $\ell t$-bit pattern exactly $2^{k - \ell t}$ times. Equivalently, the matrix that maps the state to those $\ell t$ output bits has rank $\ell t$.
 
 The **dimension gap** at resolution $\ell$ is
 
@@ -68,7 +68,7 @@ Combined generators improve equidistribution by widening the state space without
 
 ## Tempering as a linear map
 
-Many families wrap a **tempering** linear bijection $T : \mathbb{F}_2^w \to \mathbb{F}_2^w$ around the raw output:
+Many families wrap a **tempering** linear bijection $T : \mathbb{F}_2^L \to \mathbb{F}_2^L$ around the raw output:
 
 $$
 \mathbf{z}_n = T \,\mathbf{y}_n .

@@ -1,4 +1,4 @@
-# LCP-Based Fast Rejection Filter and Primitivity Testing for $\mathrm{GF}(2)$-Linear Generators
+# LCP-Based Fast Rejection Filter and Primitivity Testing for $\mathbb{F}_2$-Linear Generators
 
 ## Implementation Specification
 
@@ -7,7 +7,7 @@
 ## 1. Purpose and Scope
 
 This document describes two complementary tools for testing whether the characteristic
-polynomial $P(x)$ of a $\mathrm{GF}(2)$-linear generator is **primitive**:
+polynomial $P(x)$ of a $\mathbb{F}_2$-linear generator is **primitive**:
 
 1. **LCP fast rejection filter (BM-based):** cheap $O(k^2)$ test that can *reject* bad
    parameters with certainty, but *cannot* certify irreducibility or primitivity on its own.
@@ -31,14 +31,14 @@ then apply the exact test only to candidates that survive.
 
 ## 2. Theoretical Foundation
 
-### 2.1 $\mathrm{GF}(2)$-linear generators and minimal polynomials
+### 2.1 $\mathbb{F}_2$-linear generators and minimal polynomials
 
-A $\mathrm{GF}(2)$-linear generator evolves its $k$-bit state by a linear map $A$ over $\mathrm{GF}(2)^k$:
+A $\mathbb{F}_2$-linear generator evolves its $k$-bit state by a linear map $A$ over $\mathbb{F}_2^k$:
 
 $$\mathbf{x}_{n+1} = A \cdot \mathbf{x}_n$$
 
 Every output bit is a fixed linear function of the state: $s_n = c^T \mathbf{x}_n$. The sequence
-$\{s_n\}$ satisfies a linear recurrence over $\mathrm{GF}(2)$ whose **minimal polynomial** $m(x)$ divides
+$\{s_n\}$ satisfies a linear recurrence over $\mathbb{F}_2$ whose **minimal polynomial** $m(x)$ divides
 the **characteristic polynomial** $P(x) = \det(xI - A)$:
 
 $$m(x) \mid P(x) \quad \text{always}$$
@@ -98,7 +98,7 @@ Since $2^k - 1$ is prime, the order is either 1 (impossible for $\alpha$ nonzero
 (maximal). Therefore $P(x)$ is primitive. ∎
 
 **What this does NOT say:**
-- It does not say that every degree-$k$ polynomial over $\mathrm{GF}(2)$ is irreducible when $k$ is a
+- It does not say that every degree-$k$ polynomial over $\mathbb{F}_2$ is irreducible when $k$ is a
   Mersenne prime exponent. Reducible degree-$k$ polynomials exist for all $k > 1$.
 - It does not help the LCP test detect reducibility any better.
 
@@ -175,15 +175,15 @@ for i = 0 to N-1:
     s[i] = pop_bit(bit_buffer)
 ```
 
-> **Note on tempering:** for generators with a $\mathrm{GF}(2)$-linear output transformation (MT
+> **Note on tempering:** for generators with a $\mathbb{F}_2$-linear output transformation (MT
 > tempering, MELG lagged tempering), the minimal polynomial of the tempered sequence equals
 > that of the raw state — run the generator normally, no special handling needed.
 >
 > **Note on nonlinear scramblers:** for xorshift\*, xoshiro\*\*, xoroshiro+, the scrambled
-> output does not satisfy a $\mathrm{GF}(2)$ linear recurrence. Apply BM to the **raw state bits**
+> output does not satisfy a $\mathbb{F}_2$ linear recurrence. Apply BM to the **raw state bits**
 > before the scrambler. See Section 8.
 
-### 5.2 Berlekamp-Massey over $\mathrm{GF}(2)$
+### 5.2 Berlekamp-Massey over $\mathbb{F}_2$
 
 BM maintains:
 
@@ -218,7 +218,7 @@ BM maintains:
            m += 1
 ```
 
-All arithmetic is XOR and AND over $\mathrm{GF}(2)$. No modular inverses needed.
+All arithmetic is XOR and AND over $\mathbb{F}_2$. No modular inverses needed.
 
 **Polynomial shift:** `C[i] ^= B[i-m]` for `i = m .. deg(B)+m`, with `B[j] = 0`
 for `j < 0`.
@@ -326,7 +326,7 @@ rejection rate is higher.
 ## 8. Applying BM to the Raw State (Bypassing Scramblers)
 
 For generators with nonlinear output scramblers (xorshift\*, xoshiro\*\*, xoroshiro+),
-the scrambled output does not satisfy a $\mathrm{GF}(2)$ linear recurrence. BM on the scrambled
+the scrambled output does not satisfy a $\mathbb{F}_2$ linear recurrence. BM on the scrambled
 output will not find $P(x)$. Apply BM to the raw state instead:
 
 ```cpp
@@ -410,7 +410,7 @@ $k \gtrsim 10{,}000$.
 
 ## 10. Seed Generation for the LCP Filter
 
-Seeds must be nonzero, independent, and uniformly random over $\mathrm{GF}(2)^k \setminus \{0\}$. Use a
+Seeds must be nonzero, independent, and uniformly random over $\mathbb{F}_2^k \setminus \{0\}$. Use a
 separate generator (e.g., splitmix64 seeded from hardware clock) to produce $k$ bits per
 seed. Reject all-zero seeds.
 

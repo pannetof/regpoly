@@ -12,12 +12,12 @@ dimension defect of an $\mathbb{F}_2$-linear generator.  The algorithm uses
 
 ### Why tempering?
 
-An $\mathbb{F}_2$-linear generator produces output by extracting $w$ bits from a
+An $\mathbb{F}_2$-linear generator produces output by extracting $L$ bits from a
 $k$-bit state.  Without tempering, the raw output often has poor
 equidistribution: certain bit patterns are overrepresented or
 underrepresented in tuples of consecutive outputs.
 
-A **tempering transformation** $T$ is a bijective $\mathrm{GF}(2)$-linear map
+A **tempering transformation** $T$ is a bijective $\mathbb{F}_2$-linear map
 applied to the output word before it is returned to the user.
 Because $T$ is bijective, it does not change the generator's period
 or its state-update structure.  It only rearranges the output bits.
@@ -61,10 +61,10 @@ The free parameters are the bitmasks $b$ and $c$.
 state array:
 
 $$y \leftarrow y \oplus (y \ll \sigma), \qquad
-  y \leftarrow y \oplus (w_{i+L} \;\&\; b)$$
+  y \leftarrow y \oplus (w_{i+\ell_\text{lag}} \;\&\; b)$$
 
 The free parameter is the bitmask $b$; the structural parameters
-$\sigma$ and $L$ are fixed before optimization.
+$\sigma$ and $\ell_\text{lag}$ are fixed before optimization.
 
 
 ## 2. Safe Masks
@@ -79,7 +79,7 @@ If we perturb a bitmask bit that affects output bits $0, \ldots, \ell-2$,
 the polynomials $h_0, \ldots, h_{\ell-2}$ change, and the cached
 lattice basis for resolutions $1, \ldots, \ell-1$ becomes invalid.
 To avoid a full rebuild, we must restrict perturbations at resolution
-$\ell$ to bits that **only** affect output bits $\ell-1, \ell, \ldots, w-1$.
+$\ell$ to bits that **only** affect output bits $\ell-1, \ell, \ldots, L-1$.
 
 ### Definition
 
@@ -87,12 +87,12 @@ The **safe mask** for parameter $p$ at resolution $\ell$ is a bitmask
 $S_\ell(p)$ where bit $j$ is set iff flipping bit $j$ of parameter $p$
 does not change any of the output bits $0, 1, \ldots, \ell-2$.
 
-For a $w$-bit parameter, the base safe mask at resolution $\ell$ is:
+For an $L$-bit parameter, the base safe mask at resolution $\ell$ is:
 
-$$S_\ell = (1 \ll (w - \ell + 1)) - 1$$
+$$S_\ell = (1 \ll (L - \ell + 1)) - 1$$
 
-This allows only the lowest $w - \ell + 1$ bits to be perturbed.  These
-correspond to the bit positions $\ell-1, \ell, \ldots, w-1$ of the output
+This allows only the lowest $L - \ell + 1$ bits to be perturbed.  These
+correspond to the bit positions $\ell-1, \ell, \ldots, L-1$ of the output
 (positions that do not affect the already-resolved resolutions).
 
 ### MK tempering adjustment
@@ -113,7 +113,7 @@ an output bit below position $\ell - 1$.
 
 ### Properties
 
-- At $\ell = 1$: the safe mask is $(1 \ll w) - 1$ (all bits safe), because
+- At $\ell = 1$: the safe mask is $(1 \ll L) - 1$ (all bits safe), because
   there are no lower resolutions to protect.
 - At $\ell = L$: only one bit is safe (the LSB), severely constraining
   the search.
@@ -331,8 +331,8 @@ result = opt.run(other_comb) # reuse same settings
 
 | Operation | Cost |
 |-----------|------|
-| Generate random perturbation | $O(w)$ |
-| Update bitmask parameter + push to C++ | $O(w)$ |
+| Generate random perturbation | $O(L)$ |
+| Update bitmask parameter + push to C++ | $O(L)$ |
 | `step(ell)`: recompute one generating polynomial | $O(k)$ generator steps |
 | `step(ell)`: Lenstra reduction at resolution $\ell$ | $O(\ell^2 \cdot k / 64)$ word ops |
 
@@ -362,7 +362,7 @@ across resolutions, so the actual work is much less.
 
 ## 8. Example: MT19937
 
-For MT19937 with MK type II tempering ($w = 32$, $k = 19937$):
+For MT19937 with MK type II tempering ($L = 32$, $k = 19937$):
 
 - Parameters: $b$ (32 bits) and $c$ (32 bits), with shifts
   $\eta = 7$, $\mu = 15$, $u = 11$, $l = 18$.
@@ -372,9 +372,9 @@ For MT19937 with MK type II tempering ($w = 32$, $k = 19937$):
 - With `max_essais = 400`: typically reaches ME ($\Delta = 0$) in
   under a minute using the lattice method.
 
-For MELG19937-64 with lagged tempering ($w = 64$, $k = 19937$):
+For MELG19937-64 with lagged tempering ($L = 64$, $k = 19937$):
 
-- Parameter: $b$ (64 bits), with structural $\sigma$ and $L$.
+- Parameter: $b$ (64 bits), with structural $\sigma$ and $\ell_\text{lag}$.
 - Safe mask at $\ell = 1$: 64 bits.
 - Safe mask at $\ell = 64$: 1 bit.
 - The minimize mode with `n_restarts = 10` typically finds ME by

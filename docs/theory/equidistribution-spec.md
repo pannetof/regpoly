@@ -1,7 +1,7 @@
 # Matricial Computation of Equidistribution for Black-Box $\mathbb{F}_2$-Linear Generators
 
 **Scope.** This document specifies an algorithm and implementation plan for computing
-the dimension-of-equidistribution profile $d(\ell)$, $\ell = 1, \ldots, w$, of a pseudorandom
+the dimension-of-equidistribution profile $d(\ell)$, $\ell = 1, \ldots, L$, of a pseudorandom
 number generator that is known to be $\mathbb{F}_2$-linear but whose internal structure
 (characteristic polynomial, invariant subspaces, factorization) is not assumed to
 be known in advance. The generator may be non-full-period: no assumption is made
@@ -9,16 +9,16 @@ that the characteristic polynomial is primitive.
 
 **Inputs required from the generator.**
 
-1. A state of dimension $k$ over $\mathbb{F}_2$ (so the full state is $k$ bits; $k = w \cdot N$
+1. A state of dimension $k$ over $\mathbb{F}_2$ (so the full state is $k$ bits; $k = L \cdot N$
    in the usual LFSR-array formulation).
-2. Word size $w$ of the output (32, 64, or 128).
+2. Output bit width $L$ of the output (32, 64, or 128).
 3. A `step()` routine advancing the internal state by one step.
-4. A routine to read the current $w$-bit output word.
+4. A routine to read the current $L$-bit output word.
 5. The ability to set the state to an arbitrary $k$-bit value.
 
 No knowledge of $\chi_f$, no access to $f$ as a matrix, no tempering assumptions.
 
-**Output.** The array $d(\ell)$ for $\ell = 1, \ldots, w$, together with the recovered factor
+**Output.** The array $d(\ell)$ for $\ell = 1, \ldots, L$, together with the recovered factor
 $\varphi(t)$ of the characteristic polynomial on which equidistribution is certified,
 the dimension $p = \deg \varphi$ of the invariant subspace $V$, and the certified defect
 ratio $2^{-p}$.
@@ -183,7 +183,7 @@ Store $B$ as a bit-packed $k \times p$ matrix, rows as $p/W$-word bitstrings
 For each output phase $i$ (see §6.4), maintain a single echelon form $E_i$ over
 $\mathbb{F}_2$ with $p$ columns. Rows are successively inserted; at most $p$ pivots exist.
 
-Also maintain, for each accuracy $\ell \in \{1, \ldots, w\}$:
+Also maintain, for each accuracy $\ell \in \{1, \ldots, L\}$:
 - $c_i(\ell)$: current rank of the $\ell$-restricted submatrix for phase $i$;
 - $\mathrm{alive}_i(\ell)$: boolean flag, true while $c_i(\ell) = m \cdot \ell$ has kept up.
 
@@ -192,22 +192,22 @@ Also maintain, for each accuracy $\ell \in \{1, \ldots, w\}$:
 Order the rows of the output matrix bit-by-bit within each output word, MSB
 first:
 
-$$\text{output 0 bit 1, output 0 bit 2, \ldots, output 0 bit } w,$$
-$$\text{output 1 bit 1, output 1 bit 2, \ldots, output 1 bit } w, \ldots$$
+$$\text{output 0 bit 1, output 0 bit 2, \ldots, output 0 bit } L,$$
+$$\text{output 1 bit 1, output 1 bit 2, \ldots, output 1 bit } L, \ldots$$
 
-Then the matrix $M_m(\ell)$ for accuracy $\ell$ is obtained from $M_m(w)$ by keeping,
-within each block of $w$ consecutive rows, only the first $\ell$. **A single echelon
+Then the matrix $M_m(\ell)$ for accuracy $\ell$ is obtained from $M_m(L)$ by keeping,
+within each block of $L$ consecutive rows, only the first $\ell$. **A single echelon
 form on the full-precision rows, maintained in this order, gives every $d(\ell)$
 simultaneously.**
 
 ### 6.3 The inner loop (single phase)
 
 ```
-initialize E empty; c(ell) ← 0, alive(ell) ← true for ell = 1..w
+initialize E empty; c(ell) ← 0, alive(ell) ← true for ell = 1..L
 for m = 1, 2, 3, …:
-    compute this step's p dual vectors for bits 1..w of the output word,
+    compute this step's p dual vectors for bits 1..L of the output word,
         represented as p-bit rows over the basis B of V
-    for j = 1, …, w:
+    for j = 1, …, L:
         r ← dual vector of bit j
         attempt F_2-echelon insertion of r into E
         if r was linearly independent:
@@ -218,12 +218,12 @@ for m = 1, 2, 3, …:
                 alive(ell) ← false
                 d(ell) ← m − 1
     if no ell is still alive: break
-    if m·w ≥ p: break                   // upper bound d(ell) ≤ ⌊p/ell⌋ saturated
+    if m·L ≥ p: break                   // upper bound d(ell) ≤ ⌊p/ell⌋ saturated
 ```
 
-### 6.4 Phase handling (for $w_\text{output} < w_\text{state}$)
+### 6.4 Phase handling (for $L < w_\text{state}$)
 
-If the generator emits $w$-bit words but is designed around a larger internal
+If the generator emits $L$-bit words but is designed around a larger internal
 word (e.g. SFMT emits 32-bit words from a 128-bit internal word, giving four
 phases $i \in \{0, 1, 2, 3\}$ per internal step), maintain **four independent
 echelon forms** $E_0, \ldots, E_3$, one per phase, sharing the same $V$-basis $B$
@@ -245,8 +245,8 @@ Never materialize $f$ as a $k \times k$ matrix. Instead:
 2. At each $m$-step, advance all $p$ virtual registers by one call to `step()`
    each. This is $p$ independent generator steps — parallelizable, and each
    is as cheap as a single generator step.
-3. Read the $w$-bit output from each virtual register. Transpose the resulting
-   $p \times w$ slab to obtain $w$ dual vectors, each of length $p$ bits — exactly
+3. Read the $L$-bit output from each virtual register. Transpose the resulting
+   $p \times L$ slab to obtain $L$ dual vectors, each of length $p$ bits — exactly
    the rows we need to insert.
 
 Cost per $m$-step: $p$ generator steps. For SFMT19937 with $p \approx 20000$: a few
@@ -267,11 +267,11 @@ Worst case: $O(p^2 / 64)$ word-ops per insertion. Total insertions: at most $p$
 
 $$\begin{aligned}
 \text{Echelon maintenance:} \quad & O(p^3 / W) \quad \leftarrow \text{dominant} \\
-\text{Generator advance:} \quad & O(p \cdot k / W) \text{ per } m\text{-step} \times O(p/w) \text{ } m\text{-steps} \\
-& = O(p^2 \cdot k / (w \cdot W))
+\text{Generator advance:} \quad & O(p \cdot k / W) \text{ per } m\text{-step} \times O(p/L) \text{ } m\text{-steps} \\
+& = O(p^2 \cdot k / (L \cdot W))
 \end{aligned}$$
 
-For $p = k = 19937$, $w = 32$, $W = 64$: echelon is $\sim 10^{11}$ word-ops, i.e.
+For $p = k = 19937$, $L = 32$, $W = 64$: echelon is $\sim 10^{11}$ word-ops, i.e.
 seconds to a minute. Generator advance is $\sim 10^{10}$, i.e. comparable but
 slightly faster.
 
@@ -323,7 +323,7 @@ confirm $f^{(2^p - 1)/q} \cdot s_V \ne s_V$ for every small prime $q$ dividing $
 
 Confirm:
 
-- $d(w) \ge 1$ (a single $w$-bit output should be $w$-uniform; failure here means
+- $d(L) \ge 1$ (a single $L$-bit output should be $L$-uniform; failure here means
   output tempering is catastrophically broken or $B$ is wrong).
 - $d(1) \le p$ (upper bound always holds; violation means the echelon
   bookkeeping is buggy).
@@ -333,7 +333,7 @@ Confirm:
 
 Run the *entire* pipeline — stages 1 through 5 — on MT19937, for which the
 $d(\ell)$ profile is published (cf. Matsumoto–Nishimura 1998, Table 2; also SFMT
-paper Table 3). Require exact agreement on all 32 values of $d(\ell)$. This is
+paper Table 3). Require exact agreement on all $L = 32$ values of $d(\ell)$. This is
 the single most important test; it catches basis-construction bugs,
 phase-handling bugs, and off-by-one errors in the echelon loop.
 

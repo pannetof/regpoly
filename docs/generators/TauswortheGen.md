@@ -14,7 +14,7 @@ polynomials with more than three nonzero terms.
 ## 1. The linear recurrence
 
 A Tausworthe generator (Tausworthe, 1965) produces a bit sequence
-$\{b_n\}_{n \ge 0}$ over $\mathrm{GF}(2)$ via
+$\{b_n\}_{n \ge 0}$ over $\mathbb{F}_2$ via
 
 $$
 b_n \;=\; a_1 b_{n-1} \oplus a_2 b_{n-2} \oplus \cdots \oplus a_k b_{n-k},
@@ -24,11 +24,11 @@ $$
 with $a_i \in \{0,1\}$ and $a_k = 1$. The **characteristic polynomial** is
 
 $$
-P(z) \;=\; z^k + a_1 z^{k-1} + \cdots + a_k \;\in\; \mathrm{GF}(2)[z].
+P(z) \;=\; z^k + a_1 z^{k-1} + \cdots + a_k \;\in\; \mathbb{F}_2[z].
 $$
 
 The sequence attains its maximal period $\rho = 2^k - 1$ iff $P(z)$ is
-**primitive** over $\mathrm{GF}(2)$. Non-primitive choices give shorter periods,
+**primitive** over $\mathbb{F}_2$. Non-primitive choices give shorter periods,
 sometimes much shorter; in practice $P$ is always chosen primitive.
 
 ---
@@ -57,18 +57,18 @@ Two requirements:
 
 ## 3. $\mathbb{F}_2$-linear matrix form
 
-The Tausworthe generator is a special case of the general $\mathrm{GF}(2)$-linear
+The Tausworthe generator is a special case of the general $\mathbb{F}_2$-linear
 generator
 
 $$
-\mathbf{x}_n \;=\; A\,\mathbf{x}_{n-1} \;\in\; \mathrm{GF}(2)^k,
+\mathbf{x}_n \;=\; A\,\mathbf{x}_{n-1} \;\in\; \mathbb{F}_2^k,
 \qquad
-\mathbf{y}_n \;=\; B\,\mathbf{x}_n \;\in\; \mathrm{GF}(2)^L,
+\mathbf{y}_n \;=\; B\,\mathbf{x}_n \;\in\; \mathbb{F}_2^L,
 \qquad
 u_n \;=\; \sum_{j=1}^{L} y_{n,j}\, 2^{-j},
 $$
 
-with $A \in \mathrm{GF}(2)^{k \times k}$ and $B \in \mathrm{GF}(2)^{L \times k}$.
+with $A \in \mathbb{F}_2^{k \times k}$ and $B \in \mathbb{F}_2^{L \times k}$.
 The period is $2^k - 1$ iff the minimal polynomial of $A$ is primitive of
 degree $k$.
 
@@ -94,7 +94,7 @@ $2^{t\ell}$ identical cubic cells, every cell contains exactly $2^{k - t\ell}$
 of the $2^k - 1$ output tuples $(u_n, u_{n+1}, \ldots, u_{n+t-1})$ taken over
 one full period (plus the zero state, giving exact equality).
 
-Equivalently, the $k \times t\ell$ matrix over $\mathrm{GF}(2)$ whose rows come
+Equivalently, the $k \times t\ell$ matrix over $\mathbb{F}_2$ whose rows come
 from the first $\ell$ output bits at $t$ successive times — built from
 $B, BA, BA^2, \ldots, BA^{t-1}$ restricted to their first $\ell$ rows — has
 full rank $t\ell$.
@@ -304,9 +304,9 @@ $B$ is the top-$L$-row selector.
 A combined generator with $J$ QuickTaus components has
 
 $$
-A \;=\; \mathrm{diag}(A_1, \ldots, A_J) \;\in\; \mathrm{GF}(2)^{k \times k},
+A \;=\; \mathrm{diag}(A_1, \ldots, A_J) \;\in\; \mathbb{F}_2^{k \times k},
 \qquad
-B \;=\; [\,B_1 \mid B_2 \mid \cdots \mid B_J\,] \;\in\; \mathrm{GF}(2)^{L \times k},
+B \;=\; [\,B_1 \mid B_2 \mid \cdots \mid B_J\,] \;\in\; \mathbb{F}_2^{L \times k},
 $$
 
 with state $\mathbf{x} = (\mathbf{x}^{(1)}, \ldots, \mathbf{x}^{(J)})$
