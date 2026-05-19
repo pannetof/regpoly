@@ -1,30 +1,32 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Francois Panneton, Ph.D.
 
-"""
-tempering_optimizer.py — Tempering bitmask optimization.
+"""Tempering bitmask optimisation driver.
 
-Phase 2.4d: the recursive optimize(v) inner loop now lives in C++
-(see packages/regpoly-cpp/src/search/tempering_optimizer.cpp). Python
+:class:`regpoly.search.tempering_optimizer.TemperingOptimizer`
+runs the StackBase + safe-mask + random-perturbation loop that searches
+for tempering bitmasks (`b`, `c`, …) minimising the equidistribution
+defect. The recursive inner loop lives in C++
+(:cpp:class:`regpoly::core::TemperingOptimizer`,
+``packages/regpoly-cpp/src/search/tempering_optimizer.cpp``); Python
 still owns:
 
-  * Safe-mask construction (small structural computation that depends
-    on `mu` and bit width — runs once per Combination).
-  * Building the (cpp_trans, param_name, width) locator list that the
-    C++ driver consumes.
-  * Syncing the best-found values back into each Transformation's
-    Python `_params` dict after the C++ driver returns.
+- Safe-mask construction (depends on ``mu`` and the bit width —
+  computed once per `Combination`).
+- The `(cpp_trans, param_name, width)` locator list the C++ driver
+  consumes to know where to write the best-found values.
+- Syncing the best-found values back into each `Transformation`'s
+  Python `_params` dict once the C++ driver returns.
 
-Modes (controlled by delta, mse, n_restarts):
+The optimiser has three operating modes, selected by the
+`delta`/`mse`/`n_restarts` constructor arguments:
 
-  delta=None, mse=None, n_restarts=1 (default):
-      ME mode.  delta=[0]*L, mse=0.  Single call.
-
-  delta=[...], mse=N, n_restarts=1:
-      Find b,c with gaps[v] <= delta[v] and se <= mse.
-
-  n_restarts > 1 (delta and mse ignored):
-      Minimize se via iterative delta tightening.
+* **ME mode** (``delta=None``, ``mse=None``, ``n_restarts=1`` — the default):
+  equivalent to ``delta=[0]*L, mse=0``; one call.
+* **Targeted** (``delta`` and ``mse`` explicit, ``n_restarts=1``):
+  find ``b, c`` with ``gaps[v] <= delta[v]`` and ``se <= mse``.
+* **Minimisation** (``n_restarts > 1``): minimise ``se`` via iterative
+  ``delta`` tightening.
 """
 
 from __future__ import annotations
@@ -39,6 +41,15 @@ INT_MAX = 2**31 - 1
 
 
 class TemperingOptimizer:
+    """Search for tempering bitmasks that minimise the dimension defect.
+
+    See the module docstring for the three operating modes (ME, target
+    `delta/mse`, multi-restart `se`-minimisation).
+
+    See Also
+    --------
+    :cpp:class:`regpoly::core::TemperingOptimizer` : the C++ implementation this wraps.
+    """
 
     def __init__(
         self,
@@ -48,6 +59,24 @@ class TemperingOptimizer:
         n_restarts: int = 1,
         verbose: bool = True,
     ) -> None:
+        """Configure the optimiser.
+
+        Parameters
+        ----------
+        max_essais
+            Maximum number of random-perturbation tries per
+            restart.
+        delta
+            Per-resolution target defects. `None` switches to ME
+            mode (defaults to all-zeros).
+        mse
+            Target total defect. `None` keeps ME mode.
+        n_restarts
+            When greater than 1, ignore `delta`/`mse` and
+            run iterative `se`-minimisation instead.
+        verbose
+            Print per-try progress to stderr.
+        """
         self.max_essais = max_essais
         self.delta = delta
         self.mse = mse

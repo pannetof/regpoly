@@ -98,11 +98,12 @@ Bibliography + PDFs of the foundational papers behind each family.
 :::
 
 :::{grid-item-card} 🔍 &nbsp; API Reference
-:link: api/index
+:link: api/python/index
 :link-type: doc
 
-Auto-generated reference for the public C++ and Python surfaces.
-Class / file / namespace hierarchy, cross-linked across both layers.
+Auto-generated reference for the public Python surface (`autodoc` +
+NumPy-style docstrings) and the C++ surface (Doxygen + Exhale's
+Class / File / Namespace hierarchy). Bidirectionally cross-linked.
 :::
 
 :::{grid-item-card} 🛠 &nbsp; Developer

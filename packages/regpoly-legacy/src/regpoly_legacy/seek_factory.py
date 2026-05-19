@@ -1,14 +1,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2026 Francois Panneton, Ph.D.
 
-"""seek_from_legacy(): build a regpoly.search.seek.Seek from the legacy
-positional-argument input form (test_file + per-component .dat files).
+"""Build a :class:`regpoly.search.seek.Seek` from pre-v2 positional inputs.
 
-The implementation mirrors the body of the now-deleted
-``Seek.from_legacy`` / ``_read_legacy`` in ``regpoly.search.seek``. It
-reaches into ``Seek``'s private ``_comb`` / ``_tests`` / ``_nbtries``
-attributes — acceptable since both modules live in the same workspace
-and the previous ``Seek.from_legacy`` classmethod did the same.
+:func:`regpoly_legacy.seek_factory.seek_from_legacy` is the
+replacement for the now-deleted ``Seek.from_legacy`` classmethod. The
+implementation mirrors the body of the deleted
+``Seek._read_legacy`` in `regpoly.search.seek`. It reaches into
+`Seek`'s private `_comb` / `_tests` / `_nbtries` attributes —
+acceptable since both modules live in the same workspace and the
+previous `Seek.from_legacy` classmethod did the same.
 """
 
 from __future__ import annotations
@@ -160,9 +161,33 @@ def seek_from_legacy(
     test_file: str,
     gen_data_files: list[str],
 ) -> Seek:
-    """Build a ``Seek`` from legacy C-format files.
+    """Build a :class:`regpoly.search.seek.Seek` from pre-v2 positional inputs.
 
-    Replaces the now-deleted ``Seek.from_legacy`` classmethod.
+    Replaces the deleted `Seek.from_legacy` classmethod. Use this when
+    the input you have is the historical positional form (test file +
+    one or more `.dat` generator files), not a YAML config.
+
+    Parameters
+    ----------
+    nb_comp
+        Number of components — must equal `len(gen_data_files)`.
+    test_file
+        Path to the legacy test-configuration `.dt` file.
+    gen_data_files
+        List of legacy `.dat` generator-pool files,
+        one per component.
+
+    Returns
+    -------
+    Seek
+        A constructed `Seek` ready for :meth:`regpoly.search.seek.Seek.run`.
+
+    Raises
+    ------
+    RuntimeError
+        For any parse failure in the underlying
+        :class:`regpoly_legacy.LegacyReader` or in the
+        legacy test-file decoder.
     """
     s = Seek()
     s._comb, tests, s._nbtries = _read_legacy(nb_comp, test_file, gen_data_files)

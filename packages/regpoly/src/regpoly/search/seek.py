@@ -1,14 +1,25 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Francois Panneton, Ph.D.
 
-"""
-seek.py — Seek class: runs the equidistribution search.
+"""Full-stack equidistribution search driver.
 
-Input format: YAML configuration file (``equidist.*.yaml``). The
-``legacy_file:`` key for embedding pre-v2 ``.dat`` parameter pools has
-moved to the optional ``regpoly-legacy`` add-on package — see
-``regpoly_legacy.seek_factory.seek_from_legacy(...)`` for the equivalent
-positional-argument form.
+The :class:`regpoly.search.seek.Seek` class glues together YAML
+parsing, generator/tempering pool construction, the test driver, and
+the result writer for the canonical ``equidist.*.yaml`` flow. The
+public entry points are:
+
+- :meth:`regpoly.search.seek.Seek.from_yaml` —
+  build a `Seek` from a YAML config.
+- :meth:`regpoly.search.seek.Seek.run` — execute the search loop.
+
+The pre-v2 `legacy_file:` YAML key (which embedded `.dat` parameter
+pools directly) has been removed from this layer; the optional
+``regpoly-legacy`` add-on still supports it via
+:func:`regpoly_legacy.seek_factory.seek_from_legacy`.
+
+Cross-layer note: the inner search loop lives in
+:cpp:class:`regpoly::core::Seek` (header: ``src/include/search/seek.h``);
+this module owns configuration ingestion and result output.
 """
 
 from __future__ import annotations
@@ -45,11 +56,14 @@ _EQ66dash = "-" * 66
 
 
 class Seek:
-    """
-    Search for combined generators with good equidistribution properties.
+    """Search for combined generators with good equidistribution properties.
 
     Construct via ``Seek.from_yaml("search.config.yaml")``. The legacy
     positional-arg constructor moved to ``regpoly_legacy.seek_from_legacy``.
+
+    See Also
+    --------
+    :cpp:class:`regpoly::core::Seek` : the C++ search-loop counterpart.
     """
 
     def __init__(self) -> None:

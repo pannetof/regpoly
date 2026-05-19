@@ -714,19 +714,72 @@ def parse_transformation_specs(filename: str) -> tuple[list[tuple[str, dict[str,
 
 
 class LegacyReader:
-    """Parsers for legacy text-based generator and transformation files."""
+    """Pre-v2 `.dat` parser façade.
+
+    Drop-in replacement for the historical
+    `regpoly.io.legacy_reader.LegacyReader` (deleted when the legacy
+    code moved out of `regpoly` into this add-on). Constructs
+    :class:`regpoly.core.generator.Generator` /
+    :class:`regpoly.core.transformation.Transformation`
+    objects via the existing C++ factory — no behavioural drift versus
+    the deleted C++ parser.
+
+    The lower-level
+    :func:`regpoly_legacy.reader.parse_generator_specs`
+    and
+    :func:`regpoly_legacy.reader.parse_transformation_specs`
+    functions return raw `(family, params_dict)` tuples for callers
+    that want to inspect parsed specs before construction.
+    """
 
     @staticmethod
     def read_generators(filename: str, L: int) -> list:
+        """Parse a `.dat` generator file and build `Generator` instances.
+
+        Parameters
+        ----------
+        filename
+            Path to a legacy `.dat` generator file.
+        L
+            Output resolution in bits, applied to every generator
+            in the file.
+
+        Returns
+        -------
+        list of Generator
+            List of :class:`regpoly.core.generator.Generator`
+            instances, one per row in the input file.
+
+        Raises
+        ------
+        RuntimeError
+            For any parse failure — see the per-tag
+            error messages in
+            :func:`regpoly_legacy.reader.parse_generator_specs`.
+        """
         from regpoly.core.generator import Generator
         specs = parse_generator_specs(filename, L)
         return [Generator.create(family, L, **params) for family, params in specs]
 
     @staticmethod
     def read_transformations(filename: str) -> tuple:
-        """Read transformations from the legacy text format.
+        """Parse a `.dat` transformation file and build `Transformation` instances.
 
-        Returns ``(transformations, mk_opt)``.
+        Parameters
+        ----------
+        filename
+            Path to a legacy `.dat` transformation file.
+
+        Returns
+        -------
+        tuple
+            A tuple ``(transformations, mk_opt)``:
+
+            - `transformations`: list of
+              :class:`regpoly.core.transformation.Transformation`
+              instances.
+            - `mk_opt` (`bool`): True iff at least one row used a
+              `tempMKopt` / `tempMK2opt` variant.
         """
         from regpoly.core.transformation import Transformation
         specs, mk_opt = parse_transformation_specs(filename)

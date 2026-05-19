@@ -1,13 +1,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Francois Panneton, Ph.D.
 
-"""
-regpoly.analyses.pis — primary-invariant-subspace gap analysis for a
-single generator (no tempering chain).
+"""Primary-invariant-subspace gap analysis for a single generator.
 
-Phase 5.2 wraps the C++ PISCache so the web app's per-generator
-analysis worker (`regpoly_web.tasks.analysis`) doesn't have to touch
-_cpp directly.
+Thin Python shim over `regpoly_cpp.PISCache` so the web app's
+per-generator analysis worker (`regpoly_web.tasks.analysis`) doesn't
+have to touch `_regpoly_cpp` directly. The output dict is the canonical
+shape that downstream persistence + UI code expects.
 """
 
 from __future__ import annotations
@@ -22,24 +21,53 @@ from regpoly.core.generator import Generator
 
 
 def analyze_single_generator(gen: Generator) -> dict[str, Any]:
-    """Compute the per-resolution gaps + summary for one Generator.
+    """Compute the per-resolution dimension defect of one F₂-linear generator.
 
-    Builds a single-component Combination around `gen` (no tempering),
-    feeds it to the C++ PISCache, and returns:
+    Wraps the generator in a single-component
+    :class:`regpoly.core.combination.Combination` (no tempering),
+    runs the C++ PISCache, and packages the result as a flat dict so
+    downstream code (the web analysis worker, the
+    `regpoly` CLI's `show` mode) can persist it in one shot.
 
-        {
-            "gaps":           [int]  # 1-indexed up to comb.L
-            "se":             int    # sum(gaps)
-            "elapsed":        float  # seconds spent in compute_all
-            "char_poly_int":  int    # the BitVect-encoded char poly value
-            "hamming_weight": int    # popcount(char_poly_int) + 1 (leading x^k)
-            "k":              int
-            "L":              int
-        }
+    Parameters
+    ----------
+    gen
+        A constructed :class:`regpoly.core.generator.Generator`.
+        The generator does not need to be at any particular state —
+        the wrapping `Combination.reset()` is called internally.
 
-    The `char_poly_int` and `hamming_weight` are computed alongside so
-    callers (typically the web's analysis worker) can persist them in
-    one shot.
+    Returns
+    -------
+    dict
+        A dict with the following keys:
+
+        - ``gaps`` (`list[int]`): per-resolution defect, indexed 1..L.
+        - ``se`` (`int`): total dimension defect (sum of ``gaps``).
+        - ``elapsed`` (`float`): wall-clock seconds spent in
+          `PISCache.compute_all`.
+        - ``char_poly_int`` (`int`): integer encoding of the
+          characteristic polynomial (leading ``x^k`` coefficient is
+          implicit).
+        - ``hamming_weight`` (`int`): population count of
+          ``char_poly_int`` plus 1 (for the implicit leading bit).
+        - ``k`` (`int`): total state size in bits.
+        - ``L`` (`int`): output resolution in bits.
+
+    See Also
+    --------
+    :cpp:class:`regpoly::core::PISCache` : the C++ implementation this wraps.
+
+    Examples
+    --------
+    >>> from regpoly import Generator
+    >>> from regpoly.analyses.pis import analyze_single_generator
+    >>> g = Generator.create(             # doctest: +SKIP
+    ...     "MTGen", L=32, w=32, r=624, m=397, p=31,
+    ...     a=0x9908b0df,
+    ... )
+    >>> res = analyze_single_generator(g)  # doctest: +SKIP
+    >>> res["se"]                          # doctest: +SKIP
+    0
     """
     cpoly_bv = gen.char_poly()
     cpoly_int = int(cpoly_bv._val)

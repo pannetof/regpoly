@@ -57,6 +57,9 @@ docs/_doxygen/
 .jupyter_cache/
 jupyter_execute/
 
+# Exhale-generated C++ API pages (regenerated every build from Doxygen XML)
+docs/api/cpp/library/
+
 # Generator search results dropped by notebooks during execution
 docs/yaml/
 
