@@ -161,6 +161,7 @@ library/index
 papers/index
 usage/python
 usage/cpp
+usage/python-cpp-bridge
 usage/web
 notebooks/index
 deployment

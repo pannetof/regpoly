@@ -60,7 +60,11 @@ The `regpoly` package may import `regpoly_cpp`, but the web app must go through 
 
 ## See also
 
+- [The Python / C++ bridge](python-cpp-bridge.md) — what each layer
+  owns, the wrapper-to-C++ map, the *two-`Generator` confusion*
+  (`regpoly.library.Generator` is a parameter set;
+  `regpoly.core.generator.Generator` is the runtime class).
 - [C++ usage](cpp.md) — for users who do not want a Python runtime.
 - [Web UI](web.md) — for browser-based search and result browsing.
-- [Notebooks](notebooks.md) — for per-family demos and equidistribution exploration.
+- [Notebooks](../notebooks/index.md) — per-family demos and equidistribution exploration.
 - [Architecture](../dev/architecture.md) — for a deeper look at the package layout.

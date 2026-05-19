@@ -2,8 +2,9 @@
 
 Mathematical and algorithmic background for F₂-linear generators and the analyses REGPOLY performs.
 
+- **[Equidistribution in 5 minutes](equidistribution-in-5-minutes.md)** — beginner on-ramp: what `k(L)`, gaps, SE, and "ME" mean, why the metric matters, no Berlekamp-Massey.
 - **[F₂-linear generators](f2-linear-generators.md)** — general framework: state, recurrence, output, characteristic polynomial, full-period condition.
-- **[Equidistribution](equidistribution-spec.md)** — design of record for matricial equidistribution computation on F₂-linear generators that may not be full-period.
+- **[Equidistribution (design of record)](equidistribution-spec.md)** — matricial equidistribution computation on F₂-linear generators that may not be full-period.
 - **[Antithetic check](antithetic-check.md)** — algorithm for testing local antitheticity of a linear RNG point set.
 - **[Lattice method (Couture–L'Ecuyer)](lattice_method_couture_lecuyer.md)** — dual lattice basis + Lenstra reduction.
 - **[Lattice method (Harase)](lattice_method_harase.md)** — Harase–Matsumoto–Saito primal reduction.
@@ -13,3 +14,18 @@ Mathematical and algorithmic background for F₂-linear generators and the analy
 - **[Tempering optimizer notes](optimizer_temper.md)** — additional notes on the tempering optimizer.
 
 > **Note**: `f2-linear-generators.md` is the umbrella reference; the others go into specific algorithmic detail.
+
+```{toctree}
+:hidden:
+
+equidistribution-in-5-minutes
+f2-linear-generators
+equidistribution-spec
+antithetic-check
+lattice_method_couture_lecuyer
+lattice_method_harase
+tempering_optimization
+lcp-irreducibility
+search_format
+optimizer_temper
+```
