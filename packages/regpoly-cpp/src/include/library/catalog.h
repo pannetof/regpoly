@@ -16,6 +16,7 @@
 /**
  * @file catalog.h
  * @brief Paper-centric published-generators catalog.
+ * @defgroup library Library
  *
  * Defines the data model and on-disk reader for the catalog of
  * published parameter sets. Mirrors the Python data model surfaced
@@ -32,7 +33,8 @@
  * through pybind11; the `regpoly` Python package keeps only a thin
  * shim that re-exports the pybind11 types.
  *
- * @see [`regpoly.library.Catalog`](../../python/regpoly.library.md)
+ * @see :py:class:`regpoly.library.Catalog`
+ * @ingroup library
  */
 
 namespace regpoly::library {
@@ -40,15 +42,17 @@ namespace regpoly::library {
 using regpoly::core::StructMap;
 
 // ── Variant value type for component params + tempering steps ─────────
-//
-// YAML parameter values come in three shapes the catalog needs to
-// preserve faithfully: ints (incl. bitmask hex literals stored as
-// negative-when-MSB or wrapped to int64), strings (e.g. "0x9908b0df"
-// — yaml-cpp parses hex as a string, the runtime factory converts),
-// bools, and homogeneous int lists (Tausworthe `poly`, MELG `nb_lag`).
-// We store them in a tagged union since pybind11 transparently
-// converts std::variant<int64_t,…> to native Python.
 
+/**
+ * @brief Discriminator tag for the values stored in `ParamValue`.
+ *
+ * YAML parameter values come in a handful of shapes the catalog needs
+ * to preserve faithfully: ints (incl. bitmask hex literals stored as
+ * negative-when-MSB or wrapped to `int64`), strings (e.g. `"0x9908b0df"`
+ * — yaml-cpp parses hex as a string and the runtime factory converts),
+ * bools, homogeneous int lists (Tausworthe `poly`, MELG `nb_lag`), and
+ * nested struct maps (WELL `matrices`).
+ */
 enum class ParamKind : uint8_t {
     Int = 0,
     String = 1,
@@ -57,13 +61,27 @@ enum class ParamKind : uint8_t {
     StructMap = 4,
 };
 
+/**
+ * @brief Tagged-union value for one entry of a `ParamMap`.
+ *
+ * Stores any of the shapes enumerated by `ParamKind`. We hand-roll the
+ * union rather than using `std::variant` because pybind11 transparently
+ * converts the explicit field set to native Python (int / str / bool /
+ * list / dict), and the field-per-kind layout is friendlier to YAML
+ * round-trip than `std::variant`'s alternative selection.
+ *
+ * Construct via the static `make_*` helpers; do not set fields manually
+ * (the `kind` tag must stay consistent with the populated field).
+ *
+ * @ingroup library
+ */
 struct ParamValue {
-    ParamKind kind = ParamKind::String;
-    int64_t int_val = 0;
-    std::string string_val;
-    bool bool_val = false;
-    std::vector<int64_t> int_list_val;
-    StructMap struct_map_val;
+    ParamKind kind = ParamKind::String;  ///< Discriminator selecting the populated field.
+    int64_t int_val = 0;                 ///< Populated when `kind == Int`.
+    std::string string_val;              ///< Populated when `kind == String`.
+    bool bool_val = false;               ///< Populated when `kind == Bool`.
+    std::vector<int64_t> int_list_val;   ///< Populated when `kind == IntList`.
+    StructMap struct_map_val;            ///< Populated when `kind == StructMap`.
 
     static ParamValue make_int(int64_t v) {
         ParamValue p;
@@ -97,67 +115,125 @@ struct ParamValue {
     }
 };
 
-using ParamMap = std::map<std::string, ParamValue>;  // ordered for determinism
+/// Ordered map from parameter name to `ParamValue` (ordered for determinism).
+using ParamMap = std::map<std::string, ParamValue>;
 
+/**
+ * @brief One tempering step in a generator's per-component tempering chain.
+ *
+ * Mirrors the per-step YAML mapping inside `tempering:` lists. `type`
+ * selects the tempering family (e.g. `"tempMK"`, `"shiftLR"`); `params`
+ * carries the remaining keys (`b`, `c`, `eta`, `mu`, `w`, …).
+ *
+ * @ingroup library
+ */
 struct TemperingStep {
-    std::string type;            // e.g. "tempMK"
-    ParamMap params;             // remaining keys (b, c, eta, mu, w, …)
+    std::string type;            ///< Tempering family name (e.g. `"tempMK"`).
+    ParamMap params;             ///< Remaining tempering parameters.
 };
 
+/**
+ * @brief One component (generator + its tempering chain) inside a `CatalogGenerator`.
+ *
+ * Combined generators expose several `Component` entries; single-family
+ * generators expose exactly one. `family` is the canonical `-Gen`
+ * class name (e.g. `"MTGen"`), `L` is the output-word width in bits,
+ * `params` carries the structural parameters consumed by the factory,
+ * and `tempering` describes the (possibly empty) output-tempering chain.
+ *
+ * @ingroup library
+ */
 struct Component {
-    std::string family;
-    int L = 0;
-    ParamMap params;
-    std::vector<TemperingStep> tempering;
+    std::string family;                       ///< Canonical C++ generator family name.
+    int L = 0;                                ///< Output word width in bits.
+    ParamMap params;                          ///< Structural parameters consumed by the factory.
+    std::vector<TemperingStep> tempering;     ///< Tempering chain (possibly empty).
 };
 
+/**
+ * @brief Single author entry on a `Paper`.
+ *
+ * Mirrors the YAML `authors:` list. `family` is the surname, `given`
+ * is the given-name string. `display()` returns the `"Family, Given"`
+ * form used in formatted citations.
+ *
+ * @ingroup library
+ */
 struct Author {
-    std::string family;
-    std::string given;
+    std::string family;          ///< Family (sur)name.
+    std::string given;           ///< Given name(s).
 
+    /** @brief Return `"family, given"` (or just `family` when `given` is empty). */
     std::string display() const {
         return given.empty() ? family : (family + ", " + given);
     }
+    /** @brief Short form (family name only) for compact citations. */
     std::string short_name() const { return family; }
 };
 
+/**
+ * @brief One generator entry inside a `Paper`'s `generators:` list.
+ *
+ * Each catalog entry has a stable id (slug), a human-readable display
+ * name, a canonical family (or `"combined"` for multi-component
+ * generators), and a list of `Component` definitions that the
+ * factory uses to materialise a runtime `regpoly::core::Generator`.
+ * Parse-time validation failures are recorded in `errors[]` rather
+ * than thrown; check `valid()` before consuming the entry.
+ *
+ * @ingroup library
+ */
 struct CatalogGenerator {
-    std::string id;              // slug, e.g. "lfsr113"
-    std::string display;
-    std::string family;          // C++ generator family name
-    std::string target;          // "tested_generator" or "primitive_generator"
-    bool combined = false;
-    int Lmax = 0;
-    std::vector<Component> components;
-    std::string notes_md;
-    bool starred = false;
-    std::vector<std::string> errors;
+    std::string id;                      ///< Slug, e.g. `"lfsr113"`.
+    std::string display;                 ///< Human-readable display name.
+    std::string family;                  ///< C++ generator family name.
+    std::string target;                  ///< `"tested_generator"` or `"primitive_generator"`.
+    bool combined = false;               ///< True iff this is a multi-component combined generator.
+    int Lmax = 0;                        ///< Maximum L across components (combined-only).
+    std::vector<Component> components;   ///< Component definitions (1+ entries).
+    std::string notes_md;                ///< Free-form Markdown notes.
+    bool starred = false;                ///< UI starred flag.
+    std::vector<std::string> errors;     ///< Parse / validation errors (empty when valid).
 
+    /** @brief True iff `errors` is empty. */
     bool valid() const { return errors.empty(); }
 };
 
+/**
+ * @brief One paper YAML file's parsed contents.
+ *
+ * Mirrors the on-disk paper YAML schema: bibliographic metadata
+ * (authors, year, title, venue, …), a list of `CatalogGenerator`
+ * entries, and per-paper provenance (`source_path`, `source_mtime`)
+ * used by `Catalog::reload_if_stale()`. `errors[]` accumulates
+ * parse-time failures; nested generator errors are surfaced through
+ * `valid()`'s recursive check.
+ *
+ * @ingroup library
+ */
 struct Paper {
-    std::string id;
-    std::vector<Author> authors;
-    int year = 0;
-    std::string title;
-    std::string venue;
-    std::string volume;
-    std::string issue;
-    std::string pages;
-    std::string doi;
-    std::string pdf;
-    std::string bibkey;
-    std::string abstract_md;
-    std::string notes_md;
-    std::vector<std::string> tags;
-    bool starred = false;
-    bool deferred = false;
-    std::vector<CatalogGenerator> generators;
-    std::string source_path;     // absolute path
-    double source_mtime = 0.0;   // POSIX mtime
-    std::vector<std::string> errors;
+    std::string id;                              ///< Paper id (YAML file stem).
+    std::vector<Author> authors;                 ///< Author list in author-order.
+    int year = 0;                                ///< Publication year.
+    std::string title;                           ///< Paper title.
+    std::string venue;                           ///< Journal / conference / preprint server.
+    std::string volume;                          ///< Volume (if applicable).
+    std::string issue;                           ///< Issue (if applicable).
+    std::string pages;                           ///< Page range.
+    std::string doi;                             ///< DOI string.
+    std::string pdf;                             ///< Relative path to bundled PDF (or empty).
+    std::string bibkey;                          ///< Citation key.
+    std::string abstract_md;                     ///< Abstract (Markdown).
+    std::string notes_md;                        ///< Free-form Markdown notes.
+    std::vector<std::string> tags;               ///< Tag membership for filtered queries.
+    bool starred = false;                        ///< UI starred flag.
+    bool deferred = false;                       ///< Deferred (not yet validated) flag.
+    std::vector<CatalogGenerator> generators;    ///< Generators defined by this paper.
+    std::string source_path;                     ///< Absolute path to the paper YAML file.
+    double source_mtime = 0.0;                   ///< POSIX mtime at last load.
+    std::vector<std::string> errors;             ///< Parse / validation errors (empty when valid).
 
+    /** @brief True iff this paper and every contained generator parsed without errors. */
     bool valid() const {
         if (!errors.empty()) return false;
         for (const auto& g : generators) {
@@ -166,8 +242,11 @@ struct Paper {
         return true;
     }
 
+    /** @brief Short author list (first author + `et al.` for long lists). */
     std::string author_list_short() const;
+    /** @brief Display string used in dropdown lists / titles. */
     std::string display() const;
+    /** @brief ACM Transactions-style citation string. */
     std::string acmtrans_citation() const;
 };
 
@@ -180,7 +259,22 @@ struct Paper {
  * value copies — papers and generators are small enough that callers
  * don't need to worry about lifetimes.
  *
- * @see [`regpoly.library.Catalog`](../../python/regpoly.library.md) — the Python wrapper.
+ * @code{.cpp}
+ *   regpoly::library::Catalog cat("docs/library");
+ *   cat.load();
+ *   for (const auto& paper : cat.papers()) {
+ *       std::cout << paper.id << " — " << paper.title << "\n";
+ *   }
+ *   auto hit = cat.generator("mt19937");
+ *   if (hit) {
+ *       const auto& [paper, gen] = *hit;
+ *       std::cout << gen.family << ": " << gen.display << "\n";
+ *   }
+ * @endcode
+ *
+ * @see :py:class:`regpoly.library.Catalog`
+ *
+ * @ingroup library
  */
 class Catalog {
 public:
@@ -230,21 +324,21 @@ public:
     /**
      * @brief Return the subset of papers matching `filter`.
      * @param filter  Filter spec (starred, tag, include_invalid).
-     * @returns       Papers in catalog (load) order.
+     * @return        Papers in catalog (load) order.
      */
     std::vector<Paper> papers(const PapersFilter& filter) const;
 
     /**
      * @brief Look up one paper by id.
      * @param paper_id  Paper id (YAML file stem).
-     * @returns The matching `Paper`, or `std::nullopt` if unknown.
+     * @return The matching `Paper`, or `std::nullopt` if unknown.
      */
     std::optional<Paper> paper(const std::string& paper_id) const;
 
     /**
      * @brief Look up one generator by id, plus its containing paper.
      * @param gen_id  Generator id (unique across the catalog).
-     * @returns  `(paper, generator)`, or `std::nullopt` if unknown.
+     * @return `(paper, generator)`, or `std::nullopt` if unknown.
      */
     std::optional<std::pair<Paper, CatalogGenerator>>
     generator(const std::string& gen_id) const;
@@ -253,7 +347,7 @@ public:
      * @brief Enumerate every generator, optionally filtered by family.
      * @param family  Canonical `-Gen` class name. `std::nullopt` →
      *                no filter.
-     * @returns Catalog-order list of `(paper, generator)` pairs.
+     * @return Catalog-order list of `(paper, generator)` pairs.
      */
     std::vector<std::pair<Paper, CatalogGenerator>>
     all_generators(const std::optional<std::string>& family = {}) const;
@@ -282,7 +376,9 @@ private:
  * @param family     Canonical generator family name.
  * @param params     Component parameter map.
  * @param tempering  Tempering step list.
- * @returns          16-character lowercase hex string.
+ * @return           16-character lowercase hex string.
+ *
+ * @see :py:func:`regpoly.library.config_hash`
  */
 std::string config_hash(
     const std::string& family,
@@ -296,7 +392,7 @@ std::string config_hash(
  * for the catalog unit tests.
  *
  * @param path  Absolute path to the YAML file.
- * @returns     A populated `Paper`. Parse errors land in `paper.errors`
+ * @return      A populated `Paper`. Parse errors land in `paper.errors`
  *              rather than throwing.
  */
 Paper parse_paper(const std::string& path);
@@ -325,7 +421,7 @@ Paper parse_paper(const std::string& path);
  *                                 `"primitive_generator"`.
  * @param starred                  Initial value of the `starred:` flag.
  *
- * @returns  Path of the modified paper file.
+ * @return  Path of the modified paper file.
  * @throws std::runtime_error  On any precondition failure or I/O
  *                             error. The paper file is left untouched
  *                             in that case.
@@ -347,7 +443,7 @@ std::string publish_tested_generator(
  * skip rule so the loader and the unit tests agree.
  *
  * @param filename  File name (not full path).
- * @returns         True iff this file is a cross-check fixture and
+ * @return          True iff this file is a cross-check fixture and
  *                  should be skipped during catalog load.
  */
 bool is_cross_check_yaml(const std::string& filename);
