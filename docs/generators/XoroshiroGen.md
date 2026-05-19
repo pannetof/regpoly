@@ -5,17 +5,17 @@
 **Legacy aliases:** `Xoroshiro`
 
 The xoroshiro (xor/rotate/shift/rotate) linear engine introduced by
-Blackman & Vigna (2022). Parametrised by a word width `w` and a state
-word count `r ≥ 2`, plus a triple `(A, B, C)` of intra-word rotations
+Blackman & Vigna (2022). Parametrised by a word width $w$ and a state
+word count $r \ge 2$, plus a triple $(A, B, C)$ of intra-word rotations
 and shifts.
 
-> Note: the paper writes "k" for the word count; this codebase reserves
-> `k` for the state size in bits (a regpoly-wide convention), so the
-> parameter is named `r` instead.
+> Note: the paper writes "$k$" for the word count; this codebase reserves
+> $k$ for the state size in bits (a regpoly-wide convention), so the
+> parameter is named $r$ instead.
 
 ## Mathematical recurrence
 
-State: `r` words `s_0, s_1, ..., s_{r-1}` of `w` bits each. One step of
+State: $r$ words $s_0, s_1, \ldots, s_{r-1}$ of $w$ bits each. One step of
 the recurrence is
 
 ```
@@ -27,7 +27,7 @@ new s_{r-2}  = rotl(s_0, A) XOR t XOR (t << B)
 new s_{r-1}  = rotl(t, C)
 ```
 
-The corresponding `rw × rw` transition matrix `X_{rw}` is given in §3.1
+The corresponding $rw \times rw$ transition matrix $X_{rw}$ is given in §3.1
 of the paper.
 
 ## Parameter sets from the literature

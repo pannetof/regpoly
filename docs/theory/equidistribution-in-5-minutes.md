@@ -7,24 +7,24 @@ For the design-of-record algorithm see [Equidistribution](equidistribution-spec.
 ## The question
 
 > If I take consecutive outputs from this generator and stack them into
-> $L$-dimensional points, are those points spread evenly across the
-> $L$-dimensional unit cube?
+> $t$-dimensional points, are those points spread evenly across the
+> $t$-dimensional unit cube?
 
-For a Monte Carlo simulation that draws $L$ random numbers per sample
+For a Monte Carlo simulation that draws $t$ random numbers per sample
 (option pricing, particle transport, etc.), the answer determines
 whether your samples cover the integration domain or cluster on a
 lattice — which determines whether your estimator is unbiased.
 
 ## The metric
 
-For an $L$-dimensional resolution $\ell$ — meaning, take the leading
-$\ell$ bits of each output word and pack $L$ consecutive such words
-into a single $\ell L$-bit point — count how many of the $2^{\ell L}$
+For a $t$-dimensional resolution $\ell$ — meaning, take the leading
+$\ell$ bits of each output word and pack $t$ consecutive such words
+into a single $\ell t$-bit point — count how many of the $2^{\ell t}$
 possible points the generator actually visits over its full period, and
 how many times each.
 
-A generator is **equidistributed at $(L, \ell)$** if every $\ell L$-bit
-point appears exactly the same number of times. The largest $L$ for
+A generator is **equidistributed at $(t, \ell)$** if every $\ell t$-bit
+point appears exactly the same number of times. The largest $t$ for
 which this holds at resolution $\ell$ is the **dimension of
 equidistribution** $d(\ell)$.
 
@@ -74,10 +74,10 @@ In REGPOLY's search loops:
 
 REGPOLY computes $d(\ell)$ via a matricial method:
 
-1. Build the $\ell L \times k$ matrix that maps the generator's state
-   to the first $L$ output words truncated to $\ell$ leading bits each.
-2. Reduce it via Gaussian elimination over GF(2).
-3. The rank of that matrix at the largest $L$ where it equals $\ell L$
+1. Build the $\ell t \times k$ matrix that maps the generator's state
+   to the first $t$ output words truncated to $\ell$ leading bits each.
+2. Reduce it via Gaussian elimination over $\mathrm{GF}(2)$.
+3. The rank of that matrix at the largest $t$ where it equals $\ell t$
    is $d(\ell)$.
 
 For full-period generators this is straightforward. For generators
@@ -110,7 +110,7 @@ snippet with `regpoly::core::run_matricial_equidistribution`.
 ## See also
 
 - [F₂-linear generators](f2-linear-generators.md) — the matrices behind
-  $A$, $B$, $T$ and what "linear over GF(2)" really means.
+  $A$, $B$, $T$ and what "linear over $\mathrm{GF}(2)$" really means.
 - [Equidistribution spec](equidistribution-spec.md) — full algorithm,
   including the reducible-$\chi$ case.
 - [Search format](search_format.md) — the YAML schema where you

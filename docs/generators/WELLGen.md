@@ -7,9 +7,9 @@ the tag `carry` (historical "Carry Generator" naming); that path lives
 in the optional `regpoly-legacy` add-on.
 
 Well Equidistributed Long-period Linear (WELL) generators of Panneton,
-L'Ecuyer, & Matsumoto (2006). The state is `r` words of `w` bits
+L'Ecuyer, & Matsumoto (2006). The state is $r$ words of $w$ bits
 stored in a circular buffer. The recurrence uses 8 algorithm slots
-T0..T7. Each slot is filled with a transformation class Mi (i=0..6)
+T0..T7. Each slot is filled with a transformation class $M_i$ ($i = 0, \ldots, 6$)
 from Table I of the paper; the M-class table further down lists each
 class's formula and computational cost.
 
@@ -17,7 +17,7 @@ class's formula and computational cost.
 
 Slots T0..T7 are positions in the WELL recurrence; each is filled with
 one of the M0..M6 classes per the parameter table. The state consists
-of r words V[0], V[1], ..., V[r-1] in a circular buffer indexed by i.
+of $r$ words $V[0], V[1], \ldots, V[r-1]$ in a circular buffer indexed by $i$.
 At each step:
 
 ```
@@ -34,10 +34,8 @@ i              = (i+r-1) % r
 
 The masks split the boundary word to achieve the desired state size:
 
-```
-upper_mask = bits w-1 down to p    (top w-p bits)
-lower_mask = bits p-1 down to 0    (bottom p bits)
-```
+- `upper_mask` = bits $w-1$ down to $p$ (top $w - p$ bits)
+- `lower_mask` = bits $p-1$ down to 0 (bottom $p$ bits)
 
 ### Transformation matrix classes
 
@@ -47,35 +45,35 @@ of named arguments matching the paper:
 
 | M | Args | Formula |
 |---|------|---------|
-| 0 | (none) | `y = 0` |
-| 1 | (none) | `y = x` (identity) |
-| 2 | `t` | `y = x ≫ t` if `t ≥ 0`, else `x ≪ −t` |
-| 3 | `t` | `y = x ⊕ shift(x, t)` (same sign rule as M2) |
-| 4 | `a` | `y = (x ≫ 1) ⊕ a` if LSB(x), else `x ≫ 1` |
-| 5 | `t`, `b` | `y = x ⊕ (shift(x, t) & b)` |
-| 6 | `q`, `t`, `s`, `a` | `y = (rotate_left(x, q) & d_s) ⊕ (a if x_t = 1 else 0)` |
+| 0 | (none) | $y = 0$ |
+| 1 | (none) | $y = x$ (identity) |
+| 2 | `t` | $y = x \gg t$ if $t \ge 0$, else $x \ll -t$ |
+| 3 | `t` | $y = x \oplus \mathrm{shift}(x, t)$ (same sign rule as M2) |
+| 4 | `a` | $y = (x \gg 1) \oplus a$ if $\mathrm{LSB}(x)$, else $x \gg 1$ |
+| 5 | `t`, `b` | $y = x \oplus (\mathrm{shift}(x, t) \mathbin{\&} b)$ |
+| 6 | `q`, `t`, `s`, `a` | $y = (\mathrm{rotate\_left}(x, q) \mathbin{\&} d_s) \oplus (a \text{ if } x_t = 1 \text{ else } 0)$ |
 
-For M6, `d_s` is the 32-bit mask with the (s+1)-th bit zero and all
-others one (paper Table I's `d_s`); the `x_t = 1` test selects the
-bit at MSB-position t. Both are synthesised at runtime from the
+For M6, $d_s$ is the 32-bit mask with the $(s+1)$-th bit zero and all
+others one (paper Table I's $d_s$); the $x_t = 1$ test selects the
+bit at MSB-position $t$. Both are synthesised at runtime from the
 small-integer fields, matching the paper exactly.
 
-**Bit-indexing convention.** M4's `x_{w-1}` resolves to the LSB under
-the paper's column-vector convention (§1). M6's `t` and `s` are
+**Bit-indexing convention.** M4's $x_{w-1}$ resolves to the LSB under
+the paper's column-vector convention (§1). M6's $t$ and $s$ are
 0-indexed from the MSB.
 
 **Range constraints** (paper Table I):
-- M2/M3/M5: `−w ≤ t ≤ w` (signed shift; sign chooses direction)
-- M6: `0 ≤ q, t, s < w`
-- M4/M5/M6: `a`, `b` ∈ {0, …, 2^w − 1}
+- M2/M3/M5: $-w \le t \le w$ (signed shift; sign chooses direction)
+- M6: $0 \le q, t, s < w$
+- M4/M5/M6: $a, b \in \{0, \ldots, 2^w - 1\}$
 
 ### Computational cost
 
-Each Mi class has an associated cost (number of operations):
-`M0=0, M1=1, M2=2, M3=3, M4=5, M5=4, M6=8`. Costs are not monotonic
-in M-index (M4 > M5) because conditional XOR is more expensive than
+Each $M_i$ class has an associated cost (number of operations):
+$M_0 = 0$, $M_1 = 1$, $M_2 = 2$, $M_3 = 3$, $M_4 = 5$, $M_5 = 4$, $M_6 = 8$. Costs are not monotonic
+in M-index ($M_4 > M_5$) because conditional XOR is more expensive than
 masked shift on most architectures. The total cost of a generator is
-the sum over its 8 algorithm slots, repeating Mi costs as needed.
+the sum over its 8 algorithm slots, repeating $M_i$ costs as needed.
 
 ## Parameters
 
@@ -110,15 +108,13 @@ matrices:
 
 ## State size (period exponent)
 
-```
-k = w * r - p
-```
+$$k = w \cdot r - p$$
 
 Classical examples:
-- **WELL19937:** w=32, r=624, p=31 => k = 32*624 - 31 = 19937
-- **WELL44497:** w=32, r=1391, p=15 => k = 32*1391 - 15 = 44497
-- **WELL512:**  w=32, r=16,  p=0  => k = 32*16 = 512
-- **WELL1024:** w=32, r=32,  p=0  => k = 32*32 = 1024
+- **WELL19937:** $w = 32$, $r = 624$, $p = 31 \Rightarrow k = 32 \cdot 624 - 31 = 19937$
+- **WELL44497:** $w = 32$, $r = 1391$, $p = 15 \Rightarrow k = 32 \cdot 1391 - 15 = 44497$
+- **WELL512:** $w = 32$, $r = 16$, $p = 0 \Rightarrow k = 32 \cdot 16 = 512$
+- **WELL1024:** $w = 32$, $r = 32$, $p = 0 \Rightarrow k = 32 \cdot 32 = 1024$
 
 ## Search examples
 
@@ -233,7 +229,7 @@ search:
   L: 32
   limit:
     max_tries: 100000
-    max_cost: 12          # 0 < max_cost ≤ 64
+    max_cost: 12          # 0 < max_cost <= 64
 
 structural_params:
   w: 32

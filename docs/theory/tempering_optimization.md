@@ -1,7 +1,7 @@
 # Tempering Optimization Algorithm
 
 Optimization of tempering bitmask parameters to minimize the total
-dimension defect of an F2-linear generator.  The algorithm uses
+dimension defect of an $\mathbb{F}_2$-linear generator.  The algorithm uses
 **safe masks** with **random multi-bit perturbation** and an
 **incremental dual-lattice basis** (StackBase). Implemented in
 `packages/regpoly-cpp/src/search/tempering_optimizer.cpp`
@@ -12,12 +12,12 @@ dimension defect of an F2-linear generator.  The algorithm uses
 
 ### Why tempering?
 
-An F2-linear generator produces output by extracting $w$ bits from a
+An $\mathbb{F}_2$-linear generator produces output by extracting $w$ bits from a
 $k$-bit state.  Without tempering, the raw output often has poor
 equidistribution: certain bit patterns are overrepresented or
 underrepresented in tuples of consecutive outputs.
 
-A **tempering transformation** $T$ is a bijective GF(2)-linear map
+A **tempering transformation** $T$ is a bijective $\mathrm{GF}(2)$-linear map
 applied to the output word before it is returned to the user.
 Because $T$ is bijective, it does not change the generator's period
 or its state-update structure.  It only rearranges the output bits.

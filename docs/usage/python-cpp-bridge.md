@@ -17,7 +17,7 @@ wondering whether the wrapper does anything you should care about.
 
 | Concern                                          | Lives in C++ | Lives in Python |
 |--------------------------------------------------|:------------:|:---------------:|
-| GF(2) algebra: `BitVect`, `BitMatrix`, BM, Gauss | ✅           |                 |
+| $\mathrm{GF}(2)$ algebra: `BitVect`, `BitMatrix`, BM, Gauss | ✅           |                 |
 | Generator families: MT, WELL, MELG, SFMT, …      | ✅           |                 |
 | Tempering transformations                         | ✅           |                 |
 | Combined-generator iterator                       | ✅           |                 |

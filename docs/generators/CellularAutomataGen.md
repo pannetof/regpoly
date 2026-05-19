@@ -13,15 +13,15 @@ the full paper-style generator (no new combined-family class needed).
 
 ## Mathematical recurrence
 
-The state is a packed k-bit `BitVect` with cell 0 stored at the MSB and
-cell k−1 at the LSB.  Each cell updates under one of two rules:
+The state is a packed $k$-bit `BitVect` with cell 0 stored at the MSB and
+cell $k-1$ at the LSB.  Each cell updates under one of two rules:
 
-- **Rule 90**  on cell i: `S_i' = S_{i-1} XOR S_{i+1}`
-- **Rule 150** on cell i: `S_i' = S_{i-1} XOR S_i XOR S_{i+1}`
+- **Rule 90** on cell $i$: $S_i' = S_{i-1} \oplus S_{i+1}$
+- **Rule 150** on cell $i$: $S_i' = S_{i-1} \oplus S_i \oplus S_{i+1}$
 
-Outside-boundary cells (i = -1, i = k) are pinned to 0 (null boundary).
+Outside-boundary cells ($i = -1$, $i = k$) are pinned to 0 (null boundary).
 
-Stacking the per-cell update over all k cells, one CA step collapses
+Stacking the per-cell update over all $k$ cells, one CA step collapses
 to three bitvector operations:
 
 ```
@@ -30,20 +30,20 @@ state ← (state << 1) XOR (state >> 1) XOR (rules AND state)
         ^ to cell i            ^ to cell i         ^ at rule-150 cells
 ```
 
-where `rules` is the k-bit vector with bit i = 1 iff cell i uses rule 150.
-`next()` applies this s times in a row, where s is the time-spacing.
-The matrix `T^s` is never materialized — the equidistribution machinery
+where `rules` is the $k$-bit vector with bit $i = 1$ iff cell $i$ uses rule 150.
+`next()` applies this $s$ times in a row, where $s$ is the time-spacing.
+The matrix $T^s$ is never materialized — the equidistribution machinery
 extracts it lazily via the base `Generator::transition_matrix()` helper.
 
 ### Characteristic polynomial
 
 Recovered at runtime by the inherited Berlekamp–Massey routine
-(`Generator::char_poly()`).  For an isolated CA at s=1 the resulting
+(`Generator::char_poly()`).  For an isolated CA at $s = 1$ the resulting
 polynomial is primitive iff the rule vector is one of the published
 maximal-length CA constructions — see Cattell & Zhang 1995 (Table 2)
-or Adak & Das 2021 (CA(90′) / CA(150′) families).  At time-spacing s,
-the recovered polynomial is the characteristic polynomial of T^s,
-which is primitive iff T is primitive AND `gcd(s, 2^k − 1) = 1`.
+or Adak & Das 2021 (CA(90′) / CA(150′) families).  At time-spacing $s$,
+the recovered polynomial is the characteristic polynomial of $T^s$,
+which is primitive iff $T$ is primitive AND $\gcd(s, 2^k - 1) = 1$.
 
 ## Parameters
 
@@ -58,11 +58,9 @@ time-spacing are pinned by the paper-published constructions.
 
 ## State size
 
-```
-k = number of cells (paper uses 31 ≤ k ≤ 128 except for R2 where k = 1409)
-period = 2^k - 1 when T is primitive AND gcd(s, 2^k - 1) = 1
-       = (2^k - 1) / gcd(s, 2^k - 1) otherwise
-```
+- $k = $ number of cells (paper uses $31 \le k \le 128$ except for R2 where $k = 1409$)
+- period $= 2^k - 1$ when $T$ is primitive AND $\gcd(s, 2^k - 1) = 1$
+- period $= (2^k - 1) / \gcd(s, 2^k - 1)$ otherwise
 
 ## Catalog entries
 
@@ -97,22 +95,22 @@ CA(90′)/CA(150′) constructions are derived programmatically.
   right padding"; both conventions give similar rank deficiency
   patterns (see paper-disagreement note below).
 
-## Two conventions for the equidistribution matrix `B`
+## Two conventions for the equidistribution matrix $B$
 
-The paper's per-`t` rank values in Tables 1, 3, 7-10 are only
+The paper's per-$t$ rank values in Tables 1, 3, 7-10 are only
 reproducible under a **non-standard** matrix construction.  The
-standard ME definition asks "`rank(B) = t·l` where `B` has `t·l` rows
-from `t` advances of the recurrence" — that is what our C++
+standard ME definition asks "$\mathrm{rank}(B) = t \cdot \ell$ where $B$ has $t \cdot \ell$ rows
+from $t$ advances of the recurrence" — that is what our C++
 matricial-DE kernel implements.  The paper uses:
 
-> **Paper convention.** `B` has `(t+1)·l` rows: block 0 is the
-> *initial-state* output (no advance), blocks 1..t come from `t`
-> advances.  `(t, l)`-equidistributed iff `rank(B) ≥ t·l`.
+> **Paper convention.** $B$ has $(t+1) \cdot \ell$ rows: block 0 is the
+> *initial-state* output (no advance), blocks $1, \ldots, t$ come from $t$
+> advances.  $(t, \ell)$-equidistributed iff $\mathrm{rank}(B) \ge t \cdot \ell$.
 
 This convention is identified empirically.  For R1 (single 32-bit
 CA, paper Table 1) the paper-convention rank reproduces 8 of 9
-published ranks exactly; the remaining row at `t=16` is a likely
-paper typo.  For combined `(31, 32, s ∈ {1, 2, 4, 7, 8})` (paper
+published ranks exactly; the remaining row at $t = 16$ is a likely
+paper typo.  For combined $(31, 32, s \in \{1, 2, 4, 7, 8\})$ (paper
 Tables 3, 7, 8, 9, 10) the paper-convention binary verdict matches
 the paper at **every per-row cell**.
 
@@ -120,21 +118,21 @@ the paper at **every per-row cell**.
 
 | Paper data | Reproduction |
 |---|---|
-| Table 1 — R1 single CA  | 8/9 per-row ranks match; t=16 likely typo |
-| Table 2 — Cattell-Zhang positions, k=29..128 | 100/100 primitive ✓ |
-| Table 3 — combined (31,32) s=1, NOT ME       | 13/13 binary verdicts match ✓ |
-| Table 7 — combined (31,32) s=2, NOT ME       | matches at the ME-overall level ✓ |
-| Table 8 — combined (31,32) s=4, NOT ME       | matches at the ME-overall level ✓ |
-| Table 9 — combined (31,32) s=7, ME           | 13/13 binary verdicts match (all equi) ✓ |
-| Table 10 — combined (31,32) s=8, ME          | 13/13 binary verdicts match (all equi) ✓ |
+| Table 1 — R1 single CA  | 8/9 per-row ranks match; $t = 16$ likely typo |
+| Table 2 — Cattell-Zhang positions, $k = 29\ldots128$ | 100/100 primitive ✓ |
+| Table 3 — combined $(31, 32)$, $s = 1$, NOT ME       | 13/13 binary verdicts match ✓ |
+| Table 7 — combined $(31, 32)$, $s = 2$, NOT ME       | matches at the ME-overall level ✓ |
+| Table 8 — combined $(31, 32)$, $s = 4$, NOT ME       | matches at the ME-overall level ✓ |
+| Table 9 — combined $(31, 32)$, $s = 7$, ME           | 13/13 binary verdicts match (all equi) ✓ |
+| Table 10 — combined $(31, 32)$, $s = 8$, ME          | 13/13 binary verdicts match (all equi) ✓ |
 | Table 11 — Adak-Das CA(90′)/CA(150′) combos  | primitivity verified; ME claims tracked |
 | Table 12 — 49 combined CA-PRNGs              | 35/49 match paper-conv ME; 14/49 disagree |
 | Section 3.1 — R1, R2, R3, R4 (weak)          | all primitive, all NOT ME ✓ |
 
 ## 14 Table 12 entries that disagree with the paper
 
-Under paper convention, these entries have specific `(t, l*)` cells
-where `rank(B) < t·l`, contradicting the paper's "ME" claim:
+Under paper convention, these entries have specific $(t, \ell^\ast)$ cells
+where $\mathrm{rank}(B) < t \cdot \ell$, contradicting the paper's "ME" claim:
 
 | Entry | Deficit row(s) — `(t, l*, our_rank, t·l)` |
 |---|---|
@@ -155,7 +153,7 @@ where `rank(B) < t·l`, contradicting the paper's "ME" claim:
 
 11 of these have small deficits (1–3 ranks short).  The remaining 3
 have substantial deficits (6, 9, 12+).  A block-count study shows
-that `(t+2)·l` blocks would close 12/14 and `(t+3)·l` all 14 — but
+that $(t+2) \cdot \ell$ blocks would close 12/14 and $(t+3) \cdot \ell$ all 14 — but
 those block counts over-shoot the R1 Table 1 ranks, so they cannot
 be the universal convention.  Most plausible reading: the paper
 made arithmetic errors or applied "almost ME" labelling for these
@@ -164,8 +162,8 @@ specific entries.
 ## Kernel convention vs paper convention
 
 Our C++ matricial-DE kernel implements the **standard** convention
-(`t·l` rows, equi iff `rank = t·l`).  For combined generators where
-the conventions diverge (e.g., `(31, 32, s=7)`), the kernel reports
+($t \cdot \ell$ rows, equi iff $\mathrm{rank} = t \cdot \ell$).  For combined generators where
+the conventions diverge (e.g., $(31, 32, s = 7)$), the kernel reports
 NOT ME even though the paper convention (and the paper) say ME.  The
 period and primitivity machinery is unaffected — those are reproduced
 byte-for-byte.

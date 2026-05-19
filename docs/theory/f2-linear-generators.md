@@ -37,9 +37,9 @@ Primitivity (and full period) is checked in REGPOLY by the `is_full_period` driv
 
 ## Equidistribution
 
-The defining quality metric for an F₂-linear generator is **equidistribution**: how uniformly its output points fill the unit hypercube $[0, 1)^L$.
+The defining quality metric for an F₂-linear generator is **equidistribution**: how uniformly its output points fill the unit hypercube $[0, 1)^t$.
 
-For a single resolution $\ell \in \{1, \ldots, w\}$, the **dimension of equidistribution** $d(\ell)$ is the largest $L$ such that the set of all $L$-tuples of consecutive outputs, truncated to $\ell$ leading bits each, covers every $\ell L$-bit pattern exactly $2^{k - \ell L}$ times. Equivalently, the matrix that maps the state to those $\ell L$ output bits has rank $\ell L$.
+For a single resolution $\ell \in \{1, \ldots, w\}$, the **dimension of equidistribution** $d(\ell)$ is the largest $t$ such that the set of all $t$-tuples of consecutive outputs, truncated to $\ell$ leading bits each, covers every $\ell t$-bit pattern exactly $2^{k - \ell t}$ times. Equivalently, the matrix that maps the state to those $\ell t$ output bits has rank $\ell t$.
 
 The **dimension gap** at resolution $\ell$ is
 

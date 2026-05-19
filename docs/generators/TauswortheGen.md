@@ -55,7 +55,7 @@ Two requirements:
 
 ---
 
-## 3. F2-linear matrix form
+## 3. $\mathbb{F}_2$-linear matrix form
 
 The Tausworthe generator is a special case of the general $\mathrm{GF}(2)$-linear
 generator

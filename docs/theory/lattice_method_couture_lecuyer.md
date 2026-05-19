@@ -13,8 +13,8 @@
 
 ## 1. Problem Statement
 
-Given a combined F2-linear generator with total state dimension k bits and
-output resolution L (bits per output word), compute the **resolution gaps**
+Given a combined $\mathbb{F}_2$-linear generator with total state dimension $k$ bits and
+output resolution $L$ (bits per output word), compute the **resolution gaps**
 (dimension defects):
 
 $$\delta_\ell = \left\lfloor k / \ell \right\rfloor - t_\ell, \qquad \ell = 1, \ldots, L$$

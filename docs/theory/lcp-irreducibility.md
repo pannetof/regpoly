@@ -1,4 +1,4 @@
-# LCP-Based Fast Rejection Filter and Primitivity Testing for GF(2)-Linear Generators
+# LCP-Based Fast Rejection Filter and Primitivity Testing for $\mathrm{GF}(2)$-Linear Generators
 
 ## Implementation Specification
 
@@ -7,12 +7,12 @@
 ## 1. Purpose and Scope
 
 This document describes two complementary tools for testing whether the characteristic
-polynomial `P(x)` of a GF(2)-linear generator is **primitive**:
+polynomial $P(x)$ of a $\mathrm{GF}(2)$-linear generator is **primitive**:
 
-1. **LCP fast rejection filter (BM-based):** cheap O(k²) test that can *reject* bad
+1. **LCP fast rejection filter (BM-based):** cheap $O(k^2)$ test that can *reject* bad
    parameters with certainty, but *cannot* certify irreducibility or primitivity on its own.
-2. **Exact irreducibility test (Rabin / `IterIrredTest`):** O(k^2.585) test that certifies
-   irreducibility exactly. For Mersenne prime exponent `k`, this simultaneously certifies
+2. **Exact irreducibility test (Rabin / `IterIrredTest`):** $O(k^{2.585})$ test that certifies
+   irreducibility exactly. For Mersenne prime exponent $k$, this simultaneously certifies
    primitivity.
 
 The intended workflow is to use the LCP filter to cheaply discard obviously bad parameters,
@@ -20,9 +20,9 @@ then apply the exact test only to candidates that survive.
 
 > **⚠ Critical limitation of the LCP test**
 >
-> L = k observed by BM does **not** imply P(x) is irreducible — not even when `k` is a
-> Mersenne prime exponent. A reducible P(x) with large balanced factors (e.g., degrees
-> 100 + 507 when k = 607) will produce L = k for almost every random seed, and the LCP
+> $L = k$ observed by BM does **not** imply $P(x)$ is irreducible — not even when $k$ is a
+> Mersenne prime exponent. A reducible $P(x)$ with large balanced factors (e.g., degrees
+> 100 + 507 when $k = 607$) will produce $L = k$ for almost every random seed, and the LCP
 > test will not detect the reducibility. The LCP test is a rejection filter only. The exact
 > irreducibility test (`IterIrredTest` in NTL, or Rabin's algorithm) is required to certify
 > irreducibility.
@@ -31,83 +31,75 @@ then apply the exact test only to candidates that survive.
 
 ## 2. Theoretical Foundation
 
-### 2.1 GF(2)-linear generators and minimal polynomials
+### 2.1 $\mathrm{GF}(2)$-linear generators and minimal polynomials
 
-A GF(2)-linear generator evolves its k-bit state by a linear map A over GF(2)^k:
+A $\mathrm{GF}(2)$-linear generator evolves its $k$-bit state by a linear map $A$ over $\mathrm{GF}(2)^k$:
 
-```
-x_{n+1} = A · x_n
-```
+$$\mathbf{x}_{n+1} = A \cdot \mathbf{x}_n$$
 
-Every output bit is a fixed linear function of the state: `s_n = c^T x_n`. The sequence
-{s_n} satisfies a linear recurrence over GF(2) whose **minimal polynomial** m(x) divides
-the **characteristic polynomial** P(x) = det(xI − A):
+Every output bit is a fixed linear function of the state: $s_n = c^T \mathbf{x}_n$. The sequence
+$\{s_n\}$ satisfies a linear recurrence over $\mathrm{GF}(2)$ whose **minimal polynomial** $m(x)$ divides
+the **characteristic polynomial** $P(x) = \det(xI - A)$:
 
-```
-m(x) | P(x)    always
-deg(m(x)) ≤ deg(P(x)) = k    always
-```
+$$m(x) \mid P(x) \quad \text{always}$$
+$$\deg(m(x)) \le \deg(P(x)) = k \quad \text{always}$$
 
 ### 2.2 What Berlekamp-Massey computes
 
-Given N ≥ 2k bits of {s_n}, BM finds:
+Given $N \ge 2k$ bits of $\{s_n\}$, BM finds:
 
-```
-m(x)  — the minimal polynomial of the sequence for the given seed x_0
-L     — the linear complexity = deg(m(x))
-```
+- $m(x)$ — the minimal polynomial of the sequence for the given seed $\mathbf{x}_0$
+- $L$ — the linear complexity $= \deg(m(x))$
 
-The relationship between L and the structure of P(x) depends on the seed:
+The relationship between $L$ and the structure of $P(x)$ depends on the seed:
 
-```
-L = k  ⟺  m(x) = P(x)  for this particular seed x_0
-L < k  ⟺  x_0 lies in a proper A-invariant subspace (eigenspace of a factor of P(x))
-```
+$$\begin{aligned}
+L = k &\iff m(x) = P(x) \text{ for this particular seed } \mathbf{x}_0 \\
+L < k &\iff \mathbf{x}_0 \text{ lies in a proper } A\text{-invariant subspace (eigenspace of a factor of } P(x)\text{)}
+\end{aligned}$$
 
-### 2.3 The correct interpretation of L = k
+### 2.3 The correct interpretation of $L = k$
 
-**L = k does NOT imply P(x) is irreducible.**
+**$L = k$ does NOT imply $P(x)$ is irreducible.**
 
-If P(x) = f(x)·g(x) with deg(f) = d and deg(g) = k−d, then:
-- Seeds in ker(g(A)) give L = d < k     — detects reducibility
-- Seeds in ker(f(A)) give L = k−d < k  — detects reducibility
-- Generic seeds give L = k              — does NOT detect reducibility
+If $P(x) = f(x) \cdot g(x)$ with $\deg(f) = d$ and $\deg(g) = k - d$, then:
+- Seeds in $\ker(g(A))$ give $L = d < k$ — detects reducibility
+- Seeds in $\ker(f(A))$ give $L = k - d < k$ — detects reducibility
+- Generic seeds give $L = k$ — does NOT detect reducibility
 
-The fraction of seeds that detect reducibility is only ≈ 2^{-d_min} where d_min is the
-degree of the smallest factor. For large balanced factors (d ≈ k/2), this fraction is
-≈ 2^{-k/2} ≈ 0, so the LCP test essentially never detects the reducibility.
+The fraction of seeds that detect reducibility is only $\approx 2^{-d_\text{min}}$ where $d_\text{min}$ is the
+degree of the smallest factor. For large balanced factors ($d \approx k/2$), this fraction is
+$\approx 2^{-k/2} \approx 0$, so the LCP test essentially never detects the reducibility.
 
-**Empirical confirmation:** the a=0 MELG607 generator has k = 607 (a Mersenne prime
+**Empirical confirmation:** the $a = 0$ MELG607 generator has $k = 607$ (a Mersenne prime
 exponent), yet its characteristic polynomial is reducible. NTL's `IterIrredTest` returns
 false. Its factors have degrees like 3+604 or 100+507 — neither factor degree divides 607.
-BM on a random seed gives L = 607, failing to detect the reducibility.
+BM on a random seed gives $L = 607$, failing to detect the reducibility.
 
 ### 2.4 What the LCP test IS good for
 
 The failure direction is exact and useful:
 
-```
-L < k for any seed  →  P(x) is definitely reducible  (certain, no caveats)
-```
+$$L < k \text{ for any seed} \implies P(x) \text{ is definitely reducible (certain, no caveats)}$$
 
-This is cheap (O(k²) per seed) and allows fast rejection of bad parameters before running
+This is cheap ($O(k^2)$ per seed) and allows fast rejection of bad parameters before running
 the expensive exact test. In a parameter search where most candidates are bad, this filter
 eliminates the majority of candidates at low cost.
 
 ### 2.5 The Mersenne prime exponent property (correctly stated)
 
-When k is a Mersenne prime exponent, 2^k − 1 is a Mersenne prime. This gives:
+When $k$ is a Mersenne prime exponent, $2^k - 1$ is a Mersenne prime. This gives:
 
-**Correct claim:** if P(x) is **irreducible** of degree k and k is a Mersenne prime
-exponent, then P(x) is **primitive**.
+**Correct claim:** if $P(x)$ is **irreducible** of degree $k$ and $k$ is a Mersenne prime
+exponent, then $P(x)$ is **primitive**.
 
-**Proof:** any root α of an irreducible degree-k polynomial has order dividing 2^k − 1.
-Since 2^k − 1 is prime, the order is either 1 (impossible for α nonzero) or 2^k − 1
-(maximal). Therefore P(x) is primitive. ∎
+**Proof:** any root $\alpha$ of an irreducible degree-$k$ polynomial has order dividing $2^k - 1$.
+Since $2^k - 1$ is prime, the order is either 1 (impossible for $\alpha$ nonzero) or $2^k - 1$
+(maximal). Therefore $P(x)$ is primitive. ∎
 
 **What this does NOT say:**
-- It does not say that every degree-k polynomial over GF(2) is irreducible when k is a
-  Mersenne prime exponent. Reducible degree-k polynomials exist for all k > 1.
+- It does not say that every degree-$k$ polynomial over $\mathrm{GF}(2)$ is irreducible when $k$ is a
+  Mersenne prime exponent. Reducible degree-$k$ polynomials exist for all $k > 1$.
 - It does not help the LCP test detect reducibility any better.
 
 **What this DOES say:** once irreducibility is certified by `IterIrredTest`, primitivity
@@ -124,7 +116,7 @@ For Mersenne prime exponent k:
 
 This eliminates the need for the Brillhart-Lehmer-Selfridge-Tuckerman-Wagstaff (BLSTW)
 factor tables and the associated order verification, which is the main computational
-bottleneck for large k in the general case.
+bottleneck for large $k$ in the general case.
 
 ---
 
@@ -150,8 +142,8 @@ For each candidate parameter set:
 ```
 
 In a typical parameter search, Stage 1 rejects most candidates cheaply (the fraction of
-primitive polynomials among all degree-k polynomials is φ(2^k − 1) / (k · 2^k) ≈ 1/k for
-large k, so roughly (1 − 1/k) of candidates are bad). Stage 2 is only run on the small
+primitive polynomials among all degree-$k$ polynomials is $\varphi(2^k - 1) / (k \cdot 2^k) \approx 1/k$ for
+large $k$, so roughly $(1 - 1/k)$ of candidates are bad). Stage 2 is only run on the small
 fraction that survive Stage 1.
 
 ---
@@ -183,21 +175,21 @@ for i = 0 to N-1:
     s[i] = pop_bit(bit_buffer)
 ```
 
-> **Note on tempering:** for generators with a GF(2)-linear output transformation (MT
+> **Note on tempering:** for generators with a $\mathrm{GF}(2)$-linear output transformation (MT
 > tempering, MELG lagged tempering), the minimal polynomial of the tempered sequence equals
 > that of the raw state — run the generator normally, no special handling needed.
 >
 > **Note on nonlinear scramblers:** for xorshift\*, xoshiro\*\*, xoroshiro+, the scrambled
-> output does not satisfy a GF(2) linear recurrence. Apply BM to the **raw state bits**
+> output does not satisfy a $\mathrm{GF}(2)$ linear recurrence. Apply BM to the **raw state bits**
 > before the scrambler. See Section 8.
 
-### 5.2 Berlekamp-Massey over GF(2)
+### 5.2 Berlekamp-Massey over $\mathrm{GF}(2)$
 
 BM maintains:
 
 | Variable | Type | Meaning |
 |---|---|---|
-| `L` | int | Current linear complexity = deg(m(x)) so far |
+| `L` | int | Current linear complexity $= \deg(m(x))$ so far |
 | `C[0..k]` | bit array | Current connection polynomial, `C[0] = 1` |
 | `B[0..k]` | bit array | Previous connection polynomial |
 | `m` | int | Steps since last length increase |
@@ -226,7 +218,7 @@ BM maintains:
            m += 1
 ```
 
-All arithmetic is XOR and AND over GF(2). No modular inverses needed.
+All arithmetic is XOR and AND over $\mathrm{GF}(2)$. No modular inverses needed.
 
 **Polynomial shift:** `C[i] ^= B[i-m]` for `i = m .. deg(B)+m`, with `B[j] = 0`
 for `j < 0`.
@@ -254,7 +246,7 @@ After all t seeds give L = k:
 
 ### 5.4 Intermediate plateau detection (diagnostic only)
 
-If during a BM run L stabilises at ℓ with 0 < ℓ < k for more than 2ℓ consecutive steps:
+If during a BM run $L$ stabilises at $\ell$ with $0 < \ell < k$ for more than $2\ell$ consecutive steps:
 
 ```
 → Strong evidence of an irreducible factor of degree ℓ
@@ -296,12 +288,12 @@ if (is_irreducible) {
 
 | Algorithm | Cost |
 |---|---|
-| Rabin / `IterIrredTest` (naive) | O(k³) |
-| Rabin / `IterIrredTest` (Karatsuba, NTL default for GF2X) | O(k^2.585) |
-| Order check for Mersenne exponent k | **Free — not needed** |
-| Order check for general k | O(k³) + cost of factoring 2^k − 1 |
+| Rabin / `IterIrredTest` (naive) | $O(k^3)$ |
+| Rabin / `IterIrredTest` (Karatsuba, NTL default for GF2X) | $O(k^{2.585})$ |
+| Order check for Mersenne exponent $k$ | **Free — not needed** |
+| Order check for general $k$ | $O(k^3) +$ cost of factoring $2^k - 1$ |
 
-For k = 607 with NTL's Karatsuba GF2X: approximately 607^2.585 ≈ 5 × 10⁷ bit operations.
+For $k = 607$ with NTL's Karatsuba GF2X: approximately $607^{2.585} \approx 5 \times 10^7$ bit operations.
 
 ---
 
@@ -316,18 +308,16 @@ Total per rejected candidate:     O(t · k²) only [Stage 2 skipped]
 ```
 
 The filter's value is that for most candidates (reducible or wrong period), Stage 2 is never
-reached. In a parameter search with rejection rate r:
+reached. In a parameter search with rejection rate $r$:
 
-```
-Expected cost per search step = t · k²  +  (1-r) · k^2.585
-```
+$$\text{Expected cost per search step} = t \cdot k^2 + (1 - r) \cdot k^{2.585}$$
 
-For r = 0.99 (99% of candidates rejected by Stage 1) and k = 607:
-- LCP filter: 40 × 607² ≈ 1.5 × 10⁷
-- IterIrredTest (1% of the time): 0.01 × 5 × 10⁷ ≈ 5 × 10⁵
-- Total per step: ≈ 1.5 × 10⁷
+For $r = 0.99$ (99% of candidates rejected by Stage 1) and $k = 607$:
+- LCP filter: $40 \times 607^2 \approx 1.5 \times 10^7$
+- IterIrredTest (1% of the time): $0.01 \times 5 \times 10^7 \approx 5 \times 10^5$
+- Total per step: $\approx 1.5 \times 10^7$
 
-Compared to running IterIrredTest alone on every candidate: 5 × 10⁷ per step.
+Compared to running IterIrredTest alone on every candidate: $5 \times 10^7$ per step.
 **Speedup from the filter: approximately 3× in this scenario**, and better when the
 rejection rate is higher.
 
@@ -336,8 +326,8 @@ rejection rate is higher.
 ## 8. Applying BM to the Raw State (Bypassing Scramblers)
 
 For generators with nonlinear output scramblers (xorshift\*, xoshiro\*\*, xoroshiro+),
-the scrambled output does not satisfy a GF(2) linear recurrence. BM on the scrambled
-output will not find P(x). Apply BM to the raw state instead:
+the scrambled output does not satisfy a $\mathrm{GF}(2)$ linear recurrence. BM on the scrambled
+output will not find $P(x)$. Apply BM to the raw state instead:
 
 ```cpp
 uint64_t next_raw_state_bit(generator_state* g, int bit_position) {
@@ -390,7 +380,7 @@ void xor_shifted(uint64_t* C, const uint64_t* B, int m, int degB) {
 
 ### Circular sequence buffer
 
-BM needs bits s[n] and s[n-1..n-L] with L ≤ k. A circular buffer of k+1 bits suffices:
+BM needs bits $s[n]$ and $s[n-1..n-L]$ with $L \le k$. A circular buffer of $k+1$ bits suffices:
 
 ```cpp
 uint64_t seq_buf[(k + 64) / 64] = {};
@@ -412,20 +402,20 @@ Extracting all 64 bits per word reduces generator calls by 64×.
 
 ### PCLMUL acceleration
 
-On x86 with CLMUL, enable with `-mpclmul` and `NTL_PCLMUL=on`. At k = 607 (~10 machine
+On x86 with CLMUL, enable with `-mpclmul` and `NTL_PCLMUL=on`. At $k = 607$ (~10 machine
 words), Karatsuba + PCLMUL is faster than any FFT-based approach; FFT only wins for
-k ≳ 10,000.
+$k \gtrsim 10{,}000$.
 
 ---
 
 ## 10. Seed Generation for the LCP Filter
 
-Seeds must be nonzero, independent, and uniformly random over GF(2)^k \ {0}. Use a
-separate generator (e.g., splitmix64 seeded from hardware clock) to produce k bits per
+Seeds must be nonzero, independent, and uniformly random over $\mathrm{GF}(2)^k \setminus \{0\}$. Use a
+separate generator (e.g., splitmix64 seeded from hardware clock) to produce $k$ bits per
 seed. Reject all-zero seeds.
 
-The purpose of t = 20–40 seeds is to increase the probability of catching reducibility
-when d_min is small (few-bit factors). For large balanced factors the filter provides no
+The purpose of $t = 20\text{–}40$ seeds is to increase the probability of catching reducibility
+when $d_\text{min}$ is small (few-bit factors). For large balanced factors the filter provides no
 benefit — those are caught by Stage 2. The filter is most effective when the parameter
 search naturally produces polynomials with occasional small factors, which is the common
 case in practice.
@@ -436,18 +426,18 @@ case in practice.
 
 | Observation | Conclusion | Certainty |
 |---|---|---|
-| BM gives L < k for any seed | P(x) **reducible** | **Certain** |
-| BM gives intermediate plateau at ℓ | Factor of degree ℓ exists | **Certain** |
-| BM gives L = k for all t seeds | P(x) **may or may not** be irreducible | **No conclusion** |
-| `IterIrredTest` returns true | P(x) is **irreducible** | **Certain** |
-| `IterIrredTest` true + k Mersenne exponent | P(x) is **primitive** | **Certain** |
-| `IterIrredTest` true + order check passes | P(x) is **primitive** | **Certain** |
+| BM gives $L < k$ for any seed | $P(x)$ **reducible** | **Certain** |
+| BM gives intermediate plateau at $\ell$ | Factor of degree $\ell$ exists | **Certain** |
+| BM gives $L = k$ for all $t$ seeds | $P(x)$ **may or may not** be irreducible | **No conclusion** |
+| `IterIrredTest` returns true | $P(x)$ is **irreducible** | **Certain** |
+| `IterIrredTest` true + $k$ Mersenne exponent | $P(x)$ is **primitive** | **Certain** |
+| `IterIrredTest` true + order check passes | $P(x)$ is **primitive** | **Certain** |
 
 ---
 
 ## 12. Recommended Parameters
 
-| k | Mersenne prime exponent | t (LCP seeds) | N (bits) | Order check after IterIrredTest? |
+| $k$ | Mersenne prime exponent | $t$ (LCP seeds) | $N$ (bits) | Order check after IterIrredTest? |
 |---|---|---|---|---|
 | 607 | Yes | 20–40 | 1278 | Not needed |
 | 1279 | Yes | 20–40 | 2622 | Not needed |
@@ -455,7 +445,7 @@ case in practice.
 | 4253 | Yes | 20–40 | 8570 | Not needed |
 | 19937 | Yes | 10–20 | 39938 | Not needed |
 | 44497 | Yes | 10–20 | 89058 | Not needed |
-| other | No | 20–40 | 2k+64 | Required |
+| other | No | 20–40 | $2k + 64$ | Required |
 
 ---
 

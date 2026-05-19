@@ -2,7 +2,7 @@
 
 Mathematical and algorithmic background for F₂-linear generators and the analyses REGPOLY performs.
 
-- **[Equidistribution in 5 minutes](equidistribution-in-5-minutes.md)** — beginner on-ramp: what `k(L)`, gaps, SE, and "ME" mean, why the metric matters, no Berlekamp-Massey.
+- **[Equidistribution in 5 minutes](equidistribution-in-5-minutes.md)** — beginner on-ramp: what $k(t)$, gaps, SE, and "ME" mean, why the metric matters, no Berlekamp-Massey.
 - **[F₂-linear generators](f2-linear-generators.md)** — general framework: state, recurrence, output, characteristic polynomial, full-period condition.
 - **[Equidistribution (design of record)](equidistribution-spec.md)** — matricial equidistribution computation on F₂-linear generators that may not be full-period.
 - **[Antithetic check](antithetic-check.md)** — algorithm for testing local antitheticity of a linear RNG point set.
