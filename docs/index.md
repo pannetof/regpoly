@@ -48,7 +48,7 @@ example is on the C++ usage page.
 :::
 
 :::{grid-item-card} 📓 &nbsp; Browse the notebooks
-:link: usage/notebooks
+:link: notebooks/index
 :link-type: doc
 :class-card: sd-shadow-sm
 
@@ -161,7 +161,7 @@ papers/index
 usage/python
 usage/cpp
 usage/web
-usage/notebooks
+notebooks/index
 deployment
 packages/regpoly-cpp
 packages/regpoly

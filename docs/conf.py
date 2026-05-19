@@ -134,13 +134,41 @@ myst_heading_anchors = 3
 
 # -- MyST-NB (notebooks) ------------------------------------------------------
 
-# Step 2 default: render committed outputs only (no execution). Step 4
-# will switch to "cache" once jupyter-cache + the actions/cache CI key
-# (including the .so hash) are wired up.
-nb_execution_mode = "off"
+# Hash-based notebook execution: first build on a fresh checkout
+# executes every included notebook and stores the outputs in
+# `.jupyter_cache/` (gitignored). Subsequent builds reuse the cache
+# unless the notebook source changes.
+#
+# CI note: the docs workflow (Step 11) must wire `actions/cache@v4`
+# against `.jupyter_cache/` keyed on a hash of:
+#   - every .ipynb file under docs/notebooks/
+#   - the compiled pybind11 extension (.venv/.../*_regpoly_cpp*.so)
+# so that a C++ code change invalidates notebook outputs.
+nb_execution_mode = "cache"
+
+# Alias every kernel reference in a notebook (e.g. the "regpoly" custom
+# kernel some pre-v2 notebooks were authored with) to the local venv's
+# python3 kernel. Avoids any dependency on the user's global Jupyter
+# kernel registry.
+nb_kernel_rgx_aliases = {r".*": "python3"}
+
+# Don't abort the docs build when one notebook errors during execution —
+# the error cell renders in the output so the reader sees it. This is
+# safer than -W on the slow lane because (a) pre-v2 reference notebooks
+# may depend on external URLs or fixtures that have moved, and (b) we
+# don't want a single broken notebook to break the entire docs deploy.
+nb_execution_raise_on_error = False
+nb_execution_timeout = 120          # per-cell seconds; was 600 (overkill)
+nb_execution_allow_errors = True    # render error tracebacks instead of failing
+
+# Notebooks excluded from execution (still rendered with their committed
+# outputs). Add entries here whenever a notebook depends on network /
+# moved fixtures / hardware not available in CI.
+nb_execution_excludepatterns = [
+    "**/research/**",                            # 2 CA research notebooks
+    "**/reference/primitive.ipynb",              # fetches external URL
+]
 nb_execution_cache_path = ".jupyter_cache"    # gitignored
-nb_execution_timeout = 600                    # per-notebook seconds
-nb_execution_excludepatterns = ["**/research/**"]
 nb_merge_streams = True                        # cleaner stdout/stderr in output cells
 
 # -- Autodoc + Napoleon (NumPy style) -----------------------------------------

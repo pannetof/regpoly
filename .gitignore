@@ -57,5 +57,8 @@ docs/_doxygen/
 .jupyter_cache/
 jupyter_execute/
 
+# Generator search results dropped by notebooks during execution
+docs/yaml/
+
 # Smoke test scratch directory (one-off; will be removed after Step 1 ships)
 docs-smoke/
