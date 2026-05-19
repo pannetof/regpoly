@@ -116,7 +116,7 @@ for the search-side details.
   garbage (or fail the spec's primitivity guard).
 - **Cross-check delta.** For a subset of mexps, regpoly's
   notprimitive method selects an invariant subspace that differs
-  by $\le 1$ bit per $v$ from MTToolBox's annihilate-then-equidist
+  by $\le 1$ bit per $\ell$ from MTToolBox's annihilate-then-equidist
   convention; the `cross_check_xfail` markers in
   `docs/library/rmt_params.yaml` document the affected entries.
 - **Seed degeneracy guard.** `init()` sets `state[0] = 1` when the

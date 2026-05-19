@@ -1,7 +1,7 @@
 # Matricial Computation of Equidistribution for Black-Box $\mathbb{F}_2$-Linear Generators
 
 **Scope.** This document specifies an algorithm and implementation plan for computing
-the dimension-of-equidistribution profile $k(v)$, $v = 1, \ldots, w$, of a pseudorandom
+the dimension-of-equidistribution profile $d(\ell)$, $\ell = 1, \ldots, w$, of a pseudorandom
 number generator that is known to be $\mathbb{F}_2$-linear but whose internal structure
 (characteristic polynomial, invariant subspaces, factorization) is not assumed to
 be known in advance. The generator may be non-full-period: no assumption is made
@@ -9,16 +9,16 @@ that the characteristic polynomial is primitive.
 
 **Inputs required from the generator.**
 
-1. A state of dimension $n$ over $\mathbb{F}_2$ (so the full state is $n$ bits; $n = w \cdot N$
+1. A state of dimension $k$ over $\mathbb{F}_2$ (so the full state is $k$ bits; $k = w \cdot N$
    in the usual LFSR-array formulation).
 2. Word size $w$ of the output (32, 64, or 128).
 3. A `step()` routine advancing the internal state by one step.
 4. A routine to read the current $w$-bit output word.
-5. The ability to set the state to an arbitrary $n$-bit value.
+5. The ability to set the state to an arbitrary $k$-bit value.
 
 No knowledge of $\chi_f$, no access to $f$ as a matrix, no tempering assumptions.
 
-**Output.** The array $k(v)$ for $v = 1, \ldots, w$, together with the recovered factor
+**Output.** The array $d(\ell)$ for $\ell = 1, \ldots, w$, together with the recovered factor
 $\varphi(t)$ of the characteristic polynomial on which equidistribution is certified,
 the dimension $p = \deg \varphi$ of the invariant subspace $V$, and the certified defect
 ratio $2^{-p}$.
@@ -33,8 +33,8 @@ The pipeline is seven stages:
 2. Factor $\chi_f$ over $\mathbb{F}_2$.
 3. Select the largest-period irreducible factor $\varphi$; set $p = \deg \varphi$,
    $V = \ker \varphi(f)$.
-4. Construct a basis $B$ of $V$ as an $n \times p$ bit-matrix.
-5. Run the matricial DE core on $V$ to extract all $k(v)$ in one sweep.
+4. Construct a basis $B$ of $V$ as a $k \times p$ bit-matrix.
+5. Run the matricial DE core on $V$ to extract all $d(\ell)$ in one sweep.
 6. Initialize-state guard: ensure the user-facing initializer produces states
    with nonzero $V$-component.
 7. Verify via three sanity checks and a cross-check against a known generator.
@@ -48,31 +48,31 @@ Each stage is specified below.
 ### 2.1 Procedure
 
 Pick a nonzero initial state $s_0$. Define a scalar $\mathbb{F}_2$-valued output functional
-$\ell : \text{state} \to \mathbb{F}_2$ — the simplest viable choice is "bit 0 of the first output word
+$\lambda : \text{state} \to \mathbb{F}_2$ — the simplest viable choice is "bit 0 of the first output word
 after one step." Produce the sequence
 
-$$b_j = \ell(f^j \cdot s_0), \quad j = 0, 1, \ldots, 2n + 32.$$
+$$b_j = \lambda(f^j \cdot s_0), \quad j = 0, 1, \ldots, 2k + 32.$$
 
-Run Berlekamp–Massey on $(b_j)$. It returns a polynomial $\mu_{s_0, \ell}(t)$ which
+Run Berlekamp–Massey on $(b_j)$. It returns a polynomial $\mu_{s_0, \lambda}(t)$ which
 divides $\chi_f(t)$.
 
 Repeat with 5 independent random initial states and/or 2–3 different scalar
-functionals $\ell$ (e.g. bit 0 of word 0, bit 7 of word 0, bit 0 of word 1). Compute
+functionals $\lambda$ (e.g. bit 0 of word 0, bit 7 of word 0, bit 0 of word 1). Compute
 
 $$\chi_f(t) := \mathrm{lcm}\text{ of all recovered minimal polynomials.}$$
 
 ### 2.2 Verification
 
-Before proceeding, require $\deg \chi_f = n$. If not, repeat with more sampling
-functionals. Failure to reach degree $n$ after ~20 trials indicates either that
-the generator has a minimal polynomial genuinely smaller than $n$ (i.e. the
+Before proceeding, require $\deg \chi_f = k$. If not, repeat with more sampling
+functionals. Failure to reach degree $k$ after ~20 trials indicates either that
+the generator has a minimal polynomial genuinely smaller than $k$ (i.e. the
 declared state dimension is larger than the reachable state space), or a bug in
 the `step()` wiring.
 
 ### 2.3 Cost
 
-$O(n^2)$ per Berlekamp–Massey run, $O(n)$ generator steps per sequence. With
-$n \approx 20000$, this stage runs in well under a minute.
+$O(k^2)$ per Berlekamp–Massey run, $O(k)$ generator steps per sequence. With
+$k \approx 20000$, this stage runs in well under a minute.
 
 ### 2.4 Implementation notes
 
@@ -99,7 +99,7 @@ modulus 2, or the dedicated `F2` routines). Do not reimplement.
 
 ### 3.2 Expected runtime
 
-For $n \approx 20000$, seconds to low minutes. For $n \approx 100000$, still tractable but
+For $k \approx 20000$, seconds to low minutes. For $k \approx 100000$, still tractable but
 benefits from NTL's tuned implementations.
 
 ---
@@ -128,7 +128,7 @@ $2^{d_j} - 1$).
 
 Set
 
-$$\varphi := \text{the selected factor}, \quad p := \deg \varphi, \quad V := \ker \varphi(f) \subset \mathbb{F}_2^n, \quad \dim V = p.$$
+$$\varphi := \text{the selected factor}, \quad p := \deg \varphi, \quad V := \ker \varphi(f) \subset \mathbb{F}_2^k, \quad \dim V = p.$$
 
 ### 4.2 Note on multiplicity
 
@@ -145,16 +145,16 @@ check fails.
 
 ### 5.1 Route B (orbit-based — preferred)
 
-Let $\psi(t) := \chi_f(t) / \varphi(t)$, a polynomial of degree $n - p$.
+Let $\psi(t) := \chi_f(t) / \varphi(t)$, a polynomial of degree $k - p$.
 
-1. Pick a random state $s \in \mathbb{F}_2^n$.
+1. Pick a random state $s \in \mathbb{F}_2^k$.
 2. Compute $s' := \psi(f) \cdot s$ by evaluating $\psi$ at $f$ via Horner's scheme:
    iterate `step()` from $s$ and accumulate the $\psi$-coefficients. Cost:
-   $n - p$ generator steps, $n - p$ state-XORs.
+   $k - p$ generator steps, $k - p$ state-XORs.
 3. Verify $s' \ne 0$ and $\varphi(f) \cdot s' = 0$. If $s' = 0$, retry with new $s$
    (this happens with probability $2^{-p}$, so effectively never).
-4. Collect the orbit $\{f^k \cdot s' : k = 0, 1, \ldots, p - 1\}$ as columns of an
-   $n \times p$ matrix $B$.
+4. Collect the orbit $\{f^m \cdot s' : m = 0, 1, \ldots, p - 1\}$ as columns of a
+   $k \times p$ matrix $B$.
 5. Check $\mathrm{rank}_{\mathbb{F}_2}(B) = p$. If yes, done: the columns of $B$ span $V$.
 6. If rank $< p$ (generically impossible but possible for pathological
    generators where the minimal polynomial of $s'$ is a proper divisor of $\varphi$),
@@ -171,8 +171,8 @@ Route A is more robust but costs $\sim p$ applications of $\psi(f)$ instead of $
 
 ### 5.3 Representation of $B$
 
-Store $B$ as a bit-packed $n \times p$ matrix, rows as $p/W$-word bitstrings
-($W = 64$). Memory: $n \cdot p / 8$ bytes. For $n = p = 20000$: 50 MB. Fine.
+Store $B$ as a bit-packed $k \times p$ matrix, rows as $p/W$-word bitstrings
+($W = 64$). Memory: $k \cdot p / 8$ bytes. For $k = p = 20000$: 50 MB. Fine.
 
 ---
 
@@ -183,9 +183,9 @@ Store $B$ as a bit-packed $n \times p$ matrix, rows as $p/W$-word bitstrings
 For each output phase $i$ (see §6.4), maintain a single echelon form $E_i$ over
 $\mathbb{F}_2$ with $p$ columns. Rows are successively inserted; at most $p$ pivots exist.
 
-Also maintain, for each accuracy $v \in \{1, \ldots, w\}$:
-- $c_i(v)$: current rank of the $v$-restricted submatrix for phase $i$;
-- $\mathrm{alive}_i(v)$: boolean flag, true while $c_i(v) = k \cdot v$ has kept up.
+Also maintain, for each accuracy $\ell \in \{1, \ldots, w\}$:
+- $c_i(\ell)$: current rank of the $\ell$-restricted submatrix for phase $i$;
+- $\mathrm{alive}_i(\ell)$: boolean flag, true while $c_i(\ell) = m \cdot \ell$ has kept up.
 
 ### 6.2 Key structural observation
 
@@ -195,30 +195,30 @@ first:
 $$\text{output 0 bit 1, output 0 bit 2, \ldots, output 0 bit } w,$$
 $$\text{output 1 bit 1, output 1 bit 2, \ldots, output 1 bit } w, \ldots$$
 
-Then the matrix $M_k(v)$ for accuracy $v$ is obtained from $M_k(w)$ by keeping,
-within each block of $w$ consecutive rows, only the first $v$. **A single echelon
-form on the full-precision rows, maintained in this order, gives every $k(v)$
+Then the matrix $M_m(\ell)$ for accuracy $\ell$ is obtained from $M_m(w)$ by keeping,
+within each block of $w$ consecutive rows, only the first $\ell$. **A single echelon
+form on the full-precision rows, maintained in this order, gives every $d(\ell)$
 simultaneously.**
 
 ### 6.3 The inner loop (single phase)
 
 ```
-initialize E empty; c(v) ← 0, alive(v) ← true for v = 1..w
-for k = 1, 2, 3, …:
+initialize E empty; c(ell) ← 0, alive(ell) ← true for ell = 1..w
+for m = 1, 2, 3, …:
     compute this step's p dual vectors for bits 1..w of the output word,
         represented as p-bit rows over the basis B of V
     for j = 1, …, w:
         r ← dual vector of bit j
         attempt F_2-echelon insertion of r into E
         if r was linearly independent:
-            for every v ≥ j with alive(v):
-                c(v) ← c(v) + 1
-        for every v ≥ j with alive(v):
-            if c(v) < k·v:            // only possible if r was dependent
-                alive(v) ← false
-                k(v) ← k − 1
-    if no v is still alive: break
-    if k·w ≥ p: break                   // upper bound k(v) ≤ ⌊p/v⌋ saturated
+            for every ell ≥ j with alive(ell):
+                c(ell) ← c(ell) + 1
+        for every ell ≥ j with alive(ell):
+            if c(ell) < m·ell:        // only possible if r was dependent
+                alive(ell) ← false
+                d(ell) ← m − 1
+    if no ell is still alive: break
+    if m·w ≥ p: break                   // upper bound d(ell) ≤ ⌊p/ell⌋ saturated
 ```
 
 ### 6.4 Phase handling (for $w_\text{output} < w_\text{state}$)
@@ -230,26 +230,26 @@ echelon forms** $E_0, \ldots, E_3$, one per phase, sharing the same $V$-basis $B
 and the same advance of the generator state. Each $E_i$ sees only the output
 bits of phase $i$.
 
-The reported $k(v)$ for the generator is
+The reported $d(\ell)$ for the generator is
 
-$$k(v) = \min_i k_i(v).$$
+$$d(\ell) = \min_i d_i(\ell).$$
 
 For generators with no phase mismatch, use a single phase ($i = 0$).
 
 ### 6.5 Lazy output generation (the trick that makes this affordable)
 
-Never materialize $f$ as an $n \times n$ matrix. Instead:
+Never materialize $f$ as a $k \times k$ matrix. Instead:
 
 1. Pack the $p$ basis vectors of $V$ (the columns of $B$) as $p$ "virtual
-   registers," each an $n$-bit state of the generator.
-2. At each $k$-step, advance all $p$ virtual registers by one call to `step()`
+   registers," each a $k$-bit state of the generator.
+2. At each $m$-step, advance all $p$ virtual registers by one call to `step()`
    each. This is $p$ independent generator steps — parallelizable, and each
    is as cheap as a single generator step.
 3. Read the $w$-bit output from each virtual register. Transpose the resulting
    $p \times w$ slab to obtain $w$ dual vectors, each of length $p$ bits — exactly
    the rows we need to insert.
 
-Cost per $k$-step: $p$ generator steps. For SFMT19937 with $p \approx 20000$: a few
+Cost per $m$-step: $p$ generator steps. For SFMT19937 with $p \approx 20000$: a few
 hundred thousand XOR/shift operations, i.e. ~millisecond.
 
 ### 6.6 Bit-packed echelon reduction
@@ -267,11 +267,11 @@ Worst case: $O(p^2 / 64)$ word-ops per insertion. Total insertions: at most $p$
 
 $$\begin{aligned}
 \text{Echelon maintenance:} \quad & O(p^3 / W) \quad \leftarrow \text{dominant} \\
-\text{Generator advance:} \quad & O(p \cdot n / W) \text{ per } k\text{-step} \times O(p/w) \text{ } k\text{-steps} \\
-& = O(p^2 \cdot n / (w \cdot W))
+\text{Generator advance:} \quad & O(p \cdot k / W) \text{ per } m\text{-step} \times O(p/w) \text{ } m\text{-steps} \\
+& = O(p^2 \cdot k / (w \cdot W))
 \end{aligned}$$
 
-For $p = n = 19937$, $w = 32$, $W = 64$: echelon is $\sim 10^{11}$ word-ops, i.e.
+For $p = k = 19937$, $w = 32$, $W = 64$: echelon is $\sim 10^{11}$ word-ops, i.e.
 seconds to a minute. Generator advance is $\sim 10^{10}$, i.e. comparable but
 slightly faster.
 
@@ -281,7 +281,7 @@ Four phases (SFMT case) multiply by 4. Total: minutes on a single core.
 
 The Couture–L'Ecuyer 1993 weighted-norm trick (and the Harase refinements on
 top of it) reorder *which* new dual vectors to insert, prioritizing by a weight
-reflecting how close each $v$ is to its bound $\lfloor p/v \rfloor$. Savings are a 3–10×
+reflecting how close each $\ell$ is to its bound $\lfloor p/\ell \rfloor$. Savings are a 3–10×
 constant factor. **Defer to a second pass** — implement §6.3 first, validate,
 then optimize if the base version is too slow for a parameter-search loop.
 
@@ -309,7 +309,7 @@ runtime projection.
 
 ## 8. Stage 7 — Verification
 
-Three mandatory sanity checks, in order. A failure in any check means $k(v)$ is
+Three mandatory sanity checks, in order. A failure in any check means $d(\ell)$ is
 not to be trusted.
 
 ### 8.1 Period check
@@ -323,17 +323,17 @@ confirm $f^{(2^p - 1)/q} \cdot s_V \ne s_V$ for every small prime $q$ dividing $
 
 Confirm:
 
-- $k(w) \ge 1$ (a single $w$-bit output should be $w$-uniform; failure here means
+- $d(w) \ge 1$ (a single $w$-bit output should be $w$-uniform; failure here means
   output tempering is catastrophically broken or $B$ is wrong).
-- $k(1) \le p$ (upper bound always holds; violation means the echelon
+- $d(1) \le p$ (upper bound always holds; violation means the echelon
   bookkeeping is buggy).
-- $k(v) \le \lfloor p/v \rfloor$ for all $v$ (same: upper bound must hold).
+- $d(\ell) \le \lfloor p/\ell \rfloor$ for all $\ell$ (same: upper bound must hold).
 
 ### 8.3 Cross-check against a known generator
 
 Run the *entire* pipeline — stages 1 through 5 — on MT19937, for which the
-$k(v)$ profile is published (cf. Matsumoto–Nishimura 1998, Table 2; also SFMT
-paper Table 3). Require exact agreement on all 32 values of $k(v)$. This is
+$d(\ell)$ profile is published (cf. Matsumoto–Nishimura 1998, Table 2; also SFMT
+paper Table 3). Require exact agreement on all 32 values of $d(\ell)$. This is
 the single most important test; it catches basis-construction bugs,
 phase-handling bugs, and off-by-one errors in the echelon loop.
 
@@ -356,12 +356,12 @@ analyses/
   guard.{cpp,h}           ← initial-state guard
   verify.{cpp,h}          ← §8 sanity checks
 cli/
-  main.cpp                ← `regpoly-cli` driver (emits k(v) table)
+  main.cpp                ← `regpoly-cli` driver (emits d(ell) table)
 tests/
-  test_bm_kv_mt19937.cpp  ← cross-check against MT19937 published k(v)
+  test_bm_kv_mt19937.cpp  ← cross-check against MT19937 published d(ell)
   test_bm_kv_sfmt.cpp     ← cross-check against SFMT19937 Table 3
-  test_bm_kv_small.cpp    ← degenerate small-n generators with
-                              hand-computed k(v)
+  test_bm_kv_small.cpp    ← degenerate small-k generators with
+                              hand-computed d(ell)
 ```
 
 **Key types.**
@@ -379,12 +379,12 @@ typedef struct {
 } echelon_t;
 
 typedef struct {
-    size_t   n, w, p;
-    bitrow_t *B_cols; // p columns of B, each n bits — stored col-major
+    size_t   k, w, p;
+    bitrow_t *B_cols; // p columns of B, each k bits — stored col-major
     // ... generator-specific callbacks:
     void (*step)(void *state);
     void (*read)(const void *state, uint8_t *out_w_bytes);
-    void (*set_state)(void *state, const uint8_t *in_n_bytes);
+    void (*set_state)(void *state, const uint8_t *in_k_bytes);
     size_t state_size;
 } de_context_t;
 ```
@@ -397,9 +397,9 @@ typedef struct {
   $\mathbb{F}_2$-linearity of $f$ and of the output functionals.
 - **Tempered generators with nonlinear tempering** (e.g. XOR-shift-multiply on
   output) break the linearity of the output functionals. This pipeline computes
-  $k(v)$ for the *pre-tempering* sequence only; post-tempering DE requires
+  $d(\ell)$ for the *pre-tempering* sequence only; post-tempering DE requires
   separate analysis.
-- **Generators with $n > 10^5$** are in principle handled but factorization
+- **Generators with $k > 10^5$** are in principle handled but factorization
   (stage 2) and $\psi(f)$ evaluation (stage 4) become the bottleneck. Consider
   whether the generator's design already exposes $\varphi$ — if so, skip stages 1–3.
 
