@@ -28,7 +28,9 @@ uv run pytest packages/regpoly-legacy/tests/python
 uv run pytest -m slow
 uv run pytest -m e2e
 
-# Docs site:
+# Docs site (Sphinx + Doxygen + Breathe + Exhale + PyData theme):
 uv sync --group docs
-cd docs && uv run mkdocs serve
+sudo apt install -y doxygen graphviz                      # one-time
+uv run --group docs sphinx-build -b html docs site        # one-shot build
+uv run --group docs sphinx-autobuild docs site            # live-reload preview
 ```

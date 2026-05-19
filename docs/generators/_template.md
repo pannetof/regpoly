@@ -3,8 +3,9 @@
 <!--
   Per-family page template.
   Copy this file to <Family>Gen.md, fill in each section against the
-  C++ class in packages/regpoly-cpp/src/generators/, and link it in
-  mkdocs.yml under the `Generators:` nav.
+  C++ class in packages/regpoly-cpp/src/generators/, and add it to the
+  toctree in docs/generators/index.md (Sphinx + MyST picks it up
+  automatically once the file exists and is listed).
   Already-authored examples:
     - generators/MTGen.md           (full, canonical)
     - generators/WELLGen.md         (full)

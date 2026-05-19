@@ -213,10 +213,12 @@ GitHub Pages on every push to `master` via
 |---|---|
 | **Theory** — F₂-linear framework, equidistribution, lattice methods, tempering, search format | [`docs/theory/`](docs/theory/index.md) |
 | **Generators** — one page per family (17 total) | [`docs/generators/`](docs/generators/index.md) |
-| **Usage** — Python, C++ CLI, web UI, notebooks | [`docs/usage/python.md`](docs/usage/python.md), [`cpp.md`](docs/usage/cpp.md), [`web.md`](docs/usage/web.md), [`notebooks.md`](docs/usage/notebooks.md) |
+| **Usage** — Python, C++ CLI, Python/C++ bridge, web UI | [`docs/usage/python.md`](docs/usage/python.md), [`cpp.md`](docs/usage/cpp.md), [`python-cpp-bridge.md`](docs/usage/python-cpp-bridge.md), [`web.md`](docs/usage/web.md) |
+| **Notebooks** — 15 per-family demos + 14 reference notebooks | [`docs/notebooks/`](docs/notebooks/index.md) |
 | **Library** — published parameter catalogs | [`docs/library/`](docs/library/index.md) |
 | **Papers** — bibliography + PDFs | [`docs/papers/`](docs/papers/index.md) |
-| **Dev** — architecture, building, contributing, Postgres dev-env, web design spec, user stories | [`docs/dev/`](docs/dev/architecture.md) |
+| **API reference** — autodoc + Doxygen/Exhale per-symbol pages for the public Python + C++ surface | [`docs/api/python/index.md`](docs/api/python/index.md) |
+| **Dev** — architecture, building, contributing, API doc style, Postgres dev-env, web design spec, user stories | [`docs/dev/`](docs/dev/architecture.md) |
 
 ### Package READMEs
 

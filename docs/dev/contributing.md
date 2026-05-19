@@ -20,3 +20,10 @@ CI is gated by:
     - `regpoly_legacy → regpoly → regpoly_cpp`
 
 The slow lane (`-m slow`) runs MTToolBox cross-checks and `nbmake` notebook execution; the e2e lane (`-m e2e`) runs Playwright golden-path browser tests for the web app.
+
+## API documentation
+
+Every new public symbol (Python `__all__` member, or header declaration
+under `packages/regpoly-cpp/src/include/`) ships with a docstring or
+Doxygen block. See the [API documentation guide](api-docs.md) for the
+required tags, examples, and how to render the docs locally.

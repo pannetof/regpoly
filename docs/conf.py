@@ -69,11 +69,6 @@ source_suffix = {
 
 master_doc = "index"
 exclude_patterns = [
-    # Old MkDocs scaffolding — still on disk during the transition; Step 8 deletes it.
-    "api/index.md",
-    "api/cpp/index.md",
-    "dev/api-docs-style.md",
-    "gen_paper_pages.py",
     # Build-time generated catalog fragment, pulled into papers/index.md via
     # `{include}` — don't parse it as a standalone document.
     "papers/_auto_catalog.md",
