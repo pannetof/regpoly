@@ -8,6 +8,20 @@ do this for `L` — see [Page-local overrides](#page-local-overrides)).
 When you read a new docstring or theory section, this is the table to
 check first.
 
+## Typographic conventions
+
+- **Bit vectors are bold.** Every element of $\mathbb{F}_2^k$ or
+  $\mathbb{F}_2^L$ is written with `\mathbf{}` — e.g. the state
+  $\mathbf{x}$, the output word $\mathbf{y}$, the tempered output
+  $\mathbf{u}$, the all-ones vector $\mathbf{1}$, the zero vector
+  $\mathbf{0}$. Scalars stay in plain italic ($k$, $\ell$, $t$).
+- **Matrices are plain capitals** in italic: $A$, $B$, $T$.
+- **Polynomials and field elements** are plain italic ($\chi_f$,
+  $\varphi$, $p$).
+- **Code identifiers** use a monospace font, never math. A function
+  parameter named `L` in C++ is `L` in code-font even though the
+  underlying math symbol is the same $L$.
+
 ## Field and vector spaces
 
 | Symbol | Meaning |
@@ -31,7 +45,7 @@ docs use `\mathbb{F}_2`.
 | $A \in \mathbb{F}_2^{k \times k}$ | matrix | **State-transition matrix**. $\mathbf{x}_{n+1} = A \cdot \mathbf{x}_n$. |
 | $B \in \mathbb{F}_2^{L \times k}$ | matrix | **Output matrix**. $\mathbf{y}_n = B \cdot \mathbf{x}_n$. |
 | $T \in \mathbb{F}_2^{L \times L}$ | matrix | **Tempering matrix**. $\mathbf{u}_n = T \cdot \mathbf{y}_n$. |
-| $f$ | linear map | The F₂-linear state-transition map: $f(\mathbf{x}) = A \mathbf{x}$. |
+| $f$ | linear map $\mathbb{F}_2^k \to \mathbb{F}_2^k$ | The F₂-linear **state-transition map**, defined by $f(\mathbf{x}) := A \mathbf{x}$. Iterating $\mathbf{x}_{n+1} = f(\mathbf{x}_n)$ is equivalent to multiplying by $A$. |
 | $n$ | integer | **Time step** index in $\mathbf{x}_n$, $\mathbf{y}_n$, $f^n$. Not to be confused with the state size — state size is always $k$. |
 
 ## Characteristic polynomial and primitivity

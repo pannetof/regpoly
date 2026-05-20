@@ -2,6 +2,15 @@
 
 ## Implementation Specification
 
+> **Page-local notation override.** On this page, $L$ denotes the
+> **linear complexity** (the Berlekamp–Massey output, i.e. the degree
+> of the minimal polynomial of the observed bit sequence). This is
+> distinct from the canonical [output bit width $L$ in
+> notation.md](notation.md). Every other symbol on this page follows
+> the canonical conventions: state size $k$, state-update matrix $A$,
+> state vector $\mathbf{x}_n \in \mathbb{F}_2^k$ (bold), polynomials
+> $P(x)$, $m(x)$, $f(x)$, $g(x)$ in plain italic.
+
 ---
 
 ## 1. Purpose and Scope

@@ -1,5 +1,14 @@
 # Matricial Computation of Equidistribution for Black-Box $\mathbb{F}_2$-Linear Generators
 
+This page follows the canonical [Notation](notation.md) conventions:
+bit vectors are bold (e.g. the state $\mathbf{s}$), matrices are plain
+capital italic ($A$, $B$, $E$, $M$), polynomials are plain italic
+($\chi_f$, $\varphi$, $\psi$), and scalars are plain italic ($k$, $L$,
+$\ell$, $t$, $p$). Page-local symbols introduced below
+($\lambda$, $\mu_{\mathbf{s}_0, \lambda}$, $V$, $B$, $E_i$,
+$c_i(\ell)$, $\mathrm{alive}_i(\ell)$, $M_m(\ell)$, $m$,
+$w_\text{state}$) are defined at first use.
+
 **Scope.** This document specifies an algorithm and implementation plan for computing
 the dimension-of-equidistribution profile $d(\ell)$, $\ell = 1, \ldots, L$, of a pseudorandom
 number generator that is known to be $\mathbb{F}_2$-linear but whose internal structure
@@ -10,7 +19,8 @@ that the characteristic polynomial is primitive.
 **Inputs required from the generator.**
 
 1. A state of dimension $k$ over $\mathbb{F}_2$ (so the full state is $k$ bits; $k = L \cdot N$
-   in the usual LFSR-array formulation).
+   in the usual LFSR-array formulation, where $N$ is the number of $L$-bit
+   words in the array).
 2. Output bit width $L$ of the output (32, 64, or 128).
 3. A `step()` routine advancing the internal state by one step.
 4. A routine to read the current $L$-bit output word.
@@ -47,14 +57,19 @@ Each stage is specified below.
 
 ### 2.1 Procedure
 
-Pick a nonzero initial state $s_0$. Define a scalar $\mathbb{F}_2$-valued output functional
-$\lambda : \text{state} \to \mathbb{F}_2$ — the simplest viable choice is "bit 0 of the first output word
-after one step." Produce the sequence
+Pick a nonzero initial state $\mathbf{s}_0 \in \mathbb{F}_2^k$. Define a scalar
+$\mathbb{F}_2$-valued **output functional** $\lambda : \mathbb{F}_2^k \to \mathbb{F}_2$ —
+the simplest viable choice is "bit 0 of the first output word after one step."
+Each $b_j \in \mathbb{F}_2$ below is a single scalar bit; the family $(b_j)$ is
+a scalar bit sequence (not a vector quantity), and so each $b_j$ stays in
+plain italic. Produce the sequence
 
-$$b_j = \lambda(f^j \cdot s_0), \quad j = 0, 1, \ldots, 2k + 32.$$
+$$b_j = \lambda(f^j \cdot \mathbf{s}_0), \quad j = 0, 1, \ldots, 2k + 32.$$
 
-Run Berlekamp–Massey on $(b_j)$. It returns a polynomial $\mu_{s_0, \lambda}(t)$ which
-divides $\chi_f(t)$.
+Run Berlekamp–Massey on $(b_j)$. It returns a polynomial
+$\mu_{\mathbf{s}_0, \lambda}(t)$ — the **minimal polynomial** of the scalar
+sequence with respect to the seed $\mathbf{s}_0$ and the functional $\lambda$
+— which divides $\chi_f(t)$.
 
 Repeat with 5 independent random initial states and/or 2–3 different scalar
 functionals $\lambda$ (e.g. bit 0 of word 0, bit 7 of word 0, bit 0 of word 1). Compute
@@ -147,24 +162,26 @@ check fails.
 
 Let $\psi(t) := \chi_f(t) / \varphi(t)$, a polynomial of degree $k - p$.
 
-1. Pick a random state $s \in \mathbb{F}_2^k$.
-2. Compute $s' := \psi(f) \cdot s$ by evaluating $\psi$ at $f$ via Horner's scheme:
-   iterate `step()` from $s$ and accumulate the $\psi$-coefficients. Cost:
-   $k - p$ generator steps, $k - p$ state-XORs.
-3. Verify $s' \ne 0$ and $\varphi(f) \cdot s' = 0$. If $s' = 0$, retry with new $s$
-   (this happens with probability $2^{-p}$, so effectively never).
-4. Collect the orbit $\{f^m \cdot s' : m = 0, 1, \ldots, p - 1\}$ as columns of a
-   $k \times p$ matrix $B$.
+1. Pick a random state $\mathbf{s} \in \mathbb{F}_2^k$.
+2. Compute $\mathbf{s}' := \psi(f) \cdot \mathbf{s}$ by evaluating $\psi$ at $f$
+   via Horner's scheme: iterate `step()` from $\mathbf{s}$ and accumulate the
+   $\psi$-coefficients. Cost: $k - p$ generator steps, $k - p$ state-XORs.
+3. Verify $\mathbf{s}' \ne \mathbf{0}$ and $\varphi(f) \cdot \mathbf{s}' = \mathbf{0}$.
+   If $\mathbf{s}' = \mathbf{0}$, retry with new $\mathbf{s}$ (this happens with
+   probability $2^{-p}$, so effectively never).
+4. Collect the orbit $\{f^m \cdot \mathbf{s}' : m = 0, 1, \ldots, p - 1\}$ as
+   columns of a $k \times p$ matrix $B$ (here $m$ is the orbit step index,
+   reused as the inner-loop counter in §6.3).
 5. Check $\mathrm{rank}_{\mathbb{F}_2}(B) = p$. If yes, done: the columns of $B$ span $V$.
 6. If rank $< p$ (generically impossible but possible for pathological
-   generators where the minimal polynomial of $s'$ is a proper divisor of $\varphi$),
-   repeat from step 1.
+   generators where the minimal polynomial of $\mathbf{s}'$ is a proper divisor
+   of $\varphi$), repeat from step 1.
 
 ### 5.2 Route A (annihilator-based — fallback)
 
-1. Pick random $s$, compute $s' := \psi(f) \cdot s$ as above. Now $s' \in V$ by
-   construction.
-2. Repeat until $p$ linearly independent such $s'$ have been collected.
+1. Pick random $\mathbf{s}$, compute $\mathbf{s}' := \psi(f) \cdot \mathbf{s}$
+   as above. Now $\mathbf{s}' \in V$ by construction.
+2. Repeat until $p$ linearly independent such $\mathbf{s}'$ have been collected.
 3. Gauss-eliminate to confirm $\dim = p$ and to obtain a clean basis.
 
 Route A is more robust but costs $\sim p$ applications of $\psi(f)$ instead of $\sim 1$.
@@ -180,12 +197,21 @@ Store $B$ as a bit-packed $k \times p$ matrix, rows as $p/W$-word bitstrings
 
 ### 6.1 Object maintained
 
-For each output phase $i$ (see §6.4), maintain a single echelon form $E_i$ over
-$\mathbb{F}_2$ with $p$ columns. Rows are successively inserted; at most $p$ pivots exist.
+For each output phase $i$ (see §6.4), maintain a single **echelon form** $E_i$
+over $\mathbb{F}_2$ with $p$ columns — the running row-reduced matrix into
+which dual rows are inserted. Rows are successively inserted; at most $p$
+pivots exist.
+
+Throughout this section, $m = 1, 2, 3, \ldots$ denotes the **outer loop
+counter**, indexing successive output words (steps) of the generator within
+the current phase.
 
 Also maintain, for each accuracy $\ell \in \{1, \ldots, L\}$:
-- $c_i(\ell)$: current rank of the $\ell$-restricted submatrix for phase $i$;
-- $\mathrm{alive}_i(\ell)$: boolean flag, true while $c_i(\ell) = m \cdot \ell$ has kept up.
+
+- $c_i(\ell)$: current rank of the $\ell$-restricted submatrix for phase $i$
+  (the **count** of independent rows so far for that resolution);
+- $\mathrm{alive}_i(\ell)$: boolean flag, true while $c_i(\ell) = m \cdot \ell$
+  has kept up with the ideal rank.
 
 ### 6.2 Key structural observation
 
@@ -195,10 +221,12 @@ first:
 $$\text{output 0 bit 1, output 0 bit 2, \ldots, output 0 bit } L,$$
 $$\text{output 1 bit 1, output 1 bit 2, \ldots, output 1 bit } L, \ldots$$
 
-Then the matrix $M_m(\ell)$ for accuracy $\ell$ is obtained from $M_m(L)$ by keeping,
-within each block of $L$ consecutive rows, only the first $\ell$. **A single echelon
-form on the full-precision rows, maintained in this order, gives every $d(\ell)$
-simultaneously.**
+Let $M_m(\ell)$ denote the $m \cdot \ell \times p$ matrix whose rows are the dual
+vectors of bits $1, \ldots, \ell$ of the first $m$ output words, expressed over
+the basis $B$ of $V$. Then $M_m(\ell)$ for accuracy $\ell$ is obtained from
+$M_m(L)$ by keeping, within each block of $L$ consecutive rows, only the first
+$\ell$. **A single echelon form on the full-precision rows, maintained in this
+order, gives every $d(\ell)$ simultaneously.**
 
 ### 6.3 The inner loop (single phase)
 
@@ -223,12 +251,15 @@ for m = 1, 2, 3, …:
 
 ### 6.4 Phase handling (for $L < w_\text{state}$)
 
-If the generator emits $L$-bit words but is designed around a larger internal
-word (e.g. SFMT emits 32-bit words from a 128-bit internal word, giving four
-phases $i \in \{0, 1, 2, 3\}$ per internal step), maintain **four independent
-echelon forms** $E_0, \ldots, E_3$, one per phase, sharing the same $V$-basis $B$
-and the same advance of the generator state. Each $E_i$ sees only the output
-bits of phase $i$.
+Let $w_\text{state}$ denote the **internal word width** of the generator —
+the natural register width on which its `step()` routine operates (128 bits
+for SFMT, 32 bits for MT19937, etc.). If the generator emits $L$-bit words
+but is designed around a larger internal word (e.g. SFMT emits 32-bit words
+from a 128-bit internal word, giving four phases $i \in \{0, 1, 2, 3\}$ per
+internal step), maintain **four independent echelon forms**
+$E_0, \ldots, E_3$, one per phase, sharing the same $V$-basis $B$ and the
+same advance of the generator state. Each $E_i$ sees only the output bits
+of phase $i$.
 
 The reported $d(\ell)$ for the generator is
 
@@ -254,14 +285,17 @@ hundred thousand XOR/shift operations, i.e. ~millisecond.
 
 ### 6.6 Bit-packed echelon reduction
 
-Each row of $E$ is $p$ bits, stored as $\lceil p/64 \rceil$ `uint64_t` words. Insertion:
+Each row of $E$ is a vector $\mathbf{r} \in \mathbb{F}_2^p$, stored as
+$\lceil p/W \rceil$ `uint64_t` words (with the machine word width $W = 64$
+as in §5.3). Insertion:
 
-- Find the highest set bit of the incoming row $r$.
-- If no pivot exists at that position: $r$ is independent, store as new pivot.
-- If a pivot exists: XOR the pivot into $r$, repeat.
+- Find the highest set bit of the incoming row $\mathbf{r}$.
+- If no pivot exists at that position: $\mathbf{r}$ is independent, store as
+  new pivot.
+- If a pivot exists: XOR the pivot into $\mathbf{r}$, repeat.
 
-Worst case: $O(p^2 / 64)$ word-ops per insertion. Total insertions: at most $p$
-(rank is capped). Total echelon work per phase: $O(p^3 / 64)$ word-ops.
+Worst case: $O(p^2 / W)$ word-ops per insertion. Total insertions: at most $p$
+(rank is capped). Total echelon work per phase: $O(p^3 / W)$ word-ops.
 
 ### 6.7 Total complexity per phase
 
@@ -294,12 +328,16 @@ with nonzero $V$-component. Analogue of SFMT's `6d736d6d` MSB trick.
 
 ### 7.1 Procedure
 
-1. After seeding, compute the $V$-projection: $s_V := (\text{a specific projector})(s)$
-   where the projector is expressible in terms of $\varphi$ and $\psi = \chi_f / \varphi$. A clean
-   choice: $s_V := \psi(f) \cdot s / \text{normalizer}$, but for guarding purposes we only
-   need $s_V \ne 0$, which holds iff $\psi(f) \cdot s \ne 0$.
-2. If $\psi(f) \cdot s = 0$, perturb $s$ (e.g. flip one bit in a predetermined
-   location) and retry. This happens with probability $2^{-p}$.
+1. After seeding, compute the $V$-projection:
+   $\mathbf{s}_V := (\text{a specific projector})(\mathbf{s})$ where the
+   projector is expressible in terms of $\varphi$ and $\psi = \chi_f / \varphi$.
+   A clean choice:
+   $\mathbf{s}_V := \psi(f) \cdot \mathbf{s} / \text{normalizer}$, but for
+   guarding purposes we only need $\mathbf{s}_V \ne \mathbf{0}$, which holds
+   iff $\psi(f) \cdot \mathbf{s} \ne \mathbf{0}$.
+2. If $\psi(f) \cdot \mathbf{s} = \mathbf{0}$, perturb $\mathbf{s}$ (e.g. flip
+   one bit in a predetermined location) and retry. This happens with
+   probability $2^{-p}$.
 
 For generators where the state has a natural "magic value" position (cf. SFMT),
 hardcoding that value into the initializer is sufficient and cheaper than
@@ -314,10 +352,12 @@ not to be trusted.
 
 ### 8.1 Period check
 
-From a random state with $s_V \ne 0$, iterate the generator and confirm the
-orbit on $V$ does not close before $\mathrm{ord}(\varphi)$ steps. For Mersenne-exponent $p$,
-confirm $f^{(2^p - 1)/q} \cdot s_V \ne s_V$ for every small prime $q$ dividing $2^p - 1$
-(standard primitivity test on the orbit, Knuth Vol. 2 §3.2.2).
+From a random state with $\mathbf{s}_V \ne \mathbf{0}$, iterate the generator
+and confirm the orbit on $V$ does not close before $\mathrm{ord}(\varphi)$
+steps. For Mersenne-exponent $p$, confirm
+$f^{(2^p - 1)/q} \cdot \mathbf{s}_V \ne \mathbf{s}_V$ for every small prime
+$q$ dividing $2^p - 1$ (standard primitivity test on the orbit, Knuth Vol. 2
+§3.2.2).
 
 ### 8.2 Trivial DE bounds
 

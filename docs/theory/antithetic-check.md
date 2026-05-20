@@ -6,6 +6,13 @@ Given a linear random number generator defined by matrices $A$ and $B$ over
 $\mathbb{F}_2$, this algorithm determines whether the generated point set is locally
 antithetic in dimension $d$.
 
+> **Page-local override.** On this page, $d$ denotes the **antithetic test
+> dimension** (a positive integer). This is distinct from $d(\ell)$, the
+> equidistribution dimension at resolution $\ell$ defined in
+> [notation.md](notation.md). See the
+> [Page-local overrides](notation.md#page-local-overrides) section of the
+> canonical notation page.
+
 ---
 
 ## Symbol Definitions
@@ -14,13 +21,16 @@ antithetic in dimension $d$.
 |--------|------|-------------|
 | $k$ | positive integer | State size in bits |
 | $L$ | positive integer | Output size in bits, $L \le k$ |
-| $d$ | positive integer | Dimension to test, $d \ge 1$ |
+| $d$ | positive integer | Dimension to test, $d \ge 1$ (antithetic test dimension — see page-local override above) |
 | $A$ | matrix in $\mathbb{F}_2^{k \times k}$ | Transition matrix of the recurrence $\mathbf{x}_n = A \cdot \mathbf{x}_{n-1}$ |
 | $B$ | matrix in $\mathbb{F}_2^{L \times k}$ | Output matrix, $\mathbf{y}_n = B \cdot \mathbf{x}_n$ |
 | $C_j$ | matrix in $\mathbb{F}_2^{L \times k}$ | Output matrix for coordinate $j$, defined as $C_j = B \cdot A^{j-1}$ |
 | $\mathbf{v}$ | column vector in $\mathbb{F}_2^L$ | Target reflection vector, defined as $\mathbf{v} = (1, 1, \ldots, 1)^T$ (all ones) |
-| $\delta_j$ | column vector in $\mathbb{F}_2^k$ | Antithetic offset for coordinate $j$ |
+| $\boldsymbol{\delta}_j$ | column vector in $\mathbb{F}_2^k$ | Antithetic offset for coordinate $j$ |
+| $\mathbf{rhs}_j$ | column vector in $\mathbb{F}_2^{dL}$ | Right-hand side of the linear system for coordinate $j$ |
+| $S$ | matrix in $\mathbb{F}_2^{dL \times k}$ | Stacked system matrix $[C_1; C_2; \ldots; C_d]$ (same for every $j$) |
 | $\mathbf{0}_L$ | column vector in $\mathbb{F}_2^L$ | Zero vector of length $L$ |
+| $\mathbf{0}_k$ | column vector in $\mathbb{F}_2^k$ | Zero vector of length $k$ |
 | $D_\text{max}$ | positive integer | Maximum feasible dimension, defined as $D_\text{max} = \lfloor \sqrt{k} \rfloor$ |
 
 All arithmetic is performed in $\mathbb{F}_2$: addition is XOR (`^`), multiplication
@@ -32,11 +42,11 @@ is AND (`&`). All matrices and vectors have entries in $\{0, 1\}$.
 
 The point set is **locally antithetic in dimension $d$** if and only if for
 each coordinate index $j$ in $\{1, \ldots, d\}$ there exists a nonzero vector
-$\delta_j$ in $\mathbb{F}_2^k$ such that:
+$\boldsymbol{\delta}_j$ in $\mathbb{F}_2^k$ such that:
 
 $$\begin{aligned}
-C_j \cdot \delta_j &= \mathbf{v} \quad &\text{(condition A: coordinate } j \text{ is reflected)} \\
-C_i \cdot \delta_j &= \mathbf{0}_L \quad &\text{(condition B: all other coordinates } i \ne j \text{ are unchanged)}
+C_j \cdot \boldsymbol{\delta}_j &= \mathbf{v} \quad &\text{(condition A: coordinate } j \text{ is reflected)} \\
+C_i \cdot \boldsymbol{\delta}_j &= \mathbf{0}_L \quad &\text{(condition B: all other coordinates } i \ne j \text{ are unchanged)}
 \end{aligned}$$
 
 for all $i$ in $\{1, \ldots, d\}$, $i \ne j$.
@@ -68,8 +78,8 @@ $$\mathbf{v} = (1, 1, \ldots, 1)^T \quad \text{in } \mathbb{F}_2^L.$$
 
 - `is_antithetic`: boolean, `True` if the point set is locally antithetic in
   dimension $d$, `False` otherwise
-- `offsets`: if `is_antithetic` is `True`, a list $[\delta_1, \ldots, \delta_d]$
-  where each $\delta_j$ is a column vector in $\mathbb{F}_2^k$ (array of $k$ bits);
+- `offsets`: if `is_antithetic` is `True`, a list $[\boldsymbol{\delta}_1, \ldots, \boldsymbol{\delta}_d]$
+  where each $\boldsymbol{\delta}_j$ is a column vector in $\mathbb{F}_2^k$ (array of $k$ bits);
   if `is_antithetic` is `False`, return `None`
 
 ---
@@ -128,29 +138,29 @@ That is, $S_j[iL : (i+1)L, :] = C[i+1]$ for $i$ in $\{0, \ldots, d-1\}$.
 Note that $S_j$ is the same matrix for all $j$ — it does not depend on $j$.
 Call it $S$ (no subscript needed). It has shape $(dL) \times k$.
 
-Build the right-hand side vector $\mathrm{rhs}_j$ of length $dL$ over $\mathbb{F}_2$ as
+Build the right-hand side vector $\mathbf{rhs}_j$ of length $dL$ over $\mathbb{F}_2$ as
 follows:
 
-$$\mathrm{rhs}_j[iL : (i+1)L] = \begin{cases} \mathbf{v} & \text{if } i+1 = j \text{ (the } j\text{-th block is all ones)} \\ \mathbf{0}_L & \text{otherwise (all other blocks are zero)} \end{cases}$$
+$$\mathbf{rhs}_j[iL : (i+1)L] = \begin{cases} \mathbf{v} & \text{if } i+1 = j \text{ (the } j\text{-th block is all ones)} \\ \mathbf{0}_L & \text{otherwise (all other blocks are zero)} \end{cases}$$
 
-That is, $\mathrm{rhs}_j$ is zero everywhere except in the block of $L$ entries
+That is, $\mathbf{rhs}_j$ is zero everywhere except in the block of $L$ entries
 corresponding to coordinate $j$, where it equals $\mathbf{v} = (1, 1, \ldots, 1)^T$.
 
 #### 3b: Solve the Linear System Over $\mathbb{F}_2$
 
 Solve the system:
 
-$$S \cdot \delta_j = \mathrm{rhs}_j$$
+$$S \cdot \boldsymbol{\delta}_j = \mathbf{rhs}_j$$
 
 where:
 - $S$ has shape $(dL) \times k$
-- $\delta_j$ is the unknown column vector of length $k$
-- $\mathrm{rhs}_j$ is the right-hand side column vector of length $dL$
+- $\boldsymbol{\delta}_j$ is the unknown column vector of length $k$
+- $\mathbf{rhs}_j$ is the right-hand side column vector of length $dL$
 - All operations are over $\mathbb{F}_2$
 
 This is an overdetermined system (more equations than unknowns when $dL > k$,
 underdetermined when $dL < k$). Solve it using **Gaussian elimination over
-$\mathbb{F}_2$** on the augmented matrix $[S \mid \mathrm{rhs}_j]$ of shape $(dL) \times (k+1)$.
+$\mathbb{F}_2$** on the augmented matrix $[S \mid \mathbf{rhs}_j]$ of shape $(dL) \times (k+1)$.
 
 **Gaussian elimination over $\mathbb{F}_2$:**
 
@@ -187,18 +197,18 @@ is **inconsistent** (no solution exists).
 `offsets = None`. Do not proceed to the next coordinate $j$ or the next
 dimension.
 
-**If consistent:** extract any particular solution $\delta_j$ from the
+**If consistent:** extract any particular solution $\boldsymbol{\delta}_j$ from the
 row-reduced augmented matrix by back-substitution. Free variables (columns
 with no pivot) may be set to 0.
 
 #### 3c: Check Non-Zero Condition
 
-Verify that the solution $\delta_j$ is not the zero vector:
+Verify that the solution $\boldsymbol{\delta}_j$ is not the zero vector:
 
-$$\delta_j \ne \mathbf{0}_k \quad \text{(at least one entry of } \delta_j \text{ is 1)}$$
+$$\boldsymbol{\delta}_j \ne \mathbf{0}_k \quad \text{(at least one entry of } \boldsymbol{\delta}_j \text{ is 1)}$$
 
-If $\delta_j = \mathbf{0}_k$, the system is consistent but the only solution is
-trivial. This should not happen if $A$ has maximal period and $\mathbf{v} \ne 0$, but
+If $\boldsymbol{\delta}_j = \mathbf{0}_k$, the system is consistent but the only solution is
+trivial. This should not happen if $A$ has maximal period and $\mathbf{v} \ne \mathbf{0}_L$, but
 check defensively. If it occurs, set `is_antithetic = False` and return.
 
 ---
@@ -242,17 +252,17 @@ $C_1 = B$ (shape $2 \times 4$).
 
 For $d = 1$, $j = 1$:
 - $S = C_1$ (shape $2 \times 4$)
-- $\mathrm{rhs}_1 = \mathbf{v} = [1, 1]^T$
+- $\mathbf{rhs}_1 = \mathbf{v} = [1, 1]^T$
 
 Augmented matrix:
 ```
 [1, 0, 0, 0 | 1]
 [0, 1, 0, 0 | 1]
 ```
-Already in row echelon form. Solution: $\delta_1 = [1, 1, 0, 0]^T$
-(free variables $\delta_1[2] = 0$, $\delta_1[3] = 0$).
+Already in row echelon form. Solution: $\boldsymbol{\delta}_1 = [1, 1, 0, 0]^T$
+(free variables $\boldsymbol{\delta}_1[2] = 0$, $\boldsymbol{\delta}_1[3] = 0$).
 
-Check: $B \cdot \delta_1 = [1, 1]^T = \mathbf{v}$. Correct.
+Check: $B \cdot \boldsymbol{\delta}_1 = [1, 1]^T = \mathbf{v}$. Correct.
 
 `is_antithetic = True`, `offsets = [[1,1,0,0]^T]`.
 
@@ -268,10 +278,10 @@ Check: $B \cdot \delta_1 = [1, 1]^T = \mathbf{v}$. Correct.
   directly. XOR two rows: `row_a ^ row_b`. Check if a bit is set:
   `(row >> col) & 1`. Set a bit: `row | (1 << col)`.
 - The system matrix $S$ is the same for all $j$: assemble it once and reuse,
-  only changing $\mathrm{rhs}_j$ for each $j$.
-- The row-reduced form of $[S \mid \mathrm{rhs}_j]$ for different $j$ only differs in
+  only changing $\mathbf{rhs}_j$ for each $j$.
+- The row-reduced form of $[S \mid \mathbf{rhs}_j]$ for different $j$ only differs in
   the last column. Therefore, row-reduce $S$ once and apply the same row
-  operations to each $\mathrm{rhs}_j$ separately, saving significant computation.
+  operations to each $\mathbf{rhs}_j$ separately, saving significant computation.
 
 ---
 
@@ -282,5 +292,5 @@ Check: $B \cdot \delta_1 = [1, 1]^T = \mathbf{v}$. Correct.
 | Precompute $C_1, \ldots, C_d$ | $d$ matrix multiplications, each $O(L \cdot k^2 / 64)$ with bitmasks |
 | Assemble $S$ | $O(d \cdot L \cdot k / 64)$ |
 | Row-reduce $S$ (once) | $O(d \cdot L \cdot k^2 / 64)$ |
-| Apply row ops to each $\mathrm{rhs}_j$ | $O(d \cdot d \cdot L / 64)$ per $j$, total $O(d^2 \cdot L / 64)$ |
+| Apply row ops to each $\mathbf{rhs}_j$ | $O(d \cdot d \cdot L / 64)$ per $j$, total $O(d^2 \cdot L / 64)$ |
 | Total | $O(d \cdot L \cdot k^2 / 64)$ dominated by row reduction |

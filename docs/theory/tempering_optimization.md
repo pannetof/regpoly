@@ -1,12 +1,24 @@
 # Tempering Optimization Algorithm
 
-Optimization of tempering bitmask parameters to minimize the total
-dimension defect of an $\mathbb{F}_2$-linear generator.  The algorithm uses
+Optimization of tempering bitmask parameters to minimize the sum of
+dimension gaps of an $\mathbb{F}_2$-linear generator.  The algorithm uses
 **safe masks** with **random multi-bit perturbation** and an
 **incremental dual-lattice basis** (StackBase). Implemented in
 `packages/regpoly-cpp/src/search/tempering_optimizer.cpp`
 (`TemperingOptimizer`); reproduces the historical
 `OptimizeTemper()` driver of the upstream C codebase.
+
+All mathematical symbols on this page follow the conventions of the
+canonical [notation page](notation.md): bit vectors are bold (the raw
+output word $\mathbf{y}$, the tempered output $\mathbf{u}$, the
+lookahead state word $\mathbf{w}_i$), matrices are plain italic
+capitals (the tempering map $T$), and scalars / bitmask integers
+($k$, $\ell$, $L$, $t$, $b$, $c$, $\eta$, $\mu$, $\sigma$) stay in
+plain italic. The MELG section below uses **$\ell_\text{lag}$** for
+the word-index lag — this is the documented page-local override
+declared in the [notation page](notation.md#page-local-overrides);
+the matching C++ constructor parameter is `int L` (code font) and is
+*not* the output bit width $L$.
 
 ## 1. Background
 
@@ -28,7 +40,7 @@ as possible.
 ### Equidistribution
 
 The **dimension of equidistribution with $\ell$-bit accuracy** is $d(\ell)$:
-the largest $t$ such that the $t$-tuples $(u_i, \ldots, u_{i+t-1})$,
+the largest $t$ such that the $t$-tuples $(\mathbf{u}_i, \ldots, \mathbf{u}_{i+t-1})$,
 each truncated to their $\ell$ most significant bits, cover all $2^{t\ell}$
 patterns equally over one full period.  The upper bound is
 $\lfloor k / \ell \rfloor$.
@@ -37,11 +49,11 @@ The **dimension gap** at resolution $\ell$ is:
 
 $$\delta(\ell) = \lfloor k/\ell \rfloor - d(\ell), \qquad \ell = 1, \ldots, L.$$
 
-The **total dimension defect** is:
+The **sum of dimension gaps** is:
 
-$$\Delta = \sum_{\ell=1}^{L} \delta(\ell).$$
+$$\text{SE} = \sum_{\ell=1}^{L} \delta(\ell).$$
 
-A generator is **maximally equidistributed (ME)** when $\Delta = 0$,
+A generator is **maximally equidistributed (ME)** when $\text{SE} = 0$,
 meaning $\delta(\ell) = 0$ for every resolution.
 
 ### Tempering types
@@ -51,20 +63,23 @@ Two tempering families are supported:
 **Matsumoto-Kurita (MK) tempering** — applies shift-and-mask operations to
 the output word.  Type I:
 
-$$y \leftarrow y \oplus \bigl((y \ll \eta) \;\&\; b\bigr), \qquad
-  y \leftarrow y \oplus \bigl((y \ll \mu) \;\&\; c\bigr)$$
+$$\mathbf{y} \leftarrow \mathbf{y} \oplus \bigl((\mathbf{y} \ll \eta) \;\&\; b\bigr), \qquad
+  \mathbf{y} \leftarrow \mathbf{y} \oplus \bigl((\mathbf{y} \ll \mu) \;\&\; c\bigr)$$
 
 Type II (MT19937-style) adds right-shift steps before and after.
-The free parameters are the bitmasks $b$ and $c$.
+The free parameters are the bitmasks $b$ and $c$ (scalar integers
+viewed as bit vectors in $\mathbb{F}_2^L$).
 
 **Lagged tempering** (MELG-style) — uses a lookahead word from the
-state array:
+state array. Here $\ell_\text{lag}$ denotes the **word-index lag**
+(page-local override; see [notation page](notation.md#page-local-overrides)):
 
-$$y \leftarrow y \oplus (y \ll \sigma), \qquad
-  y \leftarrow y \oplus (w_{i+\ell_\text{lag}} \;\&\; b)$$
+$$\mathbf{y} \leftarrow \mathbf{y} \oplus (\mathbf{y} \ll \sigma), \qquad
+  \mathbf{y} \leftarrow \mathbf{y} \oplus (\mathbf{w}_{i+\ell_\text{lag}} \;\&\; b)$$
 
 The free parameter is the bitmask $b$; the structural parameters
-$\sigma$ and $\ell_\text{lag}$ are fixed before optimization.
+$\sigma$ (left-shift amount) and $\ell_\text{lag}$ (word index of the
+lookahead state word $\mathbf{w}$) are fixed before optimization.
 
 
 ## 2. Safe Masks
@@ -83,9 +98,10 @@ $\ell$ to bits that **only** affect output bits $\ell-1, \ell, \ldots, L-1$.
 
 ### Definition
 
-The **safe mask** for parameter $p$ at resolution $\ell$ is a bitmask
-$S_\ell(p)$ where bit $j$ is set iff flipping bit $j$ of parameter $p$
-does not change any of the output bits $0, 1, \ldots, \ell-2$.
+The **safe mask** for a tempering parameter (e.g. $b$ or $c$) at
+resolution $\ell$ is a bitmask $S_\ell$ where bit $j$ is set iff
+flipping bit $j$ of that parameter does not change any of the output
+bits $0, 1, \ldots, \ell-2$.
 
 For an $L$-bit parameter, the base safe mask at resolution $\ell$ is:
 
@@ -246,14 +262,14 @@ The optimizer supports three modes, selected by the arguments to
 
 Sets `delta = [0, 0, ..., 0]` and `mse = 0`.  The recursion only
 advances past resolution $\ell$ when $\delta(\ell) = 0$, and the overall
-target is $\Delta = 0$.  This is the strictest mode: it searches for
+target is $\text{SE} = 0$.  This is the strictest mode: it searches for
 a **maximally equidistributed** tempering.
 
 ### Mode 2: Target search (`delta=[...], mse=N, n_restarts=1`)
 
 The user provides per-resolution gap bounds `delta[ell]` and a total
 defect bound `mse`.  The recursion advances when $\delta(\ell) \le \texttt{delta[ell]}$
-and $\text{se} \le \text{mse}$.  This is useful for finding
+and `se` $\le$ `mse`.  This is useful for finding
 "almost ME" solutions when exact ME is too expensive or impossible.
 
 ### Mode 3: Minimize (`n_restarts > 1`)
@@ -369,7 +385,7 @@ For MT19937 with MK type II tempering ($L = 32$, $k = 19937$):
 - Safe mask at $\ell = 1$: 32 + 32 = 64 bits (all free).
 - Safe mask at $\ell = 16$: approximately 17 + 17 = 34 bits.
 - Safe mask at $\ell = 32$: 1 + 1 = 2 bits.
-- With `max_essais = 400`: typically reaches ME ($\Delta = 0$) in
+- With `max_essais = 400`: typically reaches ME ($\text{SE} = 0$) in
   under a minute using the lattice method.
 
 For MELG19937-64 with lagged tempering ($L = 64$, $k = 19937$):

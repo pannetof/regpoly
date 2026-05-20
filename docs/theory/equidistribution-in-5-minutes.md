@@ -3,6 +3,7 @@
 A working intuition for what REGPOLY measures, written for people who
 want to *use* a generator without first reading Berlekamp–Massey.
 For the design-of-record algorithm see [Equidistribution](equidistribution-spec.md).
+Symbol conventions ($k$, $\ell$, $L$, $t$, $d(\ell)$, $\delta(\ell)$, $\text{SE}$, $A$, $B$, $T$) follow the [Notation](notation.md) page.
 
 ## The question
 
