@@ -116,11 +116,21 @@ html_theme_options = {
     "footer_end": ["sphinx-version", "theme-version"],
 }
 
-# Notebook pages get a "Show Source" link in the sidebar so readers
-# can download the underlying .ipynb and run it locally.
+# Notebook pages get a "Download notebook" button in the sidebar so
+# readers can grab the underlying .ipynb and run it locally. The
+# custom `sourcelink` template (docs/_templates/sourcelink.html) adds
+# the HTML5 `download` attribute so the browser actually downloads
+# the file instead of rendering it as plain text.
 html_sidebars = {
     "notebooks/**": ["sidebar-nav-bs", "page-toc", "sourcelink"],
 }
+
+# Drop the default `.txt` suffix Sphinx appends to source copies, so
+# the linked file ends in `.ipynb` (preserves the right extension when
+# the browser saves it).
+html_sourcelink_suffix = ""
+
+templates_path = ["_templates"]
 
 # -- MyST options -------------------------------------------------------------
 

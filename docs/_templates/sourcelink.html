@@ -1,0 +1,19 @@
+{#-
+   Notebook download button (overrides Sphinx default sourcelink).
+
+   - HTML5 `download` attribute forces the browser to download the file
+     instead of opening it inline as text/plain.
+   - Sphinx already exposes the source under `_sources/<docname>.ipynb`
+     (the `.txt` suffix is dropped by `html_sourcelink_suffix = ""`).
+-#}
+{%- if show_source and has_source and sourcename %}
+<div class="sphinx-sourcelink" role="note" aria-label="notebook source">
+  <a href="{{ pathto('_sources/' + sourcename, true)|e }}"
+     class="btn btn-primary"
+     download="{{ sourcename.rsplit('/', 1)[-1] }}"
+     rel="nofollow"
+     style="display:inline-block; margin-top:1em; width:100%; text-align:center;">
+     ⬇  {{ _('Download notebook') }}
+  </a>
+</div>
+{%- endif %}
