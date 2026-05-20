@@ -6,6 +6,7 @@ Mathematical and algorithmic background for F₂-linear generators and the analy
 - **[Equidistribution in 5 minutes](equidistribution-in-5-minutes.md)** — beginner on-ramp: what $d(\ell)$, gaps, SE, and "ME" mean, why the metric matters, no Berlekamp-Massey.
 - **[F₂-linear generators](f2-linear-generators.md)** — general framework: state, recurrence, output, characteristic polynomial, full-period condition.
 - **[Equidistribution (design of record)](equidistribution-spec.md)** — matricial equidistribution computation on F₂-linear generators that may not be full-period.
+- **[(t,m,s)-net t-value](tvalue-spec.md)** — Schmid-style primal computation of the t-value profile for digital nets; companion to the equidistribution test for `DigitalNet`-typed generators (Sobol, Niederreiter).
 - **[Antithetic check](antithetic-check.md)** — algorithm for testing local antitheticity of a linear RNG point set.
 - **[Lattice method (Couture–L'Ecuyer)](lattice_method_couture_lecuyer.md)** — dual lattice basis + Lenstra reduction.
 - **[Lattice method (Harase)](lattice_method_harase.md)** — Harase–Matsumoto–Saito primal reduction.
@@ -23,6 +24,7 @@ notation
 equidistribution-in-5-minutes
 f2-linear-generators
 equidistribution-spec
+tvalue-spec
 antithetic-check
 lattice_method_couture_lecuyer
 lattice_method_harase

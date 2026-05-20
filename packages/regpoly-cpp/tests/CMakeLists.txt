@@ -20,6 +20,10 @@ add_executable(regpoly_cpp_tests
     test_combination.cpp
     test_combined_generator.cpp
     test_default_test_method.cpp
+    test_digital_net.cpp
+    test_sobol.cpp
+    test_niederreiter_f2.cpp
+    test_tvalue_runner.cpp
     test_primitive_search.cpp
     test_primitivity.cpp
     test_random_samplers.cpp

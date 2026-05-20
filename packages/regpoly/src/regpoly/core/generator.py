@@ -57,7 +57,18 @@ _FAMILY_ALIASES: dict[str, str] = {
     "MTGP":            "MTGPGen",
     "TinyMT32":        "TinyMT32Gen",
     "RMT64":           "RMT64Gen",
+    # Digital-net families (Phase 1-3, 2026)
+    "sobol":         "SobolNet",
+    "Sobol":         "SobolNet",
+    "niederreiter":  "NiederreiterF2Gen",
+    "Niederreiter":  "NiederreiterF2Gen",
 }
+
+# Digital-net family names. Their constructors are bound directly via
+# pybind11 (py::class_<SobolNet, DigitalNet>(...)) and not via the
+# Generator factory's parametric registry, so Generator.create routes
+# them through a short-circuit that calls the bound class directly.
+_DIGITAL_NET_FAMILIES = {"SobolNet", "NiederreiterF2Gen"}
 
 
 def resolve_family(family: str, params: dict | None = None) -> str:
@@ -188,6 +199,24 @@ class Generator(Parametric):
         >>> gen = Generator.create("TGFSRGen", L=32, w=32, r=3)  # doctest: +SKIP
         """
         resolved = resolve_family(family, params)
+
+        # Digital nets bypass the C++ parametric factory: their
+        # constructors live in pybind11 (py::class_<SobolNet, ...>(...))
+        # and take simple (m, s_max) integer args.
+        if resolved in _DIGITAL_NET_FAMILIES:
+            try:
+                s_max = params["s_max"]
+            except KeyError:
+                raise ValueError(
+                    f"{resolved}: 's_max' is a required structural parameter."
+                ) from None
+            cls_obj = getattr(_cpp, resolved)
+            cpp_gen = cls_obj(L, s_max)
+            gen = cls(cpp_gen)
+            gen._type_name = resolved
+            gen._params = {"s_max": s_max}
+            return gen
+
         specs = _cpp.get_gen_param_specs(resolved)
         # Expose L to randomizers (e.g. tausworthe_poly) via the params
         # dict; strip it afterwards so we don't pass it to the C++ factory.

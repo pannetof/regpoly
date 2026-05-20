@@ -1,6 +1,10 @@
 # Generators
 
-REGPOLY implements 17 F₂-linear generator families plus a `CombinedGenerator` that XORs J of them. Each family page below documents the recurrence, the parameter space, common parameter sets from the literature, and source-file pointers.
+REGPOLY implements 17 F₂-linear PRNG families, 2 F₂ digital-net
+families, and a `CombinedGenerator` that XORs J of them. Each family
+page below documents the recurrence (or matrix construction, for
+digital nets), the parameter space, common parameter sets from the
+literature, and source-file pointers.
 
 ## Mersenne Twister family
 
@@ -36,3 +40,13 @@ REGPOLY implements 17 F₂-linear generator families plus a `CombinedGenerator` 
 ## MELG
 
 - [MELG (Maximally Equidistributed F₂-Linear)](MELGGen.md)
+
+## F₂ digital nets
+
+These inherit from a new `DigitalNet` base class (which inherits
+from `Generator`), so the existing equidistribution machinery runs
+on them unchanged. They pair naturally with the
+[t-value test](../theory/tvalue-spec.md).
+
+- [SobolNet (Sobol, Joe–Kuo direction numbers)](SobolNet.md)
+- [NiederreiterF2Gen (Niederreiter 1988 digital sequence in F₂)](NiederreiterF2Gen.md)

@@ -157,6 +157,7 @@ The previous home of the C++ port was `MinimalCode/cpp_regpoly/`. Its contents h
 
 ## Conventions
 
+- **Math notation in docs.** Sphinx + MyST is configured with the `dollarmath` and `amsmath` extensions (see `docs/conf.py`'s `myst_enable_extensions`). Math symbols MUST be rendered as proper math, never as inline code. Use `$...$` for inline math (e.g. `$t(s) = m - d_{\max}(s)$`, not `` `t(s) = m - d_max(s)` ``) and `$$...$$` (or fenced ```` ```{math} ```` blocks) for display math. Bold vectors with `\mathbf{...}`, blackboard for fields (`\mathbb{F}_2`). Mirror the conventions documented in [`docs/theory/notation.md`](docs/theory/notation.md) and demonstrated throughout `docs/theory/equidistribution-spec.md`. Backtick-styled code is reserved for code identifiers (function names, file paths, parameter names) — never for variables, sets, formulas, or anything you'd typeset in LaTeX.
 - **One-way deps.** Two layered import-linter contracts: `regpoly-web → regpoly → regpoly-cpp` (catalog / YAML / web path) and `regpoly-legacy → regpoly → regpoly-cpp` (pre-v2 `.dat` path). Nothing goes backwards. Defined in the workspace `pyproject.toml`.
 - **`shared/` is workspace-shared runtime data only.** YAML search configs live under `shared/yaml/`. Pre-v2 `.dat` fixtures are NOT here anymore — they moved to `packages/regpoly-legacy/shared/legacy_parameters/`.
 - **C++ extension stays in `regpoly-cpp`.** The `.so` is a build artefact of `regpoly-cpp` (when built in Python-wheel mode); `regpoly` consumes it via the `regpoly_cpp` package interface only.

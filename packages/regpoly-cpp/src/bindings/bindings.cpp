@@ -11,6 +11,10 @@
 #include "combined.h"
 #include "equidistribution_method.h"
 #include "equidistribution_runner.h"
+#include "tvalue_runner.h"
+#include "digital_net.h"
+#include "sobol.h"
+#include "niederreiter_f2.h"
 #include "generator.h"
 #include "transformation.h"
 #include "gauss.h"
@@ -710,6 +714,63 @@ PYBIND11_MODULE(_regpoly_cpp, m) {
         return d;
     }, py::arg("gen"), py::arg("kg"), py::arg("L"), py::arg("Lmax"),
        py::arg("delta"), py::arg("mse"));
+
+    // ── t-value profile (Phase 4) ──────────────────────────────────────
+    //
+    // Schmid-style primal enumeration over compositions; dual method
+    // is a registered name that raises (placeholder for the
+    // Niederreiter–Pirsic kernel that lands in a follow-up).
+    m.def("run_tvalue_profile",
+          [](const Generator& gen, int kg, int m, int s_max,
+             const std::vector<int>& delta, int max_t_sum,
+             const std::string& method) -> py::dict {
+        regpoly::core::TValueResult r;
+        if (method == "schmid") {
+            r = regpoly::core::run_tvalue_profile_schmid(
+                gen, kg, m, s_max, delta, max_t_sum);
+        } else if (method == "niederreiter_pirsic") {
+            r = regpoly::core::run_tvalue_profile_dual(
+                gen, kg, m, s_max, delta, max_t_sum);
+        } else {
+            throw std::invalid_argument(
+                "run_tvalue_profile: unknown method '" + method
+                + "'. Expected 'schmid' or 'niederreiter_pirsic'.");
+        }
+        py::dict d;
+        d["tvals"] = r.tvals;
+        d["se"] = r.se;
+        d["verified"] = r.verified;
+        return d;
+    }, py::arg("gen"), py::arg("kg"), py::arg("m"), py::arg("s_max"),
+       py::arg("delta"), py::arg("max_t_sum"), py::arg("method") = "schmid");
+
+    // ── DigitalNet family (Phase 1) + concrete nets (Phases 2-3) ───────
+    //
+    // Expose the abstract DigitalNet so Python can dynamic_cast / hold
+    // refs polymorphically, plus the two concrete first-pass nets.
+    py::class_<regpoly::core::DigitalNet, Generator>(m, "DigitalNet")
+        .def("s_max", &regpoly::core::DigitalNet::s_max)
+        .def("m", &regpoly::core::DigitalNet::m)
+        .def("current_j", &regpoly::core::DigitalNet::current_j);
+
+    py::class_<regpoly::core::SobolNet, regpoly::core::DigitalNet>(m, "SobolNet")
+        .def(py::init<int, int>(),
+             py::arg("m"), py::arg("s_max"),
+             "Construct a Sobol net using the embedded Joe-Kuo 2003 "
+             "trusted table (covers j=2..8 in v1).")
+        .def_static("embedded_table_size",
+                    &regpoly::core::SobolNet::embedded_table_size);
+
+    py::class_<regpoly::core::NiederreiterF2Gen,
+               regpoly::core::DigitalNet>(m, "NiederreiterF2Gen")
+        .def(py::init<int, int>(),
+             py::arg("m"), py::arg("s_max"),
+             "Construct a Niederreiter F_2 net with irreducibles "
+             "generated on the fly.")
+        .def("irreducible",
+             &regpoly::core::NiederreiterF2Gen::irreducible)
+        .def("irreducible_degree",
+             &regpoly::core::NiederreiterF2Gen::irreducible_degree);
 
     m.def("run_collision_free",
           [](const Generator& gen, int kg, int L, int L_for_phi4) -> py::dict {

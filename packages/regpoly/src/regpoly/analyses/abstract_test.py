@@ -43,7 +43,8 @@ class AbstractTest(ABC):
         """
         Read tests from a YAML file.
 
-        File format:
+        File format::
+
             tests:
               - type: equidistribution
                 max_gap_sum: 100
@@ -53,20 +54,23 @@ class AbstractTest(ABC):
               - type: tuplets
                 dimensions: [50, 10, 5]
                 ...
+              - type: tvalue
+                s_max: 8
+                max_t_sum: 4
+                ...
 
-        Returns a list of AbstractTest instances.
+        Returns a list of AbstractTest instances. New tests are added
+        by registering them in
+        :mod:`regpoly.analyses.test_registry`; this dispatch site
+        consumes the registry rather than carrying its own hard-coded
+        table.
         """
         import yaml
 
-        from regpoly.analyses.collision_free_test import CollisionFreeTest
-        from regpoly.analyses.equidistribution_test import EquidistributionTest
-        from regpoly.analyses.tuplets_test import TupletsTest
-
-        _dispatch = {
-            "equidistribution": EquidistributionTest,
-            "collision_free"  : CollisionFreeTest,
-            "tuplets"         : TupletsTest,
-        }
+        # Late import: the registry module itself imports every test
+        # class, so importing it at module top would create a cycle
+        # (each test module imports AbstractTest).
+        from regpoly.analyses import test_registry
 
         with open(filename) as f:
             data = yaml.safe_load(f)
@@ -74,10 +78,11 @@ class AbstractTest(ABC):
         tests = []
         for entry in data["tests"]:
             type_str = entry["type"]
-            test_cls = _dispatch.get(type_str)
-            if test_cls is None:
-                raise ValueError(f"Unknown test type '{type_str}'")
-            tests.append(test_cls._from_params(entry, Lmax))
+            try:
+                spec = test_registry.get(type_str)
+            except KeyError as exc:
+                raise ValueError(str(exc)) from exc
+            tests.append(spec.test_cls._from_params(entry, Lmax))
         return tests
 
     @staticmethod

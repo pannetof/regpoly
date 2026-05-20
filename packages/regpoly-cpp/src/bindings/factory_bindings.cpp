@@ -64,6 +64,8 @@ void bind_gen(py::module_& m, const char* name) {
 
 }  // namespace
 
+namespace regpoly::core {
+
 void register_generator_types(py::module_& m) {
     // ── Concrete classes ───────────────────────────────────────────────
     bind_gen<PolyLCGGen>      (m, "PolyLCGGen");
@@ -103,3 +105,5 @@ void register_generator_types(py::module_& m) {
         }
     }
 }
+
+}  // namespace regpoly::core
