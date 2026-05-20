@@ -74,8 +74,7 @@ exclude_patterns = [
     "papers/_auto_catalog.md",
     # Notebooks we DO NOT render
     "notebooks/research/**",
-    # Markdown sources of notebooks the user doesn't want included
-    "notebooks/families/_runner.py",
+    # The notebook-stamper script (not a doc; not user-visible)
     "notebooks/families/_stamp.py",
     # Build outputs
     "_build",
