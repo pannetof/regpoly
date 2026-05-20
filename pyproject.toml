@@ -28,6 +28,10 @@ docs = [
     # (requires `doxygen` + `graphviz` on PATH at build time)
     "breathe>=4.35",
     "exhale>=0.3",
+    # Notebook runtime extras — needed by docs/notebooks/reference/
+    # bitmatrix_display.ipynb (BitMatrix.to_image) and a few plotting cells.
+    "pillow>=10.0",
+    "matplotlib>=3.8",
 ]
 lint = [
     "ruff>=0.6",

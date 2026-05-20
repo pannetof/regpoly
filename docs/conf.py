@@ -116,6 +116,12 @@ html_theme_options = {
     "footer_end": ["sphinx-version", "theme-version"],
 }
 
+# Notebook pages get a "Show Source" link in the sidebar so readers
+# can download the underlying .ipynb and run it locally.
+html_sidebars = {
+    "notebooks/**": ["sidebar-nav-bs", "page-toc", "sourcelink"],
+}
+
 # -- MyST options -------------------------------------------------------------
 
 myst_enable_extensions = [
@@ -164,6 +170,12 @@ nb_execution_allow_errors = True    # render error tracebacks instead of failing
 nb_execution_excludepatterns = [
     "**/research/**",                            # 2 CA research notebooks
     "**/reference/primitive.ipynb",              # fetches external URL
+    # genf2w uses the pre-v2 `coeffs:` YAML key format; the new
+    # factory expects `coeff` (singular, flat uint_vec) and the
+    # YAML preprocessor's coeffs→coeff translation is a known
+    # regression. The committed cell outputs render as-is so the
+    # notebook's narrative is preserved until the loader is fixed.
+    "**/reference/genf2w_equidistribution.ipynb",
 ]
 nb_execution_cache_path = ".jupyter_cache"    # gitignored
 nb_merge_streams = True                        # cleaner stdout/stderr in output cells

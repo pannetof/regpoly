@@ -30,14 +30,25 @@ def load_catalog(library_dir: Path | None = None):
 def find_example_for_family(cat, family: str) -> tuple[str, Any] | None:
     """Walk the catalog for the first generator whose first component
     is the requested family. Returns (library_id, generator) or None.
+
+    Resolves legacy family-name aliases (e.g. catalog stores
+    ``MersenneTwister``; the requested family is ``MTGen``).
     """
+    from regpoly.core.generator import resolve_family
+
+    target = resolve_family(family)
     for paper in cat.papers():
         for g in getattr(paper, "generators", []) or []:
             comps = getattr(g, "components", None) or []
             if not comps:
                 continue
-            comp_family = getattr(comps[0], "family", None)
-            if comp_family == family:
+            # Components surfaced via the C++ catalog are dicts with the
+            # keys {"family", "L", "params", "tempering"}.
+            comp = comps[0]
+            comp_family = comp["family"] if isinstance(comp, dict) else getattr(comp, "family", None)
+            if comp_family is None:
+                continue
+            if resolve_family(comp_family) == target:
                 return g.id, g
     return None
 
@@ -55,7 +66,10 @@ def instantiate(g) -> tuple[Any, Any]:
         "k_g": comb.k_g,
         "J": comb.J,
         "components": [
-            {"family": c.family, "L": getattr(c, "L", None)}
+            {
+                "family": c["family"] if isinstance(c, dict) else getattr(c, "family", None),
+                "L": (c.get("L") if isinstance(c, dict) else getattr(c, "L", None)),
+            }
             for c in g.components
         ],
     }
@@ -64,51 +78,112 @@ def instantiate(g) -> tuple[Any, Any]:
 
 def analyze_first_component(comb) -> dict[str, Any]:
     """Run an equidistribution analysis on the first component
-    (uses regpoly.analyses.pis.analyze_single_generator)."""
+    (uses :func:`regpoly.analyses.pis.analyze_single_generator`).
+
+    Returns a result dict on success; on a known algorithm-level
+    limitation (PISCache requires a primitive characteristic
+    polynomial — SIMD families like SFMT/dSFMT and the
+    lagged-feedback families like MELG don't satisfy that today and
+    need the notprimitive / simd_notprimitive methods, which the
+    `analyze_single_generator` shim does not yet dispatch on
+    automatically), returns a stub dict with the failure message so
+    the notebook continues to render instead of crashing.
+    """
     from regpoly.analyses.pis import analyze_single_generator
 
     t0 = time.time()
-    res = analyze_single_generator(comb[0])
-    res["walltime"] = time.time() - t0
+    try:
+        res = analyze_single_generator(comb[0])
+        res["walltime"] = time.time() - t0
+        res["status"] = "ok"
+    except RuntimeError as exc:
+        res = {
+            "status": "skipped",
+            "reason": str(exc).split("\n")[0],
+            "walltime": time.time() - t0,
+            "se": None,
+            "k": comb[0].k,
+            "L": comb[0].L,
+            "gaps": [],
+            "hamming_weight": None,
+        }
     return res
 
 
 def summarise(family: str, lib_id: str | None, info: dict, ana: dict) -> str:
     """One-line per-key summary suitable for `print()` in a notebook."""
-    lines = [
+    base = [
         f"family            : {family}",
         f"library entry     : {lib_id or '(none — using fallback params)'}",
         f"k_g (combined)    : {info['k_g']}",
         f"J (components)    : {info['J']}",
         f"Lmax              : {info['Lmax']}",
-        f"se (Σ gaps)       : {ana['se']}",
-        f"k (component)     : {ana['k']}",
-        f"L (component)     : {ana['L']}",
-        f"hamming weight    : {ana['hamming_weight']}",
-        f"PIS walltime (s)  : {ana['walltime']:.4f}",
-        f"first 8 gaps      : {ana['gaps'][:8]}",
     ]
-    return "\n".join(lines)
+    if ana.get("status") == "skipped":
+        base.extend([
+            f"k (component)     : {ana['k']}",
+            f"L (component)     : {ana['L']}",
+            f"analysis          : SKIPPED — {ana['reason']}",
+            f"                    (this family needs the notprimitive /",
+            f"                    simd_notprimitive equidistribution",
+            f"                    method, which the auto-stub does not",
+            f"                    dispatch on automatically yet.)",
+        ])
+    else:
+        base.extend([
+            f"se (Σ gaps)       : {ana['se']}",
+            f"k (component)     : {ana['k']}",
+            f"L (component)     : {ana['L']}",
+            f"hamming weight    : {ana['hamming_weight']}",
+            f"PIS walltime (s)  : {ana['walltime']:.4f}",
+            f"first 8 gaps      : {ana['gaps'][:8]}",
+        ])
+    return "\n".join(base)
 
 
 def run_for_family(family: str, library_id: str | None = None) -> dict:
     """End-to-end driver. Loads catalog, picks an example for `family`
     (or the named library entry if `library_id` is set), instantiates,
-    analyses, returns the assembled result dict."""
+    analyses, returns the assembled result dict.
+
+    If neither the named library entry nor a catalog walk finds an
+    example for the family, returns a stub result with status
+    ``"no_example"`` so the notebook continues to render.
+    """
     cat = load_catalog()
+    g = None
     if library_id:
         loc = cat.generator(library_id)
-        if loc is None:
-            raise RuntimeError(f"library_id not in catalog: {library_id}")
-        _, g = loc
-    else:
+        if loc is not None:
+            _, g = loc
+    if g is None:
         match = find_example_for_family(cat, family)
-        if match is None:
-            raise RuntimeError(
-                f"No catalog entry has {family} as its first component. "
-                f"Provide library_id explicitly or supply fallback params."
-            )
-        library_id, g = match
+        if match is not None:
+            library_id, g = match
+
+    if g is None:
+        info = {"Lmax": None, "k_g": None, "J": None, "components": []}
+        ana = {
+            "status": "no_example",
+            "reason": (
+                f"No catalog entry exercises {family} as its first "
+                f"component (yet)."
+            ),
+            "walltime": 0.0,
+            "se": None, "k": None, "L": None,
+            "gaps": [], "hamming_weight": None,
+        }
+        return {
+            "family": family,
+            "library_id": None,
+            "info": info,
+            "analysis": ana,
+            "summary": (
+                f"family            : {family}\n"
+                f"library entry     : (none — {ana['reason']})\n"
+                f"analysis          : SKIPPED"
+            ),
+        }
 
     comb, info = instantiate(g)
     ana = analyze_first_component(comb)

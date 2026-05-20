@@ -85,9 +85,9 @@ def _build_notebook(family: str, library_id: str | None) -> dict:
         AUTO_MARKER
         + "\n# Parameters cell — edit the library_id to point at a different "
         + "catalog entry\nFAMILY = "
-        + json.dumps(family)
+        + repr(family)
         + "\nLIBRARY_ID = "
-        + json.dumps(library_id)
+        + repr(library_id)
         + "\n"
     )
     body = (
@@ -95,8 +95,10 @@ def _build_notebook(family: str, library_id: str | None) -> dict:
         + "\n# Driver cell — delegates to docs/notebooks/families/_runner.py\n"
         + "import sys\n"
         + "from pathlib import Path\n"
-        + "sys.path.insert(0, str(Path('.').resolve()))\n"
-        + "from docs.notebooks.families._runner import run_for_family\n\n"
+        + "# When the notebook is executed (Sphinx build, Jupyter Lab, nbmake),\n"
+        + "# CWD is the notebook's directory — which is where _runner.py lives.\n"
+        + "sys.path.insert(0, str(Path.cwd()))\n"
+        + "from _runner import run_for_family\n\n"
         + "result = run_for_family(FAMILY, library_id=LIBRARY_ID)\n"
         + "print(result['summary'])\n"
     )
@@ -147,8 +149,8 @@ def _write_combined() -> Path:
         AUTO_MARKER
         + "\nimport sys\n"
         + "from pathlib import Path\n"
-        + "sys.path.insert(0, str(Path('.').resolve()))\n"
-        + "from docs.notebooks.families._runner import (\n"
+        + "sys.path.insert(0, str(Path.cwd()))\n"
+        + "from _runner import (\n"
         + "    load_catalog, find_example_for_family, instantiate,\n"
         + "    analyze_first_component, summarise,\n"
         + ")\n\n"
