@@ -27,12 +27,10 @@ namespace fs = std::filesystem;
 namespace {
 
 // Walk up from this source file's compile-time __FILE__ to find the
-// catalog package data (src/regpoly/_data/library). Falls back to
-// walking up from CWD if that fails (depending on where ctest was
-// invoked from).
+// neutral top-level catalog data (data/library). Falls back to walking up
+// from CWD if that fails (depending on where ctest was invoked from).
 fs::path find_library_dir() {
-    const fs::path rel =
-        fs::path("src") / "regpoly" / "_data" / "library";
+    const fs::path rel = fs::path("data") / "library";
     auto try_paths = std::vector<fs::path>{
         fs::path(__FILE__).parent_path(),
         fs::current_path(),
@@ -45,7 +43,7 @@ fs::path find_library_dir() {
             base = base.parent_path();
         }
     }
-    ADD_FAILURE() << "could not find catalog data dir (src/regpoly/_data/library)";
+    ADD_FAILURE() << "could not find catalog data dir (data/library)";
     return {};
 }
 

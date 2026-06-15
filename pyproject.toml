@@ -17,16 +17,18 @@ dependencies = [
 [project.scripts]
 regpoly = "regpoly.io.cli:main"
 
-# Single distribution: the pure-Python `regpoly` package + the thin
-# `regpoly_cpp` package whose `_regpoly_cpp` extension is built by CMake.
-# The same CMakeLists.txt serves pure-C++ consumers via
-# `-DREGPOLY_BUILD_PYTHON_EXTENSION=OFF` (libregpoly_core.a + regpoly-cli +
-# find_package(regpoly), no pybind11). The catalog + reference PDFs ship as
-# package data under regpoly/_data/{library,papers}.
+# Single distribution. The C++ lives in `cpp/` (its own CMake project, also
+# usable standalone via -DREGPOLY_BUILD_PYTHON_EXTENSION=OFF); the Python
+# packages live in `python/`; the catalog + PDFs live in the neutral `data/`.
+# CMake builds the `_regpoly_cpp` extension from `cpp/` and (via
+# REGPOLY_CATALOG_WHEEL_LAYOUT) installs the catalog into the wheel at
+# regpoly/_data/{library,papers} so importlib.resources resolves it.
 [tool.scikit-build]
-wheel.packages = ["src/regpoly", "src/regpoly_cpp"]
+cmake.source-dir = "cpp"
+wheel.packages = ["python/regpoly", "python/regpoly_cpp"]
 cmake.version = ">=3.20"
-sdist.include = ["src", "include", "cmake", "CMakeLists.txt"]
+cmake.define = {REGPOLY_CATALOG_WHEEL_LAYOUT = "ON"}
+sdist.include = ["cpp", "python", "data"]
 
 [dependency-groups]
 docs = [
@@ -67,7 +69,7 @@ extend-exclude = [
     "notebooks",
     "docs/notebooks",
 ]
-src = ["src"]
+src = ["python"]
 
 [tool.ruff.lint]
 select = ["F", "I"]
@@ -83,7 +85,6 @@ markers = [
     "e2e: end-to-end browser tests via Playwright",
 ]
 testpaths = [
-    "cpp-tests/python",
     "tests",
 ]
 addopts = "-m 'not slow and not e2e' --import-mode=importlib --timeout=120 --timeout-method=thread"

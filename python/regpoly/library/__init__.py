@@ -54,23 +54,37 @@ from regpoly_cpp import _regpoly_cpp as _cpp
 _BUNDLED = object()
 
 
-def bundled_library_dir() -> Path:
-    """Return the catalog directory (paper YAMLs) bundled as package data.
+def _bundled_data_dir(name: str) -> Path:
+    """Resolve the catalog data dir ``name`` (``library`` or ``papers``).
 
-    The catalog ships inside the ``regpoly`` package under ``_data/library``;
-    this resolves to it for editable installs, wheels, and sdist builds
-    alike, so callers never need to locate a repo tree.
+    Two tiers, in order:
+
+    1. **Installed wheel** — the catalog is shipped as ``regpoly`` package
+       data at ``regpoly/_data/<name>`` (CMake installs it there for the
+       wheel; ``importlib.resources`` finds it).
+    2. **Editable / source tree** — the neutral top-level ``data/<name>`` is
+       the source of truth (``python/regpoly`` → ``python`` → repo root →
+       ``data/<name>``), since an editable install points at the source and
+       has no ``_data`` inside the package.
     """
-    return Path(resources.files("regpoly")) / "_data" / "library"
+    pkg = Path(resources.files("regpoly")) / "_data" / name
+    if pkg.is_dir():
+        return pkg
+    return Path(resources.files("regpoly")).resolve().parents[1] / "data" / name
+
+
+def bundled_library_dir() -> Path:
+    """Return the catalog directory (paper YAMLs); see :func:`_bundled_data_dir`."""
+    return _bundled_data_dir("library")
 
 
 def bundled_papers_dir() -> Path:
-    """Return the reference-PDF directory bundled as package data.
+    """Return the reference-PDF directory.
 
     Sibling of :func:`bundled_library_dir`; paper ``pdf:`` fields are stored
-    relative to the shared ``_data`` root (e.g. ``papers/foo.pdf``).
+    relative to the shared data root (e.g. ``papers/foo.pdf``).
     """
-    return Path(resources.files("regpoly")) / "_data" / "papers"
+    return _bundled_data_dir("papers")
 
 
 #: Bibliographic author record (re-exported from the C++ catalog).

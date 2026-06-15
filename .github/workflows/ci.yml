@@ -30,7 +30,7 @@ jobs:
 
       - name: Build C++ tests
         run: |
-          cmake -S . -B build -DREGPOLY_BUILD_TESTS=ON
+          cmake -S cpp -B build -DREGPOLY_BUILD_TESTS=ON
           cmake --build build -j
 
       - name: Run ctest
@@ -41,3 +41,34 @@ jobs:
 
       - name: ruff check
         run: uv run ruff check .
+
+  # Pure-C++ acceptance gate: build, install, and consume regpoly from a
+  # SEPARATE CMake project via find_package — with NO Python at all. This is
+  # what proves an external C++ user can actually use the library.
+  cpp-consumer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies (no Python)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libntl-dev libgmp-dev libgf2x-dev cmake build-essential
+
+      - name: Build + test the pure-C++ library
+        run: |
+          cmake -S cpp -B build-cpp -DREGPOLY_BUILD_PYTHON_EXTENSION=OFF -DREGPOLY_BUILD_TESTS=ON
+          cmake --build build-cpp -j
+          ctest --test-dir build-cpp --output-on-failure
+
+      - name: Install to a prefix
+        run: cmake --install build-cpp --prefix "$RUNNER_TEMP/rp"
+
+      - name: Installed CLI finds its catalog (exe-relative, no flags)
+        run: cd "$RUNNER_TEMP" && "$RUNNER_TEMP/rp/bin/regpoly-cli" catalog list | head -3
+
+      - name: Build the standalone find_package(regpoly) consumer
+        run: |
+          cmake -S cpp/examples -B build-ex -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/rp"
+          cmake --build build-ex
+          ./build-ex/regpoly_example

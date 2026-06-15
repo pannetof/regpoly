@@ -37,7 +37,7 @@ jobs:
 
       - name: Build C++ tests
         run: |
-          cmake -S . -B build -DREGPOLY_BUILD_TESTS=ON
+          cmake -S cpp -B build -DREGPOLY_BUILD_TESTS=ON
           cmake --build build -j
 
       - name: Run ctest

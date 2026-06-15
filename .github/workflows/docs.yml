@@ -11,7 +11,9 @@ on:
     branches: [master]
     paths:
       - "docs/**"
-      - "src/**"
+      - "cpp/**"
+      - "python/**"
+      - "data/**"
       - "include/**"
       - "CHANGELOG.md"
       - "README.md"

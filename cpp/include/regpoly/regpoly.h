@@ -22,8 +22,8 @@
 #pragma once
 
 #include <regpoly/bitvect.h>
-#include <regpoly/combination.h>
-#include <regpoly/combined.h>
+#include <regpoly/combo_enumerator.h>
+#include <regpoly/combined_f2_linear_source.h>
 #include <regpoly/equidistribution_runner.h>
 #include <regpoly/gauss.h>
 #include <regpoly/generator.h>

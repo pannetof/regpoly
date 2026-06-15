@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# FindNTL.cmake is installed next to this file.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+
+find_dependency(Threads)
+find_dependency(NTL)
+# regpoly_core is a static library that links yaml-cpp privately; downstream
+# links must resolve yaml-cpp's symbols, so it is a public dependency here.
+find_dependency(yaml-cpp)
+
+include("${CMAKE_CURRENT_LIST_DIR}/regpolyTargets.cmake")
+
+check_required_components(regpoly)

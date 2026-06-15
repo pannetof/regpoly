@@ -5,7 +5,7 @@
 path through EquidistributionTest.run().
 
 The C++ rules are exercised exhaustively in
-packages/regpoly/cpp-tests/test_default_test_method.cpp; this file
+cpp/tests/test_default_test_method.cpp; this file
 verifies that:
   - the pybind11 binding round-trips str | None,
   - EquidistributionTest accepts method=None,

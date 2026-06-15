@@ -11,7 +11,7 @@ construction (formerly via the legacy `.dat` reader, which has since
 been removed; the same parameter set is checked in inline here).
 
 The byte-for-byte fixture at
-packages/regpoly/cpp-tests/fixtures/well19937a_1024.bin was captured
+cpp/tests/fixtures/well19937a_1024.bin was captured
 pre-rename with the deterministic seed (bit 0 set, all others zero);
 after the structured-ParamBag refactor the same fixture must still match.
 """
@@ -27,7 +27,8 @@ from regpoly_cpp._regpoly_cpp import BitVect
 
 FIXTURE = (
     Path(__file__).resolve().parents[1]
-    / "cpp-tests"
+    / "cpp"
+    / "tests"
     / "fixtures"
     / "well19937a_1024.bin"
 )
@@ -56,7 +57,7 @@ WELL19937A_KWARGS = {
 def _generate_1024_bytes(gen) -> bytes:
     """Pull 1024 32-bit outputs (little-endian) from a deterministically
     seeded generator. Matches the capture procedure in
-    packages/regpoly/cpp-tests/test_well_byte_for_byte.cpp."""
+    cpp/tests/test_well_byte_for_byte.cpp."""
     cpp_gen = gen._cpp_gen
     k = cpp_gen.k() if callable(cpp_gen.k) else cpp_gen.k
     seed = BitVect(k)

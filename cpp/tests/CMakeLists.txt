@@ -61,12 +61,12 @@ gtest_discover_tests(regpoly_cpp_tests)
 # don't go through GoogleTest — they just check exit code + stdout
 # pattern via `add_test` + `set_tests_properties(... PASS_REGULAR_EXPRESSION ...)`.
 # The binary lives under the build dir; the catalog fixtures live in the
-# package data (src/regpoly/_data/library) in the source tree.
+# data (the neutral top-level data/library) in the source tree.
 
 if(TARGET regpoly_cli)
     set(REGPOLY_CLI $<TARGET_FILE:regpoly_cli>)
-    set(REPO_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/..)
-    set(CATALOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/regpoly/_data/library)
+    set(REPO_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+    set(CATALOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../data/library)
 
     add_test(NAME RegpolyCli.Help
              COMMAND ${REGPOLY_CLI} --help)

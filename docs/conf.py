@@ -23,9 +23,9 @@ import os
 import sys
 from pathlib import Path
 
-# Make the src/ tree importable so autodoc can find the Python modules.
+# Make the python/ tree importable so autodoc can find the Python modules.
 ROOT = Path(__file__).resolve().parent.parent
-_src = ROOT / "src"
+_src = ROOT / "python"
 if _src.exists():
     sys.path.insert(0, str(_src))
 
@@ -226,11 +226,11 @@ exhale_args = {
     "containmentFolder":     "./api/cpp/library",
     "rootFileName":          "library_root.rst",
     "rootFileTitle":         "C++ API",
-    "doxygenStripFromPath":  str(ROOT / "src" / "include"),
+    "doxygenStripFromPath":  str(ROOT / "cpp" / "src" / "include"),
     "createTreeView":        True,
     "exhaleExecutesDoxygen": True,
     "exhaleDoxygenStdin": "\n".join([
-        f"INPUT                = {ROOT / 'src' / 'include'}",
+        f"INPUT                = {ROOT / 'cpp' / 'src' / 'include'}",
         "FILE_PATTERNS        = *.h",
         "RECURSIVE            = YES",
         "GENERATE_HTML        = NO",

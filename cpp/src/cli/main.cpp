@@ -83,16 +83,28 @@ constexpr const char* kUsage =
     "  2. the catalog bundled in the source tree at build time.\n"
     "Installed binaries should pass --library or set $REGPOLY_CATALOG_DIR.\n";
 
-// Default catalog dir (used when --library/-l is absent):
+// Default catalog dir (used when --library/-l is absent), in order:
 //   1. $REGPOLY_CATALOG_DIR
-//   2. REGPOLY_SOURCE_CATALOG — the in-source-tree catalog baked in at
-//      build time, so a binary run from its build tree finds the bundled
-//      catalog with no flags.
-// Returns empty when neither resolves; the caller then errors and asks
-// for --library.
+//   2. install-relative: <dir-of-this-binary>/../share/regpoly/catalog,
+//      so an installed `regpoly-cli` finds its installed catalog with no
+//      flags (Linux; resolves the binary via /proc/self/exe).
+//   3. REGPOLY_SOURCE_CATALOG — the in-source-tree catalog baked in at
+//      build time, so a binary run from its build tree (full repo) finds
+//      the bundled catalog with no flags.
+// Returns empty when none resolve; the caller then errors and asks for
+// --library.
 std::string find_default_library_dir() {
     if (const char* env = std::getenv("REGPOLY_CATALOG_DIR")) {
         if (env[0] != '\0') return env;
+    }
+    {
+        std::error_code ec;
+        fs::path exe = fs::read_symlink("/proc/self/exe", ec);
+        if (!ec) {
+            fs::path cand = exe.parent_path().parent_path()
+                          / "share" / "regpoly" / "catalog";
+            if (fs::is_directory(cand)) return cand.string();
+        }
     }
 #ifdef REGPOLY_SOURCE_CATALOG
     {
