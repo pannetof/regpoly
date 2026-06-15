@@ -1,0 +1,164 @@
+include(FetchContent)
+
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.15.2
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+include(GoogleTest)
+
+# regpoly_core is defined at the parent CMakeLists.txt scope; we just
+# link against it here. The test target additionally needs access to
+# private internal headers (concrete generator classes like
+# TauswortheGen) to construct fixtures — those headers are NOT part of
+# the public API surface.
+add_executable(regpoly_cpp_tests
+    test_smoke.cpp
+    test_combination.cpp
+    test_combined_f2_linear_source.cpp
+    test_default_test_method.cpp
+    test_digital_net.cpp
+    test_sobol.cpp
+    test_niederreiter_f2.cpp
+    test_tvalue_runner.cpp
+    test_primitive_search.cpp
+    test_primitivity.cpp
+    test_random_samplers.cpp
+    test_resolution_sets.cpp
+    test_seek_search.cpp
+    test_seek_config.cpp
+    test_catalog.cpp
+    test_well_byte_for_byte.cpp
+    test_well_random_matrices.cpp
+    test_tempering_chain.cpp
+    test_f2_linear_source.cpp
+    test_tempering_optimizer.cpp
+    test_tempering_search.cpp
+    test_yaml_cpp_smoke.cpp
+)
+target_include_directories(regpoly_cpp_tests PRIVATE
+    ../src/include/algebra
+    ../src/include/analyses
+    ../src/include/core
+    ../src/include/generators
+    ../src/include/transforms
+    ../src/include/lattice
+    ../src/include/library
+    ../src/include/search
+    ../src/include/yaml_config)
+target_link_libraries(regpoly_cpp_tests PRIVATE
+    regpoly_core
+    yaml-cpp::yaml-cpp
+    GTest::gtest_main)
+
+gtest_discover_tests(regpoly_cpp_tests)
+
+# ── regpoly-cli subprocess tests ──────────────────────────────────────
+# Exercise the Phase 4.1 CLI subcommands by spawning the binary. These
+# don't go through GoogleTest — they just check exit code + stdout
+# pattern via `add_test` + `set_tests_properties(... PASS_REGULAR_EXPRESSION ...)`.
+# The binary lives under the build dir; the catalog fixtures live in the
+# package data (src/regpoly/_data/library) in the source tree.
+
+if(TARGET regpoly_cli)
+    set(REGPOLY_CLI $<TARGET_FILE:regpoly_cli>)
+    set(REPO_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    set(CATALOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../src/regpoly/_data/library)
+
+    add_test(NAME RegpolyCli.Help
+             COMMAND ${REGPOLY_CLI} --help)
+    set_tests_properties(RegpolyCli.Help PROPERTIES
+        PASS_REGULAR_EXPRESSION "Usage: regpoly-cli")
+
+    add_test(NAME RegpolyCli.Version
+             COMMAND ${REGPOLY_CLI} --version)
+    set_tests_properties(RegpolyCli.Version PROPERTIES
+        PASS_REGULAR_EXPRESSION "regpoly-cli 2\\.1\\.0")
+
+    add_test(NAME RegpolyCli.CatalogList
+             COMMAND ${REGPOLY_CLI} catalog list
+                     --library ${CATALOG_DIR})
+    set_tests_properties(RegpolyCli.CatalogList PROPERTIES
+        PASS_REGULAR_EXPRESSION "matsumoto-nishimura-1998")
+
+    add_test(NAME RegpolyCli.CatalogShowMT
+             COMMAND ${REGPOLY_CLI} catalog show matsumoto-nishimura-1998
+                     --library ${CATALOG_DIR})
+    set_tests_properties(RegpolyCli.CatalogShowMT PROPERTIES
+        PASS_REGULAR_EXPRESSION "Mersenne Twister")
+
+    add_test(NAME RegpolyCli.CatalogGenMT
+             COMMAND ${REGPOLY_CLI} catalog gen mt19937
+                     --library ${CATALOG_DIR})
+    set_tests_properties(RegpolyCli.CatalogGenMT PROPERTIES
+        PASS_REGULAR_EXPRESSION "MersenneTwister")
+
+    # Phase 4.2: end-to-end search via the YAML config loader.
+    # (The carry32 fixture used here previously was driven by the
+    # pre-v2 `legacy_file:` source, which is no longer supported.
+    # Use an inline-form workspace YAML.)
+    add_test(NAME RegpolyCli.SearchCombined
+             COMMAND ${REGPOLY_CLI} search
+                     ${REPO_ROOT}/shared/yaml/equidist/combined.yaml)
+    set_tests_properties(RegpolyCli.SearchCombined PROPERTIES
+        PASS_REGULAR_EXPRESSION "combos")
+
+    # Phase 4.3: tested-generator file display.
+    add_test(NAME RegpolyCli.ShowMelgFixture
+             COMMAND ${REGPOLY_CLI} show
+                     ${REPO_ROOT}/shared/yaml/testedgenerators/MELG/N10_r33_w64.equidist.0025.yaml)
+    set_tests_properties(RegpolyCli.ShowMelgFixture PROPERTIES
+        PASS_REGULAR_EXPRESSION "laggedTempering")
+
+    add_test(NAME RegpolyCli.ShowMissingFile
+             COMMAND ${REGPOLY_CLI} show /no/such/file.yaml)
+    set_tests_properties(RegpolyCli.ShowMissingFile PROPERTIES
+        WILL_FAIL TRUE)
+
+    # Phase 4.3 part 2: publish — copy a paper to a tmpdir then
+    # append a tested-generator entry, then verify the catalog
+    # reloads with the new generator visible.
+    add_test(NAME RegpolyCli.PublishHappyPath
+             COMMAND ${CMAKE_COMMAND} -E env
+                     bash -c "set -e
+                              tmp=$(mktemp -d /tmp/regpoly_pub_XXXXXX)
+                              cp ${CATALOG_DIR}/lecuyer-1996.yaml $tmp/
+                              ${REGPOLY_CLI} publish \
+                                  ${REPO_ROOT}/shared/yaml/testedgenerators/MELG/N10_r33_w64.equidist.0025.yaml \
+                                  --paper lecuyer-1996 \
+                                  --gen-id melg-n10-test-pub \
+                                  --display 'MELG N10 publish test' \
+                                  --library $tmp
+                              ${REGPOLY_CLI} catalog gen melg-n10-test-pub --library $tmp | grep -q 'family:    MELG'
+                              rm -rf $tmp")
+
+    add_test(NAME RegpolyCli.PublishMissingPaper
+             COMMAND ${REGPOLY_CLI} publish
+                     ${REPO_ROOT}/shared/yaml/testedgenerators/MELG/N10_r33_w64.equidist.0025.yaml
+                     --paper no-such-paper
+                     --gen-id foo
+                     --library ${CATALOG_DIR})
+    set_tests_properties(RegpolyCli.PublishMissingPaper PROPERTIES
+        WILL_FAIL TRUE)
+
+    add_test(NAME RegpolyCli.PublishMissingFlags
+             COMMAND ${REGPOLY_CLI} publish
+                     ${REPO_ROOT}/shared/yaml/testedgenerators/MELG/N10_r33_w64.equidist.0025.yaml)
+    set_tests_properties(RegpolyCli.PublishMissingFlags PROPERTIES
+        WILL_FAIL TRUE)
+
+    # Negative cases — exit non-zero on bad input.
+    add_test(NAME RegpolyCli.UnknownCommand
+             COMMAND ${REGPOLY_CLI} bogus-command)
+    set_tests_properties(RegpolyCli.UnknownCommand PROPERTIES
+        WILL_FAIL TRUE)
+
+    add_test(NAME RegpolyCli.MissingPaper
+             COMMAND ${REGPOLY_CLI} catalog show no-such-paper
+                     --library ${CATALOG_DIR})
+    set_tests_properties(RegpolyCli.MissingPaper PROPERTIES
+        WILL_FAIL TRUE)
+endif()

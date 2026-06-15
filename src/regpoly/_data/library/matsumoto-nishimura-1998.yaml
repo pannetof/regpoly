@@ -1,0 +1,126 @@
+id: matsumoto-nishimura-1998
+authors:
+  - {family: Matsumoto, given: Makoto}
+  - {family: Nishimura, given: Takuji}
+year: 1998
+title: "Mersenne Twister: A 623-Dimensionally Equidistributed Uniform Pseudo-Random Number Generator"
+venue: ACM Transactions on Modeling and Computer Simulation
+volume: "8"
+issue: "1"
+pages: "3–30"
+doi: https://doi.org/10.1145/272991.272995
+bibkey: MatsumotoNishimura1998
+starred: true
+tags: [MT, classic]
+
+abstract: |
+  A new algorithm called Mersenne Twister (MT) is proposed for
+  generating uniform pseudorandom numbers. For a particular choice of
+  parameters, the algorithm provides a super astronomical period of
+  219937 −1 and 623-dimensional equidistribution up to 32-bit
+  accuracy, while using a working area of only 624 words. This is a
+  new variant of the previously proposed generators, TGFSR, modified
+  so as to admit a Mersenne-prime period. The characteristic
+  polynomial has many terms. The distribution up to v bits accuracy
+  for 1 ≤ v ≤ 32 is also shown to be good. An algorithm is also given
+  that checks the primitivity of the characteristic polynomial of MT
+  with computational complexity O(p2) where p is the degree of the
+  polynomial.
+
+  We implemented this generator in portable C-code. It passed several
+  stringent statistical tests, including diehard. Its speed is
+  comparable to other modern generators. Its merits are due to the
+  efficient algorithms that are unique to polynomial calculations
+  over the two-element field.
+
+generators:
+  - id: mt19937
+    display: MT19937
+    family: MersenneTwister
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: MersenneTwister
+        L: 32
+        params:
+          w: 32
+          r: 624
+          m: 397
+          p: 31
+          a: 0x9908B0DF
+        tempering:
+          - type: tempMK2
+            w: 32
+            eta: 7
+            mu: 15
+            u: 11
+            l: 18
+            b: 0x9D2C5680
+            c: 0xEFC60000
+    notes: |
+      The canonical MT19937 tempering chain
+      ``y ^= (y >> u); y ^= (y << s) & b; y ^= (y << t) & c;
+        y ^= (y >> l)`` is encoded as a single ``tempMK2``
+      transformation (MK type II) subsuming the right-shifts via its
+      ``u`` / ``l`` parameters.
+
+  - id: mt11213a
+    display: MT11213A
+    family: MersenneTwister
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: MersenneTwister
+        L: 32
+        params:
+          w: 32
+          r: 351
+          m: 175
+          p: 19
+          a: 0xE4BD75F5
+        tempering:
+          - type: tempMK2
+            w: 32
+            eta: 7
+            mu: 15
+            u: 11
+            l: 17
+            b: 0x655E5280
+            c: 0xFFD58000
+    notes: |
+      Smaller Mersenne Twister variant with period $2^{11213}-1$;
+      `k = w \cdot n - r = 32 \cdot 351 - 19 = 11213`.
+
+  - id: mt11213b
+    display: MT11213B
+    family: MersenneTwister
+    target: tested_generator
+    combined: false
+    Lmax: 32
+    starred: true
+    components:
+      - family: MersenneTwister
+        L: 32
+        params:
+          w: 32
+          r: 351
+          m: 175
+          p: 19
+          a: 0xCCAB8EE7
+        tempering:
+          - type: tempMK2
+            w: 32
+            eta: 7
+            mu: 15
+            u: 11
+            l: 17
+            b: 0x31B6AB00
+            c: 0xFFE50000
+    notes: |
+      Second MT11213 parametrisation from the same 1998 paper
+      (different twist mask `a` and different tempering masks
+      `b`, `c`).

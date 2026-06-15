@@ -1,0 +1,534 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
+// regpoly-cli — standalone C++ command-line driver.
+//
+// Phase 4.1 ships two foundational subcommands that exercise the
+// already-ported C++ machinery without requiring a YAML search-config
+// loader:
+//
+//   regpoly-cli catalog list [--library DIR]
+//                            print every paper id + display title.
+//   regpoly-cli catalog show PAPER_ID [--library DIR]
+//                            print one paper's full record (authors,
+//                            citation, generator list).
+//   regpoly-cli catalog gen  GEN_ID  [--library DIR]
+//                            print one generator's record + paper.
+//
+// Phase 4.2 adds `search FILE.yaml` — load a seek-style YAML config
+// and run the equidistribution search loop via the existing C++
+// drivers. Phase 4.3 adds `show <result.yaml>` — display a
+// tested-generator file (single- or multi-component shape) including
+// its tempering chain and equidistribution / collision-free /
+// tuplets results. The `publish` subcommand (catalog write) lands
+// later.
+
+#include "catalog.h"
+#include "combo_enumerator.h"
+#include "params.h"
+#include "seek_config.h"
+#include "seek_search.h"
+
+#include <yaml-cpp/yaml.h>
+
+#include <cstdlib>
+#include <cstring>
+#include <filesystem>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+using namespace regpoly::core;
+using namespace regpoly::library;
+using namespace regpoly::yaml_config;
+
+
+namespace fs = std::filesystem;
+
+namespace {
+
+constexpr const char* kVersion = "regpoly-cli 2.1.0";
+constexpr const char* kUsage =
+    "Usage: regpoly-cli <command> [options]\n"
+    "\n"
+    "Commands:\n"
+    "  catalog list [--library DIR]\n"
+    "      List every paper id + display title.\n"
+    "  catalog show PAPER_ID [--library DIR]\n"
+    "      Print one paper's full record.\n"
+    "  catalog gen GEN_ID [--library DIR]\n"
+    "      Print one generator's record + its paper.\n"
+    "  search FILE.yaml\n"
+    "      Load a seek-style YAML search config and run the\n"
+    "      equidistribution search loop. Output format does not\n"
+    "      mirror `uv run regpoly`; use that command for the\n"
+    "      Python-side display.\n"
+    "  show FILE.yaml\n"
+    "      Display a tested-generator YAML (single- or multi-\n"
+    "      component): components + tempering chain + results.\n"
+    "  publish FILE.yaml --paper PAPER_ID --gen-id GEN_ID\n"
+    "          [--display TEXT] [--target STR] [--starred] [--library DIR]\n"
+    "      Append a tested-generator entry to an existing paper YAML\n"
+    "      under the catalog. The paper file's `generators:` block\n"
+    "      must currently be the last top-level key.\n"
+    "\n"
+    "Options:\n"
+    "  -h, --help        show this message and exit\n"
+    "  -V, --version     print version and exit\n"
+    "\n"
+    "Catalog dir resolution when no --library/-l is given:\n"
+    "  1. $REGPOLY_CATALOG_DIR\n"
+    "  2. the catalog bundled in the source tree at build time.\n"
+    "Installed binaries should pass --library or set $REGPOLY_CATALOG_DIR.\n";
+
+// Default catalog dir (used when --library/-l is absent):
+//   1. $REGPOLY_CATALOG_DIR
+//   2. REGPOLY_SOURCE_CATALOG — the in-source-tree catalog baked in at
+//      build time, so a binary run from its build tree finds the bundled
+//      catalog with no flags.
+// Returns empty when neither resolves; the caller then errors and asks
+// for --library.
+std::string find_default_library_dir() {
+    if (const char* env = std::getenv("REGPOLY_CATALOG_DIR")) {
+        if (env[0] != '\0') return env;
+    }
+#ifdef REGPOLY_SOURCE_CATALOG
+    {
+        fs::path src(REGPOLY_SOURCE_CATALOG);
+        if (fs::is_directory(src)) return src.string();
+    }
+#endif
+    return {};
+}
+
+// Parse `--library DIR` or `-l DIR` if present in args; returns the
+// directory and removes the args from the vector.
+std::string consume_library_flag(std::vector<std::string>& args) {
+    for (size_t i = 0; i < args.size(); ++i) {
+        if ((args[i] == "--library" || args[i] == "-l")
+            && i + 1 < args.size()) {
+            std::string dir = args[i + 1];
+            args.erase(args.begin() + i, args.begin() + i + 2);
+            return dir;
+        }
+    }
+    return find_default_library_dir();
+}
+
+// Parse `-L N` if present; returns the int (default 32) and removes
+// from the args.
+int consume_L_flag(std::vector<std::string>& args, int def = 32) {
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (args[i] == "-L" && i + 1 < args.size()) {
+            int v = std::atoi(args[i + 1].c_str());
+            args.erase(args.begin() + i, args.begin() + i + 2);
+            return v;
+        }
+    }
+    return def;
+}
+
+int cmd_catalog(std::vector<std::string> args) {
+    if (args.empty()) {
+        std::cerr << "regpoly-cli: catalog requires a sub-action "
+                  << "(list | show | gen)\n";
+        return 2;
+    }
+    std::string action = args[0];
+    args.erase(args.begin());
+
+    std::string library_dir = consume_library_flag(args);
+    if (library_dir.empty()) {
+        std::cerr << "regpoly-cli: could not locate the catalog. "
+                  << "Pass --library DIR or set $REGPOLY_CATALOG_DIR.\n";
+        return 2;
+    }
+
+    regpoly::library::Catalog cat(library_dir);
+    cat.load();
+
+    if (action == "list") {
+        regpoly::library::Catalog::PapersFilter f;
+        f.include_invalid = true;
+        auto papers = cat.papers(f);
+        for (const auto& p : papers) {
+            std::cout << p.id << " — " << p.display();
+            if (!p.valid()) std::cout << " (INVALID: " << p.errors.size()
+                                       << " error" << (p.errors.size() == 1 ? "" : "s")
+                                       << ")";
+            std::cout << "\n";
+        }
+        return 0;
+    }
+
+    if (action == "show") {
+        if (args.empty()) {
+            std::cerr << "regpoly-cli: catalog show requires PAPER_ID\n";
+            return 2;
+        }
+        auto p = cat.paper(args[0]);
+        if (!p.has_value()) {
+            std::cerr << "regpoly-cli: no such paper: " << args[0] << "\n";
+            return 1;
+        }
+        std::cout << "id:        " << p->id << "\n";
+        std::cout << "display:   " << p->display() << "\n";
+        std::cout << "year:      " << p->year << "\n";
+        std::cout << "title:     " << p->title << "\n";
+        std::cout << "venue:     " << p->venue << "\n";
+        if (!p->doi.empty())   std::cout << "doi:       " << p->doi << "\n";
+        if (!p->bibkey.empty())std::cout << "bibkey:    " << p->bibkey << "\n";
+        std::cout << "starred:   " << (p->starred ? "yes" : "no") << "\n";
+        std::cout << "valid:     " << (p->valid() ? "yes" : "no") << "\n";
+        for (const auto& e : p->errors) std::cout << "  ! " << e << "\n";
+        std::cout << "citation:  " << p->acmtrans_citation() << "\n";
+        std::cout << "generators (" << p->generators.size() << "):\n";
+        for (const auto& g : p->generators) {
+            std::cout << "  - " << g.id << " [" << g.family << "]"
+                      << "  L=" << g.Lmax;
+            if (g.starred) std::cout << "  *";
+            if (!g.valid()) std::cout << "  INVALID";
+            std::cout << "\n";
+        }
+        return 0;
+    }
+
+    if (action == "gen") {
+        if (args.empty()) {
+            std::cerr << "regpoly-cli: catalog gen requires GEN_ID\n";
+            return 2;
+        }
+        auto loc = cat.generator(args[0]);
+        if (!loc.has_value()) {
+            std::cerr << "regpoly-cli: no such generator: " << args[0] << "\n";
+            return 1;
+        }
+        const auto& [paper, gen] = *loc;
+        std::cout << "generator: " << gen.id << "\n";
+        std::cout << "display:   " << gen.display << "\n";
+        std::cout << "family:    " << gen.family << "\n";
+        std::cout << "Lmax:      " << gen.Lmax << "\n";
+        std::cout << "target:    " << gen.target << "\n";
+        std::cout << "combined:  " << (gen.combined ? "yes" : "no") << "\n";
+        std::cout << "components: " << gen.components.size() << "\n";
+        std::cout << "paper:     " << paper.id << " — " << paper.display() << "\n";
+        return 0;
+    }
+
+    std::cerr << "regpoly-cli: unknown catalog sub-action '"
+              << action << "'\n";
+    return 2;
+}
+
+const char* test_kind_name(SeekTestKind k) {
+    switch (k) {
+        case SeekTestKind::EquidistributionMatricial:        return "equidist[matricial]";
+        case SeekTestKind::EquidistributionLattice:          return "equidist[lattice]";
+        case SeekTestKind::EquidistributionHarase:           return "equidist[harase]";
+        case SeekTestKind::EquidistributionNotPrimitive:     return "equidist[notprimitive]";
+        case SeekTestKind::EquidistributionSimdNotPrimitive: return "equidist[simd_notprimitive]";
+        case SeekTestKind::EquidistributionNothing:          return "equidist[nothing]";
+        case SeekTestKind::CollisionFree:                    return "collision_free";
+        case SeekTestKind::Tuplets:                          return "tuplets";
+    }
+    return "?";
+}
+
+int cmd_search(std::vector<std::string> args) {
+    if (args.empty()) {
+        std::cerr << "regpoly-cli: search requires FILE.yaml\n";
+        return 2;
+    }
+    const std::string yaml_path = args[0];
+
+    regpoly::yaml_config::SeekConfig cfg;
+    try {
+        cfg = regpoly::yaml_config::load_seek_config(yaml_path);
+    } catch (const std::exception& exc) {
+        std::cerr << "regpoly-cli: " << exc.what() << "\n";
+        return 1;
+    }
+
+    regpoly::yaml_config::SeekBuild built;
+    try {
+        built = regpoly::yaml_config::build_search(cfg);
+    } catch (const std::exception& exc) {
+        std::cerr << "regpoly-cli: " << exc.what() << "\n";
+        return 1;
+    }
+
+    // Header — brief, machine-readable-ish.
+    std::cout << "regpoly-cli search\n";
+    std::cout << "  config:    " << yaml_path << "\n";
+    std::cout << "  seed:      [" << cfg.seed1 << ", " << cfg.seed2 << "]\n";
+    std::cout << "  Lmax:      " << cfg.Lmax << "\n";
+    std::cout << "  J:         " << cfg.components.size() << "\n";
+    std::cout << "  nbtries:   " << cfg.nbtries << "\n";
+    std::cout << "  tests:     ";
+    for (size_t i = 0; i < cfg.tests.size(); ++i) {
+        if (i) std::cout << ", ";
+        std::cout << test_kind_name(cfg.tests[i].kind);
+    }
+    std::cout << "\n";
+    std::cout << std::string(60, '=') << "\n";
+    std::cout.flush();
+
+    int64_t selection_count = 0;
+    auto on_iter = [&](ComboEnumerator& comb, const SeekIterResult& r) {
+        ++selection_count;
+        std::cout << "  [" << std::setw(6) << selection_count << "] ";
+        std::cout << "k_g=" << comb.k_g() << " L=" << comb.L();
+        if (r.me_ran) {
+            std::cout << "  me_se=" << r.me_se;
+            std::cout << " (verified=" << (r.me_verified ? "yes" : "no")
+                      << (r.me_is_me ? ", ME" : "") << ")";
+        }
+        if (r.cf_ran) {
+            std::cout << "  cf_secf=" << r.cf_secf
+                      << " (verified=" << (r.cf_verified ? "yes" : "no") << ")";
+        }
+        if (r.tup_ran) {
+            std::cout << "  tup_first_max=" << r.tup_firstpart_max
+                      << " tup_first_sum=" << r.tup_firstpart_sum;
+        }
+        std::cout << "\n";
+        std::cout.flush();
+    };
+
+    auto on_progress = [&](const SeekProgress& p) {
+        std::cout << "  ... progress: combos=" << p.nbgen
+                  << " selected=" << p.nb_select
+                  << " ME=" << p.nb_me
+                  << " elapsed=" << std::fixed << std::setprecision(2)
+                  << p.elapsed_seconds << "s\n";
+        std::cout.flush();
+    };
+
+    SeekResult result;
+    try {
+        result = run_seek_search(*built.combination, cfg.tests,
+                                 cfg.nbtries, /*progress_interval=*/1000,
+                                 /*on_prep=*/nullptr,
+                                 on_iter, on_progress);
+    } catch (const std::exception& exc) {
+        std::cerr << "regpoly-cli: search failed: " << exc.what() << "\n";
+        return 1;
+    }
+
+    std::cout << std::string(60, '=') << "\n";
+    std::cout << "Summary:\n";
+    std::cout << "  combos:    " << result.nbgen << "\n";
+    std::cout << "  selected:  " << result.nb_select << "\n";
+    std::cout << "  ME (full): " << result.nb_me << "\n";
+    std::cout << "  elapsed:   " << std::fixed << std::setprecision(3)
+              << result.elapsed_seconds << "s\n";
+    std::cout.flush();
+    return 0;
+}
+
+// Render one YAML scalar value compactly. Used by cmd_show; the
+// tested-generator schema's leaf values are scalars (ints, hex
+// strings, bools, floats) or short int sequences.
+std::string scalar_to_str(const YAML::Node& n) {
+    if (!n.IsScalar()) return "<non-scalar>";
+    return n.as<std::string>();
+}
+
+void print_kv_block(const YAML::Node& m, const std::string& prefix) {
+    if (!m || !m.IsMap()) return;
+    for (auto kv : m) {
+        auto k = kv.first.as<std::string>();
+        const auto& v = kv.second;
+        if (v.IsScalar()) {
+            std::cout << prefix << k << ": " << scalar_to_str(v) << "\n";
+        } else if (v.IsSequence()) {
+            std::cout << prefix << k << ": [";
+            for (size_t i = 0; i < v.size(); ++i) {
+                if (i) std::cout << ", ";
+                if (v[i].IsScalar()) std::cout << scalar_to_str(v[i]);
+                else std::cout << "?";
+            }
+            std::cout << "]\n";
+        } else if (v.IsMap()) {
+            std::cout << prefix << k << ":\n";
+            print_kv_block(v, prefix + "  ");
+        }
+    }
+}
+
+void print_component(const YAML::Node& gen, const YAML::Node& tempering,
+                     int idx) {
+    std::cout << "  component " << idx << ":\n";
+    if (gen && gen.IsMap()) {
+        std::cout << "    generator:\n";
+        print_kv_block(gen, "      ");
+    }
+    if (tempering && tempering.IsSequence() && tempering.size() > 0) {
+        std::cout << "    tempering:\n";
+        for (size_t i = 0; i < tempering.size(); ++i) {
+            std::cout << "      - ";
+            const auto& step = tempering[i];
+            if (step["type"]) {
+                std::cout << "type: " << step["type"].as<std::string>() << "\n";
+            } else {
+                std::cout << "(no type)\n";
+            }
+            for (auto kv : step) {
+                auto k = kv.first.as<std::string>();
+                if (k == "type") continue;
+                std::cout << "        " << k << ": "
+                          << scalar_to_str(kv.second) << "\n";
+            }
+        }
+    }
+}
+
+void print_results(const YAML::Node& results) {
+    if (!results || !results.IsMap()) return;
+    std::cout << "  results:\n";
+    for (auto rkv : results) {
+        std::cout << "    " << rkv.first.as<std::string>() << ":\n";
+        print_kv_block(rkv.second, "      ");
+    }
+}
+
+int cmd_show(std::vector<std::string> args) {
+    if (args.empty()) {
+        std::cerr << "regpoly-cli: show requires FILE.yaml\n";
+        return 2;
+    }
+    std::string path = args[0];
+    YAML::Node doc;
+    try {
+        doc = YAML::LoadFile(path);
+    } catch (const std::exception& exc) {
+        std::cerr << "regpoly-cli: failed to load " << path
+                  << ": " << exc.what() << "\n";
+        return 1;
+    }
+    if (!doc || !doc.IsMap()) {
+        std::cerr << "regpoly-cli: " << path
+                  << ": top-level YAML must be a mapping\n";
+        return 1;
+    }
+
+    std::cout << "tested generator: " << path << "\n";
+
+    // Two top-level shapes: single-component (`generator` + `tempering`)
+    // or multi-component (`components: [{generator, tempering}, ...]`).
+    if (doc["components"] && doc["components"].IsSequence()) {
+        std::cout << "  J: " << doc["components"].size() << "\n";
+        int idx = 0;
+        for (auto comp : doc["components"]) {
+            print_component(comp["generator"], comp["tempering"], idx++);
+        }
+    } else if (doc["generator"]) {
+        std::cout << "  J: 1\n";
+        print_component(doc["generator"], doc["tempering"], 0);
+    } else {
+        std::cerr << "regpoly-cli: " << path
+                  << ": missing `generator` or `components` key\n";
+        return 1;
+    }
+
+    if (doc["results"]) print_results(doc["results"]);
+    return 0;
+}
+
+// Consume a flag of the form `--name VAL` (or `-n VAL`). Returns
+// "" if not present and removes the matched args.
+std::string consume_str_flag(std::vector<std::string>& args,
+                              const std::string& long_name,
+                              const std::string& short_name = "") {
+    for (size_t i = 0; i < args.size(); ++i) {
+        if ((args[i] == long_name
+             || (!short_name.empty() && args[i] == short_name))
+            && i + 1 < args.size()) {
+            std::string v = args[i + 1];
+            args.erase(args.begin() + i, args.begin() + i + 2);
+            return v;
+        }
+    }
+    return "";
+}
+
+bool consume_bool_flag(std::vector<std::string>& args,
+                        const std::string& long_name) {
+    for (size_t i = 0; i < args.size(); ++i) {
+        if (args[i] == long_name) {
+            args.erase(args.begin() + i);
+            return true;
+        }
+    }
+    return false;
+}
+
+int cmd_publish(std::vector<std::string> args) {
+    if (args.empty()) {
+        std::cerr << "regpoly-cli: publish requires FILE.yaml --paper PAPER_ID "
+                  << "--gen-id GEN_ID\n";
+        return 2;
+    }
+    std::string library_dir = consume_library_flag(args);
+    std::string paper_id    = consume_str_flag(args, "--paper");
+    std::string gen_id      = consume_str_flag(args, "--gen-id");
+    std::string display     = consume_str_flag(args, "--display");
+    std::string target      = consume_str_flag(args, "--target");
+    bool starred            = consume_bool_flag(args, "--starred");
+
+    if (target.empty()) target = "tested_generator";
+    if (display.empty()) display = gen_id;
+
+    if (args.empty()) {
+        std::cerr << "regpoly-cli: publish requires FILE.yaml positional arg\n";
+        return 2;
+    }
+    std::string source = args[0];
+
+    if (paper_id.empty() || gen_id.empty()) {
+        std::cerr << "regpoly-cli: publish requires --paper PAPER_ID and "
+                  << "--gen-id GEN_ID\n";
+        return 2;
+    }
+    if (library_dir.empty()) {
+        std::cerr << "regpoly-cli: could not locate the catalog. "
+                  << "Pass --library DIR or set $REGPOLY_CATALOG_DIR.\n";
+        return 2;
+    }
+
+    try {
+        std::string out_path = regpoly::library::publish_tested_generator(
+            library_dir, paper_id, gen_id, display, source, target, starred);
+        std::cout << "published " << gen_id << " into " << out_path << "\n";
+    } catch (const std::exception& exc) {
+        std::cerr << "regpoly-cli: " << exc.what() << "\n";
+        return 1;
+    }
+    return 0;
+}
+
+}  // namespace
+
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        std::cout << kUsage;
+        return 0;
+    }
+    std::string cmd = argv[1];
+    if (cmd == "-h" || cmd == "--help")    { std::cout << kUsage;            return 0; }
+    if (cmd == "-V" || cmd == "--version") { std::cout << kVersion << "\n";  return 0; }
+
+    std::vector<std::string> rest;
+    for (int i = 2; i < argc; ++i) rest.emplace_back(argv[i]);
+
+    if (cmd == "catalog")      return cmd_catalog(std::move(rest));
+    if (cmd == "search")       return cmd_search(std::move(rest));
+    if (cmd == "show")         return cmd_show(std::move(rest));
+    if (cmd == "publish")      return cmd_publish(std::move(rest));
+
+    std::cerr << "regpoly-cli: unknown command '" << cmd << "'.\n"
+              << "Run `regpoly-cli --help`.\n";
+    return 2;
+}

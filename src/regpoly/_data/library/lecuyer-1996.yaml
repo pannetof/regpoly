@@ -1,0 +1,50 @@
+id: lecuyer-1996
+authors:
+  - {family: "L'Ecuyer", given: Pierre}
+year: 1996
+title: "Maximally Equidistributed Combined Tausworthe Generators"
+venue: Mathematics of Computation
+volume: "65"
+issue: "213"
+pages: "203–213"
+doi: https://doi.org/10.1090/S0025-5718-96-00696-5
+bibkey: LEcuyer1996
+starred: true
+tags: [LFSR, Tausworthe, ME, classic]
+
+abstract: |
+  Tausworthe random number generators based on a primitive trinomial
+  allow an easy and fast implementation when their parameters obey
+  certain restrictions. However, such generators, with those
+  restrictions, have bad statistical properties unless we combine
+  them. A generator is called maximally equidistributed if its
+  vectors of successive values have the best possible equidistribution
+  in all dimensions. This paper shows how to find maximally
+  equidistributed combinations in an efficient manner, and gives a
+  list of generators with that property. Such generators have a
+  strong theoretical support and lend themselves to very fast
+  software implementations.
+
+generators:
+  - id: taus88
+    display: taus88
+    family: Tausworthe
+    target: tested_generator
+    combined: true
+    Lmax: 32
+    starred: true
+    components:
+      - family: Tausworthe
+        L: 32
+        params: {k: 31, nb_terms: 3, quicktaus: true, poly: [0, 13, 31], s: 12}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 29, nb_terms: 3, quicktaus: true, poly: [0,  2, 29], s:  4}
+        tempering: []
+      - family: Tausworthe
+        L: 32
+        params: {k: 28, nb_terms: 3, quicktaus: true, poly: [0,  3, 28], s: 17}
+        tempering: []
+    notes: |
+      Three-component combined Tausworthe.  Period $\approx 2^{88}$.

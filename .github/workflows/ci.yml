@@ -1,0 +1,43 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        # No submodules: yaml-cpp is fetched via pinned FetchContent.
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libntl-dev libgmp-dev libgf2x-dev cmake build-essential pybind11-dev
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install Python and the package
+        run: |
+          uv python install 3.11
+          uv sync --group test --group lint
+
+      - name: Build C++ tests
+        run: |
+          cmake -S . -B build -DREGPOLY_BUILD_TESTS=ON
+          cmake --build build -j
+
+      - name: Run ctest
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run pytest (default lane)
+        run: uv run pytest
+
+      - name: ruff check
+        run: uv run ruff check .

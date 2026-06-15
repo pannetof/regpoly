@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Francois Panneton, Ph.D.
+
+"""
+regpoly.analyses — Statistical test infrastructure (equidistribution, collision-free, tuplets).
+"""
+
+from regpoly.analyses.abstract_test import AbstractTest, AbstractTestResults
+from regpoly.analyses.collision_free_results import CollisionFreeResults
+from regpoly.analyses.collision_free_test import CollisionFreeTest
+from regpoly.analyses.equidistribution_results import EquidistributionResults
+from regpoly.analyses.equidistribution_test import EquidistributionTest
+from regpoly.analyses.tuplets_results import TupletsResults
+from regpoly.analyses.tuplets_test import TupletsTest
+
+__all__ = [
+    "AbstractTest",
+    "AbstractTestResults",
+    "EquidistributionTest",
+    "EquidistributionResults",
+    "CollisionFreeTest",
+    "CollisionFreeResults",
+    "TupletsTest",
+    "TupletsResults",
+]

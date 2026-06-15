@@ -1,0 +1,410 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2025 Francois Panneton, Ph.D.
+
+#include "me_notprimitive.h"
+#include "me_helpers.h"   // test_me_lat (full-period fast path)
+                             // + find_polys/normalize_polys (slow path)
+#include "dual_lattice.h"    // DualLatticeBase — dual-lattice reduction
+#include <algorithm>
+#include <climits>
+#include <memory>
+#include <numeric>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <NTL/GF2X.h>
+#include <NTL/GF2XFactoring.h>
+#include <NTL/vec_GF2.h>
+#include <NTL/GF2.h>
+
+using namespace regpoly::core;
+
+
+namespace regpoly::core {
+
+namespace {
+
+// ── Mersenne-prime-exponent fast path (mirrors generateur.cpp) ─────────
+bool is_mersenne_prime_exponent(int p) {
+    static const int mp[] = {
+        2, 3, 5, 7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607,
+        1279, 2203, 2281, 3217, 4253, 4423, 9689, 9941, 11213,
+        19937, 21701, 23209, 44497, 86243, 110503, 132049, 216091,
+        756839, 859433, 1257787, 1398269, 2976221, 3021377, 6972593,
+        13466917, 20996011, 24036583, 25964951, 30402457, 32582657,
+        37156667, 42643801, 43112609, 57885161, 74207281, 77232917,
+        82589933, 0
+    };
+    for (const int* q = mp; *q; q++) if (*q == p) return true;
+    return false;
+}
+
+// Composition-aware combined-state utilities.
+//
+// The kernel works with a list of Recurrence components and a
+// `prefix_k` partition of the concatenated state. Rather than build
+// a fake "combined Recurrence" wrapper around them, every state
+// evolution operation walks the components directly: slice the
+// concatenated state, init each component with its slice, advance,
+// then concatenate the new component states.
+
+NTL::GF2X gf2x_lcm(const NTL::GF2X& a, const NTL::GF2X& b) {
+    if (NTL::IsZero(a)) return b;
+    if (NTL::IsZero(b)) return a;
+    NTL::GF2X g, ab, q;
+    NTL::GCD(g, a, b);
+    NTL::mul(ab, a, b);
+    NTL::div(q, ab, g);
+    return q;
+}
+
+// Compute `prefix_k` (cumulative state-width partition) for a list of
+// components. `prefix_k[J]` equals total k.
+std::vector<int> compute_prefix_k(const std::vector<Recurrence*>& gens) {
+    std::vector<int> p;
+    p.reserve(gens.size() + 1);
+    p.push_back(0);
+    for (auto* g : gens) p.push_back(p.back() + g->k());
+    return p;
+}
+
+// LCM of components' `output_phases()` — the combined state-cycle
+// period. (Was `CombinedF2LinearSource::output_phases()` on the old
+// Recurrence-shaped wrapper; pulled out as a free helper now that the
+// wrapper is composition-only.)
+int combined_output_phases(const std::vector<Recurrence*>& gens) {
+    long long acc = 1;
+    for (auto* g : gens) {
+        int p = g->output_phases();
+        if (p <= 0) p = 1;
+        long long gd = std::gcd<long long>(acc, p);
+        acc = (acc / gd) * p;
+    }
+    return static_cast<int>(acc);
+}
+
+// Advance the concatenated state of `gens` by one step. Slices the
+// state into per-component pieces, init+next each component on its
+// fresh clone, then concatenates the resulting component states.
+BitVect step_once(const std::vector<Recurrence*>& gens,
+                  const std::vector<int>& prefix_k,
+                  const BitVect& r)
+{
+    BitVect out(r.nbits());
+    for (size_t j = 0; j < gens.size(); ++j) {
+        int k_j = gens[j]->k();
+        int off = prefix_k[j];
+        BitVect slice(k_j);
+        for (int i = 0; i < k_j; ++i)
+            if (r.get_bit(off + i)) slice.set_bit(i, 1);
+        auto g = gens[j]->clone_recurrence();
+        g->init(slice);
+        g->next();
+        const BitVect& new_slice = g->state();
+        for (int i = 0; i < k_j; ++i)
+            if (new_slice.get_bit(i)) out.set_bit(off + i, 1);
+    }
+    return out;
+}
+
+BitVect apply_polynomial(const NTL::GF2X& g, const BitVect& s,
+                         const std::vector<Recurrence*>& gens,
+                         const std::vector<int>& prefix_k)
+{
+    long d = NTL::deg(g);
+    BitVect r(s.nbits());
+    for (long i = d; i >= 0; i--) {
+        if (i < d) r = step_once(gens, prefix_k, r);
+        if (NTL::IsOne(NTL::coeff(g, i))) r.xor_with(s);
+    }
+    return r;
+}
+
+// Single-component apply_polynomial (used per-component during the
+// projection-into-V step). The per-component evolution doesn't need
+// the prefix_k machinery.
+BitVect apply_polynomial_single(const NTL::GF2X& g, const BitVect& s,
+                                const Recurrence& proto)
+{
+    long d = NTL::deg(g);
+    BitVect r(s.nbits());
+    auto step = [&](const BitVect& x) {
+        auto clone = proto.clone_recurrence();
+        clone->init(x);
+        clone->next();
+        return clone->state().copy();
+    };
+    for (long i = d; i >= 0; i--) {
+        if (i < d) r = step(r);
+        if (NTL::IsOne(NTL::coeff(g, i))) r.xor_with(s);
+    }
+    return r;
+}
+
+struct PhiPick {
+    NTL::GF2X phi;
+    int p;
+    bool primitivity_certified;
+};
+
+PhiPick select_phi(const NTL::GF2X& chi) {
+    NTL::vec_pair_GF2X_long fac;
+    NTL::CanZass(fac, chi);
+
+    std::vector<long> order(fac.length());
+    for (long i = 0; i < fac.length(); i++) order[i] = i;
+    std::sort(order.begin(), order.end(),
+              [&](long a, long b) { return NTL::deg(fac[a].a) > NTL::deg(fac[b].a); });
+
+    for (long i : order) {
+        long d = NTL::deg(fac[i].a);
+        if (d <= 0) continue;
+        if (is_mersenne_prime_exponent((int)d) &&
+            !NTL::IsZero(NTL::coeff(fac[i].a, 0)))
+        {
+            return { fac[i].a, (int)d, true };
+        }
+    }
+    for (long i : order) {
+        long d = NTL::deg(fac[i].a);
+        if (d > 0 && !NTL::IsZero(NTL::coeff(fac[i].a, 0)))
+            return { fac[i].a, (int)d, false };
+    }
+    throw std::runtime_error(
+        "test_me_notprimitive: chi has no nontrivial irreducible factor");
+}
+
+NTL::GF2X recover_char_poly(const std::vector<Recurrence*>& gens,
+                            const std::vector<int>& prefix_k,
+                            int kg)
+{
+    auto build_state_seq = [&](const BitVect& seed_state, int coord, int N_total) {
+        NTL::vec_GF2 seq;
+        seq.SetLength(N_total);
+        BitVect cur = seed_state.copy();
+        for (int N = 0; N < N_total; N++) {
+            cur = step_once(gens, prefix_k, cur);
+            if (coord < cur.nbits() && cur.get_bit(coord)) seq.put(N, 1);
+        }
+        return seq;
+    };
+
+    NTL::GF2X chi;
+    NTL::set(chi);
+
+    std::mt19937_64 rng(0xA110CAB1EE1ULL);
+    BitVect seed(kg);
+    for (int i = 0; i < kg; i++) if (rng() & 1ULL) seed.set_bit(i, 1);
+    bool nonz = false;
+    for (int w = 0; w < seed.nwords(); w++)
+        if (seed.data()[w]) { nonz = true; break; }
+    if (!nonz) seed.set_bit(0, 1);
+
+    int N_total = 2 * kg;
+
+    NTL::vec_GF2 seq = build_state_seq(seed, 0, N_total);
+    NTL::GF2X mu;
+    NTL::MinPolySeq(mu, seq, kg);
+    chi = gf2x_lcm(chi, mu);
+
+    for (int coord = 1; coord < kg && NTL::deg(chi) < kg; coord += std::max(1, kg / 32)) {
+        NTL::vec_GF2 seq2 = build_state_seq(seed, coord, N_total);
+        NTL::GF2X mu2;
+        NTL::MinPolySeq(mu2, seq2, kg);
+        chi = gf2x_lcm(chi, mu2);
+    }
+    return chi;
+}
+
+}  // anonymous namespace
+
+// ─────────────────────────────────────────────────────────────────────
+EquidistributionResult test_me_notprimitive(
+    const CombinedF2LinearSource& cs,
+    int kg, int L, int maxL,
+    const std::vector<int>& delta, int mse)
+{
+    auto gens = cs.recurrence_components("test_me_notprimitive");
+    const std::vector<int> prefix_k = compute_prefix_k(gens);
+
+    // Stage 1 — recover χ_f via Krylov BM on the combined state.
+    //
+    // The previous implementation also tried polychar_comb (product
+    // of each gen->char_poly()) as a fast path, then LCM'd with this
+    // BM result. That LCM dance is unsound for combinations whose
+    // components are TauswortheGen: TauswortheGen::char_poly()
+    // returns the *raw recurrence trinomial* (poly of T), but the
+    // combined generator's state actually evolves under T^s (the
+    // Tausworthe takes s internal LFSR steps per output), so
+    // polychar_comb's factors don't match the actual transition
+    // matrices. LCM'ing brought *both* sets of irreducibles into χ;
+    // select_phi could then pick a spurious one, and χ_ψ = χ/φ kept
+    // every component's real min poly — projecting every component
+    // to zero ("every component projects to zero in V (check χ
+    // recovery)") on every realistic combined-Tausworthe input
+    // (LFSR258, LFSR113, …).
+    //
+    // recover_char_poly observes the actual state evolution at every
+    // coordinate it samples, so its factors are the real per-
+    // component min polys regardless of how the underlying generator
+    // family represents char_poly() internally. SFMTGen-style cases
+    // (bit-0 BM misses factors in other lanes) are handled inside
+    // recover_char_poly itself by iterating through state
+    // coordinates until χ reaches degree kg.
+    NTL::GF2X chi = recover_char_poly(gens, prefix_k, kg);
+    PhiPick pick = select_phi(chi);
+    int p = pick.p;
+
+    if (p == kg) {
+        return test_me_lat(cs, kg, L, maxL, delta, mse);
+    }
+
+    BitVect M_phi(p + 1);
+    for (int i = 0; i <= p; i++) {
+        if (NTL::IsOne(NTL::coeff(pick.phi, i))) M_phi.set_bit(i, 1);
+    }
+
+    int Deg = p;
+    int RES = std::min(maxL, Deg);
+    int Phi = std::max(1, combined_output_phases(gens));
+
+    NTL::GF2X chi_psi;
+    NTL::div(chi_psi, chi, pick.phi);
+    long m_psi = NTL::deg(chi_psi);
+
+    auto random_nonzero = [&](int kbits, std::mt19937_64& rng) {
+        BitVect s(kbits);
+        for (int i = 0; i < kbits; i++) if (rng() & 1ULL) s.set_bit(i, 1);
+        bool any = false;
+        for (int w = 0; w < s.nwords(); w++) if (s.data()[w]) { any = true; break; }
+        if (!any) s.set_bit(0, 1);
+        return s;
+    };
+
+    std::mt19937_64 rng(0xD15C0FFEDB17EULL);
+    std::vector<BitVect> seeds(gens.size());
+    bool any_nonzero_overall = false;
+    for (size_t j = 0; j < gens.size(); j++) {
+        // Single-component prototype: just the component itself — the
+        // former CombinedView-of-one wrapping was pure indirection.
+        const Recurrence& proto_j = *gens[j];
+
+        bool got_nonzero = false;
+        for (int attempt = 0; attempt < 16; attempt++) {
+            BitVect s_random = random_nonzero(gens[j]->k(), rng);
+            BitVect s_in_V = (m_psi >= 0)
+                ? apply_polynomial_single(chi_psi, s_random, proto_j)
+                : s_random;
+            bool any = false;
+            for (int w = 0; w < s_in_V.nwords(); w++)
+                if (s_in_V.data()[w]) { any = true; break; }
+            if (any) {
+                seeds[j] = std::move(s_in_V);
+                got_nonzero = true;
+                any_nonzero_overall = true;
+                break;
+            }
+        }
+        // If chi_psi(T_j) is the zero map on component j's state space
+        // (happens when φ_j divides ψ — i.e. component j contributes
+        // nothing to V = ker φ), use a zero seed.  This is the correct
+        // projection onto V for that component, not a failure.
+        if (!got_nonzero) seeds[j] = BitVect(gens[j]->k());
+    }
+    if (!any_nonzero_overall) {
+        throw std::runtime_error(
+            "test_me_notprimitive: every component projects to zero in V "
+            "(check χ recovery)");
+    }
+
+    EquidistributionResult res;
+    res.ecart.assign(maxL + 1, 0);
+    res.se = 0;
+    // Phase 2 step 7 (Q6): notprimitive kernel covers the non-primitive
+    // case explicitly — verification is part of the algorithm.
+    res.verified = true;
+
+    auto read_combined_now = [&](std::vector<std::unique_ptr<Recurrence>>& gen_copies) {
+        // Phase 2 step 6: chain on source — `tempered_output()` replaces
+        // the legacy raw + external-apply pair.
+        BitVect combined(L);
+        for (size_t j = 0; j < gens.size(); j++) {
+            BitVect out = gen_copies[j]->get_output();
+            int n = std::min(L, out.nbits());
+            for (int b = 0; b < n; b++)
+                if (out.get_bit(b)) combined.set_bit(b, combined.get_bit(b) ^ 1);
+        }
+        return combined;
+    };
+
+    for (int sm = 0; sm < Phi; sm++) {
+        std::vector<std::unique_ptr<Recurrence>> gen_copies;
+        gen_copies.reserve(gens.size());
+        for (size_t j = 0; j < gens.size(); j++)
+            gen_copies.push_back(gens[j]->clone_recurrence());
+        for (size_t j = 0; j < gens.size(); j++)
+            gen_copies[j]->init(seeds[j]);
+        for (int s = 0; s < sm; s++) {
+            for (size_t j = 0; j < gens.size(); j++) gen_copies[j]->next();
+        }
+
+        std::vector<BitVect> A(RES, BitVect(p));
+        BitVect combined = read_combined_now(gen_copies);
+        for (int i = 0; i < RES; i++) A[i].set_bit(0, combined.get_bit(i));
+        for (int k = 1; k < p; k++) {
+            for (size_t j = 0; j < gens.size(); j++) gen_copies[j]->next();
+            combined = read_combined_now(gen_copies);
+            for (int i = 0; i < RES; i++) A[i].set_bit(k, combined.get_bit(i));
+        }
+
+        BitVect M_sm = M_phi.copy();
+        int Deg_sm = p;
+        int RES_sm = std::min(maxL, Deg_sm);
+
+        std::vector<BitVect> polys(RES_sm, BitVect(p + 1));
+        BitVect temp(p + 1);
+        for (int i = 0; i < RES_sm; i++) {
+            polys[i] = BitVect(p + 1);
+            for (int k = 0; k < p; k++) {
+                if (A[i].get_bit(k)) {
+                    temp = M_sm.copy();
+                    temp.lshift(k + 1);
+                    polys[i].xor_with(temp);
+                }
+            }
+            polys[i].and_mask(p);
+        }
+
+        Deg_sm = normalize_polys(polys, M_sm, Deg_sm, RES_sm);
+        RES_sm = std::min(maxL, Deg_sm);
+
+        DualLatticeBase base(RES_sm, Deg_sm);
+        base.dual_base(polys, M_sm, 1);
+
+        for (int l = 1; l <= RES_sm; l++) {
+            int length = base.lenstra(l);
+            int d = std::min(length, Deg_sm / l);
+            int ec = Deg_sm / l - d;
+            if (ec > res.ecart[l]) res.ecart[l] = ec;
+            if (l != RES_sm) base.dual_base_increase(polys);
+        }
+    }
+
+    int maxl_overall = maxL;
+    for (int l = 1; l <= maxL; l++) {
+        res.se += res.ecart[l];
+        if (res.ecart[l] > delta[l] || res.se > mse) {
+            maxl_overall = l;
+            break;
+        }
+    }
+    res.se = 0;
+    for (int l = 1; l <= maxl_overall; l++) res.se += res.ecart[l];
+    for (int l = maxl_overall + 1; l <= maxL; l++) res.ecart[l] = INT_MAX;
+    return res;
+}
+
+}  // namespace regpoly::core

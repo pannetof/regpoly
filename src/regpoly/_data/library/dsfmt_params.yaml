@@ -1,0 +1,163 @@
+# dSFMT (Saito 2009) standard parameter catalog.
+#
+# Sources:
+#   - All params from dSMFT/dSFMT-paramsNNN.h (the standalone
+#     dSFMT 2.2.5 distribution shipped under /regpoly/dSMFT/).
+#
+# Schema: see docs/library/README.md.
+# Tested against MTToolBox/samples/dSFMTdc/calc_equidist.
+#
+# CLI: mexp,pos1,sl1,msk1,msk2,fix1,fix2,parity1,parity2  (all uint64 hex)
+#
+# Cross-check status: gen_dsfmt's lung-carry recursion + 2-lane 52-bit
+# output match dSMFT/dSFMT-common.h line-for-line.  d(1..5) matches
+# MTToolBox exactly for mexps 521, 1279, 2203, 4253, 19937.  mexp=11213
+# differs from MTToolBox by 2 at v=1 (regpoly k(1)=11211 vs MTToolBox
+# 11209) — same notprimitive-subspace-selection issue that affects a
+# subset of RMT64 entries.  v=2..5 match for all mexps.
+
+family: dSFMT
+mttoolbox_binary: dSFMTdc/calc_equidist
+slow_threshold_mexp: 20000
+
+generators:
+  - id: dsfmt521
+    mexp: 521
+    regpoly:
+      pos1: 3
+      sl1: 25
+      msk1: 0x000fbfefff77efff
+      msk2: 0x000ffeebfbdfbfdf
+      fix1: 0xcfb393d661638469
+      fix2: 0xc166867883ae2adb
+      pcv1: 0xccaa588000000000
+      pcv2: 0x0000000000000001
+    mttoolbox_argv:
+      - "521,3,25,0x000fbfefff77efff,0x000ffeebfbdfbfdf,0xcfb393d661638469,0xc166867883ae2adb,0xccaa588000000000,0x0000000000000001"
+
+  - id: dsfmt1279
+    mexp: 1279
+    regpoly:
+      pos1: 9
+      sl1: 19
+      msk1: 0x000efff7ffddffee
+      msk2: 0x000fbffffff77fff
+      fix1: 0xb66627623d1a31be
+      fix2: 0x04b6c51147b6109b
+      pcv1: 0x7049f2da382a6aeb
+      pcv2: 0xde4ca84a40000001
+    mttoolbox_argv:
+      - "1279,9,19,0x000efff7ffddffee,0x000fbffffff77fff,0xb66627623d1a31be,0x04b6c51147b6109b,0x7049f2da382a6aeb,0xde4ca84a40000001"
+
+  - id: dsfmt2203
+    mexp: 2203
+    regpoly:
+      pos1: 7
+      sl1: 19
+      msk1: 0x000fdffff5edbfff
+      msk2: 0x000f77fffffffbfe
+      fix1: 0xb14e907a39338485
+      fix2: 0xf98f0735c637ef90
+      pcv1: 0x8000000000000000
+      pcv2: 0x0000000000000001
+    mttoolbox_argv:
+      - "2203,7,19,0x000fdffff5edbfff,0x000f77fffffffbfe,0xb14e907a39338485,0xf98f0735c637ef90,0x8000000000000000,0x0000000000000001"
+
+  - id: dsfmt4253
+    mexp: 4253
+    regpoly:
+      pos1: 19
+      sl1: 19
+      msk1: 0x0007b7fffef5feff
+      msk2: 0x000ffdffeffefbfc
+      fix1: 0x80901b5fd7a11c65
+      fix2: 0x5a63ff0e7cb0ba74
+      pcv1: 0x1ad277be12000000
+      pcv2: 0x0000000000000001
+    mttoolbox_argv:
+      - "4253,19,19,0x0007b7fffef5feff,0x000ffdffeffefbfc,0x80901b5fd7a11c65,0x5a63ff0e7cb0ba74,0x1ad277be12000000,0x0000000000000001"
+
+  - id: dsfmt11213
+    mexp: 11213
+    cross_check_xfail: "notprimitive subspace selection differs from MTToolBox annihilate at v=1 (regpoly k(1)=11211 vs MTToolBox 11209); v=2..5 match"
+    regpoly:
+      pos1: 37
+      sl1: 19
+      msk1: 0x000ffffffdf7fffd
+      msk2: 0x000dfffffff6bfff
+      fix1: 0xd0ef7b7c75b06793
+      fix2: 0x9c50ff4caae0a641
+      pcv1: 0x8234c51207c80000
+      pcv2: 0x0000000000000001
+    mttoolbox_argv:
+      - "11213,37,19,0x000ffffffdf7fffd,0x000dfffffff6bfff,0xd0ef7b7c75b06793,0x9c50ff4caae0a641,0x8234c51207c80000,0x0000000000000001"
+
+  - id: dsfmt19937
+    mexp: 19937
+    regpoly:
+      pos1: 117
+      sl1: 19
+      msk1: 0x000ffafffffffb3f
+      msk2: 0x000ffdfffc90fffd
+      fix1: 0x90014964b32f4329
+      fix2: 0x3b8d12ac548a7c7a
+      pcv1: 0x3d84e1ac0dc82880
+      pcv2: 0x0000000000000001
+    mttoolbox_argv:
+      - "19937,117,19,0x000ffafffffffb3f,0x000ffdfffc90fffd,0x90014964b32f4329,0x3b8d12ac548a7c7a,0x3d84e1ac0dc82880,0x0000000000000001"
+
+  - id: dsfmt44497
+    mexp: 44497
+    regpoly:
+      pos1: 304
+      sl1: 19
+      msk1: 0x000ff6dfffffffef
+      msk2: 0x0007ffdddeefff6f
+      fix1: 0x75d910f235f6e10e
+      fix2: 0x7b32158aedc8e969
+      pcv1: 0x4c3356b2a0000000
+      pcv2: 0x0000000000000001
+    mttoolbox_argv:
+      - "44497,304,19,0x000ff6dfffffffef,0x0007ffdddeefff6f,0x75d910f235f6e10e,0x7b32158aedc8e969,0x4c3356b2a0000000,0x0000000000000001"
+
+  - id: dsfmt86243
+    mexp: 86243
+    regpoly:
+      pos1: 231
+      sl1: 13
+      msk1: 0x000ffedff6ffffdf
+      msk2: 0x000ffff7fdffff7e
+      fix1: 0x1d553e776b975e68
+      fix2: 0x648faadf1416bf91
+      pcv1: 0x5f2cd03e2758a373
+      pcv2: 0xc0b7eb8410000001
+    mttoolbox_argv:
+      - "86243,231,13,0x000ffedff6ffffdf,0x000ffff7fdffff7e,0x1d553e776b975e68,0x648faadf1416bf91,0x5f2cd03e2758a373,0xc0b7eb8410000001"
+
+  - id: dsfmt132049
+    mexp: 132049
+    regpoly:
+      pos1: 371
+      sl1: 23
+      msk1: 0x000fb9f4eff4bf77
+      msk2: 0x000fffffbfefff37
+      fix1: 0x4ce24c0e4e234f3b
+      fix2: 0x62612409b5665c2d
+      pcv1: 0x181232889145d000
+      pcv2: 0x0000000000000001
+    mttoolbox_argv:
+      - "132049,371,23,0x000fb9f4eff4bf77,0x000fffffbfefff37,0x4ce24c0e4e234f3b,0x62612409b5665c2d,0x181232889145d000,0x0000000000000001"
+
+  - id: dsfmt216091
+    mexp: 216091
+    regpoly:
+      pos1: 1890
+      sl1: 23
+      msk1: 0x000bf7df7fefcfff
+      msk2: 0x000e7ffffef737ff
+      fix1: 0xd7f95a04764c27d7
+      fix2: 0x6a483861810bebc2
+      pcv1: 0x3af0a8f3d5600000
+      pcv2: 0x0000000000000001
+    mttoolbox_argv:
+      - "216091,1890,23,0x000bf7df7fefcfff,0x000e7ffffef737ff,0xd7f95a04764c27d7,0x6a483861810bebc2,0x3af0a8f3d5600000,0x0000000000000001"

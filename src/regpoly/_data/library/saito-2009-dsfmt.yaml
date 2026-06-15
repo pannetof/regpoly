@@ -1,0 +1,70 @@
+id: saito-2009-dsfmt
+authors:
+  - {family: Saito, given: Mutsuo}
+year: 2009
+title: "An application of finite field: design and implementation of 128-bit instruction-based fast pseudorandom number generator"
+venue: "Master's thesis, Hiroshima University"
+doi: https://doi.org/10.15027/29071
+bibkey: Saito2009
+starred: true
+tags: [MT, dSFMT, double-precision, 128bit]
+
+abstract: |
+  The double-precision SIMD-oriented Fast Mersenne Twister (dSFMT) is
+  a Mersenne-Twister variant tuned for direct emission of IEEE-754
+  double-precision floating-point fractions in [1, 2). Two 52-bit
+  mantissa fractions are packed into each 128-bit recurrence step,
+  removing the rejection step required when extracting doubles from a
+  general-purpose integer MT. The recurrence threads a 128-bit "lung"
+  carry through a circular buffer of 128-bit blocks; bit positions
+  outside the mantissa region are masked off by per-lane masks.
+
+notes: |
+  Full cross-check parameter sets for MEXP = 521, 1279, 2203, 4253,
+  11213, 19937, 44497, 86243, 132049, 216091 live in
+  `docs/library/dsfmt_params.yaml` (the MTToolBox-aligned fixture).
+  The entries here cover the three most commonly-cited mexps; mirror
+  the params file when adding more.
+
+generators:
+  - id: dsfmt521
+    display: dSFMT-521
+    family: DSFMTGen
+    target: tested_generator
+    combined: false
+    Lmax: 52
+    components:
+      - family: DSFMTGen
+        L: 52
+        params:
+          mexp: 521
+          pos1: 3
+          sl1: 25
+          msk1: 0x000fbfefff77efff
+          msk2: 0x000ffeebfbdfbfdf
+          fix1: 0xcfb393d661638469
+          fix2: 0xc166867883ae2adb
+          pcv1: 0xccaa588000000000
+          pcv2: 0x0000000000000001
+        tempering: []
+
+  - id: dsfmt19937
+    display: dSFMT-19937
+    family: DSFMTGen
+    target: tested_generator
+    combined: false
+    Lmax: 52
+    components:
+      - family: DSFMTGen
+        L: 52
+        params:
+          mexp: 19937
+          pos1: 117
+          sl1: 19
+          msk1: 0x000ffafffffffb3f
+          msk2: 0x000ffdfffc90fffd
+          fix1: 0x90014964b32f4329
+          fix2: 0x3b8d12ac548a7c7a
+          pcv1: 0x3d84e1ac0dc82880
+          pcv2: 0x0000000000000001
+        tempering: []

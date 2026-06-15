@@ -1,0 +1,42 @@
+name: publish
+
+# Build the source distribution and publish it to PyPI on a version tag.
+# sdist-only by design: no cibuildwheel / binary wheels yet. The sdist
+# bundles the full C++ source + the catalog/papers package data, so
+# `pip install regpoly==X.Y.Z` compiles the extension on the consumer
+# (needs NTL/GMP/gf2x + cmake; the App repo's docker build already has them).
+#
+# Requires the repo secret PYPI_API_TOKEN (a PyPI project/account token).
+# NOTE before the first publish: run a license/redistribution check on the
+# bundled PDFs under src/regpoly/_data/papers — they are copyrighted papers
+# going to public PyPI.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+
+      # Building an sdist is pure packaging (no compile), so no NTL/cmake here.
+      - name: Build sdist
+        run: uv build --sdist
+
+      - name: Check the sdist
+        run: |
+          ls -la dist/
+          tar tzf dist/*.tar.gz | grep -E '_data/(library|papers)/|CMakeLists.txt$' | head
+
+      - name: Publish to PyPI
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: uv publish

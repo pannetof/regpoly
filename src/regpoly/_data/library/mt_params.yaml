@@ -1,0 +1,49 @@
+# Mersenne Twister (Matsumoto–Nishimura 1998) catalog.
+#
+# Sources:
+#   - MT19937 params: MTToolBox/samples/MTDC/mt1.cpp.
+#
+# Tested against MTToolBox/samples/MTDC/mt1 (MT19937 only —
+# no positional CLI; runs MT19937 with hardcoded params).
+#
+# MTToolBox does not ship a per-mexp calc_equidist for MT (mt2 is a
+# parameter-search tool that emits aggregate delta only, not per-v
+# d(v)).  Other MT mexps are exercised through other channels.
+
+family: MersenneTwister
+mttoolbox_binary: MTDC/mt1
+slow_threshold_mexp: 20000
+
+# Cross-check status: MTToolBox/mt1 applies the standard MT19937
+# tempering inside generate() before computing d(v).  We mirror that by
+# wiring the tempering through Combinaison via a `tempering:` block per
+# entry — list of {type, params} tuples applied in order to the
+# untempered output of regpoly's gen_mt.
+
+generators:
+  - id: mt19937
+    mexp: 19937
+    regpoly:
+      w: 32
+      r: 624
+      m: 397
+      p: 31     # MEXP - (w-1)*r - 0 …; MT19937 upper_mask uses bit 31
+      a: 0x9908b0df
+    # Standard MT19937 tempering pipeline (Matsumoto–Nishimura 1998):
+    #   y ^= (y >> u);                     u  = 11
+    #   y ^= (y << s) & b;                 s  = 7,  b = 0x9D2C5680
+    #   y ^= (y << t) & c;                 t  = 15, c = 0xEFC60000
+    #   y ^= (y >> l);                     l  = 18
+    # Maps onto TemperMKTrans (type-II) parameters
+    # (u=11, eta=7, mu=15, l=18).
+    tempering:
+      - type: tempMK2
+        params:
+          w: 32
+          u: 11
+          eta: 7
+          mu: 15
+          l: 18
+          b: 0x9D2C5680
+          c: 0xEFC60000
+    mttoolbox_argv: []   # mt1 takes no args

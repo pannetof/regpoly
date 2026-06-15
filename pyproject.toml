@@ -1,0 +1,89 @@
+[build-system]
+requires = ["scikit-build-core>=0.8", "pybind11>=2.12"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "regpoly"
+version = "2.1.0"
+description = "Toolkit for analysing and searching combined PRNGs based on GF(2) linear recurrences. Bundles the native C++ core (exposed as regpoly._regpoly_cpp) and the pure-Python wrapper, YAML config, generator catalogue and search CLI."
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+authors = [{name = "Francois Panneton, Ph.D."}]
+readme = "README.md"
+dependencies = [
+    "pyyaml",
+]
+
+[project.scripts]
+regpoly = "regpoly.io.cli:main"
+
+# Single distribution: the pure-Python `regpoly` package + the thin
+# `regpoly_cpp` package whose `_regpoly_cpp` extension is built by CMake.
+# The same CMakeLists.txt serves pure-C++ consumers via
+# `-DREGPOLY_BUILD_PYTHON_EXTENSION=OFF` (libregpoly_core.a + regpoly-cli +
+# find_package(regpoly), no pybind11). The catalog + reference PDFs ship as
+# package data under regpoly/_data/{library,papers}.
+[tool.scikit-build]
+wheel.packages = ["src/regpoly", "src/regpoly_cpp"]
+cmake.version = ">=3.20"
+sdist.include = ["src", "include", "cmake", "CMakeLists.txt"]
+
+[dependency-groups]
+docs = [
+    "sphinx>=8.0",
+    "pydata-sphinx-theme>=0.16",
+    "myst-parser>=4.0",
+    "myst-nb>=1.1",
+    "jupyter-cache>=1.0",
+    "sphinx-design>=0.6",
+    "sphinx-copybutton>=0.5",
+    "sphinx-autodoc-typehints>=2.4",
+    "sphinx-reredirects>=0.1",
+    "breathe>=4.35",
+    "exhale>=0.3",
+    "pillow>=10.0",
+    "matplotlib>=3.8",
+]
+lint = [
+    "ruff>=0.6",
+]
+test = [
+    "pytest>=8.0",
+    # nbmake executes the docs/notebooks in the slow lane.
+    "nbmake>=1.5",
+    # Per-test timeout so a wedged subprocess reports rather than hangs CI.
+    "pytest-timeout>=2.3",
+]
+dev = [
+    "numpy>=2.2.6",
+    "pypdf>=6.11.0",
+    "sympy>=1.14.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+    "notebooks",
+    "docs/notebooks",
+]
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["F", "I"]
+ignore = ["F401", "F841"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["regpoly", "regpoly_cpp"]
+detect-same-package = false
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: long-running tests (MTToolBox cross-checks, nbmake notebooks)",
+    "e2e: end-to-end browser tests via Playwright",
+]
+testpaths = [
+    "cpp-tests/python",
+    "tests",
+]
+addopts = "-m 'not slow and not e2e' --import-mode=importlib --timeout=120 --timeout-method=thread"

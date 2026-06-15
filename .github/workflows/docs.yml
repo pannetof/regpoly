@@ -1,0 +1,72 @@
+name: docs
+
+# Builds the Sphinx site (theory, generators, notebooks, C++ API, Python
+# API) and deploys to GitHub Pages. NOTE: the prose site may still need a
+# follow-up pass after the two-repo split relocated the catalog/papers into
+# package data (src/regpoly/_data) — some pages referenced docs/library and
+# docs/papers directly.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/**"
+      - "src/**"
+      - "include/**"
+      - "CHANGELOG.md"
+      - "README.md"
+      - ".github/workflows/docs.yml"
+      - "pyproject.toml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: docs-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies (Doxygen + Graphviz + NTL)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz libntl-dev libgmp-dev libgf2x-dev cmake build-essential pybind11-dev
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install docs deps (builds the C++ pybind11 extension)
+        run: uv sync --group docs
+
+      - name: Build the Sphinx site
+        run: uv run sphinx-build -b html docs site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
