@@ -66,11 +66,22 @@ def _bundled_data_dir(name: str) -> Path:
        the source of truth (``python/regpoly`` → ``python`` → repo root →
        ``data/<name>``), since an editable install points at the source and
        has no ``_data`` inside the package.
+
+    Under some editable installs (e.g. scikit-build-core's rebuild-on-import
+    layout), ``resources.files("regpoly")`` returns a multiplexed path object
+    that ``pathlib.Path`` cannot wrap directly — fall straight through to
+    tier 2, resolved from the ``regpoly`` module's own ``__file__`` instead.
     """
-    pkg = Path(resources.files("regpoly")) / "_data" / name
+    try:
+        pkg_root = Path(resources.files("regpoly"))
+    except TypeError:
+        import regpoly
+
+        return Path(regpoly.__file__).resolve().parents[2] / "data" / name
+    pkg = pkg_root / "_data" / name
     if pkg.is_dir():
         return pkg
-    return Path(resources.files("regpoly")).resolve().parents[1] / "data" / name
+    return pkg_root.resolve().parents[1] / "data" / name
 
 
 def bundled_library_dir() -> Path:
