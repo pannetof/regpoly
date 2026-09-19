@@ -23,6 +23,7 @@ Run:
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -116,10 +117,30 @@ def _collect_cases() -> list[tuple]:
     return cases
 
 
+# Cases above their catalog's `slow_threshold_mexp` are skipped by default
+# (not just marked `slow`): the SIMD_NOTPRIMITIVE / NOTPRIMITIVE reduction
+# is O(p^3/W) per phase (docs/theory/equidistribution-spec.md §6.7) and a
+# synchronous, GIL-holding pybind11 call — pytest-timeout's --timeout=120
+# can't preempt it mid-call, so an oversized case doesn't fail cleanly, it
+# hangs until it finally returns (minutes to tens of minutes) and then
+# hard-kills the whole pytest session. Opt in locally with
+# REGPOLY_RUN_HUGE_CROSSCHECK=1 and a generous --timeout override, e.g.:
+#   REGPOLY_RUN_HUGE_CROSSCHECK=1 pytest -m slow --timeout=3600 \
+#       tests/test_mttoolbox_crosscheck.py
+_RUN_HUGE = os.environ.get("REGPOLY_RUN_HUGE_CROSSCHECK") == "1"
+
+
 def _make_param(case: dict) -> pytest.param:
     marks = []
     if case["slow"]:
         marks.append(pytest.mark.slow)
+        if not _RUN_HUGE:
+            marks.append(pytest.mark.skip(
+                reason=f"mexp={case['mexp']} exceeds this family's "
+                       "slow_threshold_mexp; O(p^3) cross-check cost can "
+                       "exceed the CI timeout uninterruptibly (see comment "
+                       "above _RUN_HUGE). Set REGPOLY_RUN_HUGE_CROSSCHECK=1 "
+                       "to run it."))
     if case.get("xfail_reason"):
         marks.append(pytest.mark.xfail(reason=case["xfail_reason"], strict=False))
     return pytest.param(case, id=f"{case['catalog_stem']}-{case['id']}",
