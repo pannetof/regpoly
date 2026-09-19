@@ -147,7 +147,7 @@ fixed_params:
 ## Paper-published instances
 
 The 42 paper rows in [Panneton & L'Ecuyer (2004), "Random Number
-Generators Based on Linear Recurrences in F_{2^w}"](../papers/f2w.pdf),
+Generators Based on Linear Recurrences in F_{2^w}"](https://doi.org/10.1007/3-540-31186-6),
 Tables 1 and 2, are reproduced byte-for-byte in
 [`panneton-lecuyer-2004-f2w.yaml`](../library/panneton-lecuyer-2004-f2w.yaml)
 and surface in the web UI under **Library → Panneton & L'Ecuyer, 2004**.

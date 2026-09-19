@@ -9,7 +9,6 @@ volume: "15"
 issue: "4"
 pages: "346–361"
 doi: https://doi.org/10.1145/1113316.1113319
-pdf: papers/xorshift.pdf
 bibkey: PannetonLEcuyer2005Xorshift
 starred: true
 tags: [xorshift, F2-linear, equidistribution]

@@ -10,7 +10,6 @@ volume: "32"
 issue: "1"
 pages: "1–16"
 doi: https://doi.org/10.1145/1132973.1132974
-pdf: papers/wellrng.pdf
 bibkey: PannetonLEcuyerMatsumoto2006WELL
 starred: true
 tags: [WELL, F2-linear, classic]

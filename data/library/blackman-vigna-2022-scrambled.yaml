@@ -9,7 +9,6 @@ volume: "47"
 issue: "4"
 pages: "1-32"
 doi: https://doi.org/10.1145/3460772
-pdf: papers/xoroshiro.pdf
 bibkey: BlackmanVigna2022Scrambled
 starred: true
 tags: [xoroshiro, xoshiro, F2-linear, equidistribution]

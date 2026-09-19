@@ -9,6 +9,11 @@ __pycache__/
 # Search result files
 *_results.yaml
 
+# Copyrighted reference PDFs (kept locally for convenience; the catalog
+# links out to each paper's DOI instead of bundling the PDF — see
+# data/library/*.yaml `doi:` fields).
+data/papers/*.pdf
+
 # Virtual environment
 .venv/
 

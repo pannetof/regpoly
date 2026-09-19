@@ -12,7 +12,6 @@ year: 2026
 title: "Cellular Automata based Resource Efficient Maximally Equidistributed Pseudo-Random Number Generators"
 venue: arXiv preprint
 doi: https://doi.org/10.48550/arXiv.2603.19656
-pdf: papers/CellularAutomata.pdf
 bibkey: BhuvaneswariBhattacharjee2026CA
 starred: true
 tags: [cellular-automata, F2-linear, ME, combined, time-spacing]

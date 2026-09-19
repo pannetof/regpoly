@@ -315,7 +315,7 @@ def _format_citation(meta):
 
 def _generate_paper_pages(app=None, config=None):
     """Sphinx `builder-inited` hook — auto-stub per-paper pages."""
-    library = ROOT / "docs" / "library"
+    library = ROOT / "data" / "library"
     papers_out = ROOT / "docs" / "papers"
     papers_out.mkdir(parents=True, exist_ok=True)
 

@@ -46,4 +46,4 @@ primitivity analyses operate on.
 
 - Blackman & Vigna 2022 — *Scrambled Linear Pseudorandom Number
   Generators*, ACM TOMS 47(4):1-32.
-  [`docs/papers/xoroshiro.pdf`](../papers/xoroshiro.pdf)
+  [doi:10.1145/3460772](https://doi.org/10.1145/3460772)
