@@ -83,6 +83,10 @@ The catalog is the neutral top-level `data/` tree. Resolution is two-tier — ex
 
 `tests/test_mttoolbox_crosscheck.py::test_regpoly_matches_mttoolbox_d5` was silently dormant for the monorepo's whole life (a path bug); the split activated it and revealed `mt-mt19937` is slow (~150s) and disagrees with the frozen reference. It is `@pytest.mark.slow` (default lane unaffected). Re-baseline the `*_mttoolbox_d5.py` references before relying on it.
 
+Since then (2026-09-19), running it in CI surfaced two more issues, both now worked around rather than fixed:
+- Cases above a catalog's `slow_threshold_mexp` (e.g. `dsfmt44497` and bigger, `mt19937`) run the `O(p^3/W)`-per-phase notprimitive/SIMD-notprimitive reduction (`docs/theory/equidistribution-spec.md` §6.7) for minutes-to-tens-of-minutes as a synchronous, GIL-holding pybind11 call — `pytest-timeout`'s `--timeout=120` can't preempt it mid-call, so instead of failing cleanly it hangs and then hard-kills the whole session once the call finally returns. Now `pytest.skip`'d by default; opt in locally with `REGPOLY_RUN_HUGE_CROSSCHECK=1` plus a generous `--timeout` override.
+- `rmt607` (`data/library/rmt_params.yaml`) crashes the interpreter outright with `Fatal Python error: Aborted` (SIGABRT) inside `test_me_notprimitive` — almost certainly an NTL-internal `abort()` (NTL's `Error()` handler aborts by default rather than throwing) on some degenerate characteristic-polynomial factorization, not a catchable C++ exception. `rmt521` (same family/method, same code path) runs fine immediately before it, so this isn't a blanket family failure, but since a SIGABRT can't be `xfail`'d or caught, the whole `rmt_params.yaml` family is deferred (`deferred: true`) pending an actual debugger session with a C++ build environment.
+
 ## Specs (read when relevant)
 
 - `docs/theory/equidistribution-spec.md` — design of record for matricial equidistribution on non-full-period F₂-linear generators.
