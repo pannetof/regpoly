@@ -1,0 +1,16 @@
+# Search for full-period Mersenne Twister with small state
+# k = 32*3 - 0 = 96
+search:
+  family: MersenneTwister
+  L: 32
+  limit:
+    max_tries: 5000
+
+structural:
+  w: 32
+  r: 3
+  p: 0
+
+search_params:
+  m:
+  a:

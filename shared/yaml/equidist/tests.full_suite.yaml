@@ -1,0 +1,20 @@
+# Test configuration
+tests:
+  - type: equidistribution
+    max_gap_sum: 100
+    delta:
+      - { from: 1, to: 32, max: 10000 }
+
+  - type: equidistribution
+    max_gap_sum: 50
+    delta:
+      - { from: 1, to: 16, max: 5 }
+      - { from: 17, to: 32, max: 3 }
+
+  - type: collision_free
+    max_gap_sum: 0
+
+  - type: tuplets
+    dimensions: [50, 10, 5]
+    threshold: 100.0
+    test_type: max

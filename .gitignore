@@ -27,8 +27,11 @@ site/
 docs/_site/
 .cache/
 
-# Search-run YAML outputs (CLI writes results to ./yaml/)
-yaml/
+# Search-run YAML outputs (CLI writes results to ./yaml/ at the repo root).
+# Anchored: an unanchored `yaml/` here previously matched ANY directory
+# named yaml/ anywhere in the tree, which silently black-holed
+# shared/yaml/ (the test-fixture + example-config tree) from every commit.
+/yaml/
 
 # IDE
 .vscode/

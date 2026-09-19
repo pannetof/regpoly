@@ -1,0 +1,15 @@
+# Reproduction of: ./POL 2 example3 96_1.dt 155_2.dt
+search:
+  seed: [1059674621, 1170794524]
+  Lmax: 32
+
+components:
+  - generators:
+      file: ../generators/TGFSRGen/r3_w32.yaml
+
+  - generators:
+      file: ../generators/TGFSRGen/r5_w31.yaml
+
+tests:
+  - type: equidistribution
+    max_gap_sum: 1000
