@@ -59,7 +59,18 @@ if(NOT yaml-cpp_FOUND)
     # escape hatch to just this FetchContent subbuild so it doesn't loosen any
     # policy check for regpoly_core itself (cmake_minimum_required 3.20 above).
     set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+    # yaml-cpp 0.8.0's src/emitterutils.cpp uses uint16_t/uint32_t without
+    # #include <cstdint>. Older libstdc++ leaked that header transitively;
+    # newer ones (GCC 15+) don't, so the subbuild fails to compile. Fixed
+    # upstream after the 0.8.0 tag but no newer release exists yet -- force
+    # the include for this subbuild only, same scoping as the policy fix above.
+    set(_regpoly_saved_cxx_flags "${CMAKE_CXX_FLAGS}")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -include cstdint")
+    endif()
     FetchContent_MakeAvailable(yaml-cpp)
+    set(CMAKE_CXX_FLAGS "${_regpoly_saved_cxx_flags}")
+    unset(_regpoly_saved_cxx_flags)
     unset(CMAKE_POLICY_VERSION_MINIMUM)
 endif()
 
