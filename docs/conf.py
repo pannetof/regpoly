@@ -264,7 +264,7 @@ redirects: dict[str, str] = {
 
 # -- Suppress benign warnings -------------------------------------------------
 
-# -- builder-inited hook: auto-stub per-paper pages from docs/library/*.yaml -
+# -- builder-inited hook: auto-stub per-paper pages from data/library/*.yaml -
 
 import yaml
 
@@ -386,8 +386,8 @@ def _generate_paper_pages(app=None, config=None):
             "---",
             "",
             f"_Source YAML:_ "
-            f"[`docs/library/{pid}.yaml`](https://github.com/pannetof/"
-            f"regpoly/blob/master/docs/library/{pid}.yaml). "
+            f"[`data/library/{pid}.yaml`](https://github.com/pannetof/"
+            f"regpoly/blob/master/data/library/{pid}.yaml). "
             f"This page is auto-generated at build time by the "
             f"`_generate_paper_pages` hook in `docs/conf.py`; edit the YAML "
             f"to change the page.",
@@ -403,7 +403,7 @@ def _generate_paper_pages(app=None, config=None):
     auto_path = ROOT / "docs" / "papers" / "_auto_catalog.md"
     if paper_ids:
         body = ["## Catalog-backed paper pages", "",
-                "Auto-generated from `docs/library/*.yaml` at build time:", ""]
+                "Auto-generated from `data/library/*.yaml` at build time:", ""]
         for pid in sorted(paper_ids):
             body.append(f"- [`{pid}`]({pid}.md)")
         body.append("")

@@ -126,7 +126,7 @@ for the search-side details.
 - **Cross-check status.** Upstream MTToolBox does not ship a
   per-mexp `calc_equidist` for MTGP — only an aggregate
   parameter-search tool — so the cross-check fixture
-  (`docs/library/mtgp_params.yaml`) is currently marked deferred.
+  (`data/library/mtgp_params.yaml`) is currently marked deferred.
 
 ---
 

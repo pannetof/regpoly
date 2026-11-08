@@ -692,7 +692,7 @@ def _build_family_notebook(family: str, cfg: dict) -> dict:
                 "hard-coding parameters:\n\n"
                 "```python\n"
                 "from regpoly.library import Catalog\n"
-                "cat = Catalog('docs/library')\n"
+                "cat = Catalog('data/library')\n"
                 "cat.load()\n"
                 f"_, entry = cat.generator({cfg['library_id']!r})\n"
                 "# entry.components[0] carries the same params as constructed above\n"

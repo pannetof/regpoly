@@ -92,7 +92,7 @@ The relationship:
 from regpoly.library import Catalog
 from regpoly.core.generator import Generator as RuntimeGenerator
 
-cat = Catalog("docs/library"); cat.load()
+cat = Catalog("data/library"); cat.load()
 _, params = cat.generator("mt19937")        # params is a CatalogGenerator
 gen = RuntimeGenerator.create(              # gen is a runtime Generator
     params.family, L=32, **params.params

@@ -1,7 +1,7 @@
 # Reference PDFs for the published-generators library
 
 This directory holds PDFs of the academic papers cited by entries in
-`docs/library/*.yaml` via their `reference.pdf` field.  Files here are
+`data/library/*.yaml` via their `reference.pdf` field.  Files here are
 served by the web app under `/papers/<filename>`.
 
 ## Redistribution policy

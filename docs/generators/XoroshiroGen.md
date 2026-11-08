@@ -32,7 +32,7 @@ of the paper.
 
 ## Parameter sets from the literature
 
-See [`docs/library/blackman-vigna-2022-scrambled.yaml`](../library/blackman-vigna-2022-scrambled.yaml)
+See [`data/library/blackman-vigna-2022-scrambled.yaml`](../../data/library/blackman-vigna-2022-scrambled.yaml)
 for the Table 2 (64-bit) and Table 5 (32-bit) parameter sets.
 
 ## Output scramblers

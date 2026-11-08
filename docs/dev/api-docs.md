@@ -95,7 +95,7 @@ def analyze_single_generator(gen, *, L=32, method="matricial"):
     >>> from regpoly.library import Catalog
     >>> from regpoly.core.generator import Generator
     >>> from regpoly.analyses.pis import analyze_single_generator
-    >>> cat = Catalog("docs/library")
+    >>> cat = Catalog("data/library")
     >>> cat.load()  # doctest: +SKIP
     >>> _, params = cat.generator("mt19937")  # doctest: +SKIP
     >>> gen = Generator.create(params.family, L=32, **params.params)  # doctest: +SKIP

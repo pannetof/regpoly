@@ -57,7 +57,7 @@ seek-style YAML format the Python CLI accepts (see
 a tested-generator YAML — components, tempering chain, and analysis
 results. `publish` appends a tested-generator entry to an existing
 paper YAML under the catalog and is the canonical way to grow
-`docs/library/` from C++.
+`data/library/` from C++.
 
 ## Linking from a downstream CMake project
 

@@ -8,7 +8,7 @@ When adding a new generator family:
 2. Add a GoogleTest case under `packages/regpoly-cpp/tests/`.
 3. Add a doc page under `docs/generators/<family>.md` (copy [`docs/generators/_template.md`](../generators/_template.md) and fill it in).
 4. Add a per-family notebook by extending `docs/notebooks/families/_stamp.py` (the parametric driver that stamps `<family>.ipynb`).
-5. If the family has known parameter sets from the literature, add a catalog entry under `docs/library/`.
+5. If the family has known parameter sets from the literature, add a catalog entry under `data/library/`.
 
 CI is gated by:
 

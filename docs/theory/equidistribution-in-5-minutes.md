@@ -97,7 +97,7 @@ from regpoly.library import Catalog
 from regpoly.core.generator import Generator
 from regpoly.analyses.pis import analyze_single_generator
 
-cat = Catalog("docs/library"); cat.load()
+cat = Catalog("data/library"); cat.load()
 _, params = cat.generator("mt19937")
 gen = Generator.create(params.family, L=32, **params.params)
 res = analyze_single_generator(gen)

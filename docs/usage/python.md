@@ -27,7 +27,7 @@ from regpoly import make_combined
 from regpoly.core.combination_build import build_combinaison_inputs
 from regpoly.library import Catalog
 
-cat = Catalog("docs/library")
+cat = Catalog("data/library")
 cat.load()
 _, gen = cat.generator("mt19937")
 
