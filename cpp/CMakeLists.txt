@@ -53,7 +53,14 @@ if(NOT yaml-cpp_FOUND)
         GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
         GIT_TAG 0.8.0
         GIT_SHALLOW TRUE)
+    # yaml-cpp 0.8.0's own CMakeLists.txt declares a cmake_minimum_required
+    # below 3.5. CMake >= 4.0 refuses to configure that outright ("Compatibility
+    # with CMake < 3.5 has been removed") unless told to tolerate it. Scope the
+    # escape hatch to just this FetchContent subbuild so it doesn't loosen any
+    # policy check for regpoly_core itself (cmake_minimum_required 3.20 above).
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
     FetchContent_MakeAvailable(yaml-cpp)
+    unset(CMAKE_POLICY_VERSION_MINIMUM)
 endif()
 
 # All C++ source files except factory.cpp (which carries pybind11
