@@ -89,13 +89,6 @@ the `step()` wiring.
 $O(k^2)$ per Berlekamp–Massey run, $O(k)$ generator steps per sequence. With
 $k \approx 20000$, this stage runs in well under a minute.
 
-### 2.4 Implementation notes
-
-- Bit-packed state, bit-packed sequences. BM over $\mathbb{F}_2$ is dominated by XORs.
-- Do *not* use NTL's generic `MinPolySeq` over a prime field; use a dedicated
-  $\mathbb{F}_2$ BM implementation for speed. A from-scratch C implementation is ~100
-  lines.
-
 ---
 
 ## 3. Stage 2 — Factor $\chi_f$ over $\mathbb{F}_2$
