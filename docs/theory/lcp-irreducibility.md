@@ -192,47 +192,7 @@ for i = 0 to N-1:
 > output does not satisfy a $\mathbb{F}_2$ linear recurrence. Apply BM to the **raw state bits**
 > before the scrambler. See Section 8.
 
-### 5.2 Berlekamp-Massey over $\mathbb{F}_2$
-
-BM maintains:
-
-| Variable | Type | Meaning |
-|---|---|---|
-| `L` | int | Current linear complexity $= \deg(m(x))$ so far |
-| `C[0..k]` | bit array | Current connection polynomial, `C[0] = 1` |
-| `B[0..k]` | bit array | Previous connection polynomial |
-| `m` | int | Steps since last length increase |
-
-**Initialise:** `L = 0`, `C = [1]`, `B = [1]`, `m = 1`.
-
-**For each bit `s[n]`, `n = 0, 1, …, N-1`:**
-
-```
-1. Compute discrepancy:
-       d = s[n] XOR popcount(C[1..L] AND s[n-1..n-L]) mod 2
-
-2. If d == 0:
-       m += 1
-
-3. If d == 1:
-       T = copy(C)
-       for i = m to deg(B)+m:
-           C[i] ^= B[i-m]          // C = C XOR x^m * B
-
-       if 2*L <= n:
-           L = n + 1 - L
-           B = T
-           m = 1
-       else:
-           m += 1
-```
-
-All arithmetic is XOR and AND over $\mathbb{F}_2$. No modular inverses needed.
-
-**Polynomial shift:** `C[i] ^= B[i-m]` for `i = m .. deg(B)+m`, with `B[j] = 0`
-for `j < 0`.
-
-### 5.3 Filter decision
+### 5.2 Filter decision
 
 ```
 if L < k:
@@ -253,7 +213,7 @@ After all t seeds give L = k:
 → DO NOT conclude irreducibility or primitivity from this alone
 ```
 
-### 5.4 Intermediate plateau detection (diagnostic only)
+### 5.3 Intermediate plateau detection (diagnostic only)
 
 If during a BM run $L$ stabilises at $\ell$ with $0 < \ell < k$ for more than $2\ell$ consecutive steps:
 
@@ -350,74 +310,7 @@ raw state or the output can be used — both yield the same minimal polynomial.
 
 ---
 
-## 9. C++ Implementation Notes
-
-### Polynomial representation
-
-```cpp
-static const int WORDS = (k + 63) / 64;
-uint64_t C[WORDS] = {};   C[0] = 1;
-uint64_t B[WORDS] = {};   B[0] = 1;
-```
-
-### Discrepancy computation
-
-```cpp
-int discrepancy(const uint64_t* C, int L, const uint64_t* seq_buf, int n) {
-    int d = bit_at(seq_buf, n);
-    for (int i = 1; i <= L; i++)
-        d ^= C_bit(C, i) & bit_at(seq_buf, n - i);
-    return d & 1;
-}
-```
-
-For better performance, pack into 64-bit words with AND + `__builtin_popcountll`, XOR
-the parities.
-
-### Polynomial shift
-
-```cpp
-void xor_shifted(uint64_t* C, const uint64_t* B, int m, int degB) {
-    int wshift = m / 64, bshift = m % 64;
-    for (int i = 0; i <= (degB + 63) / 64; i++) {
-        C[i + wshift] ^= B[i] << bshift;
-        if (bshift > 0)
-            C[i + wshift + 1] ^= B[i] >> (64 - bshift);
-    }
-}
-```
-
-### Circular sequence buffer
-
-BM needs bits $s[n]$ and $s[n-1..n-L]$ with $L \le k$. A circular buffer of $k+1$ bits suffices:
-
-```cpp
-uint64_t seq_buf[(k + 64) / 64] = {};
-// write s[n]: set bit at (n % (k+1))
-// read s[n-j]: read bit at ((n-j+k+1) % (k+1))
-```
-
-### Bit extraction
-
-```cpp
-uint64_t word = genrand64_int64();
-for (int bit = 0; bit < 64; bit++) {
-    int s = (word >> bit) & 1;
-    bm_step(s);   // feed into BM
-}
-```
-
-Extracting all 64 bits per word reduces generator calls by 64×.
-
-### PCLMUL acceleration
-
-On x86 with CLMUL, enable with `-mpclmul` and `NTL_PCLMUL=on`. At $k = 607$ (~10 machine
-words), Karatsuba + PCLMUL is faster than any FFT-based approach; FFT only wins for
-$k \gtrsim 10{,}000$.
-
----
-
-## 10. Seed Generation for the LCP Filter
+## 9. Seed Generation for the LCP Filter
 
 Seeds must be nonzero, independent, and uniformly random over $\mathbb{F}_2^k \setminus \{0\}$. Use a
 separate generator (e.g., splitmix64 seeded from hardware clock) to produce $k$ bits per
@@ -431,7 +324,7 @@ case in practice.
 
 ---
 
-## 11. Decision Table
+## 10. Decision Table
 
 | Observation | Conclusion | Certainty |
 |---|---|---|
@@ -444,7 +337,7 @@ case in practice.
 
 ---
 
-## 12. Recommended Parameters
+## 11. Recommended Parameters
 
 | $k$ | Mersenne prime exponent | $t$ (LCP seeds) | $N$ (bits) | Order check after IterIrredTest? |
 |---|---|---|---|---|
@@ -458,7 +351,7 @@ case in practice.
 
 ---
 
-## 13. References
+## 12. References
 
 - Berlekamp, E. R. (1968). *Algebraic Coding Theory*. McGraw-Hill.
 - Massey, J. L. (1969). Shift-register synthesis and BCH decoding. *IEEE Trans. Inf. Theory*,
