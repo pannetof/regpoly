@@ -91,14 +91,10 @@ void MTGen::get_transition_state(uint64_t* out_words, int out_nwords) const {
 }
 
 std::unique_ptr<ITestable> MTGen::copy() const {
-    auto p = std::make_unique<MTGen>(w_, r_, m_, p_, a_, L_);
-    p->state_ = state_.copy();
-    p->i_ = i_;
-    p->uu_ = uu_;
-    p->ll_ = ll_;
-    p->maskw_ = maskw_;
-    p->state_bits_ = state_bits_;
-    return p;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<MTGen>(*this);
 }
 
 BitVect MTGen::char_poly() const {

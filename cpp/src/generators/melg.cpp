@@ -549,10 +549,10 @@ BitVect MELGGen::char_poly() const {
 // ── Copy ────────────────────────────────────────────────────────────────
 
 std::unique_ptr<ITestable> MELGGen::copy() const {
-    auto g = std::make_unique<MELGGen>(w_, N_, M_, r_, sigma1_, sigma2_, a_, L_);
-    g->state_ = state_.copy();
-    g->i_ = i_;
-    return g;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<MELGGen>(*this);
 }
 
 // ── Factory methods ────────────────────────────────────────────────────

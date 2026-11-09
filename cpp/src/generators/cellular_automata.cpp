@@ -65,10 +65,10 @@ void CellularAutomataGen::next() {
 }
 
 std::unique_ptr<ITestable> CellularAutomataGen::copy() const {
-    auto g = std::make_unique<CellularAutomataGen>(
-        k_, rule150_positions_, s_, L_);
-    g->state_ = state_.copy();
-    return g;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<CellularAutomataGen>(*this);
 }
 
 // ── Factory ────────────────────────────────────────────────────────────

@@ -334,10 +334,10 @@ void MarsaXorshiftGen::next_wide_() {
 }
 
 std::unique_ptr<ITestable> MarsaXorshiftGen::copy() const {
-    auto g = std::make_unique<MarsaXorshiftGen>(
-        type_, w_, r_, m_, t1_, t2x_, taps_, t4_, mi_, L_);
-    g->state_ = state_.copy();
-    return g;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<MarsaXorshiftGen>(*this);
 }
 
 // ── Factory methods ────────────────────────────────────────────────────

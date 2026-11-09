@@ -229,15 +229,10 @@ void SFMTGen::next() {
 }
 
 std::unique_ptr<ITestable> SFMTGen::copy() const {
-    auto p = std::make_unique<SFMTGen>(
-        mexp_, pos1_, sl1_, sl2_, sr1_, sr2_,
-        msk1_, msk2_, msk3_, msk4_, L_);
-    p->state_ = state_.copy();
-    p->work_ = work_.copy();
-    p->buf_idx_ = buf_idx_;
-    p->last_output_ = last_output_;
-    p->pword_idx_ = pword_idx_;
-    return p;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<SFMTGen>(*this);
 }
 
 // ── SIMD-aware overrides for METHOD_SIMD_NOTPRIMITIVE (Phase 3) ───────

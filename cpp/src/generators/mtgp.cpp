@@ -72,12 +72,10 @@ void MTGPGen::next() {
 }
 
 std::unique_ptr<ITestable> MTGPGen::copy() const {
-    auto p = std::make_unique<MTGPGen>(mexp_, pos_, sh1_, sh2_,
-                                    mask_, tbl_, tmp_tbl_, L_);
-    p->state_ = state_.copy();
-    p->idx_ = idx_;
-    p->last_output_ = last_output_;
-    return p;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<MTGPGen>(*this);
 }
 
 BitVect MTGPGen::raw_output() const {

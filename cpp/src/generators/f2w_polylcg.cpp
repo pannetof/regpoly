@@ -35,12 +35,10 @@ void F2wPolyLCGGen::next() {
 }
 
 std::unique_ptr<ITestable> F2wPolyLCGGen::copy() const {
-    auto p = std::make_unique<F2wPolyLCGGen>(
-        w_, r_, nbcoeff_, nocoeff_, coeff_,
-        modM_, normal_basis_, step_count_, L_);
-    p->state_ = state_.copy();
-    p->table_ = table_;
-    return p;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<F2wPolyLCGGen>(*this);
 }
 
 // ── Factory methods ────────────────────────────────────────────────────

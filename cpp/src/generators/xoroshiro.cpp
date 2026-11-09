@@ -86,9 +86,10 @@ void XoroshiroGen::next() {
 }
 
 std::unique_ptr<ITestable> XoroshiroGen::copy() const {
-    auto p = std::make_unique<XoroshiroGen>(w_, r_, A_, B_, C_, L_);
-    p->state_ = state_.copy();
-    return p;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<XoroshiroGen>(*this);
 }
 
 std::unique_ptr<Recurrence> XoroshiroGen::from_params(

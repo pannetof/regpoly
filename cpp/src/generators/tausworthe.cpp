@@ -73,10 +73,10 @@ void TauswortheGen::next() {
 }
 
 std::unique_ptr<ITestable> TauswortheGen::copy() const {
-    auto p = std::make_unique<TauswortheGen>(k_, Q_, s_, quicktaus_, L_);
-    p->state_ = state_.copy();
-    p->gen_kms_ = gen_kms_;
-    return p;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<TauswortheGen>(*this);
 }
 
 BitVect TauswortheGen::char_poly() const {

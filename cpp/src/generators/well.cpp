@@ -201,13 +201,10 @@ void WELLGen::get_transition_state(uint64_t* out_words, int out_nwords) const {
 }
 
 std::unique_ptr<ITestable> WELLGen::copy() const {
-    auto g = std::make_unique<WELLGen>(w_, r_, p_, m1_, m2_, m3_, matrices_, L_);
-    g->state_ = state_.copy();
-    g->i_ = i_;
-    g->state_bits_ = state_bits_;
-    g->maskp_ = maskp_;
-    g->umaskp_ = umaskp_;
-    return g;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<WELLGen>(*this);
 }
 
 // ── Factory methods ────────────────────────────────────────────────────

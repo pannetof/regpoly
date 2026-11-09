@@ -66,11 +66,10 @@ void RMT64Gen::next() {
 }
 
 std::unique_ptr<ITestable> RMT64Gen::copy() const {
-    auto p = std::make_unique<RMT64Gen>(mexp_, pos_, mata_, maskb_, maskc_, L_);
-    p->state_ = state_.copy();
-    p->index_ = index_;
-    p->last_output_ = last_output_;
-    return p;
+    // Copy-construct so the inherited `tempering_` chain (and every
+    // other member) comes along. Hand-copying fields here silently
+    // dropped the chain, so analyses ran on untempered output.
+    return std::make_unique<RMT64Gen>(*this);
 }
 
 BitVect RMT64Gen::raw_output() const {
