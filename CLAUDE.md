@@ -81,7 +81,40 @@ The catalog is the neutral top-level `data/` tree. Resolution is two-tier — ex
 
 ## Known issue
 
-`tests/test_mttoolbox_crosscheck.py::test_regpoly_matches_mttoolbox_d5` was silently dormant for the monorepo's whole life (a path bug); the split activated it and revealed `mt-mt19937` is slow (~150s) and disagrees with the frozen reference. It is `@pytest.mark.slow` (default lane unaffected). Re-baseline the `*_mttoolbox_d5.py` references before relying on it.
+**Resolved (2026-11-08):** `tests/test_mttoolbox_crosscheck.py::test_regpoly_matches_mttoolbox_d5[mt-mt19937]`
+disagreed with the frozen MTToolBox reference. The frozen references were
+*correct* — no re-baseline was needed. Two independent bugs:
+
+1. **Every leaf `copy()` dropped the inherited tempering chain.** 17 of 19
+   generator families implemented `copy()` by constructing a fresh object and
+   hand-copying their own fields, silently omitting `F2LinearSource::tempering_`
+   (only `sobol`/`niederreiter_f2` used the prescribed
+   `make_unique<X>(*this)` form). Since `GaussMatrix::prepare` and `find_polys`
+   call `clone_source()` per matrix row, **every** equidistribution analysis ran
+   on *untempered* output regardless of the configured tempering. MT19937
+   reported `SE = 41650` instead of 6750. Fixed by switching all leaf `copy()`
+   overrides to the copy constructor, which also immunises the whole class of
+   bug against future field additions. Verified: all 32 `DIM`/`ECART` values now
+   match Table II of Matsumoto–Nishimura 1998 exactly, `SE = 6750`.
+2. **The harness drove MT through the wrong method.** `MersenneTwister` was
+   absent from `_METHOD_FOR_FAMILY`, so it defaulted to `METHOD_NOTPRIMITIVE`;
+   it is full-period, so `METHOD_DUALLATTICE` is correct (and is what
+   `shared/yaml/equidist/mt19937.yaml` uses). The harness also passed
+   `EquidistributionTest(L=MAX_V)`, conflating comparison granularity with the
+   generator's output word width (that `L` drives the column stride `j*L + cl`);
+   the matricial path rejects such a mismatch via `self.L < gen_L`, but the
+   lattice/notprimitive paths return before that guard.
+
+**Still open — `recover_char_poly` mis-recovers χ:** for MT19937 it returns a
+**degree-1** polynomial instead of degree 19937, so `select_phi` yields `p = 1`,
+the `if (p == kg) return test_me_lat(...)` fast path in
+`cpp/src/lattice/me_notprimitive.cpp` never fires, and the generator falls into
+the non-primitive branch reporting spurious **all-zero** gaps. `char_poly()`
+itself is correct (degree 19937, Hamming weight 135 per the paper) and
+`is_full_period()` returns `True`, so the defect is isolated to the BM-based
+state-sequence recovery (`build_state_seq` / `step_once` round-trip). Routing MT
+to `lattice` sidesteps it; any genuinely non-full-period generator still depends
+on this path, so it needs a real fix.
 
 Since then (2026-09-19), running it in CI surfaced two more issues, both now worked around rather than fixed:
 - Cases above a catalog's `slow_threshold_mexp` (e.g. `dsfmt44497` and bigger, `mt19937`) run the `O(p^3/W)`-per-phase notprimitive/SIMD-notprimitive reduction (`docs/theory/equidistribution-spec.md` §6.7) for minutes-to-tens-of-minutes as a synchronous, GIL-holding pybind11 call — `pytest-timeout`'s `--timeout=120` can't preempt it mid-call, so instead of failing cleanly it hangs and then hard-kills the whole session once the call finally returns. Now `pytest.skip`'d by default; opt in locally with `REGPOLY_RUN_HUGE_CROSSCHECK=1` plus a generous `--timeout` override.
