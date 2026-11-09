@@ -32,6 +32,7 @@ import yaml
 
 from regpoly import make_combined
 from regpoly.analyses.equidistribution_test import (
+    METHOD_DUALLATTICE,
     METHOD_NOTPRIMITIVE,
     METHOD_SIMD_NOTPRIMITIVE,
     EquidistributionTest,
@@ -51,6 +52,13 @@ _METHOD_FOR_FAMILY = {
     "SFMT": METHOD_SIMD_NOTPRIMITIVE,
     "dSFMT": METHOD_SIMD_NOTPRIMITIVE,
     "MTGP": METHOD_SIMD_NOTPRIMITIVE,
+    # MT19937 is full-period (primitive chi of degree kg), so the lattice
+    # method is the right driver -- it is also what
+    # shared/yaml/equidist/mt19937.yaml uses. The METHOD_NOTPRIMITIVE
+    # default is for generators whose chi may be reducible; on MT it
+    # currently mis-recovers chi (deg 1 instead of kg), misses the
+    # `p == kg` fast path, and reports spurious all-zero gaps.
+    "MersenneTwister": METHOD_DUALLATTICE,
     # Default for everything else: METHOD_NOTPRIMITIVE.
 }
 
@@ -193,9 +201,15 @@ def test_regpoly_matches_mttoolbox_d5(case: dict) -> None:
     ]
     C = make_combined(gen, trans=[temper_chain], Lmax=L)
     method = _method_for(case["family"])
+    # `EquidistributionTest.L` is the generator's OUTPUT WORD WIDTH (it
+    # drives the column stride `j*L + cl`), not the comparison
+    # granularity. Passing MAX_V here made the kernel read misaligned
+    # columns; the matricial path rejects that outright
+    # (`self.L < gen_L`), but the lattice/notprimitive paths return
+    # before that guard. Drive with the real L and slice to MAX_V below.
     test = EquidistributionTest(
-        L=MAX_V,
-        delta=[sys.maxsize] * (MAX_V + 1),
+        L=L,
+        delta=[sys.maxsize] * (L + 1),
         mse=sys.maxsize,
         method=method,
     )
